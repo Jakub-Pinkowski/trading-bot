@@ -1,0 +1,14 @@
+# PyCharm specific files
+.idea/
+
+# Virtual environments
+venv/
+env/
+ENV/
+*.env
+
+# DS_Store for macOS
+.DS_Store
+
+# Data files
+data/
