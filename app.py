@@ -7,16 +7,16 @@ ALLOWED_IPS = {
     '52.89.214.238',
     '34.212.75.30',
     '54.218.53.128',
-    '52.32.178.7'
+    '52.32.178.7',
+    '127.0.0.1',
+    'localhost'
 }
 
 
 @app.before_request
 def limit_remote_addr():
-    allowed_testing_ips = {'127.0.0.1', 'localhost'}
-    if request.remote_addr not in ALLOWED_IPS.union(allowed_testing_ips):
+    if request.remote_addr not in ALLOWED_IPS:
         abort(403)  # Forbidden access if IP is not allowed
-
 
 
 @app.route('/webhook', methods=['POST'])
@@ -30,7 +30,7 @@ def webhook():
     else:
         abort(400, description='Unsupported Content-Type')
 
-    #TODO: Do the data processing here
+    # TODO: Do the data processing here
 
     return '', 200  # Responding back with HTTP 200 OK status
 
