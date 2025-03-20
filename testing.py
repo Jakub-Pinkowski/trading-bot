@@ -1,6 +1,6 @@
 import requests
 
-url = "https://localhost:5000/v1/api/fyi/unreadnumber"
+url = "https://localhost:5000/v1/api"
 headers = {
     "Host": "api.ibkr.com",
     "User-Agent": "Python Requests",
