@@ -10,5 +10,5 @@ ENV/
 # DS_Store for macOS
 .DS_Store
 
-# Data files
-data/
+# Client portal
+clientportal/
