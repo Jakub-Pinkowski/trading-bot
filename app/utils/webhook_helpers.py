@@ -11,13 +11,11 @@ ALLOWED_IPS = {
 
 
 def validate_ip(remote_addr):
-    """Check if the sender IP is allowed."""
     if remote_addr not in ALLOWED_IPS:
         abort(403)
 
 
 def parse_request_data(request):
-    """Parse and return data from webhook request."""
     if request.content_type.startswith('application/json'):
         data = request.get_json()
     elif request.content_type.startswith('text/plain'):
