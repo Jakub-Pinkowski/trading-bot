@@ -1,14 +1,7 @@
-import requests
-import urllib3
-
 from config import BASE_URL
 from app.utils.ibkr_helpers import api_get
 
 # TODO: Make sure we tickle the API every 1 minute
-
-# Disable SSL warnings only if needed for the specific context.
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 def check_connection():
     endpoint = "iserver/auth/status"

@@ -1,4 +1,8 @@
 import requests
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def api_get(endpoint):
     url = endpoint
