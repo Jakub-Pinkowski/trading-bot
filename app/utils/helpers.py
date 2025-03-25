@@ -9,10 +9,12 @@ ALLOWED_IPS = {
     'localhost'
 }
 
+
 def validate_ip(remote_addr):
     """Check if the sender IP is allowed."""
     if remote_addr not in ALLOWED_IPS:
         abort(403)
+
 
 def parse_request_data(request):
     """Parse and return data from webhook request."""
