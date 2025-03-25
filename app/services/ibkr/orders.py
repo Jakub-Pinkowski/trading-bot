@@ -19,7 +19,7 @@ def suppress_messages(message_ids):
         response.raise_for_status()
 
 
-def place_order_and_handle_suppression(conid, order):
+def place_order(conid, order):
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
 
     order_details = {
