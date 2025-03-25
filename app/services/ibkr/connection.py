@@ -13,7 +13,6 @@ def check_connection():
         raise Exception(f"Error: Authentication request failed with status code {auth_response.status_code}")
 
     json_response = auth_response.json()
-    print("json_response:", json_response)
 
     if not (json_response.get('authenticated') and json_response.get('connected') and json_response.get('fail') == ''):
         raise Exception(f"Error: Authentication response invalid: {json_response}")
