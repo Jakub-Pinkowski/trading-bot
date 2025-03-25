@@ -20,7 +20,6 @@ def suppress_messages(message_ids):
 
 
 def handle_suppression(endpoint, order_details, message_ids):
-    """Handle suppression of messages and retry placing the order."""
     print("Suppressing message IDs:", message_ids)
     suppress_messages(message_ids)
 
