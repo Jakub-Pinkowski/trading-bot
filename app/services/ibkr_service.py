@@ -1,25 +1,16 @@
-import json
-
 import requests
 
 from app.services.ibkr.connection import check_connection
 
 
-def contract_search(symbol, sec_type):
+def contract_search(symbol):
     base_url = "https://localhost:5001/v1/api/"
-    endpoint = "iserver/secdef/search"
+    endpoint = f"/trsrv/futures?symbols={symbol}"
 
-    json_body = {
-        "symbol": symbol,
-        "secType": sec_type,
-        "name": False
-    }
+    contract_req = requests.get(url=base_url + endpoint, verify=False)
 
-    contract_req = requests.post(url=base_url + endpoint, json=json_body, verify=False)
-
-    contract_json = json.dumps(contract_req.json(), indent=2)
-
-    print("contract_json", contract_json)
+    print("contract_req", contract_req)
+    print("contract_req.json()", contract_req.json())
 
 
 class IBKRService:
@@ -41,9 +32,4 @@ class IBKRService:
         exchange = trading_data.get('Exchange')
         sec_type = trading_data.get('secType')
 
-        print(f"Symbol: {symbol}, Exchange: {exchange}, SecType: {sec_type}")
-
-        contract_search(symbol=symbol, sec_type=sec_type)
-
-        # You can now use these extracted values further in your code
-        return symbol, exchange, sec_type
+        contract_search(symbol)
