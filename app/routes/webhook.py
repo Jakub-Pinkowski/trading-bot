@@ -11,9 +11,7 @@ def webhook_route():
     validate_ip(request.remote_addr)
     data = parse_request_data(request)
 
-    # TODO: Further processing of data here
-
-    # Call IBKR service directly:
+    # Call IBKR service
     from app.services.ibkr_service import IBKRService
     ibkr_service = IBKRService()
 
