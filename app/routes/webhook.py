@@ -1,6 +1,6 @@
 from flask import Blueprint, request, abort
 
-from app.utils.helpers import validate_ip, parse_request_data
+from app.utils.webhook_helpers import validate_ip, parse_request_data
 
 webhook_blueprint = Blueprint('webhook', __name__)
 
