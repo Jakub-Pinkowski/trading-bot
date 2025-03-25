@@ -1,10 +1,11 @@
 import requests
 import urllib3
 
+# Disable SSL Warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def confirm_status():
+def contract_search():
     base_url = "https://localhost:5001/v1/api/"
     endpoint = "iserver/auth/status"
 
@@ -15,4 +16,4 @@ def confirm_status():
 
 if __name__ == "__main__":
     print("Testing")
-    confirm_status()
+    contract_search()

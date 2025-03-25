@@ -1,18 +1,26 @@
 trading-bot/
 ├── app/
 │   ├── routes/
-│   │   ├── __init__.py    
-│   │   ├── webhook.py 
+│   │   ├── __init__.py
+│   │   ├── webhook.py                  # Receive and handle incoming webhooks from TradingView
 │   ├── services/
-│   │   ├── __init__.py   
-│   │   ├── tradingview_service.py
+│   │   ├── __init__.py
+│   │   ├── tradingview_service.py      # Process webhook payload from TradingView
+│   │   └── ibkr_service.py             # Main IBKR service logic, coordinating between different IBKR tasks
+│   │   └── ibkr/
+│   │       ├── __init__.py
+│   │       ├── connection.py           # Initialize and manage IBKR API sessions and authentication
+│   │       ├── contracts.py            # Manage underlying and future contract retrieval/selection
+│   │       └── orders.py               # Manage order execution logic (buy/sell)
 │   ├── utils/
-│   │   ├── helpers.py            # Helper functions 
+│   │   ├── helpers.py                  # General-purpose helper functions
+│   │   └── ibkr_helpers.py             # IBKR-specific helper functions if needed
 │   ├── tests/
-├── .env                          # Environment variables
-├── .gitignore                    # Ignore secrets, logs, etc., for Git
-├── config.py                          
-├── README.md                     # Project documentation
-├── requirements.txt              # Python package dependencies
-├── run.py                        # Entry point for the app
-└── structure.yaml                # Project folder structure
+│   ├── __init__.py
+├── .env                                # Secure configuration (API keys, secrets, etc.)
+├── .gitignore                          # Ignored files (logs, credentials, etc.)
+├── config.py                           # General configuration including IBKR configs
+├── README.md                           # IBKR integration information added
+├── requirements.txt                    # Package dependencies, including IBKR APIs libs
+├── run.py                              # Application startup illustration
+└── structure.yaml                      # Documented updated structure
