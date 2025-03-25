@@ -3,6 +3,7 @@ from config import BASE_URL
 
 
 # TODO: Make sure we tickle the API every 1 minute
+# NOTE: I can place an order even if tickle returns "no session"
 
 def check_connection():
     endpoint = "iserver/auth/status"
@@ -12,6 +13,7 @@ def check_connection():
         raise Exception(f"Error: Authentication request failed with status code {auth_response.status_code}")
 
     json_response = auth_response.json()
+    print("json_response:", json_response)
 
     if not (json_response.get('authenticated') and json_response.get('connected') and json_response.get('fail') == ''):
         raise Exception(f"Error: Authentication response invalid: {json_response}")

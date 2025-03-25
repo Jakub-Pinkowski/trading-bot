@@ -59,6 +59,7 @@ def place_order(conid, order):
             if message_ids:
                 return handle_suppression(endpoint, order_details, message_ids)
 
+        # TODO: Sometimes I get an error in the response so I can't assume that it always works
         print("Order successfully placed:", order_response)
         return order_response
     else:
