@@ -7,7 +7,6 @@ webhook_blueprint = Blueprint('webhook', __name__)
 
 @webhook_blueprint.route('/webhook', methods=['POST'])
 def webhook_route():
-    """Full webhook handling logic."""
     validate_ip(request.remote_addr)
     data = parse_request_data(request)
 
