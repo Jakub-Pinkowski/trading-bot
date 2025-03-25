@@ -1,9 +1,6 @@
 from app.services.ibkr.connection import check_connection
 
 
-
-
-
 class IBKRService:
     def __init__(self):
         # Initialize resources or setup here.

@@ -1,6 +1,8 @@
 import requests
 import urllib3
 
+# TODO: Make sure we ticket the API every 1 minute
+
 # Disable SSL warnings only if needed for the specific context.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
