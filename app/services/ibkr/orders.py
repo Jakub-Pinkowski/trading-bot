@@ -19,6 +19,21 @@ def suppress_messages(message_ids):
         response.raise_for_status()
 
 
+def handle_suppression(endpoint, order_details, message_ids):
+    """Handle suppression of messages and retry placing the order."""
+    print("Suppressing message IDs:", message_ids)
+    suppress_messages(message_ids)
+
+    response_retry = api_post(BASE_URL + endpoint, order_details)
+
+    if response_retry.status_code == 200:
+        print("Order successfully placed after suppression:", response_retry.json())
+        return response_retry.json()
+    else:
+        print(f"Failed retry order: {response_retry.status_code} - {response_retry.text}")
+        response_retry.raise_for_status()
+
+
 def place_order(conid, order):
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
 
@@ -43,21 +58,10 @@ def place_order(conid, order):
         if isinstance(order_response, list) and 'messageIds' in order_response[0]:
             message_ids = order_response[0].get('messageIds', [])
             if message_ids:
-                print("Suppressing message IDs:", message_ids)
-                suppress_messages(message_ids)
+                return handle_suppression(endpoint, order_details, message_ids)
 
-                # Retry placing the order after suppression
-                response_retry = api_post(BASE_URL + endpoint, order_details)
-
-                if response_retry.status_code == 200:
-                    print("Order successfully placed after suppression:", response_retry.json())
-                    return response_retry.json()
-                else:
-                    print(f"Failed retry order: {response_retry.status_code} - {response_retry.text}")
-                    response_retry.raise_for_status()
-        else:
-            print("Order successfully placed:", order_response)
-            return order_response
+        print("Order successfully placed:", order_response)
+        return order_response
     else:
         print(f"Order submission error: {response.status_code} - {response.text}")
         response.raise_for_status()
