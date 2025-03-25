@@ -1,5 +1,6 @@
-from config import BASE_URL
 from app.utils.ibkr_helpers import api_get
+from config import BASE_URL
+
 
 # TODO: Make sure we tickle the API every 1 minute
 

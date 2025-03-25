@@ -1,7 +1,6 @@
 from datetime import datetime
 
-import requests
-
+from app.utils.ibkr_helpers import api_get
 from config import BASE_URL
 
 
@@ -9,7 +8,7 @@ def search_contract(symbol):
     endpoint = f"/trsrv/futures?symbols={symbol}"
 
     # Fetch the contract
-    contract_req = requests.get(url=BASE_URL + endpoint, verify=False)
+    contract_req = api_get(BASE_URL + endpoint)
     contracts = contract_req.json()
 
     if symbol in contracts and isinstance(contracts[symbol], list):
