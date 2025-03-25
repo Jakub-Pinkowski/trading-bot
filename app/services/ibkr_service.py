@@ -1,4 +1,7 @@
 import requests
+from datetime import datetime
+
+import json
 
 from app.services.ibkr.connection import check_connection
 
@@ -9,8 +12,20 @@ def contract_search(symbol):
 
     contract_req = requests.get(url=base_url + endpoint, verify=False)
 
-    print("contract_req", contract_req)
-    print("contract_req.json()", contract_req.json())
+    contracts = contract_req.json()
+    print("contracts", contracts)
+
+    if symbol in contracts and isinstance(contracts[symbol], list):
+        # Select the contract with the nearest expiration date
+        closest_contract = min(
+            contracts[symbol],
+            key=lambda x: datetime.strptime(str(x['expirationDate']), "%Y%m%d")
+        )
+        conid = closest_contract['conid']
+        return conid
+    else:
+        raise ValueError(f"No contracts found for symbol: {symbol}")
+
 
 
 class IBKRService:
@@ -21,15 +36,13 @@ class IBKRService:
     def process_data(self, trading_data):
         print("trading_data", trading_data)
 
-        # Check connection and halt execution immediately if it fails:
+        # Check connection and halt execution immediately if it fails
         check_connection()
 
-        # Execution continues only if authentication succeeded.
-        print("authenticated")
-
-        # Extract the required values from trading data safely.
+        # Extract the required values from trading data safely
         symbol = trading_data.get('symbol')
         exchange = trading_data.get('Exchange')
         sec_type = trading_data.get('secType')
 
-        contract_search(symbol)
+        contract = contract_search(symbol)
+        print("contract", contract)
