@@ -18,8 +18,6 @@ def validate_ip(remote_addr):
 def parse_request_data(request):
     if request.content_type.startswith('application/json'):
         data = request.get_json()
-    elif request.content_type.startswith('text/plain'):
-        data = request.data.decode('utf-8')
     else:
         abort(400, description='Unsupported Content-Type')
 
