@@ -1,0 +1,18 @@
+trading-bot/
+├── app/
+│   ├── routes/
+│   │   ├── __init__.py    
+│   │   ├── webhook.py 
+│   ├── services/
+│   │   ├── __init__.py   
+│   │   ├── tradingview_service.py
+│   ├── utils/
+│   │   ├── helpers.py            # Helper functions 
+│   ├── tests/
+├── .env                          # Environment variables
+├── .gitignore                    # Ignore secrets, logs, etc., for Git
+├── config.py                          
+├── README.md                     # Project documentation
+├── requirements.txt              # Python package dependencies
+├── run.py                        # Entry point for the app
+└── structure.yaml                # Project folder structure
