@@ -3,6 +3,7 @@ from datetime import datetime
 from app.utils.ibkr_helpers import api_get
 from config import BASE_URL
 
+
 # TODO: Handle near delivery cases
 
 def get_closest_contract(contracts):
