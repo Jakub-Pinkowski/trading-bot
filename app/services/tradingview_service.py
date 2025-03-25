@@ -35,6 +35,6 @@ def handle_tradingview_webhook(request):
     validate_ip(request.remote_addr)
     data = parse_request_data(request)
 
-    # TODO: Further processing of webhook data here
+    # TODO: Further processing of data here
 
     return '', 200

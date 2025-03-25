@@ -1,5 +1,5 @@
 from flask import Flask
-from routes.webhook import webhook_blueprint
+from app.routes.webhook import webhook_blueprint
 
 app = Flask(__name__)
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from services.tradingview_service import handle_tradingview_webhook
+from app.services.tradingview_service import handle_tradingview_webhook
 
 webhook_blueprint = Blueprint('webhook', __name__)
 
