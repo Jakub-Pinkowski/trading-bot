@@ -1,20 +1,18 @@
 import requests
+import urllib3
 
-url = "https://localhost:5000/v1/api"
-headers = {
-    "Host": "api.ibkr.com",
-    "User-Agent": "Python Requests",
-    "Accept": "*/*",
-    "Connection": "keep-alive"
-}
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-print(f"Request URL: {url}")
 
-try:
-    response = requests.get(url, headers=headers, verify=False)
-    print(f"Status Code: {response.status_code}")
-    print(f"Response Content: {response.text}")
-except requests.exceptions.ConnectionError as e:
-    print(f"Connection Error: {e}")
-except requests.exceptions.RequestException as e:
-    print(f"Request Exception: {e}")
+def confirm_status():
+    base_url = "https://localhost:5001/v1/api/"
+    endpoint = "iserver/auth/status"
+
+    auth_req = requests.get(url=base_url + endpoint, verify=False)
+    print(auth_req)
+    print(auth_req.text)
+
+
+if __name__ == "__main__":
+    print("Testing")
+    confirm_status()
