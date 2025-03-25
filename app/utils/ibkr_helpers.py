@@ -14,4 +14,4 @@ def api_post(endpoint, payload):
     url = endpoint
     response = requests.post(url=url, json=payload, verify=False)
     response.raise_for_status()
-    return response.json()
+    return response

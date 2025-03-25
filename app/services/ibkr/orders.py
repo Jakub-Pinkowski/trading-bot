@@ -1,5 +1,6 @@
-import requests
+from app.utils.ibkr_helpers import api_post
 from config import BASE_URL, ACCOUNT_ID
+
 
 def suppress_messages(message_ids):
     endpoint = "iserver/questions/suppress"
@@ -8,11 +9,7 @@ def suppress_messages(message_ids):
         "messageIds": message_ids
     }
 
-    response = requests.post(
-        url=BASE_URL + endpoint,
-        json=suppression_data,
-        verify=False
-    )
+    response = api_post(BASE_URL + endpoint, suppression_data)
 
     if response.status_code == 200:
         print("Suppression successful:", response.json())
@@ -37,11 +34,7 @@ def place_order_and_handle_suppression(conid, order):
         ]
     }
 
-    response = requests.post(
-        url=BASE_URL + endpoint,
-        json=order_details,
-        verify=False
-    )
+    response = api_post(BASE_URL + endpoint, order_details)
 
     if response.status_code == 200:
         order_response = response.json()
@@ -54,11 +47,8 @@ def place_order_and_handle_suppression(conid, order):
                 suppress_messages(message_ids)
 
                 # Retry placing the order after suppression
-                response_retry = requests.post(
-                    url=BASE_URL + endpoint,
-                    json=order_details,
-                    verify=False
-                )
+                response_retry = api_post(BASE_URL + endpoint, order_details)
+
                 if response_retry.status_code == 200:
                     print("Order successfully placed after suppression:", response_retry.json())
                     return response_retry.json()
