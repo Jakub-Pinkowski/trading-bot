@@ -15,7 +15,7 @@ def webhook_route():
     ibkr_service = IBKRService()
 
     try:
-        ibkr_service.process_tradingview_data(data)
+        ibkr_service.process_data(data)
     except Exception as e:
         print(f"Error processing TradingView webhook: {e}")
         abort(500, description=str(e))

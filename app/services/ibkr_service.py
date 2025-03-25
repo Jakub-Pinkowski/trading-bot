@@ -3,5 +3,5 @@ class IBKRService:
         # Initialize any required resources or connections here.
         pass
 
-    def process_tradingview_data(self, trading_data):
+    def process_data(self, trading_data):
         print(trading_data)
