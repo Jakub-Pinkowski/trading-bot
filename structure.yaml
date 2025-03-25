@@ -12,8 +12,8 @@ trading-bot/
 │   │       ├── contracts.py            # Manage underlying and future contract retrieval/selection
 │   │       └── orders.py               # Manage order execution logic (buy/sell)
 │   ├── utils/
-│   │   ├── webhook_helpers.py          # Webhook helper functions
-│   │   └── ibkr_helpers.py             # IBKR-specific helper functions if needed
+│   │   ├── ibkr_helpers.py             # IBKR-specific helper functions if needed
+│   │   └── webhook_helpers.py          # Webhook helper functions
 │   ├── tests/
 │   ├── __init__.py
 ├── .env                                # Secure configuration (API keys, secrets, etc.)
