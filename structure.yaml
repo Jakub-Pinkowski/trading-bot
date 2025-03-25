@@ -5,7 +5,6 @@ trading-bot/
 │   │   ├── webhook.py                  # Receive and handle incoming webhooks from TradingView
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── tradingview_service.py      # Process webhook payload from TradingView
 │   │   └── ibkr_service.py             # Main IBKR service logic, coordinating between different IBKR tasks
 │   │   └── ibkr/
 │   │       ├── __init__.py
