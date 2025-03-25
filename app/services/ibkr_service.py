@@ -2,7 +2,7 @@ import requests
 
 from app.services.ibkr.connection import check_connection
 from app.services.ibkr.contracts import search_contract
-from app.services.ibkr.orders import place_order
+from app.services.ibkr.orders import place_order_and_handle_suppression
 
 class IBKRService:
     def __init__(self):
@@ -21,4 +21,4 @@ class IBKRService:
 
         contract = search_contract(symbol)
 
-        order = place_order(contract, order)
+        order = place_order_and_handle_suppression(contract, order)
