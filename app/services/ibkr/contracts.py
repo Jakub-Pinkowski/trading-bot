@@ -2,13 +2,14 @@ from datetime import datetime
 
 import requests
 
+from config import BASE_URL
+
 
 def search_contract(symbol):
-    base_url = "https://localhost:5001/v1/api/"
     endpoint = f"/trsrv/futures?symbols={symbol}"
 
     # Fetch the contract
-    contract_req = requests.get(url=base_url + endpoint, verify=False)
+    contract_req = requests.get(url=BASE_URL + endpoint, verify=False)
     contracts = contract_req.json()
 
     if symbol in contracts and isinstance(contracts[symbol], list):

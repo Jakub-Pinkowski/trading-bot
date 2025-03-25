@@ -1,7 +1,7 @@
 import requests
+from config import BASE_URL, ACCOUNT_ID
 
 def suppress_messages(message_ids):
-    base_url = "https://localhost:5001/v1/api/"
     endpoint = "iserver/questions/suppress"
 
     suppression_data = {
@@ -9,7 +9,7 @@ def suppress_messages(message_ids):
     }
 
     response = requests.post(
-        url=base_url + endpoint,
+        url=BASE_URL + endpoint,
         json=suppression_data,
         verify=False
     )
@@ -23,9 +23,7 @@ def suppress_messages(message_ids):
 
 
 def place_order_and_handle_suppression(conid, order):
-    account_id = "DUE343675"
-    base_url = "https://localhost:5001/v1/api/"
-    endpoint = f"iserver/account/{account_id}/orders"
+    endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
 
     order_details = {
         "orders": [
@@ -40,7 +38,7 @@ def place_order_and_handle_suppression(conid, order):
     }
 
     response = requests.post(
-        url=base_url + endpoint,
+        url=BASE_URL + endpoint,
         json=order_details,
         verify=False
     )
@@ -57,7 +55,7 @@ def place_order_and_handle_suppression(conid, order):
 
                 # Retry placing the order after suppression
                 response_retry = requests.post(
-                    url=base_url + endpoint,
+                    url=BASE_URL + endpoint,
                     json=order_details,
                     verify=False
                 )
