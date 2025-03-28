@@ -1,11 +1,13 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.utils.ibkr_helpers import api_get
 from config import BASE_URL
 
 
+# TODO: Store all the conid locally as they never change
 # TODO: Handle near delivery cases
+# TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
 
 def parse_symbol(symbol):
     match = re.match(r'^([A-Za-z]+)', symbol)
@@ -14,13 +16,20 @@ def parse_symbol(symbol):
     return match.group(1)
 
 
-def get_closest_contract(contracts):
-    if not contracts:
-        raise ValueError("No contracts provided.")
-    return min(
-        contracts,
-        key=lambda x: datetime.strptime(str(x['expirationDate']), "%Y%m%d")
-    )
+def get_closest_contract(contracts, min_days_until_expiry=60):
+    valid_contracts = [
+        contract for contract in contracts
+        if datetime.strptime(str(contract['expirationDate']), "%Y%m%d")
+           > datetime.today() + timedelta(days=min_days_until_expiry)
+    ]
+
+    if not valid_contracts:
+        raise ValueError("No valid (liquid, distant enough) contracts available.")
+
+    # Sort by expiration and pick the earliest liquid enough contract
+    chosen_contract = min(valid_contracts, key=lambda x: datetime.strptime(str(x['expirationDate']), "%Y%m%d"))
+
+    return chosen_contract
 
 
 def search_contract(symbol):
