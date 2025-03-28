@@ -8,6 +8,8 @@ from config import BASE_URL, BASE_DIR
 
 CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
 
+MIN_DAYS_UNTIL_EXPIRY = 60
+
 
 # TODO: Store all the conid locally as they never change
 # TODO: Handle near delivery cases
@@ -35,7 +37,7 @@ def parse_symbol(symbol):
     return match.group(1)
 
 
-def get_closest_contract(contracts, min_days_until_expiry=60):
+def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     valid_contracts = [
         contract for contract in contracts
         if datetime.strptime(str(contract['expirationDate']), "%Y%m%d")
@@ -60,7 +62,7 @@ def fetch_contract(symbol):
     return contracts_data.get(parsed_symbol, [])
 
 
-def search_contract(symbol, min_days_until_expiry=60):
+def search_contract(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_cache()
 
@@ -85,5 +87,3 @@ def search_contract(symbol, min_days_until_expiry=60):
         return closest_contract['conid']
     else:
         raise ValueError(f"No contracts found for symbol: {parsed_symbol}")
-
-
