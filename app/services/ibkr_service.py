@@ -1,5 +1,6 @@
 from app.services.ibkr.connection import check_connection
 from app.services.ibkr.contracts import search_contract
+from app.services.ibkr.orders import place_order
 
 
 class IBKRService:
@@ -16,4 +17,4 @@ class IBKRService:
 
         contract = search_contract(symbol)
 
-        # place_order(contract, order)
+        place_order(contract, order)
