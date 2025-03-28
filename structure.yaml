@@ -19,7 +19,7 @@ trading-bot/
 ├── .env                                # Secure configuration (API keys, secrets, etc.)
 ├── .gitignore                          # Ignored files (logs, credentials, etc.)
 ├── config.py                           # General configuration including IBKR configs
-├── README.md                           # IBKR integration information added
-├── requirements.txt                    # Package dependencies, including IBKR APIs libs
+├── README.md                           # README
+├── requirements.txt                    # Package dependencies
 ├── run.py                              # Application startup illustration
 └── structure.yaml                      # Documented updated structure
