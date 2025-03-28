@@ -1,4 +1,449 @@
 {
-    "DUE343675": [],
-    "DUE343676": []
+    "GC": [
+        {
+            "symbol": "GC",
+            "conid": 372852975,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250626,
+            "ltd": 20250626,
+            "shortFuturesCutOff": 20250626,
+            "longFuturesCutOff": 20250529
+        },
+        {
+            "symbol": "GC",
+            "conid": 397594951,
+            "underlyingConid": 17340718,
+            "expirationDate": 20251229,
+            "ltd": 20251229,
+            "shortFuturesCutOff": 20251229,
+            "longFuturesCutOff": 20251126
+        },
+        {
+            "symbol": "GC",
+            "conid": 430360630,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260626,
+            "ltd": 20260626,
+            "shortFuturesCutOff": 20260626,
+            "longFuturesCutOff": 20260528
+        },
+        {
+            "symbol": "GC",
+            "conid": 462941472,
+            "underlyingConid": 17340718,
+            "expirationDate": 20261229,
+            "ltd": 20261229,
+            "shortFuturesCutOff": 20261229,
+            "longFuturesCutOff": 20261127
+        },
+        {
+            "symbol": "GC",
+            "conid": 499901750,
+            "underlyingConid": 17340718,
+            "expirationDate": 20270628,
+            "ltd": 20270628,
+            "shortFuturesCutOff": 20270628,
+            "longFuturesCutOff": 20270527
+        },
+        {
+            "symbol": "GC",
+            "conid": 535526299,
+            "underlyingConid": 17340718,
+            "expirationDate": 20271229,
+            "ltd": 20271229,
+            "shortFuturesCutOff": 20271229,
+            "longFuturesCutOff": 20271129
+        },
+        {
+            "symbol": "GC",
+            "conid": 570499473,
+            "underlyingConid": 17340718,
+            "expirationDate": 20280628,
+            "ltd": 20280628,
+            "shortFuturesCutOff": 20280628,
+            "longFuturesCutOff": 20280530
+        },
+        {
+            "symbol": "GC",
+            "conid": 605552435,
+            "underlyingConid": 17340718,
+            "expirationDate": 20281227,
+            "ltd": 20281227,
+            "shortFuturesCutOff": 20281227,
+            "longFuturesCutOff": 20281129
+        },
+        {
+            "symbol": "GC",
+            "conid": 633994080,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250428,
+            "ltd": 20250428,
+            "shortFuturesCutOff": 20250428,
+            "longFuturesCutOff": 20250328
+        },
+        {
+            "symbol": "GC",
+            "conid": 639787356,
+            "underlyingConid": 17340718,
+            "expirationDate": 20290627,
+            "ltd": 20290627,
+            "shortFuturesCutOff": 20290627,
+            "longFuturesCutOff": 20290530
+        },
+        {
+            "symbol": "GC",
+            "conid": 656780474,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250827,
+            "ltd": 20250827,
+            "shortFuturesCutOff": 20250827,
+            "longFuturesCutOff": 20250730
+        },
+        {
+            "symbol": "GC",
+            "conid": 668631614,
+            "underlyingConid": 17340718,
+            "expirationDate": 20251029,
+            "ltd": 20251029,
+            "shortFuturesCutOff": 20251029,
+            "longFuturesCutOff": 20250929
+        },
+        {
+            "symbol": "GC",
+            "conid": 674701635,
+            "underlyingConid": 17340718,
+            "expirationDate": 20291227,
+            "ltd": 20291227,
+            "shortFuturesCutOff": 20291227,
+            "longFuturesCutOff": 20291129
+        },
+        {
+            "symbol": "GC",
+            "conid": 693609539,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260225,
+            "ltd": 20260225,
+            "shortFuturesCutOff": 20260225,
+            "longFuturesCutOff": 20260129
+        },
+        {
+            "symbol": "GC",
+            "conid": 706903673,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260428,
+            "ltd": 20260428,
+            "shortFuturesCutOff": 20260428,
+            "longFuturesCutOff": 20260330
+        },
+        {
+            "symbol": "GC",
+            "conid": 712565963,
+            "underlyingConid": 17340718,
+            "expirationDate": 20300626,
+            "ltd": 20300626,
+            "shortFuturesCutOff": 20300626,
+            "longFuturesCutOff": 20300530
+        },
+        {
+            "symbol": "GC",
+            "conid": 732156872,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260827,
+            "ltd": 20260827,
+            "shortFuturesCutOff": 20260827,
+            "longFuturesCutOff": 20260730
+        },
+        {
+            "symbol": "GC",
+            "conid": 744880148,
+            "underlyingConid": 17340718,
+            "expirationDate": 20261028,
+            "ltd": 20261028,
+            "shortFuturesCutOff": 20261028,
+            "longFuturesCutOff": 20260929
+        },
+        {
+            "symbol": "GC",
+            "conid": 751494391,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250327,
+            "ltd": 20250327,
+            "shortFuturesCutOff": 20250327,
+            "longFuturesCutOff": 20250227
+        },
+        {
+            "symbol": "GC",
+            "conid": 751494392,
+            "underlyingConid": 17340718,
+            "expirationDate": 20301227,
+            "ltd": 20301227,
+            "shortFuturesCutOff": 20301227,
+            "longFuturesCutOff": 20301127
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200530,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260527,
+            "ltd": 20260527,
+            "shortFuturesCutOff": 20260527,
+            "longFuturesCutOff": 20260429
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200535,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260327,
+            "ltd": 20260327,
+            "shortFuturesCutOff": 20260327,
+            "longFuturesCutOff": 20260226
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200536,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260729,
+            "ltd": 20260729,
+            "shortFuturesCutOff": 20260729,
+            "longFuturesCutOff": 20260629
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200541,
+            "underlyingConid": 17340718,
+            "expirationDate": 20261125,
+            "ltd": 20261125,
+            "shortFuturesCutOff": 20261125,
+            "longFuturesCutOff": 20261029
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200545,
+            "underlyingConid": 17340718,
+            "expirationDate": 20270127,
+            "ltd": 20270127,
+            "shortFuturesCutOff": 20270127,
+            "longFuturesCutOff": 20261230
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200548,
+            "underlyingConid": 17340718,
+            "expirationDate": 20251125,
+            "ltd": 20251125,
+            "shortFuturesCutOff": 20251125,
+            "longFuturesCutOff": 20251030
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200555,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250528,
+            "ltd": 20250528,
+            "shortFuturesCutOff": 20250528,
+            "longFuturesCutOff": 20250429
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200558,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260128,
+            "ltd": 20260128,
+            "shortFuturesCutOff": 20260128,
+            "longFuturesCutOff": 20251230
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200560,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250729,
+            "ltd": 20250729,
+            "shortFuturesCutOff": 20250729,
+            "longFuturesCutOff": 20250627
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200565,
+            "underlyingConid": 17340718,
+            "expirationDate": 20260928,
+            "ltd": 20260928,
+            "shortFuturesCutOff": 20260928,
+            "longFuturesCutOff": 20260828
+        },
+        {
+            "symbol": "GC",
+            "conid": 760200570,
+            "underlyingConid": 17340718,
+            "expirationDate": 20250926,
+            "ltd": 20250926,
+            "shortFuturesCutOff": 20250926,
+            "longFuturesCutOff": 20250828
+        },
+        {
+            "symbol": "GC",
+            "conid": 765079322,
+            "underlyingConid": 17340718,
+            "expirationDate": 20270224,
+            "ltd": 20270224,
+            "shortFuturesCutOff": 20270224,
+            "longFuturesCutOff": 20270128
+        },
+        {
+            "symbol": "GC",
+            "conid": 772041608,
+            "underlyingConid": 17340718,
+            "expirationDate": 20270329,
+            "ltd": 20270329,
+            "shortFuturesCutOff": 20270329,
+            "longFuturesCutOff": 20270225
+        }
+    ],
+    "ZC": {
+        "ZC": [
+            {
+                "symbol": "ZC",
+                "conid": 532513373,
+                "underlyingConid": 11160400,
+                "expirationDate": 20251212,
+                "ltd": 20251212,
+                "shortFuturesCutOff": 20251212,
+                "longFuturesCutOff": 20251126
+            },
+            {
+                "symbol": "ZC",
+                "conid": 532513377,
+                "underlyingConid": 11160400,
+                "expirationDate": 20250714,
+                "ltd": 20250714,
+                "shortFuturesCutOff": 20250714,
+                "longFuturesCutOff": 20250627
+            },
+            {
+                "symbol": "ZC",
+                "conid": 602619710,
+                "underlyingConid": 11160400,
+                "expirationDate": 20250514,
+                "ltd": 20250514,
+                "shortFuturesCutOff": 20250514,
+                "longFuturesCutOff": 20250429
+            },
+            {
+                "symbol": "ZC",
+                "conid": 602619718,
+                "underlyingConid": 11160400,
+                "expirationDate": 20260714,
+                "ltd": 20260714,
+                "shortFuturesCutOff": 20260714,
+                "longFuturesCutOff": 20260629
+            },
+            {
+                "symbol": "ZC",
+                "conid": 602619735,
+                "underlyingConid": 11160400,
+                "expirationDate": 20261214,
+                "ltd": 20261214,
+                "shortFuturesCutOff": 20261214,
+                "longFuturesCutOff": 20261127
+            },
+            {
+                "symbol": "ZC",
+                "conid": 602619745,
+                "underlyingConid": 11160400,
+                "expirationDate": 20250912,
+                "ltd": 20250912,
+                "shortFuturesCutOff": 20250912,
+                "longFuturesCutOff": 20250828
+            },
+            {
+                "symbol": "ZC",
+                "conid": 671574006,
+                "underlyingConid": 11160400,
+                "expirationDate": 20271214,
+                "ltd": 20271214,
+                "shortFuturesCutOff": 20271214,
+                "longFuturesCutOff": 20271129
+            },
+            {
+                "symbol": "ZC",
+                "conid": 671574009,
+                "underlyingConid": 11160400,
+                "expirationDate": 20270714,
+                "ltd": 20270714,
+                "shortFuturesCutOff": 20270714,
+                "longFuturesCutOff": 20270629
+            },
+            {
+                "symbol": "ZC",
+                "conid": 671574012,
+                "underlyingConid": 11160400,
+                "expirationDate": 20260313,
+                "ltd": 20260313,
+                "shortFuturesCutOff": 20260313,
+                "longFuturesCutOff": 20260226
+            },
+            {
+                "symbol": "ZC",
+                "conid": 671574019,
+                "underlyingConid": 11160400,
+                "expirationDate": 20260914,
+                "ltd": 20260914,
+                "shortFuturesCutOff": 20260914,
+                "longFuturesCutOff": 20260828
+            },
+            {
+                "symbol": "ZC",
+                "conid": 671574022,
+                "underlyingConid": 11160400,
+                "expirationDate": 20260514,
+                "ltd": 20260514,
+                "shortFuturesCutOff": 20260514,
+                "longFuturesCutOff": 20260429
+            },
+            {
+                "symbol": "ZC",
+                "conid": 748101130,
+                "underlyingConid": 11160400,
+                "expirationDate": 20280714,
+                "ltd": 20280714,
+                "shortFuturesCutOff": 20280714,
+                "longFuturesCutOff": 20280629
+            },
+            {
+                "symbol": "ZC",
+                "conid": 748101135,
+                "underlyingConid": 11160400,
+                "expirationDate": 20270514,
+                "ltd": 20270514,
+                "shortFuturesCutOff": 20270514,
+                "longFuturesCutOff": 20270429
+            },
+            {
+                "symbol": "ZC",
+                "conid": 748101137,
+                "underlyingConid": 11160400,
+                "expirationDate": 20270914,
+                "ltd": 20270914,
+                "shortFuturesCutOff": 20270914,
+                "longFuturesCutOff": 20270830
+            },
+            {
+                "symbol": "ZC",
+                "conid": 748101140,
+                "underlyingConid": 11160400,
+                "expirationDate": 20270312,
+                "ltd": 20270312,
+                "shortFuturesCutOff": 20270312,
+                "longFuturesCutOff": 20270225
+            },
+            {
+                "symbol": "ZC",
+                "conid": 748101147,
+                "underlyingConid": 11160400,
+                "expirationDate": 20281214,
+                "ltd": 20281214,
+                "shortFuturesCutOff": 20281214,
+                "longFuturesCutOff": 20281129
+            }
+        ]
+    }
 }

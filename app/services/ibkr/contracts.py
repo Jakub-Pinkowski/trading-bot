@@ -12,6 +12,7 @@ CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
 # TODO: Store all the conid locally as they never change
 # TODO: Handle near delivery cases
 # TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
+# TODO: If I hold a position for too long I'm getting too close to the mandatory selling date, handle that scenario
 
 def load_cache():
     if not os.path.exists(CACHE_FILE_PATH):
@@ -58,6 +59,11 @@ def search_contract(symbol):
     # Fetch the contract
     contract_req = api_get(BASE_URL + endpoint)
     contracts_data = contract_req.json()
+
+    save_cache({
+        **load_cache(),
+        parsed_symbol: contracts_data
+    })
 
     if parsed_symbol in contracts_data and isinstance(contracts_data[parsed_symbol], list):
         closest_contract = get_closest_contract(contracts_data[parsed_symbol])
