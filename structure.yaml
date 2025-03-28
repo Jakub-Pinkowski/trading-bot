@@ -16,6 +16,8 @@ trading-bot/
 │   │   └── webhook_helpers.py          # Webhook helper functions
 │   ├── tests/
 │   ├── __init__.py
+├── data/
+│   ├── contracts.json                  # Contracts IDs
 ├── .env                                # Secure configuration (API keys, secrets, etc.)
 ├── .gitignore                          # Ignored files (logs, credentials, etc.)
 ├── config.py                           # General configuration including IBKR configs
