@@ -51,22 +51,33 @@ def get_closest_contract(contracts, min_days_until_expiry=60):
     return chosen_contract
 
 
-def search_contract(symbol):
-
+def search_contract(symbol, min_days_until_expiry=60):
     parsed_symbol = parse_symbol(symbol)
-    endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
+    contracts_cache = load_cache()
 
-    # Fetch the contract
+    # Check cache first
+    if parsed_symbol in contracts_cache and isinstance(contracts_cache[parsed_symbol], list):
+        try:
+            closest_contract = get_closest_contract(contracts_cache[parsed_symbol], min_days_until_expiry)
+            print(f"Using cached contract: {closest_contract['conid']}")
+            return closest_contract['conid']
+        except ValueError:
+            pass
+
+    # Fetch the contract if cache is empty or invalid
+    endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
     contract_req = api_get(BASE_URL + endpoint)
     contracts_data = contract_req.json()
 
+    # Update cache with fresh data
     save_cache({
-        **load_cache(),
-        parsed_symbol: contracts_data
+        **contracts_cache,
+        parsed_symbol: contracts_data.get(parsed_symbol, [])
     })
 
     if parsed_symbol in contracts_data and isinstance(contracts_data[parsed_symbol], list):
-        closest_contract = get_closest_contract(contracts_data[parsed_symbol])
+        closest_contract = get_closest_contract(contracts_data[parsed_symbol], min_days_until_expiry)
         return closest_contract['conid']
     else:
         raise ValueError(f"No contracts found for symbol: {parsed_symbol}")
+
