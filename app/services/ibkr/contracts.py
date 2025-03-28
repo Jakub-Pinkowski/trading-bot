@@ -1,13 +1,31 @@
+import json
+import os
 import re
 from datetime import datetime, timedelta
 
 from app.utils.ibkr_helpers import api_get
-from config import BASE_URL
+from config import BASE_URL, BASE_DIR
+
+CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
 
 
 # TODO: Store all the conid locally as they never change
 # TODO: Handle near delivery cases
 # TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
+
+def load_cache():
+    if not os.path.exists(CACHE_FILE_PATH):
+        return {}
+
+    with open(CACHE_FILE_PATH, 'r') as cache_file:
+        cache_data = json.load(cache_file)
+    return cache_data
+
+
+def save_cache(cache_data):
+    with open(CACHE_FILE_PATH, 'w') as cache_file:
+        json.dump(cache_data, cache_file, indent=4)
+
 
 def parse_symbol(symbol):
     match = re.match(r'^([A-Za-z]+)', symbol)
@@ -33,6 +51,7 @@ def get_closest_contract(contracts, min_days_until_expiry=60):
 
 
 def search_contract(symbol):
+
     parsed_symbol = parse_symbol(symbol)
     endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
 
