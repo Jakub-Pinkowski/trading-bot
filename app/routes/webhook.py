@@ -1,5 +1,6 @@
 from flask import Blueprint, request, abort
 
+from app.services.ibkr_service import process_trading_data
 from app.utils.webhook_helpers import validate_ip, parse_request_data
 
 webhook_blueprint = Blueprint('webhook', __name__)
@@ -10,12 +11,8 @@ def webhook_route():
     validate_ip(request.remote_addr)
     data = parse_request_data(request)
 
-    # Call IBKR service
-    from app.services.ibkr_service import IBKRService
-    ibkr_service = IBKRService()
-
     try:
-        ibkr_service.process_data(data)
+        process_trading_data(data)
     except Exception as e:
         print(f"Error processing TradingView webhook: {e}")
         abort(500, description=str(e))

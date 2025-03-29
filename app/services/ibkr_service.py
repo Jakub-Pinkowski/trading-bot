@@ -3,18 +3,14 @@ from app.services.ibkr.contracts import get_contract_id
 from app.services.ibkr.orders import place_order
 
 
-class IBKRService:
-    def __init__(self):
-        pass
+def process_trading_data(trading_data):
+    print("trading_data", trading_data)
 
-    def process_data(self, trading_data):
-        print("trading_data", trading_data)
+    check_connection()
 
-        check_connection()
+    symbol = trading_data.get('symbol')
+    order = trading_data.get('order')
 
-        symbol = trading_data.get('symbol')
-        order = trading_data.get('order')
+    contract = get_contract_id(symbol)
 
-        contract = get_contract_id(symbol)
-
-        place_order(contract, order)
+    place_order(contract, order)
