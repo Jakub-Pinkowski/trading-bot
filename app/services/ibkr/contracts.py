@@ -4,11 +4,9 @@ import re
 from datetime import datetime, timedelta
 
 from app.utils.ibkr_helpers import api_get
-from config import BASE_URL, BASE_DIR
+from config import BASE_DIR, BASE_URL, MIN_DAYS_UNTIL_EXPIRY
 
 CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
-
-MIN_DAYS_UNTIL_EXPIRY = 60
 
 
 # TODO: Store all the conid locally as they never change
