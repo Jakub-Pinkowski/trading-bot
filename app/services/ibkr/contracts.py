@@ -6,7 +6,6 @@ from config import MIN_DAYS_UNTIL_EXPIRY
 
 
 # TODO: Handle near delivery cases
-# TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
 # TODO: If I hold a position for too long I'm getting too close to the mandatory selling date, handle that scenario
 
 

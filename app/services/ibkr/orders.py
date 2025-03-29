@@ -1,22 +1,6 @@
 from app.utils.api_helpers import api_post
+from app.utils.ibkr_helpers.orders_helpers import suppress_messages
 from config import BASE_URL, ACCOUNT_ID
-
-
-def suppress_messages(message_ids):
-    endpoint = "iserver/questions/suppress"
-
-    suppression_data = {
-        "messageIds": message_ids
-    }
-
-    response = api_post(BASE_URL + endpoint, suppression_data)
-
-    if response.status_code == 200:
-        print("Suppression successful:", response.json())
-        return response.json()
-    else:
-        print(f"Suppression error: {response.status_code} - {response.text}")
-        response.raise_for_status()
 
 
 def handle_suppression(endpoint, order_details, message_ids):
