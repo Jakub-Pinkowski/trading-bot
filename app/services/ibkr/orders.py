@@ -1,11 +1,12 @@
+import requests
+
 from app.utils.api_helpers import api_post
-from app.utils.ibkr_helpers.orders_helpers import handle_suppression
+from app.utils.ibkr_helpers.orders_helpers import suppress_messages
 from config import BASE_URL, ACCOUNT_ID
 
 
 def place_order(conid, order):
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
-
     order_details = {
         "orders": [
             {
@@ -18,40 +19,47 @@ def place_order(conid, order):
         ]
     }
 
-    response = api_post(BASE_URL + endpoint, order_details)
+    try:
+        response = api_post(BASE_URL + endpoint, order_details)
 
-    if response.status_code == 200:
+        # Raises an HTTPError if the status code indicates an unsuccessful request
+        response.raise_for_status()
+
         order_response = response.json()
 
         # Handle suppression dynamically if required
         if isinstance(order_response, list) and 'messageIds' in order_response[0]:
             message_ids = order_response[0].get('messageIds', [])
             if message_ids:
-                return handle_suppression(endpoint, order_details, message_ids)
+                suppress_messages(message_ids)
+                place_order(conid, order)
 
-        # Handle specific scenario if "error" key exists
+        # Handle specific scenarios if "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
             error_message = order_response['error'].lower()
 
             if "available funds are in sufficient" in error_message or "available funds are insufficient" in error_message:
                 print("Order Error: Insufficient funds.", order_response)
-                # TODO: Handle insufficient funds
-                return {"status": "failed", "reason": "insufficient funds", "details": order_response}
-
+                # TODO: Handle insufficient funds scenario
 
             elif "does not comply with our order handling rules for derivatives" in error_message:
                 print("Order Error: Non-compliance with derivative rules.", order_response)
                 # TODO: Handle derivatives rule compliance scenario
-                return {"status": "failed", "reason": "derivatives compliance", "details": order_response}
 
             else:
                 print("Order Error: Unhandled error message received.", order_response)
-                return {"status": "failed", "reason": "unknown", "details": order_response}
 
-        # If no error, order is placed
-        print("Order successfully placed:", order_response)
-        return {"status": "success", "details": order_response}
+        else:
+            print("Order successfully placed:", order_response)
 
-    else:
-        print(f"Order submission error: {response.status_code} - {response.text}")
-        response.raise_for_status()
+    except requests.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+        # TODO: additional logic for HTTP error
+
+    except ValueError as json_err:
+        print(f"JSON decoding failed: {json_err}")
+        # TODO: additional logic for JSON decoding errors
+
+    except Exception as err:
+        print(f"A general exception occurred: {err}")
+        # TODO: additional logic for unexpected errors
