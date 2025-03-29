@@ -52,14 +52,6 @@ def place_order(conid, order):
         else:
             print("Order successfully placed:", order_response)
 
-    except requests.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-        # TODO: additional logic for HTTP error
+    except (requests.HTTPError, ValueError, Exception) as err:
+        print(f"An error occurred: {err}")
 
-    except ValueError as json_err:
-        print(f"JSON decoding failed: {json_err}")
-        # TODO: additional logic for JSON decoding errors
-
-    except Exception as err:
-        print(f"A general exception occurred: {err}")
-        # TODO: additional logic for unexpected errors
