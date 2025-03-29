@@ -1,7 +1,8 @@
 import re
+from datetime import datetime, timedelta
 
 from app.utils.api_helpers import api_get
-from config import BASE_URL
+from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
 
 
 def parse_symbol(symbol):
@@ -18,3 +19,19 @@ def fetch_contract(symbol):
     contracts_data = contract_req.json()
 
     return contracts_data.get(parsed_symbol, [])
+
+
+def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+    valid_contracts = [
+        contract for contract in contracts
+        if datetime.strptime(str(contract['expirationDate']), "%Y%m%d")
+           > datetime.today() + timedelta(days=min_days_until_expiry)
+    ]
+
+    if not valid_contracts:
+        raise ValueError("No valid (liquid, distant enough) contracts available.")
+
+    # Sort by expiration and pick the earliest liquid enough contract
+    chosen_contract = min(valid_contracts, key=lambda x: datetime.strptime(str(x['expirationDate']), "%Y%m%d"))
+
+    return chosen_contract
