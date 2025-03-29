@@ -25,3 +25,6 @@ trading-bot/
 ├── requirements.txt                    # Package dependencies
 ├── run.py                              # Application startup illustration
 └── structure.yaml                      # Documented updated structure
+
+# TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Make sure we tickle the API every 1 minute

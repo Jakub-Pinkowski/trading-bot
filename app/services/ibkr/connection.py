@@ -2,7 +2,6 @@ from app.utils.api_helpers import api_get
 from config import BASE_URL
 
 
-# TODO: Make sure we tickle the API every 1 minute
 # NOTE: I can place an order even if tickle returns "no session"
 
 def check_connection():

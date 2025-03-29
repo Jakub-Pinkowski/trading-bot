@@ -5,10 +5,6 @@ from app.utils.ibkr_helpers.contracts_helpers import parse_symbol, fetch_contrac
 from config import MIN_DAYS_UNTIL_EXPIRY
 
 
-# TODO: Handle near delivery cases
-# TODO: If I hold a position for too long I'm getting too close to the mandatory selling date, handle that scenario
-
-
 def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     valid_contracts = [
         contract for contract in contracts
