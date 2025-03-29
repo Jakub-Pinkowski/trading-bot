@@ -1,9 +1,7 @@
-import json
 import os
-import re
 from datetime import datetime, timedelta
 
-from app.utils.ibkr_helpers import api_get
+from app.utils.ibkr_helpers import api_get, load_cache, save_cache, parse_symbol
 from config import BASE_DIR, BASE_URL, MIN_DAYS_UNTIL_EXPIRY
 
 CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
@@ -13,26 +11,6 @@ CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
 # TODO: Handle near delivery cases
 # TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
 # TODO: If I hold a position for too long I'm getting too close to the mandatory selling date, handle that scenario
-
-def load_cache():
-    if not os.path.exists(CACHE_FILE_PATH):
-        return {}
-
-    with open(CACHE_FILE_PATH, 'r') as cache_file:
-        cache_data = json.load(cache_file)
-    return cache_data
-
-
-def save_cache(cache_data):
-    with open(CACHE_FILE_PATH, 'w') as cache_file:
-        json.dump(cache_data, cache_file, indent=4)
-
-
-def parse_symbol(symbol):
-    match = re.match(r'^([A-Za-z]+)', symbol)
-    if not match:
-        raise ValueError(f"Invalid symbol format: {symbol}")
-    return match.group(1)
 
 
 def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
