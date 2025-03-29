@@ -21,8 +21,6 @@ def place_order(conid, order):
 
     try:
         response = api_post(BASE_URL + endpoint, order_details)
-
-        # Raises an HTTPError if the status code indicates an unsuccessful request
         response.raise_for_status()
 
         order_response = response.json()
