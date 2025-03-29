@@ -38,7 +38,7 @@ def load_cache():
 
 def save_cache(cache_data):
     with open(CACHE_FILE_PATH, 'w') as cache_file:
-        json.dump(cache_data, cache_file, indent=4)
+        json.dump(cache_data, cache_file, indent=4)  # type: ignore[arg-type]
 
 
 def parse_symbol(symbol):
