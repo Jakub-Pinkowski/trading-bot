@@ -12,7 +12,7 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── ibkr_service.py                 # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── ibkr_utils/                     # Renamed ibkr_utils
+│   │   ├── ibkr_utils/                     # IBKR utilities
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py         # Connection utilities
 │   │   │   ├── contract_utils.py           # Contracts utilities
