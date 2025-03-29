@@ -2,50 +2,50 @@ trading-bot/
 ├── app/
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   └── webhook.py                # Webhooks from TradingView
+│   │   └── webhook.py                      # Webhooks from TradingView
 │   ├── services/
 │   │   ├── ibkr/
 │   │   │   ├── __init__.py
-│   │   │   ├── connection.py         # IBKR API connections
-│   │   │   ├── contracts.py          # Contracts handling
-│   │   │   └── orders.py             # Order execution
+│   │   │   ├── connection.py               # IBKR API connections
+│   │   │   ├── contracts.py                # Contracts handling
+│   │   │   └── orders.py                   # Order execution
 │   │   ├── __init__.py
-│   │   └── ibkr_service.py           # IBKR logic coordinator
+│   │   └── ibkr_service.py                 # IBKR logic coordinator
 │   ├── utils/
 │   │   ├── ibkr_helpers/
 │   │   │   ├── __init__.py
-│   │   │   ├── connection_helpers.py # Connection utilities
-│   │   │   ├── contract_helpers.py   # Contracts utilities
-│   │   │   └── orders_helpers.py     # Orders utilities
+│   │   │   ├── connection_helpers.py       # Connection utilities
+│   │   │   ├── contract_helpers.py         # Contracts utilities
+│   │   │   └── orders_helpers.py           # Orders utilities
 │   │   ├── __init__.py
-│   │   ├── api_helpers.py            # General API helpers
-│   │   ├── file_helpers.py           # File utilities
-│   │   └── webhook_helpers.py        # Webhook utilities
+│   │   ├── api_helpers.py                  # General API helpers
+│   │   ├── file_helpers.py                 # File utilities
+│   │   └── webhook_helpers.py              # Webhook utilities
 │   └── __init__.py
-├── tests/                            # ** Tests directory moved here **
+├── tests/                                  # Tests directory moved here 
 │   ├── routes/
-│   │   └── test_webhook.py           # Tests for routes
+│   │   └── test_webhook.py                 # Tests for routes
 │   ├── services/
 │   │   ├── ibkr/
-│   │   │   ├── test_connection.py    # IBKR connections tests
-│   │   │   ├── test_contracts.py     # IBKR contracts tests
-│   │   │   └── test_orders.py        # IBKR orders tests
-│   │   └── test_ibkr_service.py      # IBKR service integration tests
+│   │   │   ├── test_connection.py          # IBKR connections tests
+│   │   │   ├── test_contracts.py           # IBKR contracts tests
+│   │   │   └── test_orders.py              # IBKR orders tests
+│   │   └── test_ibkr_service.py            # IBKR service integration tests
 │   ├── utils/
 │   │   ├── ibkr_helpers/
-│   │   │   ├── test_connection_helpers.py # Connection utilities tests
-│   │   │   ├── test_contract_helpers.py   # Contract utilities tests
-│   │   │   └── test_orders_helpers.py     # Orders utilities tests
-│   │   ├── test_api_helpers.py       # API utilities tests
-│   │   ├── test_file_helpers.py      # File utilities tests
-│   │   └── test_webhook_helpers.py   # Webhook utilities tests
-│   └── conftest.py                   # Shared pytest fixtures & configuration
+│   │   │   ├── test_connection_helpers.py  # Connection utilities tests
+│   │   │   ├── test_contract_helpers.py    # Contract utilities tests
+│   │   │   └── test_orders_helpers.py      # Orders utilities tests
+│   │   ├── test_api_helpers.py             # API utilities tests
+│   │   ├── test_file_helpers.py            # File utilities tests
+│   │   └── test_webhook_helpers.py         # Webhook utilities tests
+│   └── conftest.py                         # Shared pytest fixtures & configuration
 ├── data/
-│   └── contracts.json                # Contract IDs
-├── .env                              # Configuration secrets
-├── .gitignore                        # Files to ignore
-├── config.py                         # App configuration
-├── README.md                         # Project overview
-├── requirements.txt                  # Dependencies
-├── run.py                            # App startup script
-└── structure.yaml                    # Project structure docs
+│   └── contracts.json                      # Contract IDs
+├── .env                                    # Configuration secrets
+├── .gitignore                              # Files to ignore
+├── config.py                               # App configuration
+├── README.md                               # Project overview
+├── requirements.txt                        # Dependencies
+├── run.py                                  # App startup script
+└── structure.yaml                          # Project structure docs
