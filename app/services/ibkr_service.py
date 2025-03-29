@@ -10,6 +10,7 @@ def process_trading_data(trading_data):
 
     symbol = trading_data.get('symbol')
     order = trading_data.get('order')
+    price = trading_data.get('price')
 
     contract = get_contract_id(symbol)
 
