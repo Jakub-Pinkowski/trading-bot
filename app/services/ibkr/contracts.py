@@ -34,7 +34,7 @@ def fetch_contract(symbol):
     return contracts_data.get(parsed_symbol, [])
 
 
-def get_contract(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_cache()
 
