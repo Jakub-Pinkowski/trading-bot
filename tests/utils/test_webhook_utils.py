@@ -9,6 +9,9 @@ from app.utils.webhook_utils import validate_ip, parse_request_data
 
 class TestWebhookUtils(unittest.TestCase):
 
+    def setUp(self):
+        self.app = Flask(__name__)
+
     @patch('app.utils.webhook_utils.abort')
     def test_validate_ip_allowed(self, mock_abort):
         allowed_ips = [
@@ -27,9 +30,6 @@ class TestWebhookUtils(unittest.TestCase):
         disallowed_ip = '10.10.10.10'
         validate_ip(disallowed_ip)
         mock_abort.assert_called_once_with(403)
-
-    def setUp(self):
-        self.app = Flask(__name__)
 
     def test_parse_request_data_json(self):
         mock_request = Mock(content_type='application/json', get_json=Mock(return_value={"key": "value"}))
