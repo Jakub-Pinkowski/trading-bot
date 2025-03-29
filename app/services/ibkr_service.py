@@ -1,5 +1,5 @@
 from app.services.ibkr.connection import check_connection
-from app.services.ibkr.contracts import search_contract
+from app.services.ibkr.contracts import get_contract
 from app.services.ibkr.orders import place_order
 
 
@@ -15,6 +15,6 @@ class IBKRService:
         symbol = trading_data.get('symbol')
         order = trading_data.get('order')
 
-        contract = search_contract(symbol)
+        contract = get_contract(symbol)
 
         place_order(contract, order)
