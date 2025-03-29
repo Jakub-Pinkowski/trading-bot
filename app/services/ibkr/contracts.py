@@ -1,13 +1,9 @@
-import os
 from datetime import datetime, timedelta
 
 from app.utils.ibkr_helpers import api_get, load_cache, save_cache, parse_symbol
-from config import BASE_DIR, BASE_URL, MIN_DAYS_UNTIL_EXPIRY
-
-CACHE_FILE_PATH = os.path.join(BASE_DIR, "data", "contracts.json")
+from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
 
 
-# TODO: Store all the conid locally as they never change
 # TODO: Handle near delivery cases
 # TODO: Put the expiry time in a config so that it can be different for daytrading vs swing trades
 # TODO: If I hold a position for too long I'm getting too close to the mandatory selling date, handle that scenario
