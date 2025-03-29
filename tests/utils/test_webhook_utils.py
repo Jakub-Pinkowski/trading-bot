@@ -47,3 +47,7 @@ class TestWebhookUtils(unittest.TestCase):
 
         mock_abort.assert_called_once_with(400, description='Unsupported Content-Type')
         self.assertEqual(context.exception.response.status, 400)
+
+
+if __name__ == '__main__':
+    unittest.main()
