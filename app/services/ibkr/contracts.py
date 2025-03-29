@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
 
-from app.utils.api_helpers import api_get
 from app.utils.file_helpers import load_cache, save_cache
-from app.utils.ibkr_helpers.contracts_helpers import parse_symbol
-from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
+from app.utils.ibkr_helpers.contracts_helpers import parse_symbol, fetch_contract
+from config import MIN_DAYS_UNTIL_EXPIRY
 
 
 # TODO: Handle near delivery cases
@@ -25,15 +24,6 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
     chosen_contract = min(valid_contracts, key=lambda x: datetime.strptime(str(x['expirationDate']), "%Y%m%d"))
 
     return chosen_contract
-
-
-def fetch_contract(symbol):
-    parsed_symbol = parse_symbol(symbol)
-    endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
-    contract_req = api_get(BASE_URL + endpoint)
-    contracts_data = contract_req.json()
-
-    return contracts_data.get(parsed_symbol, [])
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
