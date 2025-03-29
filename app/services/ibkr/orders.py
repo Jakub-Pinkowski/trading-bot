@@ -52,4 +52,3 @@ def place_order(conid, order):
 
     except (requests.HTTPError, ValueError, Exception) as err:
         print(f"An error occurred: {err}")
-
