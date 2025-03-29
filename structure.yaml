@@ -21,8 +21,25 @@ trading-bot/
 │   │   ├── api_helpers.py            # General API helpers
 │   │   ├── file_helpers.py           # File utilities
 │   │   └── webhook_helpers.py        # Webhook utilities
-│   ├── tests/                        # Tests directory
 │   └── __init__.py
+├── tests/                            # ** Tests directory moved here **
+│   ├── routes/
+│   │   └── test_webhook.py           # Tests for routes
+│   ├── services/
+│   │   ├── ibkr/
+│   │   │   ├── test_connection.py    # IBKR connections tests
+│   │   │   ├── test_contracts.py     # IBKR contracts tests
+│   │   │   └── test_orders.py        # IBKR orders tests
+│   │   └── test_ibkr_service.py      # IBKR service integration tests
+│   ├── utils/
+│   │   ├── ibkr_helpers/
+│   │   │   ├── test_connection_helpers.py # Connection utilities tests
+│   │   │   ├── test_contract_helpers.py   # Contract utilities tests
+│   │   │   └── test_orders_helpers.py     # Orders utilities tests
+│   │   ├── test_api_helpers.py       # API utilities tests
+│   │   ├── test_file_helpers.py      # File utilities tests
+│   │   └── test_webhook_helpers.py   # Webhook utilities tests
+│   └── conftest.py                   # Shared pytest fixtures & configuration
 ├── data/
 │   └── contracts.json                # Contract IDs
 ├── .env                              # Configuration secrets
@@ -32,6 +49,3 @@ trading-bot/
 ├── requirements.txt                  # Dependencies
 ├── run.py                            # App startup script
 └── structure.yaml                    # Project structure docs
-
-# TODO: Handle positions close to delivery date
-# TODO: Keep IBKR API connection alive every minute
