@@ -33,18 +33,19 @@ def place_order(conid, order):
         if isinstance(order_response, dict) and 'error' in order_response:
             error_message = order_response['error'].lower()
 
-            if "available funds are insufficient" in error_message:
-                print("Order Error: Insufficient funds.")
-                # TODO: Handle insufficient funds scenario here
+            if "available funds are in sufficient" in error_message or "available funds are insufficient" in error_message:
+                print("Order Error: Insufficient funds.", order_response)
+                # TODO: Handle insufficient funds
                 return {"status": "failed", "reason": "insufficient funds", "details": order_response}
 
+
             elif "does not comply with our order handling rules for derivatives" in error_message:
-                print("Order Error: Non-compliance with derivative rules.")
-                # TODO: Handle derivatives rule compliance scenario here
+                print("Order Error: Non-compliance with derivative rules.", order_response)
+                # TODO: Handle derivatives rule compliance scenario
                 return {"status": "failed", "reason": "derivatives compliance", "details": order_response}
 
             else:
-                print("Order Error: Unhandled error message received.")
+                print("Order Error: Unhandled error message received.", order_response)
                 return {"status": "failed", "reason": "unknown", "details": order_response}
 
         # If no error, order is placed
