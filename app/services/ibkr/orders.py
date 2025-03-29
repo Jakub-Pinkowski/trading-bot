@@ -1,7 +1,7 @@
 import requests
 
-from app.utils.api_helpers import api_post
-from app.utils.ibkr_helpers.orders_helpers import suppress_messages
+from app.utils.api_utils import api_post
+from app.utils.ibkr_utils.orders_utils import suppress_messages
 from config import BASE_URL, ACCOUNT_ID
 
 

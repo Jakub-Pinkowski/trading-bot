@@ -12,33 +12,33 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── ibkr_service.py                 # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── ibkr_helpers/
+│   │   ├── ibkr_utils/                     # Renamed ibkr_utils
 │   │   │   ├── __init__.py
-│   │   │   ├── connection_helpers.py       # Connection utilities
-│   │   │   ├── contract_helpers.py         # Contracts utilities
-│   │   │   └── orders_helpers.py           # Orders utilities
+│   │   │   ├── connection_utils.py         # Connection utilities
+│   │   │   ├── contract_utils.py           # Contracts utilities
+│   │   │   └── orders_utils.py             # Orders utilities
 │   │   ├── __init__.py
-│   │   ├── api_helpers.py                  # General API helpers
-│   │   ├── file_helpers.py                 # File utilities
-│   │   └── webhook_helpers.py              # Webhook utilities
+│   │   ├── api_utils.py                    # General API utilities
+│   │   ├── file_utils.py                   # File utilities
+│   │   └── webhook_utils.py                # Webhook utilities
 │   └── __init__.py
-├── tests/                                  # Tests directory moved here 
+├── tests/                                  # Tests directory
 │   ├── routes/
-│   │   └── test_webhook.py                 # Tests for routes
+│   │   └── test_webhook.py                 # Webhook tests
 │   ├── services/
 │   │   ├── ibkr/
 │   │   │   ├── test_connection.py          # IBKR connections tests
 │   │   │   ├── test_contracts.py           # IBKR contracts tests
 │   │   │   └── test_orders.py              # IBKR orders tests
-│   │   └── test_ibkr_service.py            # IBKR service integration tests
+│   │   └── test_ibkr_service.py            # IBKR service tests 
 │   ├── utils/
-│   │   ├── ibkr_helpers/
-│   │   │   ├── test_connection_helpers.py  # Connection utilities tests
-│   │   │   ├── test_contract_helpers.py    # Contract utilities tests
-│   │   │   └── test_orders_helpers.py      # Orders utilities tests
-│   │   ├── test_api_helpers.py             # API utilities tests
-│   │   ├── test_file_helpers.py            # File utilities tests
-│   │   └── test_webhook_helpers.py         # Webhook utilities tests
+│   │   ├── ibkr_utils/
+│   │   │   ├── test_connection_utils.py    # Connection utilities tests
+│   │   │   ├── test_contract_utils.py      # Contract utilities tests
+│   │   │   └── test_orders_utils.py        # Orders utilities tests
+│   │   ├── test_api_utils.py               # API utilities tests
+│   │   ├── test_file_utils.py              # File utilities tests
+│   │   └── test_webhook_utils.py           # Webhook utilities tests
 │   └── conftest.py                         # Shared pytest fixtures & configuration
 ├── data/
 │   └── contracts.json                      # Contract IDs
@@ -48,4 +48,4 @@ trading-bot/
 ├── README.md                               # Project overview
 ├── requirements.txt                        # Dependencies
 ├── run.py                                  # App startup script
-└── structure.yaml                          # Project structure docs
+└── structure.yaml

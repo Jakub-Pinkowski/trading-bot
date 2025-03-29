@@ -1,7 +1,7 @@
 from flask import Blueprint, request, abort
 
 from app.services.ibkr_service import process_trading_data
-from app.utils.webhook_helpers import validate_ip, parse_request_data
+from app.utils.webhook_utils import validate_ip, parse_request_data
 
 webhook_blueprint = Blueprint('webhook', __name__)
 
