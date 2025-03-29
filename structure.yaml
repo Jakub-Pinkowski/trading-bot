@@ -2,29 +2,36 @@ trading-bot/
 ├── app/
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   ├── webhook.py                  # Receive and handle incoming webhooks from TradingView
+│   │   └── webhook.py                # Webhooks from TradingView
 │   ├── services/
+│   │   ├── ibkr/
+│   │   │   ├── __init__.py
+│   │   │   ├── connection.py         # IBKR API connections
+│   │   │   ├── contracts.py          # Contracts handling
+│   │   │   └── orders.py             # Order execution
 │   │   ├── __init__.py
-│   │   └── ibkr_service.py             # Main IBKR service logic, coordinating between different IBKR tasks
-│   │   └── ibkr/
-│   │       ├── __init__.py
-│   │       ├── connection.py           # Initialize and manage IBKR API sessions and authentication
-│   │       ├── contracts.py            # Manage underlying and future contract retrieval/selection
-│   │       └── orders.py               # Manage order execution logic (buy/sell)
+│   │   └── ibkr_service.py           # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── ibkr_helpers.py             # IBKR-specific helper functions if needed
-│   │   └── webhook_helpers.py          # Webhook helper functions
-│   ├── tests/
-│   ├── __init__.py
+│   │   ├── ibkr_helpers/
+│   │   │   ├── __init__.py
+│   │   │   ├── connection_helpers.py # Connection utilities
+│   │   │   ├── contract_helpers.py   # Contracts utilities
+│   │   │   └── orders_helpers.py     # Orders utilities
+│   │   ├── __init__.py
+│   │   ├── api_helpers.py            # General API helpers
+│   │   ├── file_helpers.py           # File utilities
+│   │   └── webhook_helpers.py        # Webhook utilities
+│   ├── tests/                        # Tests directory
+│   └── __init__.py
 ├── data/
-│   ├── contracts.json                  # Contracts IDs
-├── .env                                # Secure configuration (API keys, secrets, etc.)
-├── .gitignore                          # Ignored files (logs, credentials, etc.)
-├── config.py                           # General configuration including IBKR configs
-├── README.md                           # README
-├── requirements.txt                    # Package dependencies
-├── run.py                              # Application startup illustration
-└── structure.yaml                      # Documented updated structure
+│   └── contracts.json                # Contract IDs
+├── .env                              # Configuration secrets
+├── .gitignore                        # Files to ignore
+├── config.py                         # App configuration
+├── README.md                         # Project overview
+├── requirements.txt                  # Dependencies
+├── run.py                            # App startup script
+└── structure.yaml                    # Project structure docs
 
-# TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
-# TODO: Make sure we tickle the API every 1 minute
+# TODO: Handle positions close to delivery date
+# TODO: Keep IBKR API connection alive every minute
