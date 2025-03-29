@@ -1,4 +1,4 @@
-from app.utils.ibkr_helpers import api_get
+from app.utils.api_helpers import api_get
 from config import BASE_URL
 
 

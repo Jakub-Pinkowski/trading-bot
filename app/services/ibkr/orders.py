@@ -1,4 +1,4 @@
-from app.utils.ibkr_helpers import api_post
+from app.utils.api_helpers import api_post
 from config import BASE_URL, ACCOUNT_ID
 
 
