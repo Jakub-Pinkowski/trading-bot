@@ -15,9 +15,13 @@ def parse_symbol(symbol):
 def fetch_contract(symbol):
     parsed_symbol = parse_symbol(symbol)
     endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
-    contracts_data = api_get(BASE_URL + endpoint)
 
-    return contracts_data.get(parsed_symbol, [])
+    try:
+        contracts_data = api_get(BASE_URL + endpoint)
+        return contracts_data.get(parsed_symbol, [])
+    except Exception as err:
+        print(f"Unexpected error fetching contract details for {symbol}: {err}")
+        return []
 
 
 def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
