@@ -21,7 +21,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
 
     # Update cache with fresh data
     contracts_cache[parsed_symbol] = fresh_contracts
-    save_file(contracts_cache)
+    save_file(contracts_cache, CONTRACTS_FILE_PATH,)
 
     if fresh_contracts:
         closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)

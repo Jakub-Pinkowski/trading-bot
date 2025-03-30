@@ -2153,5 +2153,87 @@
             "longFuturesCutOff": 20250425
         }
     ],
-    "Cl": []
+    "MZW": [
+        {
+            "symbol": "MZW",
+            "conid": 763552765,
+            "underlyingConid": 761327693,
+            "expirationDate": 20260626,
+            "ltd": 20260701,
+            "shortFuturesCutOff": 20260626,
+            "longFuturesCutOff": 20260626
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552768,
+            "underlyingConid": 761327693,
+            "expirationDate": 20261120,
+            "ltd": 20261201,
+            "shortFuturesCutOff": 20261120,
+            "longFuturesCutOff": 20261120
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552773,
+            "underlyingConid": 761327693,
+            "expirationDate": 20251121,
+            "ltd": 20251201,
+            "shortFuturesCutOff": 20251121,
+            "longFuturesCutOff": 20251121
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552778,
+            "underlyingConid": 761327693,
+            "expirationDate": 20260220,
+            "ltd": 20260301,
+            "shortFuturesCutOff": 20260220,
+            "longFuturesCutOff": 20260220
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552783,
+            "underlyingConid": 761327693,
+            "expirationDate": 20250425,
+            "ltd": 20250501,
+            "shortFuturesCutOff": 20250425,
+            "longFuturesCutOff": 20250425
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552785,
+            "underlyingConid": 761327693,
+            "expirationDate": 20250822,
+            "ltd": 20250901,
+            "shortFuturesCutOff": 20250822,
+            "longFuturesCutOff": 20250822
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552788,
+            "underlyingConid": 761327693,
+            "expirationDate": 20260424,
+            "ltd": 20260501,
+            "shortFuturesCutOff": 20260424,
+            "longFuturesCutOff": 20260424
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552795,
+            "underlyingConid": 761327693,
+            "expirationDate": 20260821,
+            "ltd": 20260901,
+            "shortFuturesCutOff": 20260821,
+            "longFuturesCutOff": 20260821
+        },
+        {
+            "symbol": "MZW",
+            "conid": 763552798,
+            "underlyingConid": 761327693,
+            "expirationDate": 20250620,
+            "ltd": 20250701,
+            "shortFuturesCutOff": 20250620,
+            "longFuturesCutOff": 20250620
+        }
+    ]
 }
