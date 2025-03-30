@@ -30,6 +30,10 @@ def parse_request_data(request):
 
 
 def save_alert_data_to_file(data, file_path, timezone="Europe/Berlin"):
+    # Don't save if it's just a dummy data
+    if 'dummy' in data:
+        return
+
     alerts_data = load_file(file_path)
 
     timestamp = datetime.now(ZoneInfo(timezone)).strftime("%y-%m-%d %H:%M:%S")
