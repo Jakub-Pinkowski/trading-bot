@@ -50,5 +50,10 @@ trading-bot/
 ├── run.py                                  # App startup script
 └── structure.yaml
 
+# Funclionality TODO
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Retrieve filled contracts
+# TODO: Build an automatic performance tool comparison
+
+# Developer TODO
 # TODO: Add unit tests for every component
