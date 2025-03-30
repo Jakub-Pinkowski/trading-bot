@@ -15,8 +15,7 @@ def parse_symbol(symbol):
 def fetch_contract(symbol):
     parsed_symbol = parse_symbol(symbol)
     endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
-    contract_req = api_get(BASE_URL + endpoint)
-    contracts_data = contract_req.json()
+    contracts_data = api_get(BASE_URL + endpoint)
 
     return contracts_data.get(parsed_symbol, [])
 

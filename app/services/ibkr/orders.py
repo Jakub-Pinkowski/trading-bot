@@ -1,5 +1,3 @@
-import requests
-
 from app.utils.api_utils import api_post
 from app.utils.ibkr_utils.orders_utils import suppress_messages
 from config import BASE_URL, ACCOUNT_ID
@@ -20,10 +18,7 @@ def place_order(conid, order):
     }
 
     try:
-        response = api_post(BASE_URL + endpoint, order_details)
-        response.raise_for_status()
-
-        order_response = response.json()
+        order_response = api_post(BASE_URL + endpoint, order_details)
 
         # Handle suppression dynamically if required
         if isinstance(order_response, list) and 'messageIds' in order_response[0]:
@@ -49,9 +44,8 @@ def place_order(conid, order):
         else:
             return order_response
 
-    except (requests.HTTPError, ValueError, Exception) as err:
-        error_response = {
+    except Exception as err:
+        return {
             "success": False,
-            "error": str(err)
+            "error": f"Unexpected error: {err}"
         }
-        return error_response

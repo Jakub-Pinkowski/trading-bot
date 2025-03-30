@@ -4,13 +4,11 @@ from config import BASE_URL
 
 def suppress_messages(message_ids):
     endpoint = "iserver/questions/suppress"
-
     suppression_data = {"messageIds": message_ids}
 
-    response = api_post(BASE_URL + endpoint, suppression_data)
+    try:
+        suppression_response = api_post(BASE_URL + endpoint, suppression_data)
+        print("Suppression successful:", suppression_response)
 
-    if response.status_code == 200:
-        print("Suppression successful:", response.json())
-    else:
-        print(f"Suppression error: {response.status_code} - {response.text}")
-        response.raise_for_status()
+    except Exception as err:
+        print(f"Unexpected error during suppression: {err}")
