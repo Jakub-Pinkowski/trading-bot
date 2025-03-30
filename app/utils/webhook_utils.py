@@ -1,4 +1,9 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from flask import abort
+
+from app.utils.file_utils import load_file, save_file
 
 ALLOWED_IPS = {
     '52.89.214.238',
@@ -22,3 +27,12 @@ def parse_request_data(request):
         abort(400, description='Unsupported Content-Type')
 
     return data
+
+
+def save_alert_data_to_file(data, file_path, timezone="Europe/Berlin"):
+    alerts_data = load_file(file_path)
+
+    timestamp = datetime.now(ZoneInfo(timezone)).strftime("%y-%m-%d %H:%M:%S")
+    alerts_data[timestamp] = data
+
+    save_file(alerts_data, file_path)
