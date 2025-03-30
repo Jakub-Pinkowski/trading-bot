@@ -14,4 +14,5 @@ def process_trading_data(trading_data):
 
     contract = get_contract_id(symbol)
 
-    place_order(contract, order)
+    order = place_order(contract, order)
+    print("order", order)

@@ -30,25 +30,27 @@ def place_order(conid, order):
             message_ids = order_response[0].get('messageIds', [])
             if message_ids:
                 suppress_messages(message_ids)
-                place_order(conid, order)
+                return place_order(conid, order)  # Recursive call adjusted to return result
 
         # Handle specific scenarios if "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
             error_message = order_response['error'].lower()
 
             if "available funds are in sufficient" in error_message or "available funds are insufficient" in error_message:
-                print("Order Error: Insufficient funds.", order_response)
-                # TODO: Handle insufficient funds scenario
+                return {"success": False, "error": "Insufficient funds", "details": order_response}
 
             elif "does not comply with our order handling rules for derivatives" in error_message:
-                print("Order Error: Non-compliance with derivative rules.", order_response)
-                # TODO: Handle derivatives rule compliance scenario
+                return {"success": False, "error": "Non-compliance with derivative rules", "details": order_response}
 
             else:
-                print("Order Error: Unhandled error message received.", order_response)
+                return {"success": False, "error": "Unhandled error", "details": order_response}
 
         else:
-            print("Order successfully placed:", order_response)
+            return order_response
 
     except (requests.HTTPError, ValueError, Exception) as err:
-        print(f"An error occurred: {err}")
+        error_response = {
+            "success": False,
+            "error": str(err)
+        }
+        return error_response
