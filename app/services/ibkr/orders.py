@@ -25,7 +25,7 @@ def place_order(conid, order):
             message_ids = order_response[0].get('messageIds', [])
             if message_ids:
                 suppress_messages(message_ids)
-                return place_order(conid, order)  # Recursive call adjusted to return result
+                return place_order(conid, order)
 
         # Handle specific scenarios if "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
