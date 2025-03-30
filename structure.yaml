@@ -49,3 +49,7 @@ trading-bot/
 ├── requirements.txt                        # Dependencies
 ├── run.py                                  # App startup script
 └── structure.yaml
+
+# TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Make sure we tickle the API every 1 minute
+# TODO: Add unit tests for every component
