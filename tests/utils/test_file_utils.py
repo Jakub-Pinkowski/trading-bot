@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import mock_open, patch, ANY
-from app.utils.file_utils import load_cache, save_cache
+from app.utils.file_utils import load_file, save_file
 import json
 
 
@@ -8,7 +8,7 @@ import json
 @patch('builtins.open', new_callable=mock_open, read_data='{"test_key": "test_value"}')
 def test_load_cache_file_exists(mock_file, mock_exists):
     expected_data = {"test_key": "test_value"}
-    result = load_cache()
+    result = load_file()
 
     assert result == expected_data
     mock_file.assert_called_once_with(ANY, 'r')
@@ -16,7 +16,7 @@ def test_load_cache_file_exists(mock_file, mock_exists):
 
 @patch('app.utils.file_utils.os.path.exists', return_value=False)
 def test_load_cache_file_missing(mock_exists):
-    result = load_cache()
+    result = load_file()
 
     assert result == {}
 
@@ -24,7 +24,7 @@ def test_load_cache_file_missing(mock_exists):
 @patch('builtins.open', new_callable=mock_open)
 def test_save_cache(mock_file):
     data_to_save = {"key": "value"}
-    save_cache(data_to_save)
+    save_file(data_to_save)
 
     mock_file.assert_called_once_with(ANY, 'w')
     handle = mock_file()

@@ -1,11 +1,11 @@
-from app.utils.file_utils import load_cache, save_cache
+from app.utils.file_utils import load_file, save_file
 from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, get_closest_contract
 from config import MIN_DAYS_UNTIL_EXPIRY
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     parsed_symbol = parse_symbol(symbol)
-    contracts_cache = load_cache()
+    contracts_cache = load_file()
 
     # Check cache first
     if parsed_symbol in contracts_cache and isinstance(contracts_cache[parsed_symbol], list):
@@ -20,7 +20,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
 
     # Update cache with fresh data
     contracts_cache[parsed_symbol] = fresh_contracts
-    save_cache(contracts_cache)
+    save_file(contracts_cache)
 
     if fresh_contracts:
         closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)
