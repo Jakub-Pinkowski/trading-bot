@@ -11,7 +11,6 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     if parsed_symbol in contracts_cache and isinstance(contracts_cache[parsed_symbol], list):
         try:
             closest_contract = get_closest_contract(contracts_cache[parsed_symbol], min_days_until_expiry)
-            print(f"Using cached contract: {closest_contract['conid']}")
             return closest_contract['conid']
         except ValueError:
             pass

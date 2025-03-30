@@ -45,6 +45,7 @@ def place_order(conid, order):
             else:
                 return {"success": False, "error": "Unhandled error", "details": order_response}
 
+        # TODO: There are still more cases to handle besides error
         else:
             return order_response
 
