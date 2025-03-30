@@ -45,7 +45,4 @@ def place_order(conid, order):
             return order_response
 
     except Exception as err:
-        return {
-            "success": False,
-            "error": f"Unexpected error: {err}"
-        }
+        return {"success": False, "error": f"Unexpected error: {err}"}
