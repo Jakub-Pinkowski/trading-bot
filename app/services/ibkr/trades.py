@@ -1,0 +1,10 @@
+from app.utils.api_utils import api_get
+from config import BASE_URL
+
+def get_trade(order_id):
+    endpoint = f"iserver/account/order/status/{order_id}"
+    response = api_get(BASE_URL + endpoint)
+    response.raise_for_status()
+
+    trade = response.json()
+    return trade
