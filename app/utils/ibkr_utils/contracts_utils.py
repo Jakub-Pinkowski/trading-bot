@@ -25,6 +25,7 @@ def fetch_contract(symbol):
 
 
 def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+    # Look for any valid contracts
     valid_contracts = [
         contract for contract in contracts
         if datetime.strptime(str(contract['expirationDate']), "%Y%m%d")
