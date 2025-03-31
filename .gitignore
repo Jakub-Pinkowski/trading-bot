@@ -13,3 +13,6 @@ ENV/
 
 # Client portal
 clientportal/
+
+# Data
+data/
