@@ -50,10 +50,14 @@ trading-bot/
 ├── run.py                                  # App startup script
 └── structure.yaml
 
-# Functionality TODO
+# Functionality
+# BUG: I lose access and can't trade after a while
+# BUG: Tickling doesn't work reliably
+# BUG: Sometimes I receive an alert more than once resulting in multiple positions being bought
+# TODO: Whenever I need to buy or sell I need to check if I already have a position and if I do I need to trade 2 unites of those
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
-# TODO: Retrieve filled contracts
 # TODO: Build an automatic performance tool comparison
+# NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
-# Developer TODO
-# TODO: Add unit tests for every component
+# Developer
+# TODO: Add/update unit tests for every component
