@@ -1,11 +1,17 @@
 from app.utils.api_utils import api_post
 from app.utils.ibkr_utils.orders_utils import suppress_messages, has_contract
-from config import BASE_URL, ACCOUNT_ID
+from config import BASE_URL, ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
 
 
 def place_order(conid, order):
     contract_exists = has_contract(conid)
     print(f"Contract {conid}: {contract_exists}")
+
+    quantity = QUANTITY_TO_TRADE
+
+    if AGGRESSIVE_TRADING and contract_exists:
+        quantity *= 2
+
 
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
     order_details = {
@@ -15,7 +21,7 @@ def place_order(conid, order):
                 "orderType": "MKT",
                 "side": order,
                 "tif": "DAY",
-                "quantity": 1,
+                "quantity": quantity,
             }
         ]
     }
