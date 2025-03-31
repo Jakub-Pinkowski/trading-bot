@@ -51,9 +51,9 @@ trading-bot/
 └── structure.yaml
 
 # Functionality
-# BUG: I lose access and can't trade after a while
-# BUG: Tickling doesn't work reliably
-# BUG: Sometimes I receive an alert more than once resulting in multiple positions being bought
+# BUG: I lose access and can't trade after a while - TO CHECK
+# BUG: Tickling doesn't work reliably - TO CHECK
+# BUG: Sometimes I receive an alert more than once resulting in multiple positions being bought - TO CHECK
 # TODO: Whenever I need to buy or sell I need to check if I already have a position and if I do I need to trade 2 unites of those
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # TODO: Build an automatic performance tool comparison
