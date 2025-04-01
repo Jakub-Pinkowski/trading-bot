@@ -10,12 +10,12 @@ def place_order(conid, order):
     quantity = QUANTITY_TO_TRADE
 
     # Existing position opposite to incoming signal; adjust quantity if aggressive trading
-    if (contract_position == 1 and order == "SELL") or (contract_position == -1 and order == "BUY"):
+    if (contract_position > 0 and order == "SELL") or (contract_position < 0 and order == "BUY"):
         if AGGRESSIVE_TRADING:
             quantity *= 2
 
     # Existing position same as incoming signal; no action needed
-    elif (contract_position == 1 and order == "BUY") or (contract_position == -1 and order == "SELL"):
+    elif (contract_position > 0 and order == "BUY") or (contract_position < 0 and order == "SELL"):
         print(f"No action taken. Already holding position {contract_position} with matching signal '{order}'.")
         return {"success": True, "message": "No action needed: already in desired position"}
 
