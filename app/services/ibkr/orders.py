@@ -19,6 +19,7 @@ def place_order(conid, order):
         print(f"No action taken. Already holding position {contract_position} with matching signal '{order}'.")
         return {"success": True, "message": "No action needed: already in desired position"}
 
+    print("quantity: ", quantity)
     # Buy the default quantity if no position is present
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
     order_details = {
