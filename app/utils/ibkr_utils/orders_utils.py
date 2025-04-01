@@ -1,8 +1,20 @@
 from app.utils.api_utils import api_get, api_post
-from config import BASE_URL
+from config import BASE_URL, ACCOUNT_ID
+
+def invalidate_cache():
+    endpoint = f"portfolio/{ACCOUNT_ID}/positions/invalidate"
+
+    try:
+        api_post(BASE_URL + endpoint, {})
+        print("Cache invalidated successfully.")
+    except Exception as err:
+        print(f"Unexpected error invalidating cache: {err}")
 
 
 def get_contract_position(conid):
+    # Invalidate cache to get the real contracts data
+    invalidate_cache()
+
     endpoint = f"portfolio/positions/{conid}"
 
     try:
