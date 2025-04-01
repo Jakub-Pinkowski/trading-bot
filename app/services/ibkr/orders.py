@@ -1,18 +1,25 @@
 from app.utils.api_utils import api_post
-from app.utils.ibkr_utils.orders_utils import suppress_messages, has_contract
+from app.utils.ibkr_utils.orders_utils import suppress_messages, get_contract_position
 from config import BASE_URL, ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
 
 
 def place_order(conid, order):
-    contract_exists = has_contract(conid)
-    print(f"Contract {conid}: {contract_exists}")
+    contract_position = get_contract_position(conid)
+    print(f"Contract {conid} current position: {contract_position}")
 
     quantity = QUANTITY_TO_TRADE
 
-    if AGGRESSIVE_TRADING and contract_exists:
-        quantity *= 2
+    # Existing position opposite to incoming signal; adjust quantity if aggressive trading
+    if (contract_position == 1 and order == "SELL") or (contract_position == -1 and order == "BUY"):
+        if AGGRESSIVE_TRADING:
+            quantity *= 2
 
+    # Existing position same as incoming signal; no action needed
+    elif (contract_position == 1 and order == "BUY") or (contract_position == -1 and order == "SELL"):
+        print(f"No action taken. Already holding position {contract_position} with matching signal '{order}'.")
+        return {"success": True, "message": "No action needed: already in desired position"}
 
+    # Buy the default quantity if no position is present
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
     order_details = {
         "orders": [
