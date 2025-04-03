@@ -7,6 +7,32 @@ from app.utils.file_utils import save_to_csv
 from config import BASE_URL, TRADES_FILE_PATH
 
 
+def clean_trade_data(trades_df):
+    columns_needed = [
+        "execution_id",
+        "symbol",
+        "side",
+        "size",
+        "price",
+        "trade_time",
+        "exchange",
+        "commission",
+        "net_amount",
+        "company_name"
+    ]
+
+    cleaned_df = trades_df[columns_needed].copy()
+
+    # Ensure correct datatypes explicitly
+    cleaned_df["trade_time"] = pd.to_datetime(cleaned_df["trade_time"])
+    cleaned_df["size"] = cleaned_df["size"].astype(float)
+    cleaned_df["price"] = cleaned_df["price"].astype(float)
+    cleaned_df["commission"] = cleaned_df["commission"].astype(float)
+    cleaned_df["net_amount"] = cleaned_df["net_amount"].astype(float)
+
+    return cleaned_df
+
+
 def get_recent_trades():
     # Get yesterday's and today's data
     endpoint = "iserver/account/trades?days=2"
@@ -23,26 +49,27 @@ def get_recent_trades():
         trades_df = pd.DataFrame(trades_response)
         trades_df['trade_time'] = pd.to_datetime(trades_df['trade_time'], format='%Y%m%d-%H:%M:%S')
 
-        # Filter to exactly yesterday's trades
+        # Cleaning/preparing
+        cleaned_df = clean_trade_data(trades_df)
+
+        print("cleaned_df:", cleaned_df)
+
         today = datetime.now().date()
         yesterday = today - timedelta(days=1)
         start_time = datetime.combine(yesterday, datetime.min.time())
         end_time = datetime.combine(today, datetime.min.time())
 
-        yesterdays_trades = trades_df[
-            (trades_df['trade_time'] >= start_time) &
-            (trades_df['trade_time'] < end_time)
+        yesterdays_trades = cleaned_df[
+            (cleaned_df['trade_time'] >= start_time) &
+            (cleaned_df['trade_time'] < end_time)
             ]
 
-        # If no trades found for yesterday return
         if yesterdays_trades.empty:
-            return {"success": True, "message": "No trades found for yesterday"}
+            return {"success": True, "data": yesterdays_trades, "message": "No trades found for yesterday"}
 
-        # Save yesterday's data to CSV
         save_to_csv(yesterdays_trades, TRADES_FILE_PATH)
 
         return {"success": True, "data": yesterdays_trades}
-
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
