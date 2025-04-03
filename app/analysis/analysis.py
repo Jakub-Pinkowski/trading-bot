@@ -19,18 +19,13 @@ def get_recent_trades():
         if not trades_response:
             return {"success": False, "error": "No data returned from IBKR API"}
 
-        # Create DataFrame from returned data
+        # Create DataFrame from returned data and convert trade_time to datetime object
         trades_df = pd.DataFrame(trades_response)
-
-        # Convert trade_time to datetime object
         trades_df['trade_time'] = pd.to_datetime(trades_df['trade_time'], format='%Y%m%d-%H:%M:%S')
-
 
         # Filter to exactly yesterday's trades
         today = datetime.now().date()
         yesterday = today - timedelta(days=1)
-
-        # Selecting trades between yesterday start and today start
         start_time = datetime.combine(yesterday, datetime.min.time())
         end_time = datetime.combine(today, datetime.min.time())
 
@@ -39,12 +34,12 @@ def get_recent_trades():
             (trades_df['trade_time'] < end_time)
             ]
 
-        # If no trades found for yesterday, inform clearly
+        # If no trades found for yesterday return
         if yesterdays_trades.empty:
-            return {"success": True,  "message": "No trades found for yesterday"}
+            return {"success": True, "message": "No trades found for yesterday"}
 
-        # Save filtered data into the configured trade log file
-        save_to_csv(trades_df, TRADES_FILE_PATH)
+        # Save yesterday's data to CSV
+        save_to_csv(yesterdays_trades, TRADES_FILE_PATH)
 
         return {"success": True, "data": yesterdays_trades}
 

@@ -27,4 +27,3 @@ def save_to_csv(data, file_path):
     else:
         # Write new CSV with headers
         data.to_csv(file_path, mode='w', index=False, header=True)
-
