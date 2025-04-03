@@ -16,7 +16,6 @@ def place_order(conid, order):
 
     # Existing position same as incoming signal; no action needed
     elif (contract_position > 0 and order == "BUY") or (contract_position < 0 and order == "SELL"):
-        print(f"No action taken. Already holding position {contract_position} with matching signal '{order}'.")
         return {"success": True, "message": "No action needed: already in desired position"}
 
     print("quantity: ", quantity)
