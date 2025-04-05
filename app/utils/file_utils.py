@@ -31,17 +31,21 @@ def save_to_csv(data, file_path):
         data.to_csv(file_path, mode='w', index=False, header=True)
 
 
-def json_to_dataframe(data, date_fields=None, datetime_format='%y-%m-%d %H:%M:%S'):
+def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):
     if not data:
         return pd.DataFrame()
 
-    df = pd.DataFrame.from_dict(data, orient='index').reset_index()
+    # Check data type to choose conversion method appropriately
+    if isinstance(data, dict):
+        df = pd.DataFrame.from_dict(data, orient=orient).reset_index()
+        if orient == 'index' and 'index' in df.columns:
+            df.rename(columns={'index': index_name}, inplace=True)
+    elif isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        raise ValueError("Unsupported data format. Provide either dictionary or list.")
 
-    # Rename 'index' to a more descriptive name if it's timestamp or similar
-    if 'index' in df.columns:
-        df.rename(columns={'index': 'timestamp'}, inplace=True)
-
-    # Convert specified fields to datetime objects using specified format
+    # Convert specified fields to datetime objects using given format
     if date_fields:
         for field in date_fields:
             df[field] = pd.to_datetime(df[field], format=datetime_format, errors='coerce')
