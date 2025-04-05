@@ -30,6 +30,8 @@ def get_recent_trades():
         trades_df = pd.DataFrame(trades_response)
         trades_df['trade_time'] = pd.to_datetime(trades_df['trade_time'], format='%Y%m%d-%H:%M:%S')
 
+        print("trades_df:", trades_df)
+
         # Clean the DataFrame
         cleaned_df = clean_trade_data(trades_df)
 
@@ -50,4 +52,4 @@ def get_recent_trades():
 def run_analysis():
     alerts_data = get_alerts_data()
     print("alerts_data:", alerts_data)
-    trades_data = get_recent_trades()
+    # trades_data = get_recent_trades()

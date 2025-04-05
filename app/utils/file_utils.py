@@ -31,7 +31,7 @@ def save_to_csv(data, file_path):
         data.to_csv(file_path, mode='w', index=False, header=True)
 
 
-def json_to_dataframe(data, date_fields=None):
+def json_to_dataframe(data, date_fields=None, datetime_format='%y-%m-%d %H:%M:%S'):
     if not data:
         return pd.DataFrame()
 
@@ -41,9 +41,9 @@ def json_to_dataframe(data, date_fields=None):
     if 'index' in df.columns:
         df.rename(columns={'index': 'timestamp'}, inplace=True)
 
-    # Convert specified fields to datetime objects
+    # Convert specified fields to datetime objects using specified format
     if date_fields:
         for field in date_fields:
-            df[field] = pd.to_datetime(df[field])
+            df[field] = pd.to_datetime(df[field], format=datetime_format, errors='coerce')
 
     return df
