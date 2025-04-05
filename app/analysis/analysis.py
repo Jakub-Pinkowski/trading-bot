@@ -12,6 +12,7 @@ from app.utils.file_utils import load_file, json_to_dataframe
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
 # TODO: The whole file is a mess, clean it up
+# TODO: Consider splitting analysis into separate files for alerts and trades
 
 def split_and_save_trades_by_date(trades_json, trades_dir, timezone="Europe/Berlin"):
     trades_by_day = {}
