@@ -1,24 +1,43 @@
+import os
+from glob import glob
+
 import pandas as pd
 
 from app.utils.analisys_utils import clean_alerts_data, clean_trade_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file, save_to_csv, json_to_dataframe
-from config import BASE_URL, ALERTS_FILE_PATH, TRADES_FILE_PATH
+from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
 
 def get_alerts_data():
-    alerts_json = load_file(ALERTS_FILE_PATH)
-    alerts_df = json_to_dataframe(
-        alerts_json,
-        date_fields=['timestamp'],
-        datetime_format='%y-%m-%d %H:%M:%S',
-        orient='index',
-        index_name='timestamp'
-    )
+    # Fetch all json files in ALERTS_DIR
+    file_pattern = os.path.join(ALERTS_DIR, "alerts_*.json")
+    alert_files = sorted(glob(file_pattern))
 
-    alerts_df = clean_alerts_data(alerts_df)
+    data_frames = []
+    for alert_file in alert_files:
+        # load individual daily alerts json file
+        daily_alerts_json = load_file(alert_file)
 
-    return alerts_df
+        if daily_alerts_json:  # Check if data exists for the day
+            daily_alerts_df = json_to_dataframe(
+                daily_alerts_json,
+                date_fields=['timestamp'],
+                datetime_format='%y-%m-%d %H:%M:%S',
+                orient='index',
+                index_name='timestamp'
+            )
+            data_frames.append(daily_alerts_df)
+
+    # Combine all daily dataframes if there's data
+    if data_frames:
+        alerts_df = pd.concat(data_frames).sort_index()
+        # Cleaning the combined alerts DataFrame
+        alerts_df = clean_alerts_data(alerts_df)
+        return alerts_df
+    else:
+        # Return empty dataframe if no data found
+        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
 def get_recent_trades():
@@ -43,19 +62,13 @@ def get_recent_trades():
         # Clean the DataFrame
         cleaned_df = clean_trade_data(trades_df)
 
-        # TODO: Later on change to yesterday's data
-        # Filter yesterday's trades
-        # yesterdays_trades = filter_yesterdays_data(cleaned_df, 'trade_time')
-        #
-        # if yesterdays_trades.empty:
-        #     return {"success": True, "data": yesterdays_trades, "message": "No trades found for yesterday"}
-
-        save_to_csv(cleaned_df, TRADES_FILE_PATH)
+        # save_to_csv(cleaned_df, TRADES_FILE_PATH)
 
         return {"success": True, "data": cleaned_df}
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
+
 
 # TODO: Make it cleaner
 def calculate_alerts_pnl(alerts_df):
@@ -117,6 +130,7 @@ def calculate_alerts_pnl(alerts_df):
 
 def run_analysis():
     alerts_data = get_alerts_data()
+    print("alerts_data: ", alerts_data)
     trades_data = get_recent_trades()
 
-    pnl_alerts = calculate_alerts_pnl(alerts_data)
+    # pnl_alerts = calculate_alerts_pnl(alerts_data)
