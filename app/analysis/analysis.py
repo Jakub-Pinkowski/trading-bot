@@ -43,15 +43,16 @@ def get_recent_trades():
 
         print("cleaned_df:", cleaned_df)
 
+        # TODO: Later on change to yesterday's data
         # Filter yesterday's trades
-        yesterdays_trades = filter_yesterdays_data(cleaned_df, 'trade_time')
+        # yesterdays_trades = filter_yesterdays_data(cleaned_df, 'trade_time')
+        #
+        # if yesterdays_trades.empty:
+        #     return {"success": True, "data": yesterdays_trades, "message": "No trades found for yesterday"}
 
-        if yesterdays_trades.empty:
-            return {"success": True, "data": yesterdays_trades, "message": "No trades found for yesterday"}
+        save_to_csv(cleaned_df, TRADES_FILE_PATH)
 
-        save_to_csv(yesterdays_trades, TRADES_FILE_PATH)
-
-        return {"success": True, "data": yesterdays_trades}
+        return {"success": True, "data": cleaned_df}
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
