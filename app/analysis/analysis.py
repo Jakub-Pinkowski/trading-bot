@@ -1,4 +1,4 @@
-from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, filter_yesterdays_data
+from app.utils.analisys_utils import clean_alerts_data, clean_trade_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file, save_to_csv, json_to_dataframe
 from config import BASE_URL, ALERTS_FILE_PATH, TRADES_FILE_PATH
@@ -41,8 +41,6 @@ def get_recent_trades():
         # Clean the DataFrame
         cleaned_df = clean_trade_data(trades_df)
 
-        print("cleaned_df:", cleaned_df)
-
         # TODO: Later on change to yesterday's data
         # Filter yesterday's trades
         # yesterdays_trades = filter_yesterdays_data(cleaned_df, 'trade_time')
@@ -62,3 +60,4 @@ def run_analysis():
     alerts_data = get_alerts_data()
     print("alerts_data:", alerts_data)
     trades_data = get_recent_trades()
+    print("trades_data:", trades_data)
