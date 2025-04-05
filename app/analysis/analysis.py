@@ -2,15 +2,18 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from app.utils.analisys_utils import clean_trade_data
+from app.utils.analisys_utils import clean_alerts_data, clean_trade_data
 from app.utils.api_utils import api_get
-from app.utils.file_utils import load_file, save_to_csv
+from app.utils.file_utils import load_file, save_to_csv, json_to_dataframe
 from config import BASE_URL, ALERTS_FILE_PATH, TRADES_FILE_PATH
 
-def get_alerts_data():
-    alerts_data = load_file(ALERTS_FILE_PATH)
-    return alerts_data
 
+def get_alerts_data():
+    alerts_json = load_file(ALERTS_FILE_PATH)
+    alerts_df = json_to_dataframe(alerts_json, date_fields=['timestamp'])
+    alerts_df = clean_alerts_data(alerts_df)
+
+    return alerts_df
 
 
 def get_recent_trades():
@@ -53,7 +56,6 @@ def get_recent_trades():
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
-
 
 
 def run_analysis():

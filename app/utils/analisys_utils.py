@@ -25,3 +25,11 @@ def clean_trade_data(trades_df):
     cleaned_df["net_amount"] = cleaned_df["net_amount"].astype(float)
 
     return cleaned_df
+
+
+def clean_alerts_data(df, default_value="NO"):
+    if "dummy" not in df.columns:
+        df["dummy"] = default_value
+    else:
+        df["dummy"] = df["dummy"].fillna(default_value)
+    return df
