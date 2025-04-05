@@ -8,9 +8,14 @@ def process_trading_data(trading_data):
 
     check_connection()
 
+    dummy = trading_data.get('dummy')
     symbol = trading_data.get('symbol')
     order = trading_data.get('order')
     price = trading_data.get('price')
+
+    if dummy == "YES":
+        print("dummy")
+        return
 
     contract = get_contract_id(symbol)
 

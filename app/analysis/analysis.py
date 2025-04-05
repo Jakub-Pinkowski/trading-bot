@@ -4,8 +4,13 @@ import pandas as pd
 
 from app.utils.analisys_utils import clean_trade_data
 from app.utils.api_utils import api_get
-from app.utils.file_utils import save_to_csv
-from config import BASE_URL, TRADES_FILE_PATH
+from app.utils.file_utils import load_file, save_to_csv
+from config import BASE_URL, ALERTS_FILE_PATH, TRADES_FILE_PATH
+
+def get_alerts_data():
+    alerts_data = load_file(ALERTS_FILE_PATH)
+    return alerts_data
+
 
 
 def get_recent_trades():
@@ -48,3 +53,10 @@ def get_recent_trades():
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
+
+
+
+def run_analysis():
+    alerts_data = get_alerts_data()
+    print("alerts_data:", alerts_data)
+    trades_data = get_recent_trades()
