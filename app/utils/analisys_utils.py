@@ -1,4 +1,14 @@
+from datetime import datetime, timedelta
+
 import pandas as pd
+
+
+def clean_alerts_data(df, default_value="NO"):
+    if "dummy" not in df.columns:
+        df["dummy"] = default_value
+    else:
+        df["dummy"] = df["dummy"].fillna(default_value)
+    return df
 
 
 def clean_trade_data(trades_df):
@@ -27,9 +37,15 @@ def clean_trade_data(trades_df):
     return cleaned_df
 
 
-def clean_alerts_data(df, default_value="NO"):
-    if "dummy" not in df.columns:
-        df["dummy"] = default_value
-    else:
-        df["dummy"] = df["dummy"].fillna(default_value)
-    return df
+def filter_yesterdays_data(df, timestamp_column='trade_time'):
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    start_time = datetime.combine(yesterday, datetime.min.time())
+    end_time = datetime.combine(today, datetime.min.time())
+
+    filtered_df = df[
+        (df[timestamp_column] >= start_time) &
+        (df[timestamp_column] < end_time)
+        ]
+
+    return filtered_df

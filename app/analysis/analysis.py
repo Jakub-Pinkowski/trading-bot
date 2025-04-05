@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta
-
 import pandas as pd
 
-from app.utils.analisys_utils import clean_alerts_data, clean_trade_data
+from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, filter_yesterdays_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file, save_to_csv, json_to_dataframe
 from config import BASE_URL, ALERTS_FILE_PATH, TRADES_FILE_PATH
@@ -32,20 +30,11 @@ def get_recent_trades():
         trades_df = pd.DataFrame(trades_response)
         trades_df['trade_time'] = pd.to_datetime(trades_df['trade_time'], format='%Y%m%d-%H:%M:%S')
 
-        # Cleaning/preparing
+        # Clean the DataFrame
         cleaned_df = clean_trade_data(trades_df)
 
-        print("cleaned_df:", cleaned_df)
-
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        start_time = datetime.combine(yesterday, datetime.min.time())
-        end_time = datetime.combine(today, datetime.min.time())
-
-        yesterdays_trades = cleaned_df[
-            (cleaned_df['trade_time'] >= start_time) &
-            (cleaned_df['trade_time'] < end_time)
-            ]
+        # Filter yesterday's trades
+        yesterdays_trades = filter_yesterdays_data(cleaned_df, 'trade_time')
 
         if yesterdays_trades.empty:
             return {"success": True, "data": yesterdays_trades, "message": "No trades found for yesterday"}
