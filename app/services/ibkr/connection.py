@@ -7,7 +7,7 @@ scheduler = BackgroundScheduler()
 
 
 def tickle_ibkr_api():
-    endpoint = "/tickle"
+    endpoint = "tickle"
     payload = {}
     try:
         api_post(BASE_URL + endpoint, payload)
