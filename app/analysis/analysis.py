@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from datetime import datetime
 from glob import glob
 from zoneinfo import ZoneInfo
@@ -11,6 +11,7 @@ from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file, json_to_dataframe
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
+# TODO: The whole file is a mess, clean it up
 
 def split_and_save_trades_by_date(trades_json, trades_dir, timezone="Europe/Berlin"):
     trades_by_day = {}
@@ -107,7 +108,6 @@ def get_trades_data():
         return {"success": False, "error": f"Unexpected error: {err}"}
 
 
-# TODO: Make it cleaner
 def calculate_alerts_pnl(alerts_df):
     alerts_df = alerts_df.sort_values('timestamp')
 
