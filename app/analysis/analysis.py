@@ -111,7 +111,7 @@ def calculate_alerts_pnl(alerts_df):
                     'entry_time': timestamp
                 }
             else:
-                # Ignore consecutive same-side signals, clearly stated:
+                # Ignore consecutive same-side signals
                 print(f"Ignoring consecutive '{order}' signal for symbol '{symbol}' at {timestamp}")
 
     pnl_df = pd.DataFrame(pnl_records)

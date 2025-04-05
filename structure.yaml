@@ -44,7 +44,12 @@ trading-bot/
 │   │   └── test_webhook_utils.py           # Webhook utilities tests
 │   └── conftest.py                         # Shared pytest fixtures & configuration
 ├── data/
-│   └── contracts.json                      # Contract IDs
+│   ├── alerts/                             # Raw alerts data
+│   └── analysis/                           # Analysis
+│       ├── alerts_analysis/                # Performance analysis based on alerts
+│       └── trades_analysis/                # Performance analysis of trades
+│   ├── contracts/                          # Contracts ids
+│   └── trades/                         # Raw trades data
 ├── .env                                    # Configuration secrets
 ├── .gitignore                              # Files to ignore
 ├── config.py                               # App configuration
