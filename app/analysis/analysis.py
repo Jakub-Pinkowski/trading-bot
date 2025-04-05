@@ -82,7 +82,7 @@ def calculate_alerts_pnl(alerts_df):
         else:
             current_position = positions[symbol]
 
-            # If the new alert is opposite to the current position, we record the trade
+            # If the new alert is opposite to the current position
             if current_position['order_type'] != order:
                 entry_price = current_position['entry_price']
                 entry_order = current_position['order_type']
@@ -110,9 +110,6 @@ def calculate_alerts_pnl(alerts_df):
                     'entry_price': price,
                     'entry_time': timestamp
                 }
-            else:
-                # Ignore consecutive same-side signals
-                print(f"Ignoring consecutive '{order}' signal for symbol '{symbol}' at {timestamp}")
 
     pnl_df = pd.DataFrame(pnl_records)
     return pnl_df
@@ -120,8 +117,6 @@ def calculate_alerts_pnl(alerts_df):
 
 def run_analysis():
     alerts_data = get_alerts_data()
-    print("alerts_data:", alerts_data)
     trades_data = get_recent_trades()
 
     pnl_alerts = calculate_alerts_pnl(alerts_data)
-    print("pnl_alerts:", pnl_alerts)

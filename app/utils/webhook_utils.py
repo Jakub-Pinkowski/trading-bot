@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -29,14 +30,24 @@ def parse_request_data(request):
     return data
 
 
-def save_alert_data_to_file(data, file_path, timezone="Europe/Berlin"):
+def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):
     # Don't save if it's just a dummy data
     if 'dummy' in data:
         return
 
-    alerts_data = load_file(file_path)
+    # Current timestamp with timezone
+    current_dt = datetime.now(ZoneInfo(timezone))
+    timestamp = current_dt.strftime("%y-%m-%d %H:%M:%S")
 
-    timestamp = datetime.now(ZoneInfo(timezone)).strftime("%y-%m-%d %H:%M:%S")
+    # Preparing the daily file path
+    daily_file_name = f"alerts_{current_dt.strftime('%Y-%m-%d')}.json"
+    daily_file_path = os.path.join(alerts_dir, daily_file_name)
+
+    # Load existing data if the file already exists
+    alerts_data = load_file(daily_file_path)
+
+    # Add new record
     alerts_data[timestamp] = data
 
-    save_file(alerts_data, file_path)
+    # Save updated data to daily file
+    save_file(alerts_data, daily_file_path)
