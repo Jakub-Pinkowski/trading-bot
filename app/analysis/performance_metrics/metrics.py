@@ -41,7 +41,7 @@ def calculate_price_move_pct(entry_price, exit_price):
     return ((exit_price - entry_price) / entry_price) * 100
 
 
-def add_metrics(matched_trades):
+def add_per_trade_metrics(matched_trades):
     # List to hold processed trades
     trades = []
 
@@ -59,6 +59,7 @@ def add_metrics(matched_trades):
         entry_trade_time = row['start_time']
         exit_trade_time = row['end_time']
 
+        # TODO: Remove unused/unnecessary metrics later
         # Calculate all the metrics
         pnl, pnl_pct = calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission)
         trade_duration = calculate_trade_duration(entry_trade_time, exit_trade_time)
