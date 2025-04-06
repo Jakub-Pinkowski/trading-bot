@@ -31,7 +31,6 @@ def get_alerts_data():
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
-# NOTE: Returns data from the last 7 days
 def get_trades_data():
     trades_df = load_data_from_json_files(
         directory=TRADES_DIR,
@@ -46,11 +45,20 @@ def get_trades_data():
         # Explicitly sort by 'trade_time'
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
 
-        # Filter data to include trades only from the last 7 days
+        # Filter data to only include trades from the last 7 days
         seven_days_ago = datetime.now() - timedelta(days=TIMEFRAME_TO_ANALYZE)
-        trades_df = trades_df[trades_df['trade_time'] >= seven_days_ago]
+        trades_last_7_days = trades_df[trades_df['trade_time'] >= seven_days_ago]
 
-        return trades_df
+        # TODO: We might wanna fetch the data with a bit higher frequency
+        # Check if any data exists within the last 7 days
+        if not trades_last_7_days.empty:
+            return trades_last_7_days
+
+    # If no data from the last 7 days, fetch new trades data
+    fetch_result = fetch_trades_data()
+    if fetch_result.get("success"):
+        # Reload the data after fetching new trades
+        return get_trades_data()
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'trade_time'])
 
