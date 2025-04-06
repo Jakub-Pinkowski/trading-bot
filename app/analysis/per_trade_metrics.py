@@ -18,16 +18,12 @@ def calculate_trade_duration(start_time, end_time):
     return round((end_time - start_time).total_seconds() / 60.0, 2)
 
 
-
+# TODO: Should be with net_amount instead of the price
 def calculate_absolute_return(entry_price, exit_price, entry_side):
     abs_return = exit_price - entry_price
     if entry_side == 'S':  # For short trades, reverse the sign
         abs_return *= -1
     return abs_return
-
-
-def calculate_return_points(abs_return, size):
-    return abs_return * size
 
 
 def calculate_commission_pct(total_commission, entry_net_amount):
@@ -67,7 +63,6 @@ def add_per_trade_metrics(matched_trades):
         pnl, pnl_pct = calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission)
         trade_duration = calculate_trade_duration(entry_trade_time, exit_trade_time)
         abs_return = calculate_absolute_return(entry_price, exit_price, entry_side)
-        return_points = calculate_return_points(abs_return, size)
         commission_pct = calculate_commission_pct(total_commission, entry_net_amount)
         price_move_pct = calculate_price_move_pct(entry_price, exit_price)
 
@@ -88,7 +83,6 @@ def add_per_trade_metrics(matched_trades):
             'pnl_pct': pnl_pct,
             'trade_duration': trade_duration,
             'abs_return': abs_return,
-            'return_points': return_points,
             'commission_pct': commission_pct,
             'price_move_pct': price_move_pct,
         })
