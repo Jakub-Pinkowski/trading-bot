@@ -32,12 +32,10 @@ def calculate_commission_pct(total_commission, entry_net_amount):
     return round((total_commission / entry_net_amount) * 100, 4)
 
 
-
 def calculate_price_move_pct(entry_price, exit_price):
     if entry_price == 0:  # Avoid division by zero
         return 0
     return round(((exit_price - entry_price) / entry_price) * 100, 4)
-
 
 
 def add_per_trade_metrics(matched_trades):

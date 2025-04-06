@@ -16,5 +16,3 @@ def run_analysis():
 
     dataset_metrics = calculate_dataset_metrics(trades_with_per_trade_metrics)
     print(dataset_metrics)
-
-    # pnl_alerts = calculate_alerts_pnl(alerts_data)
