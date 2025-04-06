@@ -2,28 +2,28 @@ trading-bot/
 ├── app/
 │   ├── analysis/
 │   │   ├── __init__.py
-│   │   ├── data_fetching.py                  # Data fetching logic
-│   │   ├── analysis_runner.py                # Entry point and orchestrator for analysis
-│   │   ├── performance_metrics/              # Calculations related to trading performance/results
+│   │   ├── data_fetching.py                      # Data fetching logic
+│   │   ├── analysis_runner.py                    # Entry point and orchestrator for analysis
+│   │   ├── performance_metrics/                  # Calculations related to trading performance/results
 │   │   │   ├── __init__.py
-│   │   │   ├── pnl.py                        # Profit-and-loss calculation logic
-│   │   │   ├── roi.py                        # Return on investment calculations
-│   │   │   └── winrate.py                    # Win/loss ratio calculations
-│   │   └── trading_statistics/               # Statistics about trading activities
+│   │   │   ├── pnl.py                            # Profit-and-loss calculation logic
+│   │   │   ├── roi.py                            # Return on investment calculations
+│   │   │   └── winrate.py                        # Win/loss ratio calculations
+│   │   └── trading_statistics/                   # Statistics about trading activities
 │   │       ├── __init__.py
-│   │       ├── volume.py                     # Trade volume analysis logic
-│   │       ├── trade_duration.py             # Trade duration and timing analysis
+│   │       ├── volume.py                         # Trade volume analysis logic
+│   │       ├── trade_duration.py                 # Trade duration and timing analysis
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   └── webhook.py                      # Webhooks from TradingView
+│   │   └── webhook.py                            # Webhooks from TradingView
 │   ├── services/
 │   │   ├── ibkr/
 │   │   │   ├── __init__.py
-│   │   │   ├── connection.py               # IBKR API connections
-│   │   │   ├── contracts.py                # Contracts handling
-│   │   │   └── orders.py                   # Order execution
+│   │   │   ├── connection.py                     # IBKR API connections
+│   │   │   ├── contracts.py                      # Contracts handling
+│   │   │   └── orders.py                         # Order execution
 │   │   ├── __init__.py
-│   │   └── ibkr_service.py                 # IBKR logic coordinator
+│   │   └── ibkr_service.py                       # IBKR logic coordinator
 │   ├── utils/
 │   │   ├── analysis_utils/                       # Analysis utilities
 │   │   │   ├── __init__.py
@@ -40,51 +40,51 @@ trading-bot/
 │   │   │       └── trade_duration_utils.py       # Trade duration analysis utilities
 │   │   ├── ibkr_utils/                           # IBKR Utilities
 │   │   │   ├── __init__.py
-│   │   │   ├── connection_utils.py         # Connection utilities
-│   │   │   ├── contract_utils.py           # Contracts utilities
-│   │   │   ├── ibkr_utils.py               # Generic IBKR utilities
-│   │   │   └── orders_utils.py             # Orders utilities
+│   │   │   ├── connection_utils.py               # Connection utilities
+│   │   │   ├── contract_utils.py                 # Contracts utilities
+│   │   │   ├── ibkr_utils.py                     # Generic IBKR utilities
+│   │   │   └── orders_utils.py                   # Orders utilities
 │   │   ├── __init__.py
-│   │   ├── api_utils.py                    # General API utilities
-│   │   ├── file_utils.py                   # File utilities
-│   │   └── webhook_utils.py                # Webhook utilities
+│   │   ├── api_utils.py                          # General API utilities
+│   │   ├── file_utils.py                         # File utilities
+│   │   └── webhook_utils.py                      # Webhook utilities
 │   └── __init__.py
-├── tests/                                  # Tests directory
+├── tests/                                        # Tests directory
 │   ├── routes/
-│   │   └── test_webhook.py                 # Webhook tests
+│   │   └── test_webhook.py                       # Webhook tests
 │   ├── services/
 │   │   ├── ibkr/
-│   │   │   ├── test_connection.py          # IBKR connections tests
-│   │   │   ├── test_contracts.py           # IBKR contracts tests
-│   │   │   └── test_orders.py              # IBKR orders tests
-│   │   └── test_ibkr_service.py            # IBKR service tests 
+│   │   │   ├── test_connection.py                # IBKR connections tests
+│   │   │   ├── test_contracts.py                 # IBKR contracts tests
+│   │   │   └── test_orders.py                    # IBKR orders tests
+│   │   └── test_ibkr_service.py                  # IBKR service tests 
 │   ├── utils/
 │   │   ├── ibkr_utils/
-│   │   │   ├── test_connection_utils.py    # Connection utilities tests
-│   │   │   ├── test_contract_utils.py      # Contract utilities tests
-│   │   │   └── test_orders_utils.py        # Orders utilities tests
-│   │   ├── test_api_utils.py               # API utilities tests
-│   │   ├── test_file_utils.py              # File utilities tests
-│   │   └── test_webhook_utils.py           # Webhook utilities tests
-│   └── conftest.py                         # Shared pytest fixtures & configuration
+│   │   │   ├── test_connection_utils.py          # Connection utilities tests
+│   │   │   ├── test_contract_utils.py            # Contract utilities tests
+│   │   │   └── test_orders_utils.py              # Orders utilities tests
+│   │   ├── test_api_utils.py                     # API utilities tests
+│   │   ├── test_file_utils.py                    # File utilities tests
+│   │   └── test_webhook_utils.py                 # Webhook utilities tests
+│   └── conftest.py                               # Shared pytest fixtures & configuration
 ├── data/
-│   ├── alerts/                             # Raw alerts data
-│   └── analysis/                           
-│       ├── alerts_analysis/                # Performance analysis based on alerts
-│       └── trades_analysis/                # Performance analysis of trades
-│   ├── contracts/                          # Contracts ids
-│   └── trades/                         # Raw trades data
-├── .env                                    # Configuration secrets
-├── .gitignore                              # Files to ignore
-├── config.py                               # App configuration
-├── README.md                               # Project overview
-├── requirements.txt                        # Dependencies
-├── run.py                                  # App startup script
+│   ├── alerts/                                   # Raw alerts data
+│   └── analysis/
+│       ├── alerts_analysis/                      # Performance analysis based on alerts
+│       └── trades_analysis/                      # Performance analysis of trades
+│   ├── contracts/                                # Contracts ids
+│   └── trades/                                   # Raw trades data
+├── .env                                          # Configuration secrets
+├── .gitignore                                    # Files to ignore
+├── config.py                                     # App configuration
+├── README.md                                     # Project overview
+├── requirements.txt                              # Dependencies
+├── run.py                                        # App startup script
 └── structure.yaml
 
 # Functionality
-# BUG: I lose access and can't trade after a while - happens when laptop goes to sleep - TO CHECK
-# BUG: Tickling doesn't work reliably - happens when laptop goes to sleep - TO CHECK
+# BUG:  I lose access and can't trade after a while - happens when laptop goes to sleep       - TO CHECK
+# BUG:  Tickling doesn't work reliably - happens when laptop goes to sleep                    - TO CHECK
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
@@ -92,7 +92,5 @@ trading-bot/
 # TODO: Create a tool to save trades
 # TODO: Create a tool to analyse performance
 
-
 # Developer
 # TODO: Add/update unit tests for every component
-
