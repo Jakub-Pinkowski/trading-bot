@@ -1,11 +1,8 @@
 import pandas as pd
-import time
 
-
-from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, save_trades_data
-from app.utils.api_utils import api_get
+from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, fetch_trades_data
 from app.utils.file_utils import load_data_from_json_files
-from config import BASE_URL, ALERTS_DIR, TRADES_DIR
+from config import ALERTS_DIR, TRADES_DIR
 
 
 # TODO: Consider splitting analysis into separate files for alerts and trades
@@ -28,31 +25,7 @@ def get_alerts_data():
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
-# TODO: Actually use it somewhere
-def fetch_trades_data(max_retries=3, retry_delay=2):
-    endpoint = "iserver/account/trades?days=7"
-    attempt = 0
-
-    while attempt < max_retries:
-        try:
-            trades_json = api_get(BASE_URL + endpoint)
-
-            # Validate if response is not empty
-            if trades_json:
-                save_trades_data(trades_json, TRADES_DIR)
-                return {"success": True, "message": "Trades fetched successfully"}
-
-            # If no data returned, increment attempt counter and retry after delay
-            attempt += 1
-            if attempt < max_retries:
-                time.sleep(retry_delay)  # Wait before making the next attempt
-
-        except Exception as err:
-            return {"success": False, "error": f"Unexpected error: {err}"}
-
-    # After maximum retries, return error
-    return {"success": False, "error": "No data returned from IBKR API after multiple retries"}
-
+# TODO: Set up a scheduler or run once daily
 
 
 def get_trades_data():
