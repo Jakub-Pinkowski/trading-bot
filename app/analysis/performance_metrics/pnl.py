@@ -19,11 +19,11 @@ def calculate_pnl(matched_trades):
         entry_trade_time = row['start_time']
         exit_trade_time = row['end_time']
 
-        # Calculate PnL based on net amounts
+        # Calculate PnL based on net amounts and price difference
         if entry_side == 'B' and exit_side == 'S':  # Long -> Short
-            pnl = (entry_net_amount - exit_net_amount) - total_commission
+            pnl = (exit_net_amount - entry_net_amount) * size - total_commission
         elif entry_side == 'S' and exit_side == 'B':  # Short -> Long
-            pnl = (exit_net_amount - entry_net_amount) - total_commission
+            pnl = (entry_net_amount - exit_net_amount) * size - total_commission
         else:
             pnl = 0  # In case of any unexpected conditions
 
