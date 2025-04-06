@@ -1,4 +1,6 @@
 import pandas as pd
+import time
+
 
 from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, save_trades_data
 from app.utils.api_utils import api_get
@@ -6,7 +8,6 @@ from app.utils.file_utils import load_data_from_json_files
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
 
-# TODO: The whole file is a mess, clean it up
 # TODO: Consider splitting analysis into separate files for alerts and trades
 
 def get_alerts_data():
@@ -28,23 +29,30 @@ def get_alerts_data():
 
 
 # TODO: Actually use it somewhere
-# BUG: Sometimes the API returns an empty array, but works on a second/third try
-def fetch_trades_data():
-    # Fetch trades from the last week
+def fetch_trades_data(max_retries=3, retry_delay=2):
     endpoint = "iserver/account/trades?days=7"
+    attempt = 0
 
-    try:
-        trades_json = api_get(BASE_URL + endpoint)
+    while attempt < max_retries:
+        try:
+            trades_json = api_get(BASE_URL + endpoint)
 
-        if not trades_json:
-            return {"success": False, "error": "No data returned from IBKR API"}
+            # Validate if response is not empty
+            if trades_json:
+                save_trades_data(trades_json, TRADES_DIR)
+                return {"success": True, "message": "Trades fetched successfully"}
 
-        save_trades_data(trades_json, TRADES_DIR)
+            # If no data returned, increment attempt counter and retry after delay
+            attempt += 1
+            if attempt < max_retries:
+                time.sleep(retry_delay)  # Wait before making the next attempt
 
-        return {"success": True, "message": "Trades fetched successfully"}
+        except Exception as err:
+            return {"success": False, "error": f"Unexpected error: {err}"}
 
-    except Exception as err:
-        return {"success": False, "error": f"Unexpected error: {err}"}
+    # After maximum retries, return error
+    return {"success": False, "error": "No data returned from IBKR API after multiple retries"}
+
 
 
 def get_trades_data():
@@ -127,5 +135,4 @@ def run_analysis():
     fetch_trades_data()
 
     trades_data = get_trades_data()
-
     # pnl_alerts = calculate_alerts_pnl(alerts_data)

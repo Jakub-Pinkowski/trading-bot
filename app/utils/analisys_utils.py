@@ -85,4 +85,4 @@ def save_trades_data(trades_json, trades_dir, timezone="Europe/Berlin"):
         with open(daily_file_path, 'w') as file:
             json.dump(list(unique_trades.values()), file, indent=4)
 
-    print(f"Trades successfully separated, deduplicated by execution_id, and saved by date in {trades_dir}")
+    print(f"Trades successfully saved in {trades_dir}")
