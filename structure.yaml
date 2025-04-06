@@ -2,7 +2,12 @@ trading-bot/
 ├── app/
 │   ├── analysis/
 │   │   ├── __init__.py
-│   │   └── analysis.py                     # Analytics
+│   │   ├── data_fetching.py               # Data fetching logic 
+│   │   ├── analysis_runner.py             # Entry point and orchestrator for analysis
+│   │   └── performance_metrics/           # Performance metrics calculations
+│   │       ├── __init__.py
+│   │       ├── pnl.py                     # PnL calculation logic
+│   │       └── volume.py                  # Volume analysis logic
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                      # Webhooks from TradingView
@@ -15,7 +20,11 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── ibkr_service.py                 # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── ibkr_utils/                     # IBKR utilities
+│   │   ├── analysis_utils/                  # Analysis utilities
+│   │   │   ├── __init__.py
+│   │   │   ├── data_fetching_utils.py       # Data cleaning utilities
+│   │   │   └── metrics_utils.py             # Metrics calculation utilities
+│   │   ├── ibkr_utils/                      # IBKR Utilities
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py         # Connection utilities
 │   │   │   ├── contract_utils.py           # Contracts utilities
@@ -45,7 +54,7 @@ trading-bot/
 │   └── conftest.py                         # Shared pytest fixtures & configuration
 ├── data/
 │   ├── alerts/                             # Raw alerts data
-│   └── analysis/                           # Analysis
+│   └── analysis/                           
 │       ├── alerts_analysis/                # Performance analysis based on alerts
 │       └── trades_analysis/                # Performance analysis of trades
 │   ├── contracts/                          # Contracts ids

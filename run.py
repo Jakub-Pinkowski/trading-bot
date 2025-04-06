@@ -1,6 +1,6 @@
 from flask import Flask
 
-from app.analysis.analysis import run_analysis
+from app.analysis.analysis_runner import run_analysis
 from app.routes.webhook import webhook_blueprint
 from app.services.ibkr.connection import start_ibkr_scheduler
 

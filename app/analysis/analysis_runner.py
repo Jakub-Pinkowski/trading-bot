@@ -1,51 +1,8 @@
 import pandas as pd
 
-from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, fetch_trades_data
-from app.utils.file_utils import load_data_from_json_files
-from config import ALERTS_DIR, TRADES_DIR
+from app.analysis.data_fetching import get_alerts_data, get_trades_data
 
-
-# TODO: Consider splitting analysis into separate files for alerts and trades
-
-def get_alerts_data():
-    alerts_df = load_data_from_json_files(
-        directory=ALERTS_DIR,
-        file_prefix="alerts",
-        date_fields=['timestamp'],
-        datetime_format='%y-%m-%d %H:%M:%S',
-        index_name='timestamp'
-    )
-
-    if not alerts_df.empty:
-        alerts_df = clean_alerts_data(alerts_df)
-        # Explicitly sort by 'timestamp'
-        alerts_df = alerts_df.sort_values('timestamp').reset_index(drop=True)
-        return alerts_df
-    else:
-        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
-
-
-# TODO: Set up a scheduler or run once daily
-
-
-def get_trades_data():
-    trades_df = load_data_from_json_files(
-        directory=TRADES_DIR,
-        file_prefix="trades",
-        date_fields=['trade_time'],
-        datetime_format='%Y%m%d-%H:%M:%S',
-        index_name='trade_time'
-    )
-
-    if not trades_df.empty:
-        trades_df = clean_trade_data(trades_df)
-        # Explicitly sort by 'trade_time'
-        trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
-        return trades_df
-    else:
-        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
-
-
+# TODO: Move this to a different file
 def calculate_alerts_pnl(alerts_df):
     alerts_df = alerts_df.sort_values('timestamp')
 
@@ -105,7 +62,7 @@ def calculate_alerts_pnl(alerts_df):
 
 def run_analysis():
     alerts_data = get_alerts_data()
-    fetch_trades_data()
-
     trades_data = get_trades_data()
+
+
     # pnl_alerts = calculate_alerts_pnl(alerts_data)
