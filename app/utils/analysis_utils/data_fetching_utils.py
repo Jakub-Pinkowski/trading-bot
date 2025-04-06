@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from app.utils.generic_utils import parse_symbol
+
 
 def fractional_to_decimal(price_str):
     if isinstance(price_str, str) and ' ' in price_str:
@@ -18,25 +20,31 @@ def fractional_to_decimal(price_str):
 
 
 def clean_alerts_data(df, default_value="NO"):
+    # Add or fill the dummy column
     if "dummy" not in df.columns:
         df["dummy"] = default_value
     else:
         df["dummy"] = df["dummy"].fillna(default_value)
+
+    # TODO: Can be deleted later
+    # Standardize order column: BUY → B, SELL → S
+    df["order"] = df["order"].replace({"BUY": "B", "SELL": "S"})
+
+    # Clean symbol column using parse_symbol
+    df["symbol"] = df["symbol"].apply(parse_symbol)
+
     return df
 
 
 def clean_trade_data(trades_df):
     columns_needed = [
-        "execution_id",
         "symbol",
         "side",
         "size",
         "price",
         "trade_time",
-        "exchange",
         "commission",
         "net_amount",
-        "company_name"
     ]
 
     cleaned_df = trades_df[columns_needed].copy()
@@ -49,6 +57,18 @@ def clean_trade_data(trades_df):
 
     # Convert fractional price strings properly
     cleaned_df["price"] = cleaned_df["price"].apply(fractional_to_decimal)
+
+    # Reorder columns
+    reordered_columns = [
+        "trade_time",
+        "symbol",
+        "side",
+        "size",
+        "price",
+        "commission",
+        "net_amount",
+    ]
+    cleaned_df = cleaned_df[reordered_columns]
 
     return cleaned_df
 

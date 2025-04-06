@@ -62,7 +62,9 @@ def calculate_alerts_pnl(alerts_df):
 
 def run_analysis():
     alerts_data = get_alerts_data()
+    print(alerts_data)
     trades_data = get_trades_data()
+    print(trades_data)
 
 
     # pnl_alerts = calculate_alerts_pnl(alerts_data)

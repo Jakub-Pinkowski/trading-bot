@@ -1,8 +1,8 @@
 import json
 import os
+from glob import glob
 
 import pandas as pd
-from glob import glob
 
 
 def load_file(file_path):

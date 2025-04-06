@@ -1,15 +1,8 @@
-import re
 from datetime import datetime, timedelta
 
 from app.utils.api_utils import api_get
+from app.utils.generic_utils import parse_symbol
 from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
-
-
-def parse_symbol(symbol):
-    match = re.match(r'^([A-Za-z]+)', symbol)
-    if not match:
-        raise ValueError(f"Invalid symbol format: {symbol}")
-    return match.group(1)
 
 
 def fetch_contract(symbol):
