@@ -1,100 +1,56 @@
 import pandas as pd
 
 
-# TODO: Use matched trades instead of raw data
-def calculate_pnl(trades):
-    open_trades = {}
-    closed_trades = []
+def calculate_pnl(matched_trades):
+    # List to hold processed trades with PnL
+    pnl_trades = []
 
-    # Define contract multipliers per symbol
-    contract_multipliers = {
-        'CL': 1000,
-        'SI': 5000,
-        'ZW': 50,
-        'ZC': 50,
-        'MZC': 10,
-        'HG': 25000,
-        'GC': 100,
-        'PL': 50,
-        'ZS': 50
-    }
-
-    for _, row in trades.iterrows():
+    # Process each matched trade
+    for _, row in matched_trades.iterrows():
         symbol = row['symbol']
-        side = row['side']
+        entry_side = row['entry_side']
+        entry_price = row['entry_price']
+        entry_net_amount = row['entry_net_amount']
+        exit_side = row['exit_side']
+        exit_price = row['exit_price']
         size = row['size']
-        price = row['price']
-        commission = row['commission']
-        trade_time = row['trade_time']
-        multiplier = contract_multipliers.get(symbol, 1)
+        exit_net_amount = row['exit_net_amount']
+        total_commission = row['total_commission']
+        entry_trade_time = row['start_time']
+        exit_trade_time = row['end_time']
 
-        if symbol not in open_trades:
-            open_trades[symbol] = []
+        # Calculate PnL based on net amounts
+        if entry_side == 'B' and exit_side == 'S':  # Long -> Short
+            pnl = (entry_net_amount - exit_net_amount) - total_commission
+        elif entry_side == 'S' and exit_side == 'B':  # Short -> Long
+            pnl = (exit_net_amount - entry_net_amount) - total_commission
+        else:
+            pnl = 0  # In case of any unexpected conditions
 
-        if side == 'B':
-            if open_trades[symbol] and open_trades[symbol][0]['side'] == 'S':
-                # Closing short position
-                open_trade = open_trades[symbol].pop(0)
-                total_commission = commission + open_trade['commission']
-                entry_net = open_trade['price'] * size * multiplier
-                exit_net = price * size * multiplier
-                pnl = (open_trade['price'] - price) * size * multiplier - total_commission
-                pnl_pct = round((pnl / entry_net) * 100, 2) if entry_net else 0
-                closed_trades.append({
-                    'start_time': open_trade['trade_time'],
-                    'end_time': trade_time,
-                    'symbol': symbol,
-                    'entry_side': open_trade['side'],
-                    'entry_price': open_trade['price'],
-                    'exit_side': side,
-                    'exit_price': price,
-                    'size': size,
-                    'entry_net_amount': entry_net,
-                    'exit_net_amount': exit_net,
-                    'total_commission': total_commission,
-                    'pnl': pnl,
-                    'pnl_pct': pnl_pct
-                })
-            else:
-                open_trades[symbol].append({
-                    'side': side,
-                    'price': price,
-                    'commission': commission,
-                    'trade_time': trade_time
-                })
+        # Calculate PnL percentage based on net amounts
+        pnl_pct = round((pnl / entry_net_amount) * 100, 2) if entry_net_amount else 0
 
-        elif side == 'S':
-            if open_trades[symbol] and open_trades[symbol][0]['side'] == 'B':
-                # Closing long position
-                open_trade = open_trades[symbol].pop(0)
-                total_commission = commission + open_trade['commission']
-                entry_net = open_trade['price'] * size * multiplier
-                exit_net = price * size * multiplier
-                pnl = (price - open_trade['price']) * size * multiplier - total_commission
-                pnl_pct = round((pnl / entry_net) * 100, 2) if entry_net else 0
-                closed_trades.append({
-                    'start_time': open_trade['trade_time'],
-                    'end_time': trade_time,
-                    'symbol': symbol,
-                    'entry_side': open_trade['side'],
-                    'entry_price': open_trade['price'],
-                    'exit_side': side,
-                    'exit_price': price,
-                    'size': size,
-                    'entry_net_amount': entry_net,
-                    'exit_net_amount': exit_net,
-                    'total_commission': total_commission,
-                    'pnl': pnl,
-                    'pnl_pct': pnl_pct
-                })
-            else:
-                open_trades[symbol].append({
-                    'side': side,
-                    'price': price,
-                    'commission': commission,
-                    'trade_time': trade_time
-                })
+        # Append the results to the pnl_trades list
+        pnl_trades.append({
+            'start_time': entry_trade_time,
+            'end_time': exit_trade_time,
+            'symbol': symbol,
+            'entry_side': entry_side,
+            'entry_price': entry_price,
+            'entry_net_amount': entry_net_amount,
+            'exit_side': exit_side,
+            'exit_price': exit_price,
+            'size': size,
+            'exit_net_amount': exit_net_amount,
+            'total_commission': total_commission,
+            'pnl': pnl,
+            'pnl_pct': pnl_pct
+        })
 
-    df = pd.DataFrame(closed_trades)
-    df = df.sort_values(by='start_time').reset_index(drop=True)
-    return df
+    # Convert the results to a DataFrame
+    df_pnl = pd.DataFrame(pnl_trades)
+
+    # Sort by start time and reset index
+    df_pnl = df_pnl.sort_values(by='start_time').reset_index(drop=True)
+
+    return df_pnl
