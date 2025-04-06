@@ -12,11 +12,11 @@ def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multi
         closing_size = min(open_trade['size'], size_)  # Close as many as possible
         processed_trades.append({
             'start_time': open_trade['trade_time'],
-            'end_time': trade_time_,
             'symbol': symbol_,
             'entry_side': open_trade['side'],
             'entry_price': open_trade['price'],
             'entry_net_amount': open_trade['price'] * closing_size * multiplier_,
+            'end_time': trade_time_,
             'exit_side': side_,
             'exit_price': price_,
             'size': closing_size,
