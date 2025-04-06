@@ -15,7 +15,8 @@ def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size
 
 
 def calculate_trade_duration(start_time, end_time):
-    return (end_time - start_time).total_seconds() / 60.0
+    return round((end_time - start_time).total_seconds() / 60.0, 2)
+
 
 
 def calculate_absolute_return(entry_price, exit_price, entry_side):
@@ -32,13 +33,15 @@ def calculate_return_points(abs_return, size):
 def calculate_commission_pct(total_commission, entry_net_amount):
     if entry_net_amount == 0:  # Avoid division by zero
         return 0
-    return (total_commission / entry_net_amount) * 100
+    return round((total_commission / entry_net_amount) * 100, 4)
+
 
 
 def calculate_price_move_pct(entry_price, exit_price):
     if entry_price == 0:  # Avoid division by zero
         return 0
-    return ((exit_price - entry_price) / entry_price) * 100
+    return round(((exit_price - entry_price) / entry_price) * 100, 4)
+
 
 
 def add_per_trade_metrics(matched_trades):
