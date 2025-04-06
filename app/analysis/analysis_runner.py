@@ -1,7 +1,7 @@
 from app.analysis.data_fetching import get_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
-from app.utils.analysis_utils.analisys_utils import match_trades
+from app.utils.analysis_utils.analysis_utils import match_trades
 
 
 def run_analysis():

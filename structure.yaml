@@ -2,17 +2,10 @@ trading-bot/
 ├── app/
 │   ├── analysis/
 │   │   ├── __init__.py
+│   │   ├── analysis_runner.py                    # Entry point for analysis
 │   │   ├── data_fetching.py                      # Data fetching logic
-│   │   ├── analysis_runner.py                    # Entry point and orchestrator for analysis
-│   │   ├── performance_metrics/                  # Calculations related to trading performance/results
-│   │   │   ├── __init__.py
-│   │   │   ├── pnl.py                            # Profit-and-loss calculation logic
-│   │   │   ├── roi.py                            # Return on investment calculations
-│   │   │   └── winrate.py                        # Win/loss ratio calculations
-│   │   └── trading_statistics/                   # Statistics about trading activities
-│   │       ├── __init__.py
-│   │       ├── volume.py                         # Trade volume analysis logic
-│   │       ├── trade_duration.py                 # Trade duration and timing analysis
+│   │   ├── dataset_metrics.py                    # Dataset metrics
+│   │   └──per_trade_metrics.py                   # Per trade metrics
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from TradingView
@@ -28,16 +21,7 @@ trading-bot/
 │   │   ├── analysis_utils/                       # Analysis utilities
 │   │   │   ├── __init__.py
 │   │   │   ├── data_fetching_utils.py            # Data cleaning utilities
-│   │   │   ├── analysis_utils.py                 # General calculation utilities
-│   │   │   ├── performance_metrics_utils/        # Performance calculations utils
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── pnl_utils.py                  # Profit-and-loss calculations utilities
-│   │   │   │   ├── roi_utils.py                  # ROI calculations utilities
-│   │   │   │   └── winrate_utils.py              # Win/loss ratio calculations utilities
-│   │   │   └── trading_statistics_utils/         # Trading statistics utilities
-│   │   │       ├── __init__.py
-│   │   │       ├── volume_utils.py               # Trade volume analysis utilities
-│   │   │       └── trade_duration_utils.py       # Trade duration analysis utilities
+│   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── ibkr_utils/                           # IBKR Utilities
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
@@ -49,7 +33,7 @@ trading-bot/
 │   │   ├── file_utils.py                         # File utilities
 │   │   └── webhook_utils.py                      # Webhook utilities
 │   └── __init__.py
-├── tests/                                        # Tests directory
+├── tests/                                        Tests directory
 │   ├── routes/
 │   │   └── test_webhook.py                       # Webhook tests
 │   ├── services/
