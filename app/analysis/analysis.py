@@ -8,7 +8,7 @@ import pandas as pd
 
 from app.utils.analisys_utils import clean_alerts_data, clean_trade_data
 from app.utils.api_utils import api_get
-from app.utils.file_utils import load_file, json_to_dataframe
+from app.utils.file_utils import load_file, load_data_from_json_files, json_to_dataframe
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
 
@@ -16,33 +16,20 @@ from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 # TODO: Consider splitting analysis into separate files for alerts and trades
 
 def get_alerts_data():
-    # Fetch all json files in ALERTS_DIR
-    file_pattern = os.path.join(ALERTS_DIR, "alerts_*.json")
-    alert_files = sorted(glob(file_pattern))
+    alerts_df = load_data_from_json_files(
+        directory=ALERTS_DIR,
+        file_prefix="alerts",
+        date_fields=['timestamp'],
+        datetime_format='%y-%m-%d %H:%M:%S',
+        index_name='timestamp'
+    )
 
-    data_frames = []
-    for alert_file in alert_files:
-        # load individual daily alerts json file
-        daily_alerts_json = load_file(alert_file)
-
-        if daily_alerts_json:  # Check if data exists for the day
-            daily_alerts_df = json_to_dataframe(
-                daily_alerts_json,
-                date_fields=['timestamp'],
-                datetime_format='%y-%m-%d %H:%M:%S',
-                orient='index',
-                index_name='timestamp'
-            )
-            data_frames.append(daily_alerts_df)
-
-    # Combine all daily dataframes if there's data
-    if data_frames:
-        alerts_df = pd.concat(data_frames).sort_index()
-        # Cleaning the combined alerts DataFrame
+    if not alerts_df.empty:
         alerts_df = clean_alerts_data(alerts_df)
+        # Explicitly sort by 'timestamp'
+        alerts_df = alerts_df.sort_values('timestamp').reset_index(drop=True)
         return alerts_df
     else:
-        # Return empty dataframe if no data found
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
@@ -104,40 +91,22 @@ def fetch_trades_data():
 
 
 def get_trades_data():
-    # Fetch all json files in TRADES_DIR
-    file_pattern = os.path.join(TRADES_DIR, "trades_*.json")
-    trade_files = sorted(glob(file_pattern))
+    trades_df = load_data_from_json_files(
+        directory=TRADES_DIR,
+        file_prefix="trades",
+        date_fields=['trade_time'],
+        datetime_format='%Y%m%d-%H:%M:%S',
+        index_name='trade_time'
+    )
 
-    data_frames = []
-    for trade_file in trade_files:
-        # load individual daily trades json file
-        daily_trades_json = load_file(trade_file)
-
-        if daily_trades_json:
-            daily_trades_df = json_to_dataframe(
-                daily_trades_json,
-                date_fields=['trade_time'],
-                datetime_format='%Y%m%d-%H:%M:%S',
-                orient='index',
-                index_name='trade_time'
-            )
-            data_frames.append(daily_trades_df)
-
-    # Combine all daily dataframes if there's data
-    if data_frames:
-        trades_df = pd.concat(data_frames).sort_index()
-        print(trades_df)
-
-        # Cleaning the combined alerts DataFrame
+    if not trades_df.empty:
         trades_df = clean_trade_data(trades_df)
-
         # Explicitly sort by 'trade_time'
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
-
         return trades_df
     else:
-        # Return empty dataframe if no data found
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
+
 
 
 def calculate_alerts_pnl(alerts_df):
@@ -198,8 +167,8 @@ def calculate_alerts_pnl(alerts_df):
 
 
 def run_analysis():
-    # alerts_data = get_alerts_data()
-    fetch_trades_data()
+    alerts_data = get_alerts_data()
+    print(alerts_data)
     trades_data = get_trades_data()
     print(trades_data)
 

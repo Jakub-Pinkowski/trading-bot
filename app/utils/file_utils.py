@@ -2,6 +2,7 @@ import json
 import os
 
 import pandas as pd
+from glob import glob
 
 
 def load_file(file_path):
@@ -11,6 +12,32 @@ def load_file(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
     return data
+
+
+def load_data_from_json_files(directory, file_prefix, date_fields, datetime_format, index_name):
+    file_pattern = os.path.join(directory, f"{file_prefix}_*.json")
+    files = sorted(glob(file_pattern))
+
+    data_frames = []
+    for file_path in files:
+        file_json = load_file(file_path)
+
+        if file_json:
+            file_df = json_to_dataframe(
+                file_json,
+                date_fields=date_fields,
+                datetime_format=datetime_format,
+                orient='index',
+                index_name=index_name
+            )
+            data_frames.append(file_df)
+
+    if data_frames:
+        # Combine and sort by index initially
+        combined_df = pd.concat(data_frames).sort_index().reset_index(drop=True)
+        return combined_df
+    else:
+        return pd.DataFrame()  # Return empty DataFrame if no data found
 
 
 def save_file(data, file_path):
