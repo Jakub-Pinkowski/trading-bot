@@ -83,7 +83,7 @@ def get_trades_data():
     # Get trades from the last week
     endpoint = "iserver/account/trades?days=7"
 
-    # BUG: Sometimes the api returns an empty array, but works on a second/third try
+    # BUG: Sometimes the API returns an empty array, but works on a second/third try
 
     try:
         trades_json = api_get(BASE_URL + endpoint)
