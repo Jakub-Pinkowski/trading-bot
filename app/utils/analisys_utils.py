@@ -53,7 +53,7 @@ def clean_trade_data(trades_df):
     return cleaned_df
 
 
-def split_and_save_trades_by_date(trades_json, trades_dir, timezone="Europe/Berlin"):
+def save_trades_data(trades_json, trades_dir, timezone="Europe/Berlin"):
     trades_by_day = {}
 
     # Organize trades by extracting the date from each trade's timestamp

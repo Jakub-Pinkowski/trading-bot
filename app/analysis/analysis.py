@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, split_and_save_trades_by_date
+from app.utils.analisys_utils import clean_alerts_data, clean_trade_data, save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
@@ -28,12 +28,10 @@ def get_alerts_data():
 
 
 # TODO: Actually use it somewhere
-
+# BUG: Sometimes the API returns an empty array, but works on a second/third try
 def fetch_trades_data():
     # Fetch trades from the last week
     endpoint = "iserver/account/trades?days=7"
-
-    # BUG: Sometimes the API returns an empty array, but works on a second/third try
 
     try:
         trades_json = api_get(BASE_URL + endpoint)
@@ -41,7 +39,7 @@ def fetch_trades_data():
         if not trades_json:
             return {"success": False, "error": "No data returned from IBKR API"}
 
-        split_and_save_trades_by_date(trades_json, TRADES_DIR)
+        save_trades_data(trades_json, TRADES_DIR)
 
         return {"success": True, "message": "Trades fetched successfully"}
 
