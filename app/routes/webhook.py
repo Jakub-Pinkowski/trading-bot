@@ -13,7 +13,7 @@ def safe_process_trading_data(data):
     except Exception as e:
         # Log the exception without aborting the request
         print(f"Error processing TradingView webhook: {e}")
-        # TODO: store errors in a logging/monitoring system here.
+        # TODO: store errors in a logging/monitoring system
 
 
 @webhook_blueprint.route('/webhook', methods=['POST'])
