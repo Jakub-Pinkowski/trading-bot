@@ -2,11 +2,11 @@ import time
 
 import pandas as pd
 
+from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trade_data, save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from config import ALERTS_DIR
 from config import BASE_URL, TRADES_DIR
-from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trade_data, save_trades_data
 
 
 def get_alerts_data():
@@ -19,9 +19,12 @@ def get_alerts_data():
     )
 
     if not alerts_df.empty:
-        alerts_df = clean_alerts_data(alerts_df)
-        # Explicitly sort by 'timestamp'
+        # Sort the DataFrame by 'timestamp' before cleaning
         alerts_df = alerts_df.sort_values('timestamp').reset_index(drop=True)
+
+        # Clean the data
+        alerts_df = clean_alerts_data(alerts_df)
+
         return alerts_df
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
@@ -43,6 +46,7 @@ def get_trades_data():
         return trades_df
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
+
 
 # TODO: Run it with a scheduler
 def fetch_trades_data(max_retries=3, retry_delay=2):

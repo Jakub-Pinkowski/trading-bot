@@ -26,8 +26,18 @@ def clean_alerts_data(df, default_value="NO"):
     else:
         df["dummy"] = df["dummy"].fillna(default_value)
 
-    # Clean symbol column using parse_symbol
+    # Clean symbol
     df["symbol"] = df["symbol"].apply(parse_symbol)
+
+    # Remove consecutive orders on the same side for a given symbol
+    df['prev_symbol'] = df['symbol'].shift(1)
+    df['prev_side'] = df['side'].shift(1)
+
+    # Filter out consecutive orders with the same symbol and side
+    df = df[~((df['symbol'] == df['prev_symbol']) & (df['side'] == df['prev_side']))]
+
+    # Drop temporary columns
+    df = df.drop(columns=['prev_symbol', 'prev_side'])
 
     return df
 
