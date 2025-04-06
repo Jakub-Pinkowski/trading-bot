@@ -1,5 +1,5 @@
 from app.analysis.data_fetching import get_alerts_data, get_trades_data
-from app.analysis.performance_metrics.pnl import match_trades
+from app.utils.analysis_utils.analisys_utils import match_trades
 
 
 def run_analysis():
