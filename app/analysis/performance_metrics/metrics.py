@@ -53,9 +53,9 @@ def add_metrics(matched_trades):
         })
 
     # Convert the results to a DataFrame
-    df_pnl = pd.DataFrame(trades)
+    df = pd.DataFrame(trades)
 
     # Sort by start time and reset index
-    df_pnl = df_pnl.sort_values(by='start_time').reset_index(drop=True)
+    df = df.sort_values(by='start_time').reset_index(drop=True)
 
-    return df_pnl
+    return df
