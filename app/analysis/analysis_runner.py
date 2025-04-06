@@ -7,8 +7,6 @@ def run_analysis():
     print(alerts_data)
     trades_data = get_trades_data()
 
-
     pnl = calculate_pnl(trades_data)
-
 
     # pnl_alerts = calculate_alerts_pnl(alerts_data)
