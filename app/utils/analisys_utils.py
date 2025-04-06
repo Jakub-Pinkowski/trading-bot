@@ -1,6 +1,16 @@
-from datetime import datetime, timedelta
+from fractions import Fraction
 
 import pandas as pd
+
+
+def fractional_to_decimal(price_str):
+    if isinstance(price_str, str) and ' ' in price_str:
+        whole, frac = price_str.split(' ', 1)
+        return float(whole) + float(Fraction(frac))
+    elif isinstance(price_str, str) and '/' in price_str:
+        return float(Fraction(price_str))
+    else:
+        return float(price_str)
 
 
 def clean_alerts_data(df, default_value="NO"):
@@ -30,22 +40,10 @@ def clean_trade_data(trades_df):
     # Ensure correct datatypes explicitly
     cleaned_df["trade_time"] = pd.to_datetime(cleaned_df["trade_time"])
     cleaned_df["size"] = cleaned_df["size"].astype(float)
-    cleaned_df["price"] = cleaned_df["price"].astype(float)
     cleaned_df["commission"] = cleaned_df["commission"].astype(float)
     cleaned_df["net_amount"] = cleaned_df["net_amount"].astype(float)
 
+    # Convert fractional price strings properly
+    cleaned_df["price"] = cleaned_df["price"].apply(fractional_to_decimal)
+
     return cleaned_df
-
-
-def filter_yesterdays_data(df, timestamp_column='trade_time'):
-    today = datetime.now().date()
-    yesterday = today - timedelta(days=1)
-    start_time = datetime.combine(yesterday, datetime.min.time())
-    end_time = datetime.combine(today, datetime.min.time())
-
-    filtered_df = df[
-        (df[timestamp_column] >= start_time) &
-        (df[timestamp_column] < end_time)
-        ]
-
-    return filtered_df

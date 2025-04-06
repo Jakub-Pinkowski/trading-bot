@@ -11,42 +11,9 @@ from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file, json_to_dataframe
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR
 
+
 # TODO: The whole file is a mess, clean it up
 # TODO: Consider splitting analysis into separate files for alerts and trades
-
-def split_and_save_trades_by_date(trades_json, trades_dir, timezone="Europe/Berlin"):
-    trades_by_day = {}
-
-    # Organize trades by extracting the date from each trade's timestamp
-    for trade in trades_json:
-        # Parse trade_time to datetime object
-        trade_datetime = datetime.strptime(trade["trade_time"], "%Y%m%d-%H:%M:%S").astimezone(ZoneInfo(timezone))
-        trade_date = trade_datetime.strftime("%Y-%m-%d")
-
-        # Initialize list if date not encountered yet
-        trades_by_day.setdefault(trade_date, []).append(trade)
-
-    # Save each day's trades into respective JSON file or one cumulative JSON
-    for date, daily_trades in trades_by_day.items():
-        daily_file_path = os.path.join(trades_dir, f'trades_{date}.json')
-
-        # If file exists, load previous contents and append new trades
-        if os.path.exists(daily_file_path):
-            with open(daily_file_path, 'r') as file:
-                existing_data = json.load(file)
-                if isinstance(existing_data, list):
-                    existing_data.extend(daily_trades)
-                else:
-                    existing_data = daily_trades
-        else:
-            existing_data = daily_trades
-
-        # Save the data to file
-        with open(daily_file_path, 'w') as file:
-            json.dump(existing_data, file, indent=4)
-
-    print(f"Trades successfully separated and saved by date in {trades_dir}")
-
 
 def get_alerts_data():
     # Fetch all json files in ALERTS_DIR
@@ -79,8 +46,45 @@ def get_alerts_data():
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
-def get_trades_data():
-    # Get trades from the last week
+def split_and_save_trades_by_date(trades_json, trades_dir, timezone="Europe/Berlin"):
+    trades_by_day = {}
+
+    # Organize trades by extracting the date from each trade's timestamp
+    for trade in trades_json:
+        trade_datetime = datetime.strptime(trade["trade_time"], "%Y%m%d-%H:%M:%S").astimezone(ZoneInfo(timezone))
+        trade_date = trade_datetime.strftime("%Y-%m-%d")
+        trades_by_day.setdefault(trade_date, []).append(trade)
+
+    # Save unique trades only
+    for date, daily_trades in trades_by_day.items():
+        daily_file_path = os.path.join(trades_dir, f'trades_{date}.json')
+
+        # Use execution_id as unique identifier
+        unique_trades = {}
+
+        # Load existing trades if file exists to avoid duplicates
+        if os.path.exists(daily_file_path):
+            with open(daily_file_path, 'r') as file:
+                existing_data = json.load(file)
+                if isinstance(existing_data, list):
+                    for trade in existing_data:
+                        unique_trades[trade["execution_id"]] = trade
+
+        # Add current trades (automatically overriding duplicates)
+        for trade in daily_trades:
+            unique_trades[trade["execution_id"]] = trade
+
+        # Save back to file
+        with open(daily_file_path, 'w') as file:
+            json.dump(list(unique_trades.values()), file, indent=4)
+
+    print(f"Trades successfully separated, deduplicated by execution_id, and saved by date in {trades_dir}")
+
+
+# TODO: Actually use it somewhere
+
+def fetch_trades_data():
+    # Fetch trades from the last week
     endpoint = "iserver/account/trades?days=7"
 
     # BUG: Sometimes the API returns an empty array, but works on a second/third try
@@ -93,20 +97,47 @@ def get_trades_data():
 
         split_and_save_trades_by_date(trades_json, TRADES_DIR)
 
-        # Create DataFrame from returned data and convert trade_time to datetime object
-        trades_df = json_to_dataframe(
-            trades_json,
-            date_fields=['trade_time'],
-            datetime_format='%Y%m%d-%H:%M:%S'
-        )
-
-        # Clean the DataFrame
-        cleaned_df = clean_trade_data(trades_df)
-
-        return cleaned_df
+        return {"success": True, "message": "Trades fetched successfully"}
 
     except Exception as err:
         return {"success": False, "error": f"Unexpected error: {err}"}
+
+
+def get_trades_data():
+    # Fetch all json files in TRADES_DIR
+    file_pattern = os.path.join(TRADES_DIR, "trades_*.json")
+    trade_files = sorted(glob(file_pattern))
+
+    data_frames = []
+    for trade_file in trade_files:
+        # load individual daily trades json file
+        daily_trades_json = load_file(trade_file)
+
+        if daily_trades_json:
+            daily_trades_df = json_to_dataframe(
+                daily_trades_json,
+                date_fields=['trade_time'],
+                datetime_format='%Y%m%d-%H:%M:%S',
+                orient='index',
+                index_name='trade_time'
+            )
+            data_frames.append(daily_trades_df)
+
+    # Combine all daily dataframes if there's data
+    if data_frames:
+        trades_df = pd.concat(data_frames).sort_index()
+        print(trades_df)
+
+        # Cleaning the combined alerts DataFrame
+        trades_df = clean_trade_data(trades_df)
+
+        # Explicitly sort by 'trade_time'
+        trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
+
+        return trades_df
+    else:
+        # Return empty dataframe if no data found
+        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
 def calculate_alerts_pnl(alerts_df):
@@ -167,8 +198,9 @@ def calculate_alerts_pnl(alerts_df):
 
 
 def run_analysis():
-    alerts_data = get_alerts_data()
+    # alerts_data = get_alerts_data()
+    fetch_trades_data()
     trades_data = get_trades_data()
-    print("trades_data: ", trades_data)
+    print(trades_data)
 
     # pnl_alerts = calculate_alerts_pnl(alerts_data)
