@@ -1,5 +1,6 @@
 import pandas as pd
 
+# TODO: Handle trading multiple positions in a trade
 def match_trades(trades):
     open_trades = {}
     processed_trades = []
@@ -29,57 +30,66 @@ def match_trades(trades):
         if symbol not in open_trades:
             open_trades[symbol] = []
 
-        if side == 'B':
+        if side == 'B':  # Buy
             if open_trades[symbol] and open_trades[symbol][0]['side'] == 'S':
                 # Closing short position
                 open_trade = open_trades[symbol].pop(0)
+                closing_size = min(open_trade['size'], size)  # Close as many as possible
                 processed_trades.append({
                     'start_time': open_trade['trade_time'],
                     'end_time': trade_time,
                     'symbol': symbol,
                     'entry_side': open_trade['side'],
                     'entry_price': open_trade['price'],
-                    'entry_net_amount': open_trade['price'] * size * multiplier,
+                    'entry_net_amount': open_trade['price'] * closing_size * multiplier,
                     'exit_side': side,
                     'exit_price': price,
-                    'size': size,
-                    'exit_net_amount': price * size * multiplier,
+                    'size': closing_size,
+                    'exit_net_amount': price * closing_size * multiplier,
                     'total_commission': commission + open_trade['commission'],
                 })
-            else:
+                size -= closing_size  # Remaining size to open a new position
+
+            # If there's still remaining size, open a new buy position
+            if size > 0:
                 open_trades[symbol].append({
                     'side': side,
                     'price': price,
                     'commission': commission,
+                    'size': size,
                     'trade_time': trade_time
                 })
 
-        elif side == 'S':
+        elif side == 'S':  # Sell
             if open_trades[symbol] and open_trades[symbol][0]['side'] == 'B':
                 # Closing long position
                 open_trade = open_trades[symbol].pop(0)
+                closing_size = min(open_trade['size'], size)  # Close as many as possible
                 processed_trades.append({
                     'start_time': open_trade['trade_time'],
                     'end_time': trade_time,
                     'symbol': symbol,
                     'entry_side': open_trade['side'],
                     'entry_price': open_trade['price'],
+                    'entry_net_amount': open_trade['price'] * closing_size * multiplier,
                     'exit_side': side,
                     'exit_price': price,
-                    'size': size,
-                    'entry_net_amount': open_trade['price'] * size * multiplier,
-                    'exit_net_amount': price * size * multiplier,
+                    'size': closing_size,
+                    'exit_net_amount': price * closing_size * multiplier,
                     'total_commission': commission + open_trade['commission'],
                 })
-            else:
+                size -= closing_size  # Remaining size to open a new position
+
+            # If there's still remaining size, open a new sell position
+            if size > 0:
                 open_trades[symbol].append({
                     'side': side,
                     'price': price,
                     'commission': commission,
+                    'size': size,
                     'trade_time': trade_time
                 })
 
-    # Convert the list of processed trades into a DataFrame
     df = pd.DataFrame(processed_trades)
     df = df.sort_values(by='start_time').reset_index(drop=True)
     return df
