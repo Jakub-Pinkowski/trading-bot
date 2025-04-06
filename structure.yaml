@@ -2,12 +2,17 @@ trading-bot/
 ├── app/
 │   ├── analysis/
 │   │   ├── __init__.py
-│   │   ├── data_fetching.py               # Data fetching logic 
-│   │   ├── analysis_runner.py             # Entry point and orchestrator for analysis
-│   │   └── performance_metrics/           # Performance metrics calculations
+│   │   ├── data_fetching.py                  # Data fetching logic
+│   │   ├── analysis_runner.py                # Entry point and orchestrator for analysis
+│   │   ├── performance_metrics/              # Calculations related to trading performance/results
+│   │   │   ├── __init__.py
+│   │   │   ├── pnl.py                        # Profit-and-loss calculation logic
+│   │   │   ├── roi.py                        # Return on investment calculations
+│   │   │   └── winrate.py                    # Win/loss ratio calculations
+│   │   └── trading_statistics/               # Statistics about trading activities
 │   │       ├── __init__.py
-│   │       ├── pnl.py                     # PnL calculation logic
-│   │       └── volume.py                  # Volume analysis logic
+│   │       ├── volume.py                     # Trade volume analysis logic
+│   │       ├── trade_duration.py             # Trade duration and timing analysis
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                      # Webhooks from TradingView
