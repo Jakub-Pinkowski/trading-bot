@@ -14,8 +14,35 @@ def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size
     return pnl, pnl_pct
 
 
+def calculate_trade_duration(start_time, end_time):
+    return (end_time - start_time).total_seconds() / 60.0
+
+
+def calculate_absolute_return(entry_price, exit_price, entry_side):
+    abs_return = exit_price - entry_price
+    if entry_side == 'S':  # For short trades, reverse the sign
+        abs_return *= -1
+    return abs_return
+
+
+def calculate_return_points(abs_return, size):
+    return abs_return * size
+
+
+def calculate_commission_pct(total_commission, entry_net_amount):
+    if entry_net_amount == 0:  # Avoid division by zero
+        return 0
+    return (total_commission / entry_net_amount) * 100
+
+
+def calculate_price_move_pct(entry_price, exit_price):
+    if entry_price == 0:  # Avoid division by zero
+        return 0
+    return ((exit_price - entry_price) / entry_price) * 100
+
+
 def add_metrics(matched_trades):
-    # List to hold processed trades with PnL
+    # List to hold processed trades
     trades = []
 
     # Process each matched trade
@@ -32,8 +59,13 @@ def add_metrics(matched_trades):
         entry_trade_time = row['start_time']
         exit_trade_time = row['end_time']
 
-        # Calculate PnL
+        # Calculate all the metrics
         pnl, pnl_pct = calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission)
+        trade_duration = calculate_trade_duration(entry_trade_time, exit_trade_time)
+        abs_return = calculate_absolute_return(entry_price, exit_price, entry_side)
+        return_points = calculate_return_points(abs_return, size)
+        commission_pct = calculate_commission_pct(total_commission, entry_net_amount)
+        price_move_pct = calculate_price_move_pct(entry_price, exit_price)
 
         # Append the results to the trades list
         trades.append({
@@ -50,6 +82,11 @@ def add_metrics(matched_trades):
             'total_commission': total_commission,
             'pnl': pnl,
             'pnl_pct': pnl_pct,
+            'trade_duration': trade_duration,
+            'abs_return': abs_return,
+            'return_points': return_points,
+            'commission_pct': commission_pct,
+            'price_move_pct': price_move_pct,
         })
 
     # Convert the results to a DataFrame
