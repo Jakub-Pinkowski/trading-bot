@@ -26,10 +26,6 @@ def clean_alerts_data(df, default_value="NO"):
     else:
         df["dummy"] = df["dummy"].fillna(default_value)
 
-    # TODO: Can be deleted later
-    # Standardize order column: BUY → B, SELL → S
-    df["order"] = df["order"].replace({"BUY": "B", "SELL": "S"})
-
     # Clean symbol column using parse_symbol
     df["symbol"] = df["symbol"].apply(parse_symbol)
 
