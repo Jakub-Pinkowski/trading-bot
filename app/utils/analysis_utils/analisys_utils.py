@@ -66,5 +66,12 @@ def match_trades(trades):
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 
     df = pd.DataFrame(processed_trades)
+
+    # Format prices to 2 decimals and net amounts to 0 decimals
+    df['entry_price'] = df['entry_price'].round(2)
+    df['exit_price'] = df['exit_price'].round(2)
+    df['entry_net_amount'] = df['entry_net_amount'].round(0).astype(int)
+    df['exit_net_amount'] = df['exit_net_amount'].round(0).astype(int)
+
     df = df.sort_values(by='start_time').reset_index(drop=True)
     return df

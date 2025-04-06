@@ -89,8 +89,7 @@ trading-bot/
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Data analysis
-# TODO: Create a tool to save trades
-# TODO: Create a tool to analyse performance
+# TODO: Potentially remove rounding in the analysis
 
 # Developer
 # TODO: Add/update unit tests for every component
