@@ -7,7 +7,7 @@ from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clea
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from config import ALERTS_DIR
-from config import BASE_URL, TRADES_DIR
+from config import BASE_URL, TRADES_DIR, TIMEFRAME_TO_ANALYZE
 
 
 def get_alerts_data():
@@ -47,7 +47,7 @@ def get_trades_data():
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
 
         # Filter data to include trades only from the last 7 days
-        seven_days_ago = datetime.now() - timedelta(days=7)
+        seven_days_ago = datetime.now() - timedelta(days=TIMEFRAME_TO_ANALYZE)
         trades_df = trades_df[trades_df['trade_time'] >= seven_days_ago]
 
         return trades_df

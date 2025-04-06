@@ -14,9 +14,10 @@ TRADES_DIR = os.path.join(DATA_DIR, "trades")
 # File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")
 
-
-
 # Strategy
 MIN_DAYS_UNTIL_EXPIRY = 60
 AGGRESSIVE_TRADING = True
 QUANTITY_TO_TRADE = 1
+
+# Analysis
+TIMEFRAME_TO_ANALYZE = 7 # In days
