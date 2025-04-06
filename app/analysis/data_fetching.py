@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -30,6 +31,7 @@ def get_alerts_data():
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
 
+# NOTE: Returns data from the last 7 days
 def get_trades_data():
     trades_df = load_data_from_json_files(
         directory=TRADES_DIR,
@@ -43,12 +45,16 @@ def get_trades_data():
         trades_df = clean_trade_data(trades_df)
         # Explicitly sort by 'trade_time'
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
+
+        # Filter data to include trades only from the last 7 days
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        trades_df = trades_df[trades_df['trade_time'] >= seven_days_ago]
+
         return trades_df
     else:
-        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
+        return pd.DataFrame(columns=['symbol', 'order', 'price', 'trade_time'])
 
 
-# TODO: Run it with a scheduler
 def fetch_trades_data(max_retries=3, retry_delay=2):
     endpoint = "iserver/account/trades?days=7"
     attempt = 0
