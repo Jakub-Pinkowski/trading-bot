@@ -1,6 +1,7 @@
 from app.analysis.data_fetching import get_alerts_data, get_trades_data
 from app.analysis.performance_metrics.metrics import add_per_trade_metrics
 from app.utils.analysis_utils.analisys_utils import match_trades
+from app.analysis.dataset_metrics import calculate_dataset_metrics
 
 
 def run_analysis():
@@ -12,5 +13,8 @@ def run_analysis():
 
     trades_with_per_trade_metrics = add_per_trade_metrics(matched_trades)
     print(trades_with_per_trade_metrics)
+
+    dataset_metrics = calculate_dataset_metrics(trades_with_per_trade_metrics)
+    print(dataset_metrics)
 
     # pnl_alerts = calculate_alerts_pnl(alerts_data)
