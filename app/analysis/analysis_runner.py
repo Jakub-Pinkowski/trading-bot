@@ -13,10 +13,8 @@ def run_analysis():
     matched_trades = match_trades(trades_data)
 
     trades_with_per_trade_metrics = add_per_trade_metrics(matched_trades)
-    print(trades_with_per_trade_metrics)
 
     dataset_metrics = calculate_dataset_metrics(trades_with_per_trade_metrics)
-    print(dataset_metrics)
 
     # TODO: Add automatic Google Sheets integration
     # Save data to CSV

@@ -63,7 +63,6 @@ def save_to_csv(data, file_path, dictionary_columns=None):
         else:
             raise ValueError("Data must be either a Pandas DataFrame or a dictionary.")
 
-        print(f"Data successfully saved to {file_path}")
 
     except Exception as e:
         logger.error(f"Error saving data to CSV file: {e}")
