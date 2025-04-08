@@ -71,7 +71,11 @@ trading-bot/
 # Functionality
 # BUG:  I lose access and can't trade after a while - happens when laptop goes to sleep       - TO CHECK
 # BUG:  Tickling doesn't work reliably - happens when laptop goes to sleep                    - TO CHECK
+# TODO: Make sure my webhook is available 24/7 - PRIO NUMBER 1
+# TODO: Setup alerts with different time intervals and track the data
+# TODO: IDEA Set up some endpoint that's available 24/7 and send the webhooks there and then analyze the alerts data to compare intervals
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Backtest the data (HOW?)
 # TODO: Analyze data in Google Sheets with charts etc.
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
