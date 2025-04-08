@@ -1,4 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
+import time
+
 
 from app.utils.api_utils import api_get, api_post
 from config import BASE_URL
@@ -9,8 +11,13 @@ scheduler = BackgroundScheduler()
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
+    start_time = time.time()
+
     try:
+        print("Starting tickle job...")
         api_post(BASE_URL + endpoint, payload)
+        print(f"Tickle job completed in {time.time() - start_time} seconds.")
+
     except Exception as e:
         print(f"Error tickling IBKR API: {e}")
 

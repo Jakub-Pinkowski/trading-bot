@@ -3,18 +3,18 @@ from app.utils.ibkr_utils.orders_utils import suppress_messages, get_contract_po
 from config import BASE_URL, ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
 
 
-def place_order(conid, order):
+def place_order(conid, side):
     contract_position = get_contract_position(conid)
 
     quantity = QUANTITY_TO_TRADE
 
     # Existing position opposite to incoming signal; adjust quantity if aggressive trading
-    if (contract_position > 0 and order == "SELL") or (contract_position < 0 and order == "BUY"):
+    if (contract_position > 0 and side == "S") or (contract_position < 0 and side == "B"):
         if AGGRESSIVE_TRADING:
             quantity *= 2
 
     # Existing position same as incoming signal; no action needed
-    elif (contract_position > 0 and order == "BUY") or (contract_position < 0 and order == "SELL"):
+    elif (contract_position > 0 and side == "B") or (contract_position < 0 and side == "S"):
         return {"success": True, "message": "No action needed: already in desired position"}
 
     # Buy the default quantity if no position is present
@@ -24,7 +24,7 @@ def place_order(conid, order):
             {
                 "conid": conid,
                 "orderType": "MKT",
-                "side": order,
+                "side": side,
                 "tif": "DAY",
                 "quantity": quantity,
             }
@@ -39,7 +39,7 @@ def place_order(conid, order):
             message_ids = order_response[0].get('messageIds', [])
             if message_ids:
                 suppress_messages(message_ids)
-                return place_order(conid, order)
+                return place_order(conid, side)
 
         # Handle specific scenarios if "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
