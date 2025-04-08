@@ -13,7 +13,6 @@ def tickle_ibkr_api():
     payload = {}
 
     try:
-        print("Tickling IBKR API...")
         api_post(BASE_URL + endpoint, payload)
 
     except Exception as e:

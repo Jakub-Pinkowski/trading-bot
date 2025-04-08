@@ -42,15 +42,13 @@ def get_trades_data():
 
     if not trades_df.empty:
         trades_df = clean_trade_data(trades_df)
-        # Explicitly sort by 'trade_time'
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
 
         # Filter data to only include trades from the last 7 days
         seven_days_ago = datetime.now() - timedelta(days=TIMEFRAME_TO_ANALYZE)
         trades_last_7_days = trades_df[trades_df['trade_time'] >= seven_days_ago]
 
-        # TODO: We might wanna fetch the data with a bit higher frequency
-        # Check if any data exists within the last 7 days
+        # Return if any data exists within the last 7 days
         if not trades_last_7_days.empty:
             return trades_last_7_days
 
@@ -60,7 +58,8 @@ def get_trades_data():
         # Reload the data after fetching new trades
         return get_trades_data()
     else:
-        return pd.DataFrame(columns=['symbol', 'order', 'price', 'trade_time'])
+        # Return an empty DataFrame if all attempts fail
+        return pd.DataFrame(columns=['conid', 'side', 'price', 'trade_time'])
 
 
 def fetch_trades_data(max_retries=3, retry_delay=2):
