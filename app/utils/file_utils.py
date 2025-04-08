@@ -46,16 +46,23 @@ def save_file(data, file_path):
         json.dump(data, file, indent=4)  # type: ignore[arg-type]
 
 
-def save_to_csv(data, file_path):
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+def save_to_csv(data, file_path, dictionary_columns=None):
+    try:
+        if isinstance(data, pd.DataFrame):
+            # Directly save the DataFrame
+            data.to_csv(file_path, index=False)
+        elif isinstance(data, dict):
+            # Convert dictionary to DataFrame and save
+            columns = dictionary_columns if dictionary_columns else ["Key", "Value"]
+            df = pd.DataFrame(list(data.items()), columns=columns)
+            df.to_csv(file_path, index=False)
+        else:
+            raise ValueError("Data must be either a Pandas DataFrame or a dictionary.")
 
-    # Check if the file exists to determine header inclusion
-    if os.path.isfile(file_path):
-        # Append data without headers
-        data.to_csv(file_path, mode='a', index=False, header=False)
-    else:
-        # Write new CSV with headers
-        data.to_csv(file_path, mode='w', index=False, header=True)
+        print(f"Data successfully saved to {file_path}")
+
+    except Exception as e:
+        print(f"An error occurred while saving to CSV: {e}")
 
 
 def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):
