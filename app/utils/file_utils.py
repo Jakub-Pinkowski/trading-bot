@@ -4,6 +4,10 @@ from glob import glob
 
 import pandas as pd
 
+from app.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def load_file(file_path):
     if not os.path.exists(file_path):
@@ -62,7 +66,7 @@ def save_to_csv(data, file_path, dictionary_columns=None):
         print(f"Data successfully saved to {file_path}")
 
     except Exception as e:
-        print(f"An error occurred while saving to CSV: {e}")
+        logger.error(f"Error saving data to CSV file: {e}")
 
 
 def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):
