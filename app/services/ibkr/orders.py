@@ -5,7 +5,6 @@ from config import BASE_URL, ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
 
 def place_order(conid, order):
     contract_position = get_contract_position(conid)
-    print(f"Contract {conid} current position: {contract_position}")
 
     quantity = QUANTITY_TO_TRADE
 
@@ -18,7 +17,6 @@ def place_order(conid, order):
     elif (contract_position > 0 and order == "BUY") or (contract_position < 0 and order == "SELL"):
         return {"success": True, "message": "No action needed: already in desired position"}
 
-    print("quantity: ", quantity)
     # Buy the default quantity if no position is present
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
     order_details = {
