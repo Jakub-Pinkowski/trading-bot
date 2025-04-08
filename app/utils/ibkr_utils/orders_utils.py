@@ -6,7 +6,6 @@ def invalidate_cache():
 
     try:
         api_post(BASE_URL + endpoint, {})
-        print("Cache invalidated successfully.")
     except Exception as err:
         print(f"Unexpected error invalidating cache: {err}")
 

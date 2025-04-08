@@ -76,4 +76,5 @@ trading-bot/
 # TODO: Potentially remove rounding in the analysis
 
 # Developer
+# TODO: Improve logging
 # TODO: Add/update unit tests for every component

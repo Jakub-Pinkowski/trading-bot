@@ -66,7 +66,6 @@ def match_trades(trades):
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 
     df = pd.DataFrame(processed_trades)
-    print(df)
 
     # Format prices to 2 decimals and net amounts to 0 decimals
     df['entry_price'] = df['entry_price'].round(2)

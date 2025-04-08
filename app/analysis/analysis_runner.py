@@ -9,7 +9,6 @@ def run_analysis():
     trades_data = get_trades_data()
 
     matched_trades = match_trades(trades_data)
-    print(matched_trades)
 
     trades_with_per_trade_metrics = add_per_trade_metrics(matched_trades)
     print(trades_with_per_trade_metrics)
