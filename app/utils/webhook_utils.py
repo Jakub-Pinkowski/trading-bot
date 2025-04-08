@@ -4,7 +4,11 @@ from zoneinfo import ZoneInfo
 
 from flask import abort
 
+from app.services.ibkr_service import process_trading_data
 from app.utils.file_utils import load_file, save_file
+from app.utils.logger import get_logger
+
+logger = get_logger()
 
 ALLOWED_IPS = {
     '52.89.214.238',
@@ -51,3 +55,13 @@ def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):
 
     # Save updated data to daily file
     save_file(alerts_data, daily_file_path)
+
+
+def safe_process_trading_data(data):
+    try:
+        process_trading_data(data)
+    except Exception as e:
+        logger.error(
+            f"Error processing TradingView webhook with data {data}: {e}",
+            exc_info=True
+        )

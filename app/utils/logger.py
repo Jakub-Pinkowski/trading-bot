@@ -15,7 +15,7 @@ def get_logger(name="app"):
 
     # File handler - write logs to a file
     file_handler = logging.FileHandler("logs/app.log")
-    file_handler.setLevel(logging.ERROR)  # Example: log only errors to the file
+    file_handler.setLevel(logging.ERROR)  # Log only errors to the file
 
     # Stream handler - for console output
     console_handler = logging.StreamHandler()
@@ -34,8 +34,3 @@ def get_logger(name="app"):
         logger.addHandler(console_handler)
 
     return logger
-
-
-# Example usage:
-logger = get_logger()
-logger.info("Logger initialized")
