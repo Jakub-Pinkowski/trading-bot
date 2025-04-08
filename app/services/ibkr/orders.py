@@ -66,7 +66,6 @@ def place_order(conid, side):
 
         # TODO: There are still more cases to handle besides these errors
         else:
-            print(f"Unexpected order response: {order_response}")
             return order_response
 
     except Exception as err:

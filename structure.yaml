@@ -72,11 +72,11 @@ trading-bot/
 # BUG:  I lose access and can't trade after a while - happens when laptop goes to sleep       - TO CHECK
 # BUG:  Tickling doesn't work reliably - happens when laptop goes to sleep                    - TO CHECK
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Analyze data in Google Sheets with charts etc.
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Data analysis
 # TODO: Potentially remove rounding in the analysis
 
 # Developer
-# TODO: Improve logging
 # TODO: Add/update unit tests for every component

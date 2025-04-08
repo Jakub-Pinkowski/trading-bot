@@ -51,8 +51,8 @@ def add_per_trade_metrics(matched_trades):
         entry_net_amount = row['entry_net_amount']
         exit_side = row['exit_side']
         exit_price = row['exit_price']
-        size = row['size']
         exit_net_amount = row['exit_net_amount']
+        size = row['size']
         total_commission = row['total_commission']
         entry_trade_time = row['start_time']
         exit_trade_time = row['end_time']
@@ -68,11 +68,11 @@ def add_per_trade_metrics(matched_trades):
         # Append the results to the trades list
         trades.append({
             'symbol': symbol,
-            'start_time': entry_trade_time,
+            'entry_time': entry_trade_time,
             'entry_side': entry_side,
             'entry_price': entry_price,
             'entry_net_amount': entry_net_amount,
-            'end_time': exit_trade_time,
+            'exit_time': exit_trade_time,
             'exit_side': exit_side,
             'exit_price': exit_price,
             'exit_net_amount': exit_net_amount,
@@ -81,15 +81,13 @@ def add_per_trade_metrics(matched_trades):
             'pnl': pnl,
             'pnl_pct': pnl_pct,
             'trade_duration': trade_duration,
-            'abs_return': abs_return,
-            'commission_pct': commission_pct,
-            'price_move_pct': price_move_pct,
         })
 
     # Convert the results to a DataFrame
     df = pd.DataFrame(trades)
 
+
     # Sort by start time and reset index
-    df = df.sort_values(by='start_time').reset_index(drop=True)
+    df = df.sort_values(by='entry_time').reset_index(drop=True)
 
     return df
