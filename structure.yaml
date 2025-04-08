@@ -30,6 +30,8 @@ trading-bot/
 │   │   │   └── orders_utils.py                   # Orders utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # General API utilities
+│   │   ├── generic_utils.py                      # Generic utilities
+│   │   ├── logger.py                             # Logger setup
 │   │   ├── file_utils.py                         # File utilities
 │   │   └── webhook_utils.py                      # Webhook utilities
 │   └── __init__.py
