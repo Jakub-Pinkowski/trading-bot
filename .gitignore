@@ -16,3 +16,6 @@ clientportal/
 
 # Data
 data/
+
+#Logs
+logs/
