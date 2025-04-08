@@ -14,7 +14,6 @@ def process_trading_data(trading_data):
     price = trading_data.get('price')
 
     if dummy == "YES":
-        print("dummy")
         return
 
     contract = get_contract_id(symbol)

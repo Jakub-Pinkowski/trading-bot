@@ -2,7 +2,10 @@ from datetime import datetime, timedelta
 
 from app.utils.api_utils import api_get
 from app.utils.generic_utils import parse_symbol
+from app.utils.logger import get_logger
 from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
+
+logger = get_logger()
 
 
 def fetch_contract(symbol):
@@ -13,7 +16,7 @@ def fetch_contract(symbol):
         contracts_data = api_get(BASE_URL + endpoint)
         return contracts_data.get(parsed_symbol, [])
     except Exception as err:
-        print(f"Unexpected error fetching contract details for {symbol}: {err}")
+        logger.error(f"Error fetching contract data: {err}")
         return []
 
 

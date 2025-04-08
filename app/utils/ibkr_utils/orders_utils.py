@@ -1,5 +1,9 @@
 from app.utils.api_utils import api_get, api_post
+from app.utils.logger import get_logger
 from config import BASE_URL, ACCOUNT_ID
+
+logger = get_logger()
+
 
 def invalidate_cache():
     endpoint = f"portfolio/{ACCOUNT_ID}/positions/invalidate"
@@ -7,7 +11,7 @@ def invalidate_cache():
     try:
         api_post(BASE_URL + endpoint, {})
     except Exception as err:
-        print(f"Unexpected error invalidating cache: {err}")
+        logger.error(f"Error invalidating cache: {err}")
 
 
 def get_contract_position(conid):
@@ -29,7 +33,7 @@ def get_contract_position(conid):
         return 0  # No position held (flat)
 
     except Exception as err:
-        print(f"Unexpected error retrieving position: {err}")
+        logger.error(f"Error fetching contract position: {err}")
         return 0
 
 
@@ -42,4 +46,4 @@ def suppress_messages(message_ids):
         print("Suppression successful:", suppression_response)
 
     except Exception as err:
-        print(f"Unexpected error during suppression: {err}")
+        logger.error(f"Error suppressing messages: {err}")
