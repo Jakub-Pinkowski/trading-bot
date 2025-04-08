@@ -6,8 +6,8 @@ ACCOUNT_ID = "DUE343675"
 
 # Data Directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
 DATA_DIR = os.path.join(BASE_DIR, "data")
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
 ALERTS_DIR = os.path.join(DATA_DIR, "alerts")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 TRADES_DIR = os.path.join(DATA_DIR, "trades")
