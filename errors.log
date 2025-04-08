@@ -27,3 +27,5 @@
 2025-04-08 18:49:40,895 - INFO - Job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-08 18:50:40 CEST)" executed successfully
 2025-04-08 18:50:40,711 - INFO - Running job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-08 18:51:40 CEST)" (scheduled at 2025-04-08 18:50:40.702196+02:00)
 2025-04-08 18:50:40,907 - INFO - Job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-08 18:51:40 CEST)" executed successfully
+2025-04-08 18:51:40,708 - INFO - Running job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-08 18:52:40 CEST)" (scheduled at 2025-04-08 18:51:40.702196+02:00)
+2025-04-08 18:51:40,910 - INFO - Job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-08 18:52:40 CEST)" executed successfully
