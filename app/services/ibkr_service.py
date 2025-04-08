@@ -13,10 +13,10 @@ def process_trading_data(trading_data):
     side = trading_data.get('side')
     price = trading_data.get('price')
 
+    contract = get_contract_id(symbol)
+
     if dummy == "YES":
         return
-
-    contract = get_contract_id(symbol)
 
     order = place_order(contract, side)
     print("order", order)

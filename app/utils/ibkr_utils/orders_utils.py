@@ -18,19 +18,20 @@ def get_contract_position(conid):
     # Invalidate cache to get the real contracts data
     invalidate_cache()
 
-    endpoint = f"portfolio/positions/{conid}"
+    endpoint = f"portfolio/{ACCOUNT_ID}/positions"
 
     try:
+        # Fetch all positions data
         positions = api_get(BASE_URL + endpoint)
-        for position_list in positions.values():
-            if isinstance(position_list, list):
-                for position in position_list:
-                    if position.get("conid") == conid:
-                        pos_quantity = position.get("position", 0)
-                        if pos_quantity != 0:
-                            # Return the actual position (- for short, + for long)
-                            return int(pos_quantity)
-        return 0  # No position held (flat)
+
+        # Iterate through the list of positions and find the one matching the conid
+        for position in positions:
+            if position.get("conid") == conid:
+                pos_quantity = position.get("position", 0)
+                return int(pos_quantity)  # Return found quantity (+/- values for positions)
+
+        return 0  # No position found for the given conid
+
 
     except Exception as err:
         logger.error(f"Error fetching contract position: {err}")
