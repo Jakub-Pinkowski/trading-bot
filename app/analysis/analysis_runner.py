@@ -18,5 +18,5 @@ def run_analysis():
 
     # TODO: Add automatic Google Sheets integration
     # Save data to CSV
-    save_to_csv(trades_with_per_trade_metrics, PER_TRADE_METRICS_FILE_PATH)  # Save trades data
-    save_to_csv(dataset_metrics, DATASET_METRICS_FILE_PATH, dictionary_columns=["Metric", "Value"])  # Save metrics
+    save_to_csv(trades_with_per_trade_metrics, PER_TRADE_METRICS_FILE_PATH)
+    save_to_csv(dataset_metrics, DATASET_METRICS_FILE_PATH, dictionary_columns=["Metric", "Value"])
