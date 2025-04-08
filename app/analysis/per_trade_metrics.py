@@ -11,7 +11,6 @@ def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size
 
     pnl_pct = round((pnl / entry_net_amount), 4) if entry_net_amount else 0
 
-
     return pnl, pnl_pct
 
 
@@ -85,7 +84,6 @@ def add_per_trade_metrics(matched_trades):
 
     # Convert the results to a DataFrame
     df = pd.DataFrame(trades)
-
 
     # Sort by start time and reset index
     df = df.sort_values(by='entry_time').reset_index(drop=True)

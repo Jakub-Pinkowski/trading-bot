@@ -1,5 +1,6 @@
 import re
 
+
 def parse_symbol(symbol):
     match = re.match(r'^([A-Za-z]+)', symbol)
     if not match:
