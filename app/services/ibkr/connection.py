@@ -23,7 +23,7 @@ def tickle_ibkr_api():
 
 
 def start_ibkr_scheduler():
-    scheduler.add_job(tickle_ibkr_api, 'interval', seconds=60)
+    scheduler.add_job(tickle_ibkr_api, 'interval', seconds=60, coalesce=True, max_instances=5)
     scheduler.start()
 
 
