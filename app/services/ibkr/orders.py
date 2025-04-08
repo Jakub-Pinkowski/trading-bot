@@ -17,6 +17,9 @@ def place_order(conid, side):
     elif (contract_position > 0 and side == "B") or (contract_position < 0 and side == "S"):
         return {"success": True, "message": "No action needed: already in desired position"}
 
+    # Convert side: "B" -> "BUY", "S" -> "SELL"
+    side = "BUY" if side == "B" else "SELL"
+
     # Buy the default quantity if no position is present
     endpoint = f"iserver/account/{ACCOUNT_ID}/orders"
     order_details = {
