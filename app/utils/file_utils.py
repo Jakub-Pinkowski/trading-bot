@@ -53,13 +53,13 @@ def save_file(data, file_path):
 def save_to_csv(data, file_path, dictionary_columns=None):
     try:
         if isinstance(data, pd.DataFrame):
-            # Directly save the DataFrame
-            data.to_csv(file_path, index=False)
+            # Append to file if it exists, else create a new file
+            data.to_csv(file_path, mode='a', header=not os.path.exists(file_path), index=False)
         elif isinstance(data, dict):
-            # Convert dictionary to DataFrame and save
+            # Convert dictionary to DataFrame and append
             columns = dictionary_columns if dictionary_columns else ["Key", "Value"]
             df = pd.DataFrame(list(data.items()), columns=columns)
-            df.to_csv(file_path, index=False)
+            df.to_csv(file_path, mode='a', header=not os.path.exists(file_path), index=False)
         else:
             raise ValueError("Data must be either a Pandas DataFrame or a dictionary.")
 
