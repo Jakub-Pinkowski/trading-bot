@@ -64,9 +64,10 @@ def place_order(conid, side):
                     return {"success": False, "error": "Unhandled error", "details": order_response}
 
 
-            # TODO: There are still more cases to handle besides error
-            else:
-                return order_response
+        # TODO: There are still more cases to handle besides these errors
+        else:
+            print(f"Unexpected order response: {order_response}")
+            return order_response
 
     except Exception as err:
         logger.exception(f"Unexpected error while placing order: {err}")

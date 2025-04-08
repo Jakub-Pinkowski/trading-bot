@@ -9,7 +9,8 @@ def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size
     else:
         pnl = 0  # Handling unexpected conditions gracefully
 
-    pnl_pct = round((pnl / entry_net_amount) * 100, 2) if entry_net_amount else 0
+    pnl_pct = round((pnl / entry_net_amount), 4) if entry_net_amount else 0
+
 
     return pnl, pnl_pct
 
@@ -66,16 +67,16 @@ def add_per_trade_metrics(matched_trades):
 
         # Append the results to the trades list
         trades.append({
-            'start_time': entry_trade_time,
             'symbol': symbol,
+            'start_time': entry_trade_time,
             'entry_side': entry_side,
             'entry_price': entry_price,
             'entry_net_amount': entry_net_amount,
             'end_time': exit_trade_time,
             'exit_side': exit_side,
             'exit_price': exit_price,
-            'size': size,
             'exit_net_amount': exit_net_amount,
+            'size': size,
             'total_commission': total_commission,
             'pnl': pnl,
             'pnl_pct': pnl_pct,
