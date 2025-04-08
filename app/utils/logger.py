@@ -1,8 +1,11 @@
 import logging
 import os
 
+from config import LOGS_DIR
+
 # Create logs directory if it doesn't exist
-os.makedirs("logs", exist_ok=True)
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
 
 
 # Configure a custom logger

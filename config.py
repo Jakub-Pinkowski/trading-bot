@@ -1,15 +1,4 @@
-import logging
 import os
-
-# Logging
-logging.basicConfig(
-    level=logging.INFO,  # Set log level to INFO; use DEBUG for more detailed logs
-    format="%(asctime)s - %(levelname)s - %(message)s",  # Log timestamp, level, and message
-    handlers=[
-        logging.FileHandler("errors.log", mode="a"),  # Save logs to a file (append mode)
-        logging.StreamHandler()  # Also log to the console
-    ]
-)
 
 # API Setup
 BASE_URL = "https://localhost:5001/v1/api/"
@@ -17,6 +6,7 @@ ACCOUNT_ID = "DUE343675"
 
 # Data Directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 ALERTS_DIR = os.path.join(DATA_DIR, "alerts")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
