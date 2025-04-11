@@ -25,16 +25,16 @@ def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multi
         open_trade = open_trades[symbol_].pop(0)
         closing_size = min(open_trade['size'], size_)  # Close as many as possible
         processed_trades.append({
-            'start_time': open_trade['trade_time'],
             'symbol': symbol_,
+            'entry_time': open_trade['trade_time'],
             'entry_side': open_trade['side'],
             'entry_price': open_trade['price'],
             'entry_net_amount': open_trade['price'] * closing_size * multiplier_,
-            'end_time': trade_time_,
+            'exit_time': trade_time_,
             'exit_side': side_,
             'exit_price': price_,
-            'size': closing_size,
             'exit_net_amount': price_ * closing_size * multiplier_,
+            'size': closing_size,
             'total_commission': commission_ + open_trade['commission'],
         })
         size_ -= closing_size  # Remaining size to open a new position
@@ -59,8 +59,7 @@ def format_processed_trades(processed_trades):
         df['exit_price'] = df['exit_price'].round(2)
         df['entry_net_amount'] = df['entry_net_amount'].round(0).astype(int)
         df['exit_net_amount'] = df['exit_net_amount'].round(0).astype(int)
-
-        df = df.sort_values(by='start_time').reset_index(drop=True)
+        df = df.sort_values(by='entry_time').reset_index(drop=True)
 
     return df
 
@@ -71,10 +70,10 @@ def match_trades(trades, is_alerts=False):
 
     for _, row in trades.iterrows():
         # Extract fields with defaults for alerts if necessary
+        trade_time = row['trade_time']
         symbol = row['symbol']
         side = row['side']
         price = row['price']
-        trade_time = row['trade_time']
 
         # Defaults for alerts
         size = 1 if is_alerts else row['size']
@@ -83,4 +82,5 @@ def match_trades(trades, is_alerts=False):
 
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 
-    return format_processed_trades(processed_trades)
+    formatted_trades = format_processed_trades(processed_trades)
+    return formatted_trades

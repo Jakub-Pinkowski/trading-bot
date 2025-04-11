@@ -43,18 +43,17 @@ def add_per_trade_metrics(matched_trades):
     # Process each matched trade
     for _, row in matched_trades.iterrows():
         symbol = row['symbol']
+        entry_trade_time = row['entry_time']
         entry_side = row['entry_side']
         entry_price = row['entry_price']
         entry_net_amount = row['entry_net_amount']
+        exit_trade_time = row['exit_time']
         exit_side = row['exit_side']
         exit_price = row['exit_price']
         exit_net_amount = row['exit_net_amount']
         size = row['size']
         total_commission = row['total_commission']
-        entry_trade_time = row['start_time']
-        print(entry_trade_time)
-        exit_trade_time = row['end_time']
-        print(exit_trade_time)
+
 
         # TODO: Remove unused/unnecessary metrics later
         # Calculate all the metrics
