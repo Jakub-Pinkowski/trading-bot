@@ -29,7 +29,7 @@ def get_alerts_data():
 
         return alerts_df
     else:
-        return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
+        return pd.DataFrame(columns=['symbol','side', 'price', 'timestamp'])
 
 
 # TODO: Figure out a solution for the dates

@@ -8,6 +8,7 @@ from config import PER_TRADE_METRICS_FILE_PATH, DATASET_METRICS_FILE_PATH
 
 def run_analysis():
     alerts_data = get_alerts_data()
+    print(alerts_data)
     tw_alerts = get_tw_alerts_data()
     print(tw_alerts)
     trades_data = get_trades_data()
