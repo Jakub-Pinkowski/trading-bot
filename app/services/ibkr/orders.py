@@ -47,21 +47,21 @@ def place_order(conid, side):
                 suppress_messages(message_ids)
                 return place_order(conid, side)
 
-            # Handle specific scenarios if "error" key exists
-            if isinstance(order_response, dict) and 'error' in order_response:
-                error_message = order_response['error'].lower()
+        # Handle specific scenarios if "error" key exists
+        if isinstance(order_response, dict) and 'error' in order_response:
+            error_message = order_response['error'].lower()
 
-                if "available funds are in sufficient" in error_message or "available funds are insufficient" in error_message:
-                    logger.error(f"Insufficient funds: {order_response}")
-                    return {"success": False, "error": "Insufficient funds", "details": order_response}
+            if "available funds are in sufficient" in error_message or "available funds are insufficient" in error_message:
+                logger.error(f"Insufficient funds: {order_response}")
+                return {"success": False, "error": "Insufficient funds", "details": order_response}
 
-                elif "does not comply with our order handling rules for derivatives" in error_message:
-                    logger.error(f"Non-compliance with derivative rules: {order_response}")
-                    return {"success": False, "error": "Non-compliance with derivative rules", "details": order_response}
+            elif "does not comply with our order handling rules for derivatives" in error_message:
+                logger.error(f"Non-compliance with derivative rules: {order_response}")
+                return {"success": False, "error": "Non-compliance with derivative rules", "details": order_response}
 
-                else:
-                    logger.error(f"Unhandled API error: {order_response}")
-                    return {"success": False, "error": "Unhandled error", "details": order_response}
+            else:
+                logger.error(f"Unhandled API error: {order_response}")
+                return {"success": False, "error": "Unhandled error", "details": order_response}
 
 
         # TODO: There are still more cases to handle besides these errors
