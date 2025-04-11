@@ -30,7 +30,8 @@ def pre_clean_tw_data(df):
     return df
 
 
-# TODO: This whole function is fucking WRONG!!!
+# BUG: This whole function is fucking WRONG!!!
+# BUG: Ensure everything is a proper datetime object instead of strings
 def clean_alerts_data(df, tw_alerts=False):
     if tw_alerts:
         df = pre_clean_tw_data(df)
@@ -43,7 +44,7 @@ def clean_alerts_data(df, tw_alerts=False):
     if "order" in df.columns:
         df = df.drop(columns=["order"])
 
-    # CHange the name of the column to match the trades data
+    # Change the name of the column to match the trades data
     if "timestamp" in df.columns:
         df = df.rename(columns={"timestamp": "trade_time"})
 
@@ -62,6 +63,7 @@ def clean_alerts_data(df, tw_alerts=False):
     return df
 
 
+# BUG: Ensure everything is a proper datetime object instead of strings
 def clean_trades_data(trades_df):
     columns_needed = [
         "symbol",

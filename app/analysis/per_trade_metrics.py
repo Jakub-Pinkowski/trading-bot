@@ -17,6 +17,7 @@ def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size
 def calculate_trade_duration(start_time, end_time):
     return round((end_time - start_time).total_seconds() / 60.0, 2)
 
+
 def calculate_absolute_return(entry_net_amount, exit_net_amount, entry_side):
     abs_return = exit_net_amount - entry_net_amount
     if entry_side == 'S':  # For short trades, reverse the sign
@@ -36,12 +37,14 @@ def calculate_price_move_pct(entry_price, exit_price):
     return round(((exit_price - entry_price) / entry_price) * 100, 4)
 
 
+# BUG: Not all date fields are actually dates, some are strings
 def add_per_trade_metrics(matched_trades):
     # List to hold processed trades
     trades = []
 
     # Process each matched trade
     for _, row in matched_trades.iterrows():
+        print(row)
         symbol = row['symbol']
         entry_trade_time = row['entry_time']
         entry_side = row['entry_side']
@@ -53,7 +56,6 @@ def add_per_trade_metrics(matched_trades):
         exit_net_amount = row['exit_net_amount']
         size = row['size']
         total_commission = row['total_commission']
-
 
         # TODO: Remove unused/unnecessary metrics later
         # Calculate all the metrics
