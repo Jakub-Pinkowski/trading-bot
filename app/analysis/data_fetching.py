@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trade_data, save_trades_data
+from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trades_data, save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
@@ -29,7 +29,7 @@ def get_alerts_data():
 
         return alerts_df
     else:
-        return pd.DataFrame(columns=['symbol','side', 'price', 'timestamp'])
+        return pd.DataFrame(columns=['symbol', 'side', 'price', 'timestamp'])
 
 
 # TODO: Figure out a solution for the dates
@@ -92,7 +92,7 @@ def get_trades_data():
     )
 
     if not trades_df.empty:
-        trades_df = clean_trade_data(trades_df)
+        trades_df = clean_trades_data(trades_df)
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
 
         # Filter data to only include trades from the last 7 days

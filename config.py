@@ -13,11 +13,15 @@ ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 TRADES_DIR = os.path.join(DATA_DIR, "trades")
 TW_ALERTS_DIR = os.path.join(DATA_DIR, "tw_alerts")
+ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "alerts")
+TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
 
 # File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")
-PER_TRADE_METRICS_FILE_PATH = os.path.join(ANALYSIS_DIR, "per_trade_metrics.csv")
-DATASET_METRICS_FILE_PATH = os.path.join(ANALYSIS_DIR, "dataset_metrics.csv")
+ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(ALERTS_ANALYSIS_DIR, "alerts_per_trade_metrics.csv")
+ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(ALERTS_ANALYSIS_DIR, "alerts_dataset_metrics.csv")
+TRADES_PER_TRADE_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_per_trade_metrics.csv")
+TRADES_DATASET_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_dataset_metrics.csv")
 
 # Strategy
 MIN_DAYS_UNTIL_EXPIRY = 60

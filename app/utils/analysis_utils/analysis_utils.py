@@ -75,3 +75,49 @@ def match_trades(trades):
 
     df = df.sort_values(by='start_time').reset_index(drop=True)
     return df
+
+
+def alerts_match_trades(trades):
+    open_trades = {}
+    processed_trades = []
+
+    # Contract multipliers
+    contract_multipliers = {
+        'CL': 1000,
+        'SI': 5000,
+        'ZW': 50,
+        'ZC': 50,
+        'MZC': 10,
+        'HG': 25000,
+        'GC': 100,
+        'PL': 50,
+        'ZS': 50,
+        'NG': 10000
+    }
+
+    # Process each trade in simplified data
+    for _, row in trades.iterrows():
+        symbol = row['symbol']
+        side = row['side']
+        price = row['price']
+        trade_time = row['timestamp']
+
+        # Default values for missing fields
+        size = 1  # Assume each trade is for a single unit
+        commission = 0  # Assume no commission provided
+        multiplier = contract_multipliers.get(symbol, 1)
+
+        # Call process_trade logic
+        process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
+
+    df = pd.DataFrame(processed_trades)
+
+    # Format prices to 2 decimals and net amounts to 0 decimals
+    if not df.empty:
+        df['entry_price'] = df['entry_price'].round(2)
+        df['exit_price'] = df['exit_price'].round(2)
+        df['entry_net_amount'] = df['entry_net_amount'].round(0).astype(int)
+        df['exit_net_amount'] = df['exit_net_amount'].round(0).astype(int)
+
+        df = df.sort_values(by='start_time').reset_index(drop=True)
+    return df

@@ -18,7 +18,7 @@ def fractional_to_decimal(price_str):
     else:
         return float(price_str)
 
-
+# TODO: It's all fucking WRONG!!!
 def clean_alerts_data(df):
     # Remove the dummy column if it exists
     if "dummy" in df.columns:
@@ -36,7 +36,7 @@ def clean_alerts_data(df):
     return df
 
 
-def clean_trade_data(trades_df):
+def clean_trades_data(trades_df):
     columns_needed = [
         "symbol",
         "side",
