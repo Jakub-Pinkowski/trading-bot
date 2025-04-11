@@ -13,13 +13,13 @@ ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 TRADES_DIR = os.path.join(DATA_DIR, "trades")
 TW_ALERTS_DIR = os.path.join(DATA_DIR, "tw_alerts")
-ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "alerts")
+TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
 
 # File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")
-ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(ALERTS_ANALYSIS_DIR, "alerts_per_trade_metrics.csv")
-ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(ALERTS_ANALYSIS_DIR, "alerts_dataset_metrics.csv")
+TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw_alerts_per_trade_metrics.csv")
+TW_ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw_alerts_dataset_metrics.csv")
 TRADES_PER_TRADE_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_per_trade_metrics.csv")
 TRADES_DATASET_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_dataset_metrics.csv")
 

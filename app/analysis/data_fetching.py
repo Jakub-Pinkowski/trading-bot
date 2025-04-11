@@ -24,9 +24,6 @@ def get_alerts_data():
         # Sort the DataFrame by 'timestamp' before cleaning
         alerts_df = alerts_df.sort_values('timestamp').reset_index(drop=True)
 
-        # Clean the data
-        alerts_df = clean_alerts_data(alerts_df)
-
         return alerts_df
     else:
         return pd.DataFrame(columns=['symbol', 'side', 'price', 'timestamp'])
@@ -92,12 +89,12 @@ def get_trades_data():
     )
 
     if not trades_df.empty:
-        trades_df = clean_trades_data(trades_df)
         trades_df = trades_df.sort_values('trade_time').reset_index(drop=True)
 
         # Filter data to only include trades from the last 7 days
         seven_days_ago = datetime.now() - timedelta(days=TIMEFRAME_TO_ANALYZE)
         trades_last_7_days = trades_df[trades_df['trade_time'] >= seven_days_ago]
+
 
         # Return if any data exists within the last 7 days
         if not trades_last_7_days.empty:
