@@ -31,6 +31,23 @@ def get_alerts_data():
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
+def clean_alerts_data(df):
+    # Remove consecutive orders on the same side for a given symbol
+    df['prev_symbol'] = df['symbol'].shift(1)
+    df['prev_side'] = df['side'].shift(1)
+
+    # Keep rows where either symbol or side changes compared to the previous row
+    df = df[~((df['symbol'] == df['prev_symbol']) & (df['side'] == df['prev_side']))]
+
+    # Drop the helper columns
+    df = df.drop(columns=['prev_symbol', 'prev_side'])
+
+    # Reset the index
+    df = df.reset_index(drop=True)
+
+    return df
+
+
 # TODO: Figure out a solution for the dates
 def get_tw_alerts_data():
     # Target the TradingView alerts CSV
@@ -72,26 +89,12 @@ def get_tw_alerts_data():
 
     # Sort the DataFrame by 'timestamp' (oldest to newest)
     alerts_df = alerts_df.sort_values(by='timestamp').reset_index(drop=True)
+    alerts_df = alerts_df[['timestamp', 'symbol', 'side', 'price']]
 
-    # Remove consecutive trades on the same side for the same symbol
-    def remove_consecutive_sides(group):
-        # Keep rows where the side is different from the previous one
-        return group.loc[group['side'] != group['side'].shift()]
-
-    # Apply the cleaning logic group by group
-    cleaned_df = alerts_df.groupby('symbol', group_keys=False).apply(remove_consecutive_sides)
-
-    # Define the output file path
-    cleaned_file_path = os.path.join(TW_ALERTS_DIR, "Cleaning_TradingView_Alerts_2025-04-11.csv")
-
-    # Save the cleaned DataFrame to CSV
-    try:
-        cleaned_df.to_csv(cleaned_file_path, index=False)
-    except Exception as e:
-        raise ValueError(f"Error saving the cleaned data to CSV: {e}")
+    alerts_df = clean_alerts_data(alerts_df)
 
     # Return the cleaned DataFrame
-    return cleaned_df
+    return alerts_df
 
 
 def get_trades_data():
