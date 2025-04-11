@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trades_data, save_trades_data
+from app.utils.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from config import BASE_URL, ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
@@ -60,22 +60,6 @@ def get_tw_alerts_data():
     alerts_df['side'] = alerts_df['description_parsed'].apply(lambda x: x.get('side'))
     alerts_df['price'] = alerts_df['description_parsed'].apply(lambda x: x.get('price'))
 
-    # Parse 'Time' column into a datetime object
-    alerts_df['timestamp'] = pd.to_datetime(alerts_df['Time'], errors='coerce')
-
-    # Select only the relevant columns
-    alerts_df = alerts_df[['symbol', 'side', 'price', 'timestamp']]
-
-    # Drop rows with missing or invalid data
-    alerts_df = alerts_df.dropna().reset_index(drop=True)
-
-    # Sort the DataFrame by 'timestamp' (oldest to newest)
-    alerts_df = alerts_df.sort_values(by='timestamp').reset_index(drop=True)
-    alerts_df = alerts_df[['timestamp', 'symbol', 'side', 'price']]
-
-    alerts_df = clean_alerts_data(alerts_df)
-
-    # Return the cleaned DataFrame
     return alerts_df
 
 
@@ -94,7 +78,6 @@ def get_trades_data():
         # Filter data to only include trades from the last 7 days
         seven_days_ago = datetime.now() - timedelta(days=TIMEFRAME_TO_ANALYZE)
         trades_last_7_days = trades_df[trades_df['trade_time'] >= seven_days_ago]
-
 
         # Return if any data exists within the last 7 days
         if not trades_last_7_days.empty:
