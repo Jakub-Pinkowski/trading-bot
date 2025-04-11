@@ -19,11 +19,10 @@ def fractional_to_decimal(price_str):
         return float(price_str)
 
 
-def clean_alerts_data(df, default_value="NO"):
+def clean_alerts_data(df):
     # Remove the dummy column if it exists
     if "dummy" in df.columns:
         df = df.drop(columns=["dummy"])
-
 
     # Clean symbol
     df["symbol"] = df["symbol"].apply(parse_symbol)
