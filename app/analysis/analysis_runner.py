@@ -19,7 +19,9 @@ def run_analysis():
     # Clean data
     alerts = clean_alerts_data(alerts_data)
     tw_alerts = clean_alerts_data(tw_alerts_data, tw_alerts=True)
+    print(tw_alerts)
     trades = clean_trades_data(trades_data)
+    print(trades)
 
     # Create trade pairs
     tw_alerts_matched = match_trades(tw_alerts, is_alerts=True)

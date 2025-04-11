@@ -43,6 +43,10 @@ def clean_alerts_data(df, tw_alerts=False):
     if "order" in df.columns:
         df = df.drop(columns=["order"])
 
+    # CHange the name of the column to match the trades data
+    if "timestamp" in df.columns:
+        df = df.rename(columns={"timestamp": "trade_time"})
+
     # Drop rows with missing or invalid data
     df = df.dropna().reset_index(drop=True)
 
@@ -85,8 +89,8 @@ def clean_trades_data(trades_df):
         "trade_time",
         "symbol",
         "side",
-        "size",
         "price",
+        "size",
         "commission",
         "net_amount",
     ]
