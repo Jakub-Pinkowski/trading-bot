@@ -74,7 +74,7 @@ def match_trades(trades, is_alerts=False):
         symbol = row['symbol']
         side = row['side']
         price = row['price']
-        trade_time = row['timestamp'] if is_alerts else row['trade_time']
+        trade_time = row['trade_time']
 
         # Defaults for alerts
         size = 1 if is_alerts else row['size']

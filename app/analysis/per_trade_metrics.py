@@ -52,7 +52,9 @@ def add_per_trade_metrics(matched_trades):
         size = row['size']
         total_commission = row['total_commission']
         entry_trade_time = row['start_time']
+        print(entry_trade_time)
         exit_trade_time = row['end_time']
+        print(exit_trade_time)
 
         # TODO: Remove unused/unnecessary metrics later
         # Calculate all the metrics
