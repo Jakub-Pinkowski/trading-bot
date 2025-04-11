@@ -12,6 +12,7 @@ ALERTS_DIR = os.path.join(DATA_DIR, "alerts")
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 TRADES_DIR = os.path.join(DATA_DIR, "trades")
+TW_ALERTS_DIR = os.path.join(DATA_DIR, "tw_alerts")
 
 # File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")
@@ -20,7 +21,7 @@ DATASET_METRICS_FILE_PATH = os.path.join(ANALYSIS_DIR, "dataset_metrics.csv")
 
 # Strategy
 MIN_DAYS_UNTIL_EXPIRY = 60
-AGGRESSIVE_TRADING = True
+AGGRESSIVE_TRADING = False
 QUANTITY_TO_TRADE = 1
 
 # Analysis

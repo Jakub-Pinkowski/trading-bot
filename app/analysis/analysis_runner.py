@@ -1,4 +1,4 @@
-from app.analysis.data_fetching import get_alerts_data, get_trades_data
+from app.analysis.data_fetching import get_alerts_data, get_tw_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.utils.analysis_utils.analysis_utils import match_trades
@@ -8,6 +8,8 @@ from config import PER_TRADE_METRICS_FILE_PATH, DATASET_METRICS_FILE_PATH
 
 def run_analysis():
     alerts_data = get_alerts_data()
+    tw_alerts = get_tw_alerts_data()
+    print(tw_alerts)
     trades_data = get_trades_data()
 
     matched_trades = match_trades(trades_data)

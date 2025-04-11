@@ -1,3 +1,5 @@
+import json
+import os
 import time
 from datetime import datetime, timedelta
 
@@ -6,8 +8,7 @@ import pandas as pd
 from app.utils.analysis_utils.data_fetching_utils import clean_alerts_data, clean_trade_data, save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
-from config import ALERTS_DIR
-from config import BASE_URL, TRADES_DIR, TIMEFRAME_TO_ANALYZE
+from config import BASE_URL, ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
 
 
 def get_alerts_data():
@@ -29,6 +30,49 @@ def get_alerts_data():
         return alerts_df
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
+
+
+def get_tw_alerts_data():
+    # TODO: Target files later a bit better
+    # Construct the file path for the TradingView alerts CSV
+    alerts_file_path = os.path.join(TW_ALERTS_DIR, "TradingView_Alerts_Log_2025-04-11.csv")
+
+    # Check if the file exists
+    if not os.path.exists(alerts_file_path):
+        raise FileNotFoundError(f"The file '{alerts_file_path}' does not exist.")
+
+    # Read the CSV file
+    try:
+        alerts_df = pd.read_csv(alerts_file_path)
+    except Exception as e:
+        raise ValueError(f"Error reading the alerts file: {e}")
+
+    # Parse the 'Description' column (JSON data)
+    def parse_description(description):
+        try:
+            if pd.notna(description):  # Ensure description is not null
+                return json.loads(description)  # Convert JSON to a Python dict
+            return {}
+        except json.JSONDecodeError:
+            return {}
+
+    # Extract relevant fields from the 'Description' column
+    alerts_df['description_parsed'] = alerts_df['Description'].apply(parse_description)
+    alerts_df['symbol'] = alerts_df['description_parsed'].apply(lambda x: x.get('symbol'))
+    alerts_df['side'] = alerts_df['description_parsed'].apply(lambda x: x.get('side'))
+    alerts_df['price'] = alerts_df['description_parsed'].apply(lambda x: x.get('price'))
+
+    # Parse 'Time' column into a datetime object
+    alerts_df['timestamp'] = pd.to_datetime(alerts_df['Time'], errors='coerce')
+
+    # Select only the relevant columns
+    cleaned_df = alerts_df[['symbol', 'side', 'price', 'timestamp']]
+
+    # Drop rows with missing or invalid data (optional)
+    cleaned_df = cleaned_df.dropna().reset_index(drop=True)
+
+    return cleaned_df
+
 
 
 def get_trades_data():
