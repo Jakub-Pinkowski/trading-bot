@@ -8,13 +8,18 @@ from config import ALERTS_PER_TRADE_METRICS_FILE_PATH, ALERTS_DATASET_METRICS_FI
 
 
 def run_analysis():
+    # Fetch data
     alerts_data = get_alerts_data()
     tw_alerts = get_tw_alerts_data()
     trades_data = get_trades_data()
 
+    # TODO: Implement this part
+    # Clean data
+
+    # Create trade pairs
     alerts_matched = match_trades(tw_alerts, is_alerts=True)
-    print(alerts_matched)
     trades_matches = match_trades(trades_data)
+    print(alerts_matched)
     print(trades_matches)
 
     # Per trades metrics

@@ -18,6 +18,7 @@ def fractional_to_decimal(price_str):
     else:
         return float(price_str)
 
+
 # TODO: It's all fucking WRONG!!!
 def clean_alerts_data(df):
     # Remove the dummy column if it exists
