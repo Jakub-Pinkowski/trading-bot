@@ -31,24 +31,9 @@ def get_alerts_data():
     else:
         return pd.DataFrame(columns=['symbol', 'order', 'price', 'timestamp'])
 
-def clean_alerts_data(df):
-    # Remove consecutive orders on the same side for a given symbol
-    df['prev_symbol'] = df['symbol'].shift(1)
-    df['prev_side'] = df['side'].shift(1)
-
-    # Keep rows where either symbol or side changes compared to the previous row
-    df = df[~((df['symbol'] == df['prev_symbol']) & (df['side'] == df['prev_side']))]
-
-    # Drop the helper columns
-    df = df.drop(columns=['prev_symbol', 'prev_side'])
-
-    # Reset the index
-    df = df.reset_index(drop=True)
-
-    return df
-
 
 # TODO: Figure out a solution for the dates
+# TODO: Break in apart into a couple of functions
 def get_tw_alerts_data():
     # Target the TradingView alerts CSV
     alerts_file_path = os.path.join(TW_ALERTS_DIR, "TradingView_Alerts_Log_2025-04-11.csv")
