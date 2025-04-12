@@ -71,14 +71,13 @@ def clean_alerts_data(df, tw_alerts=False):
     # Drop rows with missing or invalid data
     df = df.dropna().reset_index(drop=True)
 
-    # BUG: THIS IS WRONG
     # Remove consecutive orders on the same side for a given symbol
-    df['prev_symbol'] = df['symbol'].shift(1)
-    df['prev_side'] = df['side'].shift(1)
-    df = df[~((df['symbol'] == df['prev_symbol']) & (df['side'] == df['prev_side']))]
-    df = df.drop(columns=['prev_symbol', 'prev_side'])
+    mask = df.groupby("symbol")["side"].transform(lambda x: x != x.shift())
+    df = df[mask]
+    print(df)
 
     return df
+    print(df)
 
 
 def clean_trades_data(trades_df):
