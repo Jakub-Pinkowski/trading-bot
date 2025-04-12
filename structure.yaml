@@ -37,31 +37,18 @@ trading-bot/
 │   │   ├── file_utils.py                         # File utilities
 │   │   └── webhook_utils.py                      # Webhook utilities
 │   └── __init__.py
-├── tests/                                        # Tests directory
-│   ├── routes/
-│   │   └── test_webhook.py                       # Webhook tests
-│   ├── services/
-│   │   ├── ibkr/
-│   │   │   ├── test_connection.py                # IBKR connections tests
-│   │   │   ├── test_contracts.py                 # IBKR contracts tests
-│   │   │   └── test_orders.py                    # IBKR orders tests
-│   │   └── test_ibkr_service.py                  # IBKR service tests 
-│   ├── utils/
-│   │   ├── ibkr_utils/
-│   │   │   ├── test_connection_utils.py          # Connection utilities tests
-│   │   │   ├── test_contract_utils.py            # Contract utilities tests
-│   │   │   └── test_orders_utils.py              # Orders utilities tests
-│   │   ├── test_api_utils.py                     # API utilities tests
-│   │   ├── test_file_utils.py                    # File utilities tests
-│   │   └── test_webhook_utils.py                 # Webhook utilities tests
-│   └── conftest.py                               # Shared pytest fixtures & configuration
+├── clientportal/                                 # Login Java app
 ├── data/
 │   ├── alerts/                                   # Raw alerts data
 │   └── analysis/
-│       ├── alerts_analysis/                      # Performance analysis based on alerts
-│       └── trades_analysis/                      # Performance analysis of trades
+│       ├── alerts/                               # Performance analysis based on alerts
+│       ├── trades/                               # Performance analysis based on trades
+│       └── tw_alerts/                            # Performance analysis based on TW alerts
 │   ├── contracts/                                # Contracts ids
-│   └── trades/                                   # Raw trades data
+│   ├── trades/                                   # Raw trades data
+│   └── tw_trades/                                # Raw TW alerts
+├── logs/
+│   └── app.logs                                  # Error logs 
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
 ├── config.py                                     # App configuration
