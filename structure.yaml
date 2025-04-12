@@ -3,6 +3,7 @@ trading-bot/
 │   ├── analysis/
 │   │   ├── __init__.py
 │   │   ├── analysis_runner.py                    # Entry point for analysis
+│   │   ├── data_cleaning.py                      # Data cleaning logic
 │   │   ├── data_fetching.py                      # Data fetching logic
 │   │   ├── dataset_metrics.py                    # Dataset metrics
 │   │   └──per_trade_metrics.py                   # Per trade metrics
@@ -20,7 +21,8 @@ trading-bot/
 │   ├── utils/
 │   │   ├── analysis_utils/                       # Analysis utilities
 │   │   │   ├── __init__.py
-│   │   │   ├── data_fetching_utils.py            # Data cleaning utilities
+│   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
+│   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── ibkr_utils/                           # IBKR Utilities
 │   │   │   ├── __init__.py
