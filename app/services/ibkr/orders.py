@@ -64,7 +64,6 @@ def place_order(conid, side):
                 return {"success": False, "error": "Unhandled error", "details": order_response}
 
 
-        # TODO: There are still more cases to handle besides these errors
         else:
             return order_response
 
