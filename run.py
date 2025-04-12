@@ -10,7 +10,7 @@ app.register_blueprint(webhook_blueprint)
 # Tickle the API every 60 seconds
 start_ibkr_scheduler()
 
-# Testing
+# Run analytics
 analysis = run_analysis()
 
 if __name__ == '__main__':
