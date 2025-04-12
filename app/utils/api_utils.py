@@ -3,7 +3,10 @@ import json
 import requests
 import urllib3
 
+from app.utils.logger import get_logger
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+logger = get_logger()
 
 
 def get_headers(payload=None):
@@ -23,7 +26,7 @@ def api_get(endpoint):
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
-        print(f"HTTP GET Error: {response.status_code} - {response.text}")
+        logger.error(f"HTTP GET Error: {response.status_code} - {response.text}")
         raise e
     return response.json()
 
@@ -33,6 +36,6 @@ def api_post(endpoint, payload):
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
-        print(f"HTTP POST Error: {response.status_code} - {response.text}")
+        logger.error(f"HTTP POST Error: {response.status_code} - {response.text}")
         raise e
     return response.json()
