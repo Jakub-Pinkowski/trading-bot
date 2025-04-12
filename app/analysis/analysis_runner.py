@@ -8,9 +8,9 @@ from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METR
     TRADES_DATASET_METRICS_FILE_PATH
 
 
+# NOTE: We ignore alerts for now
 def run_analysis():
     # Fetch raw data
-    # NOTE: We ignore alerts for now
     alerts_data = get_alerts_data()
     tw_alerts_data = get_tw_alerts_data()
     trades_data = get_trades_data()

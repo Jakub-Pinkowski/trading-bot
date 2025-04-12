@@ -53,7 +53,6 @@ def pre_clean_alerts_data(df):
     return df
 
 
-# BUG: This whole function is fucking WRONG!!!
 def clean_alerts_data(df, tw_alerts=False):
     if tw_alerts:
         df = pre_clean_tw_alerts_data(df)
