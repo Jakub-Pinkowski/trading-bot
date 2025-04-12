@@ -37,7 +37,6 @@ def calculate_price_move_pct(entry_price, exit_price):
     return round(((exit_price - entry_price) / entry_price) * 100, 4)
 
 
-# BUG: Not all date fields are actually dates, some are strings
 def add_per_trade_metrics(matched_trades):
     # List to hold processed trades
     trades = []
