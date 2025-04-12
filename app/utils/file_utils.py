@@ -19,6 +19,7 @@ def load_file(file_path):
 
 
 def load_data_from_json_files(directory, file_prefix, date_fields, datetime_format, index_name):
+    # Retrieve a sorted list of all JSON files matching the pattern
     file_pattern = os.path.join(directory, f"{file_prefix}_*.json")
     files = sorted(glob(file_pattern))
 
@@ -26,6 +27,7 @@ def load_data_from_json_files(directory, file_prefix, date_fields, datetime_form
     for file_path in files:
         file_json = load_file(file_path)
 
+        # Convert the JSON content to a DataFrame
         if file_json:
             file_df = json_to_dataframe(
                 file_json,
@@ -37,11 +39,12 @@ def load_data_from_json_files(directory, file_prefix, date_fields, datetime_form
             data_frames.append(file_df)
 
     if data_frames:
-        # Combine and sort by index initially
+        # Combine all DataFrames into a single DataFrame and sort by index
         combined_df = pd.concat(data_frames).sort_index().reset_index(drop=True)
         return combined_df
     else:
-        return pd.DataFrame()  # Return empty DataFrame if no data found
+        # Return an empty DataFrame if no valid JSON files were found
+        return pd.DataFrame()
 
 
 def save_file(data, file_path):
