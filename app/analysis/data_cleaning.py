@@ -15,16 +15,22 @@ def fractional_to_decimal(price_str):
         return float(price_str)
 
 
-def pre_clean_tw_data(df):
+def pre_clean_tw_alerts_data(df):
     # Parse 'Time' column into a datetime object
     df['timestamp'] = pd.to_datetime(df['Time'], errors='coerce')
 
     # Select only relevant columns
     df = df[['timestamp', 'symbol', 'side', 'price']]
-    print(df)
 
     # Sort the DataFrame by 'timestamp' (oldest to newest)
     df = df.sort_values(by='timestamp').reset_index(drop=True)
+    return df
+
+
+def pre_clean_alerts_data(df):
+    # Remove the dummy column and order  columns if they exist
+    df = df.drop(columns=[col for col in ["dummy", "order"] if col in df.columns])
+
     return df
 
 
@@ -32,10 +38,9 @@ def pre_clean_tw_data(df):
 # BUG: Ensure everything is a proper datetime object instead of strings
 def clean_alerts_data(df, tw_alerts=False):
     if tw_alerts:
-        df = pre_clean_tw_data(df)
-
-    # Remove the dummy column and order  columns if they exist
-    df = df.drop(columns=[col for col in ["dummy", "order"] if col in df.columns])
+        df = pre_clean_tw_alerts_data(df)
+    else:
+        df = pre_clean_alerts_data(df)
 
     # Clean the symbol and change the name of the column to match the trades data
     df["symbol"] = df["symbol"].apply(parse_symbol)
