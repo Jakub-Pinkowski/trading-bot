@@ -74,10 +74,8 @@ def clean_alerts_data(df, tw_alerts=False):
     # Remove consecutive orders on the same side for a given symbol
     mask = df.groupby("symbol")["side"].transform(lambda x: x != x.shift())
     df = df[mask]
-    print(df)
 
     return df
-    print(df)
 
 
 def clean_trades_data(trades_df):
