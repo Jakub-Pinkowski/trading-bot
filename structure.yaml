@@ -55,7 +55,7 @@ trading-bot/
 ├── README.md                                     # Project overview
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script
-└── structure.yaml
+└── structure.yaml                                # App's structure
 
 # Functionality
 # BUG: I lose access and can't trade after a while - happens when laptop goes to sleep       - TO CHECK
@@ -68,4 +68,5 @@ trading-bot/
 # TODO: Potentially remove rounding in the analysis
 
 # Developer
+# TODO: Consider setting up a database
 # TODO: Add/update unit tests for every component
