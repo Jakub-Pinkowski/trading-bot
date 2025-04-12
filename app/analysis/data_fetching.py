@@ -41,7 +41,6 @@ def get_tw_alerts_data():
 
     # The latest file based on the date
     latest_file = files[0]
-    print(latest_file)
     alerts_file_path = os.path.join(TW_ALERTS_DIR, latest_file)
 
     # Ensure the file exists
