@@ -26,10 +26,25 @@ def get_alerts_data():
 
 
 def get_tw_alerts_data():
-    # Target the TradingView alerts CSV
-    alerts_file_path = os.path.join(TW_ALERTS_DIR, "TradingView_Alerts_Log_2025-04-11.csv")
+    # Retrieve all files in the TW_ALERTS_DIR directory
+    files = [f for f in os.listdir(TW_ALERTS_DIR) if f.startswith("TradingView_Alerts_Log_") and f.endswith(".csv")]
 
-    # Check if the file exists
+    if not files:
+        raise FileNotFoundError(f"No files found in '{TW_ALERTS_DIR}' with prefix 'TradingView_Alerts_Log_'.")
+
+    # Extract the date portion from filenames and sort files by date
+    try:
+        # Sort files based on the date in the filename
+        files.sort(key=lambda x: datetime.strptime(x.replace("TradingView_Alerts_Log_", "").replace(".csv", ""), "%Y-%m-%d"), reverse=True)
+    except ValueError as e:
+        raise ValueError(f"Error parsing dates from filenames: {e}")
+
+    # The latest file based on the date
+    latest_file = files[0]
+    print(latest_file)
+    alerts_file_path = os.path.join(TW_ALERTS_DIR, latest_file)
+
+    # Ensure the file exists
     if not os.path.exists(alerts_file_path):
         raise FileNotFoundError(f"The file '{alerts_file_path}' does not exist.")
 
