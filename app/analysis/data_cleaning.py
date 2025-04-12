@@ -1,8 +1,18 @@
+import json
 from fractions import Fraction
 
 import pandas as pd
 
 from app.utils.generic_utils import parse_symbol
+
+
+def parse_description(description):
+    try:
+        if pd.notna(description):  # Ensure description is not null
+            return json.loads(description)  # Convert JSON to a Python dict
+        return {}
+    except json.JSONDecodeError:
+        return {}
 
 
 def fractional_to_decimal(price_str):
@@ -16,14 +26,23 @@ def fractional_to_decimal(price_str):
 
 
 def pre_clean_tw_alerts_data(df):
-    # Parse 'Time' column into a datetime object
-    df['timestamp'] = pd.to_datetime(df['Time'], errors='coerce')
+    # Extract relevant fields from the 'Description' column
+    df['description_parsed'] = df['Description'].apply(parse_description)
+    df['symbol'] = df['description_parsed'].apply(lambda x: x.get('symbol'))
+    df['side'] = df['description_parsed'].apply(lambda x: x.get('side'))
+    df['price'] = df['description_parsed'].apply(lambda x: x.get('price'))
+
+    # Rename the `Time` column to `timestamp` and convert to datetime
+    df = df.rename(columns={'Time': 'timestamp'})
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+    # Remove timezone information to keep dtype as datetime64[ns]
+    if isinstance(df['timestamp'].dtype, pd.DatetimeTZDtype):
+        df['timestamp'] = df['timestamp'].dt.tz_localize(None)
 
     # Select only relevant columns
     df = df[['timestamp', 'symbol', 'side', 'price']]
 
-    # Sort the DataFrame by 'timestamp' (oldest to newest)
-    df = df.sort_values(by='timestamp').reset_index(drop=True)
     return df
 
 
@@ -35,12 +54,14 @@ def pre_clean_alerts_data(df):
 
 
 # BUG: This whole function is fucking WRONG!!!
-# BUG: Ensure everything is a proper datetime object instead of strings
 def clean_alerts_data(df, tw_alerts=False):
     if tw_alerts:
         df = pre_clean_tw_alerts_data(df)
     else:
         df = pre_clean_alerts_data(df)
+
+    # Sort the DataFrame by 'timestamp'
+    df = df.sort_values('timestamp').reset_index(drop=True)
 
     # Clean the symbol and change the name of the column to match the trades data
     df["symbol"] = df["symbol"].apply(parse_symbol)
@@ -60,7 +81,6 @@ def clean_alerts_data(df, tw_alerts=False):
     return df
 
 
-# BUG: Ensure everything is a proper datetime object instead of strings
 def clean_trades_data(trades_df):
     columns_needed = [
         "symbol",

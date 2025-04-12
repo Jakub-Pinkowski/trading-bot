@@ -1,4 +1,3 @@
-import json
 import os
 import time
 from datetime import datetime, timedelta
@@ -21,16 +20,11 @@ def get_alerts_data():
     )
 
     if not alerts_df.empty:
-        # Sort the DataFrame by 'timestamp' before cleaning
-        alerts_df = alerts_df.sort_values('timestamp').reset_index(drop=True)
-
         return alerts_df
     else:
-        return pd.DataFrame(columns=['symbol', 'side', 'price', 'timestamp'])
+        return pd.DataFrame(columns=['timestamp', 'symbol', 'side', 'price'])
 
 
-# TODO: Figure out a solution for the dates
-# TODO: Break in apart into a couple of functions
 def get_tw_alerts_data():
     # Target the TradingView alerts CSV
     alerts_file_path = os.path.join(TW_ALERTS_DIR, "TradingView_Alerts_Log_2025-04-11.csv")
@@ -44,22 +38,6 @@ def get_tw_alerts_data():
         alerts_df = pd.read_csv(alerts_file_path)
     except Exception as e:
         raise ValueError(f"Error reading the alerts file: {e}")
-
-    # Parse the 'Description' column (JSON data)
-    def parse_description(description):
-        try:
-            if pd.notna(description):  # Ensure description is not null
-                return json.loads(description)  # Convert JSON to a Python dict
-            return {}
-        except json.JSONDecodeError:
-            return {}
-
-    # Extract relevant fields from the 'Description' column
-    alerts_df['description_parsed'] = alerts_df['Description'].apply(parse_description)
-    alerts_df['symbol'] = alerts_df['description_parsed'].apply(lambda x: x.get('symbol'))
-    alerts_df['side'] = alerts_df['description_parsed'].apply(lambda x: x.get('side'))
-    alerts_df['price'] = alerts_df['description_parsed'].apply(lambda x: x.get('price'))
-
     return alerts_df
 
 
