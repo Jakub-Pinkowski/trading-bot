@@ -19,9 +19,9 @@ def pre_clean_tw_data(df):
     # Parse 'Time' column into a datetime object
     df['timestamp'] = pd.to_datetime(df['Time'], errors='coerce')
 
-    # Format the timestamps and select only relevant columns
-    df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    # Select only relevant columns
     df = df[['timestamp', 'symbol', 'side', 'price']]
+    print(df)
 
     # Sort the DataFrame by 'timestamp' (oldest to newest)
     df = df.sort_values(by='timestamp').reset_index(drop=True)

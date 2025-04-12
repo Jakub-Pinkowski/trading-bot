@@ -44,7 +44,6 @@ def add_per_trade_metrics(matched_trades):
 
     # Process each matched trade
     for _, row in matched_trades.iterrows():
-        print(row)
         symbol = row['symbol']
         entry_trade_time = row['entry_time']
         entry_side = row['entry_side']
