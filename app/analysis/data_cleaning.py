@@ -19,10 +19,8 @@ def pre_clean_tw_data(df):
     # Parse 'Time' column into a datetime object
     df['timestamp'] = pd.to_datetime(df['Time'], errors='coerce')
 
-    # Format the timestamps
+    # Format the timestamps and select only relevant columns
     df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-
-    # Select only the relevant columns
     df = df[['timestamp', 'symbol', 'side', 'price']]
 
     # Sort the DataFrame by 'timestamp' (oldest to newest)
@@ -36,24 +34,18 @@ def clean_alerts_data(df, tw_alerts=False):
     if tw_alerts:
         df = pre_clean_tw_data(df)
 
-    # Remove the dummy column if it exists
-    if "dummy" in df.columns:
-        df = df.drop(columns=["dummy"])
+    # Remove the dummy column and order  columns if they exist
+    df = df.drop(columns=[col for col in ["dummy", "order"] if col in df.columns])
 
-    # Remove the order column if it exists
-    if "order" in df.columns:
-        df = df.drop(columns=["order"])
-
-    # Change the name of the column to match the trades data
+    # Clean the symbol and change the name of the column to match the trades data
+    df["symbol"] = df["symbol"].apply(parse_symbol)
     if "timestamp" in df.columns:
         df = df.rename(columns={"timestamp": "trade_time"})
 
     # Drop rows with missing or invalid data
     df = df.dropna().reset_index(drop=True)
 
-    # Clean symbol
-    df["symbol"] = df["symbol"].apply(parse_symbol)
-
+    # BUG: THIS IS WRONG
     # Remove consecutive orders on the same side for a given symbol
     df['prev_symbol'] = df['symbol'].shift(1)
     df['prev_side'] = df['side'].shift(1)
