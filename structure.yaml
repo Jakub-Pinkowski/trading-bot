@@ -41,9 +41,9 @@ trading-bot/
 ├── data/
 │   ├── alerts/                                   # Raw alerts data
 │   └── analysis/
-│       ├── alerts/                               # Performance analysis based on alerts
-│       ├── trades/                               # Performance analysis based on trades
-│       └── tw_alerts/                            # Performance analysis based on TW alerts
+│   │   ├── alerts/                               # Performance analysis based on alerts
+│   │   ├──  trades/                               # Performance analysis based on trades
+│   │   └── tw_alerts/                            # Performance analysis based on TW alerts
 │   ├── contracts/                                # Contracts ids
 │   ├── trades/                                   # Raw trades data
 │   └── tw_trades/                                # Raw TW alerts
