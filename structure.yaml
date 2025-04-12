@@ -6,7 +6,7 @@ trading-bot/
 │   │   ├── data_cleaning.py                      # Data cleaning logic
 │   │   ├── data_fetching.py                      # Data fetching logic
 │   │   ├── dataset_metrics.py                    # Dataset metrics
-│   │   └──per_trade_metrics.py                   # Per trade metrics
+│   │   └── per_trade_metrics.py                  # Per trade metrics
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from TradingView
@@ -42,7 +42,7 @@ trading-bot/
 │   ├── alerts/                                   # Raw alerts data
 │   └── analysis/
 │   │   ├── alerts/                               # Performance analysis based on alerts
-│   │   ├──  trades/                               # Performance analysis based on trades
+│   │   ├── trades/                               # Performance analysis based on trades
 │   │   └── tw_alerts/                            # Performance analysis based on TW alerts
 │   ├── contracts/                                # Contracts ids
 │   ├── trades/                                   # Raw trades data
