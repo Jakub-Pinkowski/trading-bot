@@ -8,13 +8,17 @@ ACCOUNT_ID = "DUE343675"
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
-ALERTS_DIR = os.path.join(DATA_DIR, "alerts")
+
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
-TRADES_DIR = os.path.join(DATA_DIR, "trades")
-TW_ALERTS_DIR = os.path.join(DATA_DIR, "tw_alerts")
+RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
+
 TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
+
+ALERTS_DIR = os.path.join(RAW_DATA_DIR, "alerts")
+TRADES_DIR = os.path.join(RAW_DATA_DIR, "trades")
+TW_ALERTS_DIR = os.path.join(RAW_DATA_DIR, "tw_alerts")
 
 # File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")

@@ -2,7 +2,7 @@ trading-bot/
 ├── app/
 │   ├── analysis/
 │   │   ├── __init__.py
-│   │   ├── analysis_runner.py                    # Entry point for analysis
+│   │   ├── analysis_runner.py                    # Analysis logic coordinator
 │   │   ├── data_cleaning.py                      # Data cleaning logic
 │   │   ├── data_fetching.py                      # Data fetching logic
 │   │   ├── dataset_metrics.py                    # Dataset metrics
@@ -19,12 +19,12 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── ibkr_service.py                       # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── analysis_utils/                       # Analysis utilities
+│   │   ├── analysis_utils/                       
 │   │   │   ├── __init__.py
 │   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
-│   │   ├── ibkr_utils/                           # IBKR Utilities
+│   │   ├── ibkr_utils/                           
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
 │   │   │   ├── contract_utils.py                 # Contracts utilities
@@ -37,16 +37,17 @@ trading-bot/
 │   │   ├── file_utils.py                         # File utilities
 │   │   └── webhook_utils.py                      # Webhook utilities
 │   └── __init__.py
-├── clientportal/                                 # Login Java app
+├── clientportal/                                 # IBKR login gateway
 ├── data/
-│   ├── alerts/                                   # Raw alerts data
-│   └── analysis/
+│   ├── analysis/
 │   │   ├── alerts/                               # Performance analysis based on alerts
 │   │   ├── trades/                               # Performance analysis based on trades
 │   │   └── tw_alerts/                            # Performance analysis based on TW alerts
 │   ├── contracts/                                # Contracts ids
-│   ├── trades/                                   # Raw trades data
-│   └── tw_trades/                                # Raw TW alerts
+│   └── raw_data/
+│   │   ├── alerts/                               # Raw alerts data
+│   │   ├── trades/                               # Raw trades data
+│   │   └── tw_alerts/                            # Raw TW alerts
 ├── logs/
 │   └── app.logs                                  # Error logs 
 ├── .env                                          # Configuration secrets
