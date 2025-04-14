@@ -19,8 +19,8 @@ def tickle_ibkr_api():
         # Check for specific errors in the response and raise an exception if any
         if "error" in response and response["error"] == "no session":
             # Log the error
-            logger.error(f"API responded with error: {response['error']}")
-            return  # Exit the function after logging without raising an exception
+            logger.error(f"Tickle API responded with error: {response['error']}")
+            return
 
     except ValueError as ve:
         # Log specific API response-based errors
