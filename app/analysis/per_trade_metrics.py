@@ -84,6 +84,10 @@ def add_per_trade_metrics(matched_trades):
     # Convert the results to a DataFrame
     df = pd.DataFrame(trades)
 
+    print(df['entry_time'].head())
+
+    print(df)
+
     # Sort by start time and reset index
     df = df.sort_values(by='entry_time').reset_index(drop=True)
 
