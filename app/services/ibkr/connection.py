@@ -7,7 +7,8 @@ from config import BASE_URL
 scheduler = BackgroundScheduler()
 logger = get_logger()
 
-
+# TODO: Not all errors are logged, for example
+# Run time of job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-04-14 00:15:38 CEST)" was missed by 0:00:30.341970
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
