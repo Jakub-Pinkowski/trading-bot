@@ -14,9 +14,21 @@ def tickle_ibkr_api():
     payload = {}
 
     try:
-        api_post(BASE_URL + endpoint, payload)
+        response = api_post(BASE_URL + endpoint, payload)
+
+        # Check for specific errors in the response and raise an exception if any
+        if "error" in response and response["error"] == "no session":
+            # Log the error
+            logger.error(f"API responded with error: {response['error']}")
+            return  # Exit the function after logging without raising an exception
+
+    except ValueError as ve:
+        # Log specific API response-based errors
+        logger.error(f"Tickle IBKR API Error: {ve}")
+
     except Exception as e:
-        logger.error(f"Error tickling IBKR API: {e}")
+        # Log any unexpected errors
+        logger.error(f"Unexpected error while tickling IBKR API: {e}")
 
 
 def log_missed_job(event):
