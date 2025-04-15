@@ -59,9 +59,7 @@ trading-bot/
 └── structure.yaml                                # App's structure
 
 # Functionality
-# BUG: I lose access and can't trade after a while - happens when laptop goes to sleep       - TO CHECK
-# BUG: Tickling doesn't work reliably - happens when laptop goes to sleep                    - TO CHECK
-# TODO: Make sure my webhook is available 24/7 -                                             PRIO NUMBER 1
+# TODO: Make sure my webhook is available 24/7
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 # NOTE: When I login via the web I lose the session in the app
@@ -70,5 +68,6 @@ trading-bot/
 # TODO: Potentially remove rounding in the analysis
 
 # Developer
-# TODO: Consider setting up a database
+# TODO: Set up a database
+# TODO: Set up UI
 # TODO: Add/update unit tests for every component
