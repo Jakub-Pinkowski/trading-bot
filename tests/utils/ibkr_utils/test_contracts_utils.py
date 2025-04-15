@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, Mock
 
 import pytest
-from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, get_closest_contract
 
+from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, get_closest_contract
 from config import BASE_URL
 
 

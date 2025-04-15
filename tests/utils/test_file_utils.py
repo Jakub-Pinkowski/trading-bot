@@ -1,9 +1,7 @@
-import pytest
-from unittest.mock import mock_open, patch, ANY
-from app.utils.file_utils import load_file, save_file
 import json
+from unittest.mock import mock_open, patch, ANY
 
-# TODO: Update tests
+from app.utils.file_utils import load_file, save_file
 
 
 @patch('app.utils.file_utils.os.path.exists', return_value=True)

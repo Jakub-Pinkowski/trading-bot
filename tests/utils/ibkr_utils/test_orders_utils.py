@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import patch, Mock
+
+import pytest
+import requests
+
 from app.utils.ibkr_utils.orders_utils import suppress_messages
 from config import BASE_URL
-import requests
 
 
 @patch('app.utils.ibkr_utils.orders_utils.api_post')

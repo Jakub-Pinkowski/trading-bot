@@ -55,7 +55,7 @@ def add_per_trade_metrics(matched_trades):
         size = row['size']
         total_commission = row['total_commission']
 
-        # TODO: Remove unused/unnecessary metrics later
+        # TODO: Remove unused/unnecessary metrics
         # Calculate all the metrics
         pnl, pnl_pct = calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission)
         trade_duration = calculate_trade_duration(entry_trade_time, exit_trade_time)

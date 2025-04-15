@@ -20,7 +20,6 @@ def flask_app():
     '127.0.0.1',
     '54.218.53.128'
 ])
-
 @patch('app.utils.webhook_utils.abort')
 def test_validate_ip_allowed(mock_abort, allowed_ip):
     validate_ip(allowed_ip)
