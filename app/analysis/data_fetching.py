@@ -36,8 +36,8 @@ def get_tw_alerts_data():
     try:
         # Sort files based on the date in the filename
         files.sort(key=lambda x: datetime.strptime(x.replace("TradingView_Alerts_Log_", "").replace(".csv", ""), "%Y-%m-%d"), reverse=True)
-    except ValueError as e:
-        raise ValueError(f"Error parsing dates from filenames: {e}")
+    except ValueError as err:
+        raise ValueError(f"Error parsing dates from filenames: {err}")
 
     # The latest file based on the date
     latest_file = files[0]
