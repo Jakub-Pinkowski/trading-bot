@@ -48,8 +48,10 @@ trading-bot/
 │   │   ├── alerts/                               # Raw alerts data
 │   │   ├── trades/                               # Raw trades data
 │   │   └── tw_alerts/                            # Raw TW alerts
-├── logs/
-│   └── app.logs                                  # Error logs 
+├── logs/      
+│   ├── debug.log                                 # Debug logs
+│   ├── error.log                                 # Error logs
+│   └── info.logs                                 # Info logs 
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
 ├── config.py                                     # App configuration
