@@ -8,7 +8,7 @@ from config import BASE_URL
 scheduler = BackgroundScheduler()
 logger = get_logger()
 
-
+# TODO: Also throw an error if not authenticated
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}

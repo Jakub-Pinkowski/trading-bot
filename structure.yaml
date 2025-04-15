@@ -64,6 +64,7 @@ trading-bot/
 # TODO: Make sure my webhook is available 24/7 -                                             PRIO NUMBER 1
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
+# NOTE: When I login via the web I lose the session in the app
 
 # Data analysis
 # TODO: Potentially remove rounding in the analysis
