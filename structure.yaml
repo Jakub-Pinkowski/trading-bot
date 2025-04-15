@@ -19,12 +19,12 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── ibkr_service.py                       # IBKR logic coordinator
 │   ├── utils/
-│   │   ├── analysis_utils/                       
+│   │   ├── analysis_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
-│   │   ├── ibkr_utils/                           
+│   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
 │   │   │   ├── contract_utils.py                 # Contracts utilities
@@ -65,6 +65,8 @@ trading-bot/
 # NOTE: When I login via the web I lose the session in the app
 
 # Data analysis
+# TODO: Add automatic Google Sheets integration
+# TODO: Don't save duplicated data
 # TODO: Potentially remove rounding in the analysis
 
 # Developer

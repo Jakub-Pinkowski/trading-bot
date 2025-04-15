@@ -8,7 +8,6 @@ from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METR
     TRADES_DATASET_METRICS_FILE_PATH
 
 
-# NOTE: We ignore alerts for now
 def run_analysis():
     # Fetch raw data
     alerts_data = get_alerts_data()
@@ -32,8 +31,6 @@ def run_analysis():
     tw_alerts_dataset_metrics = calculate_dataset_metrics(tw_alerts_with_per_trade_metrics)
     trades_dataset_metrics = calculate_dataset_metrics(trades_with_per_trade_metrics)
 
-    # TODO: Add automatic Google Sheets integration
-    # TODO: Don't save the duplicated data
     # Save data to CSV
     save_to_csv(tw_alerts_with_per_trade_metrics, TW_ALERTS_PER_TRADE_METRICS_FILE_PATH)
     save_to_csv(tw_alerts_dataset_metrics, TW_ALERTS_DATASET_METRICS_FILE_PATH, dictionary_columns=["Metric", "Value"])
