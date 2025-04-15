@@ -60,8 +60,8 @@ def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):
 def safe_process_trading_data(data):
     try:
         process_trading_data(data)
-    except Exception as e:
+    except Exception as err:
         logger.error(
-            f"Error processing TradingView webhook with data {data}: {e}",
+            f"Error processing TradingView webhook with data {data}: {err}",
             exc_info=True
         )

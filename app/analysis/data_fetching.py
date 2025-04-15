@@ -52,8 +52,8 @@ def get_tw_alerts_data():
         alerts_df = pd.read_csv(alerts_file_path)
 
         return alerts_df
-    except Exception as e:
-        raise ValueError(f"Error reading the alerts file: {e}")
+    except Exception as err:
+        raise ValueError(f"Error reading the alerts file: {err}")
 
 
 def get_trades_data():

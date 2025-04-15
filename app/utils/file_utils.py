@@ -67,8 +67,8 @@ def save_to_csv(data, file_path, dictionary_columns=None):
             raise ValueError("Data must be either a Pandas DataFrame or a dictionary.")
 
 
-    except Exception as e:
-        logger.error(f"Error saving data to CSV file: {e}")
+    except Exception as err:
+        logger.error(f"Error saving data to CSV file: {err}")
 
 
 def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):

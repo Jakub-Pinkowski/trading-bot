@@ -26,12 +26,10 @@ def tickle_ibkr_api():
             return
 
     except ValueError as ve:
-        # Log specific API response-based errors
         logger.error(f"Tickle IBKR API Error: {ve}")
 
-    except Exception as e:
-        # Log any unexpected errors
-        logger.error(f"Unexpected error while tickling IBKR API: {e}")
+    except Exception as err:
+        logger.error(f"Unexpected error while tickling IBKR API: {err}")
 
 
 
