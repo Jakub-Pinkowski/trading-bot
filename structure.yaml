@@ -73,6 +73,7 @@ trading-bot/
 
 # Developer
 # TODO: Add logging proper everywhere in the app
+# TODO: Host the app for real
 # TODO: Set up a database
 # TODO: Set up UI
 # TODO: Add/update unit tests for every component
