@@ -8,7 +8,6 @@ from config import BASE_URL
 scheduler = BackgroundScheduler()
 logger = get_logger()
 
-# TODO: Also throw an error if not authenticated
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
@@ -16,10 +15,14 @@ def tickle_ibkr_api():
     try:
         response = api_post(BASE_URL + endpoint, payload)
 
-        # Check for specific errors in the response and raise an exception if any
+        # No session error
         if "error" in response and response["error"] == "no session":
-            # Log the error
             logger.error(f"Tickle API responded with error: {response['error']}")
+            return
+
+        # Unauthenticated user
+        if not response.get("authenticated", True):
+            logger.error("User is not authenticated. Please log in.")
             return
 
     except ValueError as ve:
@@ -29,6 +32,7 @@ def tickle_ibkr_api():
     except Exception as e:
         # Log any unexpected errors
         logger.error(f"Unexpected error while tickling IBKR API: {e}")
+
 
 
 def log_missed_job(event):
