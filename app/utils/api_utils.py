@@ -25,9 +25,9 @@ def api_get(endpoint):
     response = requests.get(url=endpoint, verify=False, headers=get_headers())
     try:
         response.raise_for_status()
-    except requests.HTTPError as e:
+    except requests.HTTPError as err:
         logger.error(f"HTTP GET Error: {response.status_code} - {response.text}")
-        raise e
+        raise err
     return response.json()
 
 
@@ -35,7 +35,7 @@ def api_post(endpoint, payload):
     response = requests.post(url=endpoint, json=payload, verify=False, headers=get_headers(payload))
     try:
         response.raise_for_status()
-    except requests.HTTPError as e:
+    except requests.HTTPError as err:
         logger.error(f"HTTP POST Error: {response.status_code} - {response.text}")
-        raise e
+        raise err
     return response.json()
