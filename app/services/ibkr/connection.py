@@ -8,6 +8,7 @@ from config import BASE_URL
 scheduler = BackgroundScheduler()
 logger = get_logger()
 
+
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
@@ -25,12 +26,17 @@ def tickle_ibkr_api():
             logger.error("User is not authenticated. Please log in.")
             return
 
+        # Log a success message when everything runs as expected
+        logger.info("Tickle IBKR API executed successfully.")
+
+
+
+
     except ValueError as ve:
         logger.error(f"Tickle IBKR API Error: {ve}")
 
     except Exception as err:
         logger.error(f"Unexpected error while tickling IBKR API: {err}")
-
 
 
 def log_missed_job(event):
