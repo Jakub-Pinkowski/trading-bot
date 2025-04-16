@@ -18,6 +18,12 @@ def get_logger(name="app"):
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
+    # File handler for DEBUG only (logs DEBUG)
+    debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debug.log"))
+    debug_handler.setLevel(logging.DEBUG)  # Handles DEBUG only
+    debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
+    debug_handler.setFormatter(formatter)
+
     # File handler for INFO only (logs INFO and WARNING)
     info_handler = logging.FileHandler(os.path.join(LOGS_DIR, "info.log"))
     info_handler.setLevel(logging.INFO)  # Handles INFO and WARNING
@@ -29,16 +35,16 @@ def get_logger(name="app"):
     error_handler.setLevel(logging.ERROR)  # Handles ERROR and CRITICAL
     error_handler.setFormatter(formatter)
 
-    # File handler for DEBUG only (logs DEBUG)
-    debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debug.log"))
-    debug_handler.setLevel(logging.DEBUG)  # Handles DEBUG only
-    debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
-    debug_handler.setFormatter(formatter)
+    # Console handler for ERROR and CRITICAL
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    console_handler.setFormatter(formatter)
 
-    # Add handlers to logger (prevent duplicate log entries)
+    # Add handlers to the logger in the correct order
     if not logger.handlers:
-        logger.addHandler(info_handler)
-        logger.addHandler(error_handler)
-        logger.addHandler(debug_handler)
+        logger.addHandler(debug_handler)  # Debug handler first
+        logger.addHandler(info_handler)  # Info handler second
+        logger.addHandler(error_handler)  # Error handler third
+        logger.addHandler(console_handler)  # Console handler last
 
     return logger
