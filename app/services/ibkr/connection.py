@@ -9,6 +9,30 @@ scheduler = BackgroundScheduler()
 logger = get_logger()
 
 
+# BUG: Didn't catch that I'm not authenticated
+# {
+#   "session": "6c8001a0cc585cd09f53d0dfe2e604b1",
+#   "ssoExpires": 90381,
+#   "collission": false,
+#   "userId": 137713338,
+#   "hmds": {
+#     "error": "no bridge"
+#   },
+#   "iserver": {
+#     "authStatus": {
+#       "authenticated": false,
+#       "competing": false,
+#       "connected": false,
+#       "message": "",
+#       "MAC": "F4:03:43:DC:B4:60",
+#       "serverInfo": {
+#         "serverName": "JifZ27122",
+#         "serverVersion": "Build 10.34.1f, Apr 9, 2025 11:51:04 AM"
+#       }
+#     }
+#   }
+# }
+# Response file saved.
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
