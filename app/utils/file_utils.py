@@ -75,7 +75,7 @@ def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='colu
     if not data:
         return pd.DataFrame()
 
-    # Check data type to choose conversion method appropriately
+    # Check data type to choose a conversion method appropriately
     if isinstance(data, dict):
         df = pd.DataFrame.from_dict(data, orient=orient).reset_index()
         if orient == 'index' and 'index' in df.columns:
@@ -85,7 +85,7 @@ def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='colu
     else:
         raise ValueError("Unsupported data format. Provide either dictionary or list.")
 
-    # Convert specified fields to datetime objects using given format
+    # Convert specified fields to datetime objects using a given format
     if date_fields:
         for field in date_fields:
             df[field] = pd.to_datetime(df[field], format=datetime_format, errors='coerce')

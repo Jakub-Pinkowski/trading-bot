@@ -9,7 +9,7 @@ trading-bot/
 │   │   └── per_trade_metrics.py                  # Per trade metrics
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   └── webhook.py                            # Webhooks from TradingView
+│   │   └── webhook.py                            # Webhooks from the TradingView
 │   ├── services/
 │   │   ├── ibkr/
 │   │   │   ├── __init__.py

@@ -26,7 +26,7 @@ def pre_clean_tw_alerts_data(df):
 
 
 def pre_clean_alerts_data(df):
-    # Remove the dummy column and order  columns if they exist
+    # Remove the dummy column and order columns if they exist
     df = df.drop(columns=[col for col in ["dummy", "order"] if col in df.columns])
 
     return df
@@ -41,7 +41,7 @@ def clean_alerts_data(df, tw_alerts=False):
     # Sort the DataFrame by 'timestamp'
     df = df.sort_values('timestamp').reset_index(drop=True)
 
-    # Clean the symbol and change the name of the column to match the trades data
+    # Clean the symbol and change the name of the column to match the trade data
     df["symbol"] = df["symbol"].apply(parse_symbol)
     if "timestamp" in df.columns:
         df = df.rename(columns={"timestamp": "trade_time"})

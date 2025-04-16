@@ -21,7 +21,7 @@ def save_trades_data(trades_json, trades_dir, timezone="Europe/Berlin"):
         # Use execution_id as unique identifier
         unique_trades = {}
 
-        # Load existing trades if file exists to avoid duplicates
+        # Load existing trades if a file exists to avoid duplicates
         if os.path.exists(daily_file_path):
             with open(daily_file_path, 'r') as file:
                 existing_data = json.load(file)

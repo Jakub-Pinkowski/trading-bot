@@ -39,7 +39,7 @@ def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multi
         })
         size_ -= closing_size  # Remaining size to open a new position
 
-    # If there's still remaining size, open a new position
+    # If there's still a remaining size, open a new position
     if size_ > 0:
         open_trades[symbol_].append({
             'side': side_,

@@ -63,7 +63,7 @@ def add_per_trade_metrics(matched_trades):
         commission_pct = calculate_commission_pct(total_commission, entry_net_amount)
         price_move_pct = calculate_price_move_pct(entry_price, exit_price)
 
-        # Append the results to the trades list
+        # Append the results to the trade list
         trades.append({
             'symbol': symbol,
             'entry_time': entry_trade_time,

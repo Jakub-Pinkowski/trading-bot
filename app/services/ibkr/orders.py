@@ -47,7 +47,7 @@ def place_order(conid, side):
                 suppress_messages(message_ids)
                 return place_order(conid, side)
 
-        # Handle specific scenarios if "error" key exists
+        # Handle specific scenarios if the "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
             error_message = order_response['error'].lower()
 

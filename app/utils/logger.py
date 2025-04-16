@@ -3,7 +3,7 @@ import os
 
 from config import LOGS_DIR
 
-# Create logs directory if it doesn't exist
+# Create the logs directory if it doesn't exist
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
 
