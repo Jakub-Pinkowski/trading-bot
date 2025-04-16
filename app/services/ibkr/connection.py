@@ -10,29 +10,6 @@ logger = get_logger()
 
 
 # BUG: Didn't catch that I'm not authenticated
-# {
-#   "session": "6c8001a0cc585cd09f53d0dfe2e604b1",
-#   "ssoExpires": 90381,
-#   "collission": false,
-#   "userId": 137713338,
-#   "hmds": {
-#     "error": "no bridge"
-#   },
-#   "iserver": {
-#     "authStatus": {
-#       "authenticated": false,
-#       "competing": false,
-#       "connected": false,
-#       "message": "",
-#       "MAC": "F4:03:43:DC:B4:60",
-#       "serverInfo": {
-#         "serverName": "JifZ27122",
-#         "serverVersion": "Build 10.34.1f, Apr 9, 2025 11:51:04 AM"
-#       }
-#     }
-#   }
-# }
-# Response file saved.
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
@@ -45,16 +22,23 @@ def tickle_ibkr_api():
             logger.error(f"Tickle API responded with error: {response['error']}")
             return
 
-        # Unauthenticated user
+        # Check if authStatus exists in the response and handle authentication
+        if "authStatus" in response:
+            auth_status = response["authStatus"]
+            if not auth_status.get("authenticated", False):
+                logger.error("User is not authenticated. Please log in.")
+                return
+            if not auth_status.get("connected", False):
+                logger.error("Unable to connect. Please check your connection.")
+                return
+
+        # Handle generic unauthenticated users
         if not response.get("authenticated", True):
             logger.error("User is not authenticated. Please log in.")
             return
 
-        # Log a success message when everything runs as expected
+        # Log a success message if everything runs as expected
         logger.info("Tickle IBKR API executed successfully.")
-
-
-
 
     except ValueError as ve:
         logger.error(f"Tickle IBKR API Error: {ve}")
