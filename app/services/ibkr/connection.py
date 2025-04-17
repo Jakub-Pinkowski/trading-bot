@@ -9,7 +9,6 @@ scheduler = BackgroundScheduler()
 logger = get_logger()
 
 
-# BUG: Didn't catch that I'm not authenticated
 def tickle_ibkr_api():
     endpoint = "tickle"
     payload = {}
@@ -22,15 +21,16 @@ def tickle_ibkr_api():
             logger.error(f"Tickle API responded with error: {response['error']}")
             return
 
-        # Check if authStatus exists in the response and handle authentication
-        if "authStatus" in response:
-            auth_status = response["authStatus"]
+        # Check if 'authStatus' exists under 'iserver' and handle authentication
+        if "iserver" in response and "authStatus" in response["iserver"]:
+            auth_status = response["iserver"]["authStatus"]
             if not auth_status.get("authenticated", False):
                 logger.error("User is not authenticated. Please log in.")
                 return
             if not auth_status.get("connected", False):
                 logger.error("Unable to connect. Please check your connection.")
                 return
+
 
         # Handle generic unauthenticated users
         if not response.get("authenticated", True):
