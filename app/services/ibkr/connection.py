@@ -59,7 +59,14 @@ def start_ibkr_scheduler():
 
 def check_connection():
     endpoint = "iserver/auth/status"
-    auth_response = api_get(BASE_URL + endpoint)
+    try:
+        auth_response = api_get(BASE_URL + endpoint)
 
-    if not (auth_response.get('authenticated') and auth_response.get('connected') and auth_response.get('fail') == ''):
-        raise Exception(f"Invalid authentication response: {auth_response}")
+        if not (auth_response.get('authenticated') and auth_response.get('connected') and auth_response.get('fail') == ''):
+            error_message = f"Invalid authentication response: {auth_response}"
+            logger.error(error_message)
+            raise Exception(error_message)
+
+
+    except Exception as err:
+        logger.error(f"Error checking connection: {err}")
