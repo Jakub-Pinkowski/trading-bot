@@ -61,7 +61,6 @@ def safe_process_trading_data(data):
     try:
         process_trading_data(data)
     except Exception as err:
-        logger.error(
-            f"Error processing TradingView webhook with data {data}: {err}",
-            exc_info=True
+        logger.exception(
+            f"Error processing TradingView webhook with data {data}: {err}"
         )
