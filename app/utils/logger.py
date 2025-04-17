@@ -42,9 +42,9 @@ def get_logger(name="app"):
 
     # Add handlers to the logger in the correct order
     if not logger.handlers:
-        logger.addHandler(debug_handler)  # Debug handler first
-        logger.addHandler(info_handler)  # Info handler second
-        logger.addHandler(error_handler)  # Error handler third
-        logger.addHandler(console_handler)  # Console handler last
+        logger.addHandler(debug_handler)
+        logger.addHandler(info_handler)
+        logger.addHandler(error_handler)
+        logger.addHandler(console_handler)
 
     return logger
