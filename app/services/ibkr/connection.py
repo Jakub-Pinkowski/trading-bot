@@ -21,7 +21,7 @@ def tickle_ibkr_api():
             logger.error(f"Tickle API responded with error: {response['error']}")
             return
 
-        # Check if 'authStatus' exists under 'iserver' and handle authentication
+        # User not authenticated error
         if "iserver" in response and "authStatus" in response["iserver"]:
             auth_status = response["iserver"]["authStatus"]
             if not auth_status.get("authenticated", False):
@@ -30,15 +30,6 @@ def tickle_ibkr_api():
             if not auth_status.get("connected", False):
                 logger.error("Unable to connect. Please check your connection.")
                 return
-
-
-        # Handle generic unauthenticated users
-        if not response.get("authenticated", True):
-            logger.error("User is not authenticated. Please log in.")
-            return
-
-        # Log a success message if everything runs as expected
-        logger.info("Tickle IBKR API executed successfully.")
 
     except ValueError as ve:
         logger.error(f"Tickle IBKR API Error: {ve}")
