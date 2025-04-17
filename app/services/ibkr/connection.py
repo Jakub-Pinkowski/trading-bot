@@ -46,7 +46,6 @@ def log_missed_job(event):
         )
 
 
-# Start the IBKR scheduler
 def start_ibkr_scheduler():
     # Add the job to the scheduler
     scheduler.add_job(tickle_ibkr_api, 'interval', seconds=60, coalesce=True, max_instances=5)
