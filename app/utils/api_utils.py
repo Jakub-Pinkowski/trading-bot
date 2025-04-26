@@ -21,6 +21,7 @@ def get_headers(payload=None):
         headers['Content-Length'] = str(len(json.dumps(payload)))
     return headers
 
+
 def api_get(endpoint):
     url = BASE_URL + endpoint
     response = requests.get(url=url, verify=False, headers=get_headers())
@@ -30,6 +31,7 @@ def api_get(endpoint):
         logger.error(f"HTTP GET Error: {response.status_code} - {response.text}")
         raise err
     return response.json()
+
 
 def api_post(endpoint, payload):
     url = BASE_URL + endpoint
