@@ -20,7 +20,7 @@ def get_headers(payload=None):
         headers['Content-Length'] = str(len(json.dumps(payload)))
     return headers
 
-
+# TODO: Move BASE_URL directly here
 def api_get(endpoint):
     response = requests.get(url=endpoint, verify=False, headers=get_headers())
     try:
@@ -30,7 +30,7 @@ def api_get(endpoint):
         raise err
     return response.json()
 
-
+# TODO: Move BASE_URL directly here
 def api_post(endpoint, payload):
     response = requests.post(url=endpoint, json=payload, verify=False, headers=get_headers(payload))
     try:

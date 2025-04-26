@@ -10,4 +10,11 @@ def parse_symbol(symbol):
     if not match:
         logger.error(f"Invalid symbol format: {symbol}")
         raise ValueError(f"Invalid symbol format: {symbol}")
-    return match.group(1)
+
+    parsed_symbol = match.group(1)
+
+    # Convert special tickers if needed
+    if parsed_symbol == "MHG":
+        parsed_symbol = "MHNG"
+
+    return parsed_symbol
