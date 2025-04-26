@@ -4,6 +4,7 @@ import requests
 import urllib3
 
 from app.utils.logger import get_logger
+from config import BASE_URL
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = get_logger()
@@ -20,9 +21,9 @@ def get_headers(payload=None):
         headers['Content-Length'] = str(len(json.dumps(payload)))
     return headers
 
-# TODO: Move BASE_URL directly here
 def api_get(endpoint):
-    response = requests.get(url=endpoint, verify=False, headers=get_headers())
+    url = BASE_URL + endpoint
+    response = requests.get(url=url, verify=False, headers=get_headers())
     try:
         response.raise_for_status()
     except requests.HTTPError as err:
@@ -30,9 +31,9 @@ def api_get(endpoint):
         raise err
     return response.json()
 
-# TODO: Move BASE_URL directly here
 def api_post(endpoint, payload):
-    response = requests.post(url=endpoint, json=payload, verify=False, headers=get_headers(payload))
+    url = BASE_URL + endpoint
+    response = requests.post(url=url, json=payload, verify=False, headers=get_headers(payload))
     try:
         response.raise_for_status()
     except requests.HTTPError as err:

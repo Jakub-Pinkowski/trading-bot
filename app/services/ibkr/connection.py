@@ -3,7 +3,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.utils.api_utils import api_get, api_post
 from app.utils.logger import get_logger
-from config import BASE_URL
 
 scheduler = BackgroundScheduler()
 logger = get_logger()
@@ -14,7 +13,7 @@ def tickle_ibkr_api():
     payload = {}
 
     try:
-        response = api_post(BASE_URL + endpoint, payload)
+        response = api_post(endpoint, payload)
 
         # No session error
         if "error" in response and response["error"] == "no session":
@@ -59,7 +58,7 @@ def start_ibkr_scheduler():
 def check_connection():
     endpoint = "iserver/auth/status"
     try:
-        auth_response = api_get(BASE_URL + endpoint)
+        auth_response = api_get(endpoint)
 
         if not (auth_response.get('authenticated') and auth_response.get('connected') and auth_response.get('fail') == ''):
             error_message = f"Invalid authentication response: {auth_response}"

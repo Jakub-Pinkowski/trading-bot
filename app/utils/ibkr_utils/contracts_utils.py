@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from app.utils.api_utils import api_get
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
-from config import BASE_URL, MIN_DAYS_UNTIL_EXPIRY
+from config import MIN_DAYS_UNTIL_EXPIRY
 
 logger = get_logger()
 
@@ -13,7 +13,7 @@ def fetch_contract(symbol):
     endpoint = f"/trsrv/futures?symbols={parsed_symbol}"
 
     try:
-        contracts_data = api_get(BASE_URL + endpoint)
+        contracts_data = api_get(endpoint)
         return contracts_data.get(parsed_symbol, [])
     except Exception as err:
         logger.error(f"Error fetching contract data: {err}")

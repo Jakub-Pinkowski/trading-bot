@@ -7,7 +7,7 @@ import pandas as pd
 from app.utils.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
-from config import BASE_URL, ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
+from config import ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
 
 
 def get_alerts_data():
@@ -92,9 +92,9 @@ def fetch_trades_data(max_retries=3, retry_delay=2):
 
     while attempt < max_retries:
         try:
-            trades_json = api_get(BASE_URL + endpoint)
+            trades_json = api_get(endpoint)
 
-            # Validate if response is not empty
+            # Validate if the response is not empty
             if trades_json:
                 save_trades_data(trades_json, TRADES_DIR)
                 return {"success": True, "message": "Trades fetched successfully"}
