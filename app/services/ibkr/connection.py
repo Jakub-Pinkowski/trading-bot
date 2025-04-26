@@ -1,7 +1,7 @@
 from apscheduler.events import EVENT_JOB_MISSED
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app.utils.api_utils import api_get, api_post
+from app.utils.api_utils import api_post
 from app.utils.logger import get_logger
 
 scheduler = BackgroundScheduler()
@@ -53,18 +53,3 @@ def start_ibkr_scheduler():
     scheduler.add_listener(log_missed_job, EVENT_JOB_MISSED)
 
     scheduler.start()
-
-
-def check_connection():
-    endpoint = "iserver/auth/status"
-    try:
-        auth_response = api_get(endpoint)
-
-        if not (auth_response.get('authenticated') and auth_response.get('connected') and auth_response.get('fail') == ''):
-            error_message = f"Invalid authentication response: {auth_response}"
-            logger.error(error_message)
-            raise Exception(error_message)
-
-
-    except Exception as err:
-        logger.error(f"Error checking connection: {err}")
