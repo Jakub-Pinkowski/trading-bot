@@ -1,5 +1,6 @@
 from flask import Flask
 
+from config import PORT
 from app.analysis.analysis_runner import run_analysis
 from app.routes.webhook import webhook_blueprint
 from app.services.ibkr.connection import start_ibkr_scheduler
@@ -14,4 +15,4 @@ start_ibkr_scheduler()
 # analysis = run_analysis()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=PORT)

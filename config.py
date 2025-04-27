@@ -1,8 +1,26 @@
 import os
 
-# API Setup
-BASE_URL = "https://localhost:5001/v1/api/"
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Environment Variables
+DEBUG = os.getenv('DEBUG')
+PORT = os.getenv('PORT')
+BASE_URL = os.getenv('BASE_URL')
+
+# IBKR setup
 ACCOUNT_ID = "DUE343675"
+ALLOWED_IPS = {
+    '52.89.214.238',
+    '34.212.75.30',
+    '54.218.53.128',
+    '52.32.178.7',
+    '127.0.0.1',
+    'localhost',
+    '64.225.97.130',
+    '95.91.215.16'
+}
 
 # Data Directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
