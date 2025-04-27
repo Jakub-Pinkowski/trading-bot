@@ -10,9 +10,8 @@ app.register_blueprint(webhook_blueprint)
 # Tickle the API every 60 seconds
 start_ibkr_scheduler()
 
-# BUG: Disabled until bug in the per_trade_metrics is solved
 # Run analytics
-# analysis = run_analysis()
+analysis = run_analysis()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)

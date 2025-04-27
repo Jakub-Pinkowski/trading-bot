@@ -48,7 +48,7 @@ trading-bot/
 │   │   ├── alerts/                               # Raw alerts data
 │   │   ├── trades/                               # Raw trades data
 │   │   └── tw_alerts/                            # Raw TW alerts
-├── logs/      
+├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
 │   └── info.logs                                 # Info logs 
@@ -64,12 +64,12 @@ trading-bot/
 # TODO: Make sure my webhook is available 24/7
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
-# NOTE: When I login via the web I lose the session in the app
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
 # TODO: Don't save duplicated data
 # TODO: Potentially remove rounding in the analysis
+# BUG: Error when there are no alerts/trades to analyze
 
 # Developer
 # TODO: Add logging proper everywhere in the app
