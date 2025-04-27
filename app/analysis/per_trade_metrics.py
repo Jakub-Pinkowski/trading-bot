@@ -1,5 +1,9 @@
 import pandas as pd
 
+from app.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission):
     if entry_side == 'B' and exit_side == 'S':  # Long trade
@@ -83,8 +87,6 @@ def add_per_trade_metrics(matched_trades):
 
     # Convert the results to a DataFrame
     df = pd.DataFrame(trades)
-
-    print(df)
 
     # Sort by start time and reset index
     df = df.sort_values(by='entry_time').reset_index(drop=True)
