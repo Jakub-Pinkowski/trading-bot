@@ -11,7 +11,7 @@ app.register_blueprint(webhook_blueprint)
 start_ibkr_scheduler()
 
 # Run analytics
-analysis = run_analysis()
+# analysis = run_analysis()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
