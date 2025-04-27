@@ -65,6 +65,11 @@ trading-bot/
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
+# Virtual Machine
+# TODO: Set up SSH so I don't have to use password every time
+# TODO: Set up some git solution so I can keep two different versions, local and hosted
+
+
 # Data analysis
 # TODO: Add automatic Google Sheets integration
 # TODO: Don't save duplicated data
