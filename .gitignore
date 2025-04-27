@@ -19,3 +19,6 @@ data/
 
 #Logs
 logs/
+
+# Cache
+__pycache__/
