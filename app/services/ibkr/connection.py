@@ -14,7 +14,7 @@ def tickle_ibkr_api():
 
     try:
         response = api_post(endpoint, payload)
-        logger.info("IBKR API tickle response: ", response)
+        logger.info("IBKR API tickle response: %s", response)
 
         # No session error
         if "error" in response and response["error"] == "no session":
