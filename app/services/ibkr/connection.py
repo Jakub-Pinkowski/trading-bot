@@ -30,6 +30,8 @@ def tickle_ibkr_api():
                 logger.error("Unable to connect.", response)
                 return
 
+        logger.info("IBKR API tickled successfully.: ", response)
+
     except ValueError as ve:
         logger.error(f"Tickle IBKR API Error: {ve}")
 

@@ -66,6 +66,7 @@ trading-bot/
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Virtual Machine
+# BUG: I lose session after a couple of minutes
 # TODO: Set up some git solution so I can keep two different versions, local and hosted
 # TODO: Set up additional layers of security, NGINX etc.
 # TODO: Java program might have been killed due to a memory insufficiency
