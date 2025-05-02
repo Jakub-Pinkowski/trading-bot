@@ -66,7 +66,6 @@ trading-bot/
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Virtual Machine
-# TODO: Set up SSH so I don't have to use password every time
 # TODO: Set up some git solution so I can keep two different versions, local and hosted
 # TODO: Set up additional layers of security, NGINX etc.
 # TODO: Java program might have been killed due to a memory insufficiency
