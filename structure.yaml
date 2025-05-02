@@ -69,6 +69,8 @@ trading-bot/
 # TODO: Set up SSH so I don't have to use password every time
 # TODO: Set up some git solution so I can keep two different versions, local and hosted
 # TODO: Set up additional layers of security, NGINX etc.
+# TODO: Java program might have been killed due to a memory insufficiency
+# NOTE: On 28.04 I was logged off at 01:17
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
