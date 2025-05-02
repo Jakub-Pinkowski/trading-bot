@@ -14,6 +14,7 @@ def tickle_ibkr_api():
 
     try:
         response = api_post(endpoint, payload)
+        logger.info("IBKR API tickle response: ", response)
 
         # No session error
         if "error" in response and response["error"] == "no session":
@@ -30,7 +31,6 @@ def tickle_ibkr_api():
                 logger.error("Unable to connect.", response)
                 return
 
-        logger.info("IBKR API tickled successfully.: ", response)
 
     except ValueError as ve:
         logger.error(f"Tickle IBKR API Error: {ve}")
