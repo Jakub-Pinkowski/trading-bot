@@ -6,7 +6,8 @@ trading-bot/
 │   │   ├── data_cleaning.py                      # Data cleaning logic
 │   │   ├── data_fetching.py                      # Data fetching logic
 │   │   ├── dataset_metrics.py                    # Dataset metrics
-│   │   └── per_trade_metrics.py                  # Per trade metrics
+│   │   ├── per_trade_metrics.py                  # Per trade metrics
+│   │   └── trades_matching.py                    # Matching trades
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
