@@ -1,19 +1,41 @@
 import pandas as pd
 
-# TODO: Add missing multipliers
 # Contract multipliers
 contract_multipliers = {
     'CL': 1000,
-    'SI': 5000,
-    'ZW': 50,
-    'ZC': 50,
-    'MZC': 10,
-    'HG': 25000,
+    'NG': 10000,
     'GC': 100,
+    'SI': 5000,
+    'HG': 25000,
     'PL': 50,
-    'ZS': 50,
-    'NG': 10000
+    'ZC': 5000,
+    'ZS': 5000,
+    'ZL': 60000,
+    'ZW': 5000,
+    'SB': 112000,
+    'NQ': 20,
+    'ES': 50,
+    'YM': 5,
+    'RTY': 50,
+    'ZB': 114,
+    'MCL': 100,
+    'MNG': 1000,
+    'MGC': 10,
+    'SIL': 1000,
+    'MHG': 2500,
+    'PLM': 10,
+    'MZC': 500,
+    'MZS': 500,
+    'MZL': 6000,
+    'MZW': 500,
+    'MBT': 0.1,
+    'MET': 0.1,
+    'MNQ': 2,
+    'MES': 5,
+    'MYM': 0.5,
+    'M2K': 5,
 }
+
 
 
 def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multiplier_, open_trades, processed_trades):
