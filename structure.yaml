@@ -74,8 +74,6 @@ trading-bot/
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
-# TODO: Don't save duplicated data
-# TODO: Potentially remove rounding in the analysis
 # BUG: Error when there are no alerts/trades to analyze
 
 # Developer
