@@ -54,9 +54,6 @@ def save_file(data, file_path):
 
 
 def save_to_csv(data, file_path, dictionary_columns=None):
-    import pandas as pd
-    import os
-
     try:
         # Load existing data if file exists
         if os.path.exists(file_path):
