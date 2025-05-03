@@ -71,6 +71,7 @@ trading-bot/
 # NOTE: On 03.05 at 01:41 - User is not authenticated, 06:30 - Unexpected error while tickling IBKR API
 
 # Data analysis
+# TODO: Separate analysis from the main functionality
 # TODO: Add automatic Google Sheets integration
 # TODO: Don't save duplicated data
 # TODO: Potentially remove rounding in the analysis
