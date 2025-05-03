@@ -3,19 +3,10 @@ from app.analysis.data_fetching import get_alerts_data, get_tw_alerts_data, get_
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
+from app.utils.analysis_utils.analysis_utils import is_nonempty
 from app.utils.file_utils import save_to_csv
 from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METRICS_FILE_PATH, TRADES_PER_TRADE_METRICS_FILE_PATH, \
     TRADES_DATASET_METRICS_FILE_PATH
-
-
-def is_nonempty(data):
-    try:
-        return data is not None and len(data) > 0
-    except TypeError:
-        try:
-            return data is not None and not data.empty
-        except AttributeError:
-            return data is not None
 
 
 def run_analysis():
