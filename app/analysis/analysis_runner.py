@@ -2,7 +2,7 @@ from app.analysis.data_cleaning import clean_alerts_data, clean_trades_data
 from app.analysis.data_fetching import get_alerts_data, get_tw_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
-from app.utils.analysis_utils.analysis_utils import match_trades
+from app.analysis.trades_matching import match_trades
 from app.utils.file_utils import save_to_csv
 from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METRICS_FILE_PATH, TRADES_PER_TRADE_METRICS_FILE_PATH, \
     TRADES_DATASET_METRICS_FILE_PATH
