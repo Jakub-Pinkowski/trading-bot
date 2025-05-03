@@ -12,8 +12,9 @@ app.register_blueprint(webhook_blueprint)
 start_ibkr_scheduler()
 
 # Run analysis if DEBUG is true
-if DEBUG:
-    run_analysis()
+print(f"DEBUG: {DEBUG}")
+# if DEBUG:
+#     run_analysis()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=PORT)
