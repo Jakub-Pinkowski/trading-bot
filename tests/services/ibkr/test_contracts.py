@@ -85,7 +85,11 @@ def test_get_contract_id_cache_value_error(mock_fetch_contract, mock_get_closest
     # Setup
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {"ES": [{"conid": "123456", "expiry": "20231215"}]}
-    mock_get_closest_contract.side_effect = ValueError("No valid contract found")
+    # First call raises ValueError, second call returns valid contract
+    mock_get_closest_contract.side_effect = [
+        ValueError("No valid contract found"),
+        {"conid": "123456", "expiry": "20231215"}
+    ]
     mock_fetch_contract.return_value = [{"conid": "123456", "expiry": "20231215"}]
 
     # Execute
@@ -97,6 +101,7 @@ def test_get_contract_id_cache_value_error(mock_fetch_contract, mock_get_closest
     mock_load_file.assert_called_once()
     mock_fetch_contract.assert_called_once_with("ES")
     mock_save_file.assert_called_once()
+    assert mock_get_closest_contract.call_count == 2
 
 
 @patch('app.services.ibkr.contracts.load_file')
