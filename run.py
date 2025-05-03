@@ -11,10 +11,9 @@ app.register_blueprint(webhook_blueprint)
 # Tickle the API every 60 seconds
 start_ibkr_scheduler()
 
-# Run analysis if DEBUG is true
-print(f"DEBUG: {DEBUG}")
-if DEBUG:
-    print("Starting analysis...")
-
 if __name__ == '__main__':
+    print(f"DEBUG: {DEBUG}")
+    if DEBUG:
+        print("Starting analysis...")
+        run_analysis()
     app.run(host='0.0.0.0', port=PORT)
