@@ -1,5 +1,6 @@
 import pandas as pd
 
+# BUG: Sometimes TW and IBKR treat prices differently
 # Contract multipliers
 contract_multipliers = {
     'CL': 1000,
@@ -8,11 +9,11 @@ contract_multipliers = {
     'SI': 5000,
     'HG': 25000,
     'PL': 50,
-    'ZC': 5000,
-    'ZS': 5000,
-    'ZL': 60000,
-    'ZW': 5000,
-    'SB': 112000,
+    'ZC': 50,
+    'ZS': 50,
+    'ZL': 600,
+    'ZW': 50,
+    'SB': 1120,
     'NQ': 20,
     'ES': 50,
     'YM': 5,
@@ -23,6 +24,7 @@ contract_multipliers = {
     'MGC': 10,
     'SIL': 1000,
     'MHG': 2500,
+    'MHNG': 2500,
     'PLM': 10,
     'MZC': 500,
     'MZS': 500,
