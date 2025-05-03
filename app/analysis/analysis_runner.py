@@ -10,6 +10,7 @@ from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METR
 
 
 def run_analysis():
+    print("Running analysis...")
     # Fetch raw data
     alerts_data = get_alerts_data()
     tw_alerts_data = get_tw_alerts_data()
