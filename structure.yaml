@@ -61,7 +61,6 @@ trading-bot/
 └── structure.yaml                                # App's structure
 
 # Functionality
-# TODO: Make sure my webhook is available 24/7
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
@@ -78,8 +77,7 @@ trading-bot/
 # BUG: Error when there are no alerts/trades to analyze
 
 # Developer
-# TODO: Add logging proper everywhere in the app
-# TODO: Host the app for real
+# TODO: Add proper logging everywhere in the app
 # TODO: Set up a database
 # TODO: Set up UI
 # TODO: Add/update unit tests for every component
