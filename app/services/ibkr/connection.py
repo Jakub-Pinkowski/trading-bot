@@ -25,10 +25,10 @@ def tickle_ibkr_api():
         if "iserver" in response and "authStatus" in response["iserver"]:
             auth_status = response["iserver"]["authStatus"]
             if not auth_status.get("authenticated", False):
-                logger.error("IBKR responded with 200. User is not authenticated. ", response)
+                logger.error("IBKR API responded with User is not authenticated. ", response)
                 return
             if not auth_status.get("connected", False):
-                logger.error("Unable to connect.", response)
+                logger.error("IBKR API responded with User is not connected. ", response)
                 return
 
 
