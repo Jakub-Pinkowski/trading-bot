@@ -1,9 +1,11 @@
 from app.services.ibkr.contracts import get_contract_id
 from app.services.ibkr.orders import place_order
+from app.utils.logger import get_logger
 
+logger = get_logger()
 
 def process_trading_data(trading_data):
-    print("trading_data", trading_data)
+    logger.info(f"Trading data received: {trading_data}")
 
     dummy = trading_data.get('dummy')
     symbol = trading_data.get('symbol')
@@ -16,4 +18,4 @@ def process_trading_data(trading_data):
         return
 
     order = place_order(contract, side)
-    print("order", order)
+    logger.info(f"Order placed: {order}")
