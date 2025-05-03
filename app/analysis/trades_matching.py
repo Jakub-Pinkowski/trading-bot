@@ -1,6 +1,6 @@
 import pandas as pd
 
-# BUG: Sometimes TW and IBKR treat prices differently
+# NOTE: Those are TW multipliers, might not with properly with actual trades
 # Contract multipliers
 contract_multipliers = {
     'CL': 1000,
