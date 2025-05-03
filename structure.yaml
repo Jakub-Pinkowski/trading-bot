@@ -66,7 +66,8 @@ trading-bot/
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Virtual Machine
-# TODO: Setup PyCharm remote SSH developmen
+# TODO: Setup PyCharm remote SSH development
+# BUG: I lose session after a couple of minutes
 # NOTE: On 28.04 I was logged off at 01:17
 # NOTE: On 02.05 at 01:41 -  User is not authenticated, 06:30 - Unexpected error while tickling IBKR API
 # NOTE: I lost authentication at 01:41 and Java probably went down at 06:30
