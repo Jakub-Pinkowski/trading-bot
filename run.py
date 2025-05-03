@@ -13,8 +13,8 @@ start_ibkr_scheduler()
 
 # Run analysis if DEBUG is true
 print(f"DEBUG: {DEBUG}")
-# if DEBUG:
-#     run_analysis()
+if DEBUG:
+    print("Starting analysis...")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=PORT)
