@@ -1,5 +1,6 @@
 import pandas as pd
 
+# TODO: Add missing multipliers
 # Contract multipliers
 contract_multipliers = {
     'CL': 1000,
