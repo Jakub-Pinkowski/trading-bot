@@ -28,7 +28,6 @@ def api_get(endpoint):
     try:
         response.raise_for_status()
     except requests.HTTPError as err:
-        logger.error(f"HTTP GET Error: {response.status_code} - {response}")
         raise err
     return response.json()
 
@@ -39,6 +38,5 @@ def api_post(endpoint, payload):
     try:
         response.raise_for_status()
     except requests.HTTPError as err:
-        logger.error(f"HTTP POST Error: {response.status_code} - {response}")
         raise err
     return response.json()
