@@ -5,8 +5,11 @@ from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
 from app.utils.analysis_utils.analysis_utils import is_nonempty
 from app.utils.file_utils import save_to_csv
+from app.utils.logger import get_logger
 from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METRICS_FILE_PATH, TRADES_PER_TRADE_METRICS_FILE_PATH, \
     TRADES_DATASET_METRICS_FILE_PATH
+
+logger = get_logger()
 
 
 def run_analysis():
@@ -31,6 +34,7 @@ def run_analysis():
                         TW_ALERTS_DATASET_METRICS_FILE_PATH,
                         dictionary_columns=["Metric", "Value"]
                     )
+                    logger.info("TW Alerts processed successfully.")
 
     # Process Trades
     if is_nonempty(trades_data):
@@ -47,3 +51,4 @@ def run_analysis():
                         TRADES_DATASET_METRICS_FILE_PATH,
                         dictionary_columns=["Metric", "Value"]
                     )
+                    logger.info("Trades processed successfully.")

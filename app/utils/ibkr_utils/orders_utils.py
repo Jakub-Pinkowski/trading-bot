@@ -44,7 +44,7 @@ def suppress_messages(message_ids):
 
     try:
         suppression_response = api_post(endpoint, suppression_data)
-        print("Suppression successful:", suppression_response)
+        logger.info(f"Suppression response: {suppression_response}")
 
     except Exception as err:
         logger.error(f"Error suppressing messages: {err}")
