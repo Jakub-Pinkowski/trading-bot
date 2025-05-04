@@ -83,7 +83,6 @@ def save_to_csv(data, file_path, dictionary_columns=None):
     deduped.to_csv(file_path, index=False)
 
 
-
 def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):
     if not data:
         return pd.DataFrame()
