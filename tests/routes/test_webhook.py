@@ -1,9 +1,6 @@
 from unittest.mock import patch
 
-import pytest
 from werkzeug.exceptions import Forbidden
-
-from app.routes.webhook import webhook_blueprint
 
 
 @patch('app.routes.webhook.validate_ip')

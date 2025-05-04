@@ -6,6 +6,28 @@ from flask import Flask
 from app.routes.webhook import webhook_blueprint
 
 
+# IBKR Service fixtures
+@pytest.fixture
+def mock_logger_ibkr_service(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr_service.logger", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_get_contract_id(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr_service.get_contract_id", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_place_order(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr_service.place_order", mock)
+    return mock
+
+
 # IBKR Connection fixtures
 @pytest.fixture
 def mock_logger_connection(monkeypatch):
