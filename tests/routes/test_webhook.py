@@ -1,22 +1,9 @@
 from unittest.mock import patch
 
 import pytest
-from flask import Flask
 from werkzeug.exceptions import Forbidden
 
 from app.routes.webhook import webhook_blueprint
-
-
-@pytest.fixture
-def app():
-    app = Flask(__name__)
-    app.register_blueprint(webhook_blueprint)
-    return app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
 
 
 @patch('app.routes.webhook.validate_ip')

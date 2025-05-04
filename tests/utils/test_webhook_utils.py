@@ -7,13 +7,6 @@ from werkzeug.exceptions import HTTPException
 from app.utils.webhook_utils import validate_ip, parse_request_data
 
 
-@pytest.fixture
-def flask_app():
-    app = Flask(__name__)
-    with app.app_context():
-        yield app
-
-
 @pytest.mark.parametrize("allowed_ip", [
     '52.89.214.238',
     'localhost',
