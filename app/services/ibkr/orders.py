@@ -38,14 +38,15 @@ def place_order(conid, side):
     }
 
     try:
-        order_response = api_post(endpoint, order_details)
+        while True:
+            order_response = api_post(endpoint, order_details)
 
-        # Handle suppression dynamically if required
-        if isinstance(order_response, list) and 'messageIds' in order_response[0]:
-            message_ids = order_response[0].get('messageIds', [])
-            if message_ids:
-                suppress_messages(message_ids)
-                return place_order(conid, side)
+            if isinstance(order_response, list) and "messageIds" in order_response[0]:
+                message_ids = order_response[0].get("messageIds", [])
+                if message_ids:
+                    suppress_messages(message_ids)
+                    continue  # try again after suppression
+            break  # exit loop if no suppression needed
 
         # Handle specific scenarios if the "error" key exists
         if isinstance(order_response, dict) and 'error' in order_response:
