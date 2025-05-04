@@ -54,6 +54,7 @@ trading-bot/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
 │   └── info.logs                                 # Info logs 
+├── tests/                                        # Tests directory
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
 ├── analyze.py                                    # Run analysis
