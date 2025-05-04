@@ -74,7 +74,6 @@ def test_get_contract_id_cache_invalid(mock_get_closest_contract, mock_fetch_con
     mock_save_file.assert_called_once()
     mock_get_closest_contract.assert_called_once_with([{"conid": "123456", "expiry": "20231215"}], MIN_DAYS_UNTIL_EXPIRY)
 
-
 @patch('app.services.ibkr.contracts.load_file')
 @patch('app.services.ibkr.contracts.save_file')
 @patch('app.services.ibkr.contracts.parse_symbol')

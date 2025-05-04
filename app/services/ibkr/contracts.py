@@ -2,7 +2,7 @@ from app.utils.file_utils import load_file, save_file
 from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, get_closest_contract
 from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
 
-
+# TODO: Sometimes I do something twice, check tests
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_file(CONTRACTS_FILE_PATH)
