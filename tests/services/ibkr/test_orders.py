@@ -75,6 +75,7 @@ def test_place_order_reverse_position_not_aggressive(
     assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
 
 
+# TODO: Fix this test
 def test_place_order_with_message_suppression(
         mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
 ):
