@@ -6,7 +6,6 @@ from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
 logger = get_logger()
 
 
-# TODO: Sometimes I do something twice, check tests
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_file(CONTRACTS_FILE_PATH)
@@ -26,7 +25,6 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
         logger.error(f"No contracts found for symbol: {parsed_symbol}")
         raise ValueError(f"No contracts found for symbol: {parsed_symbol}")
 
-
     # Update cache with fresh data
     contracts_cache[parsed_symbol] = fresh_contracts
     save_file(contracts_cache, CONTRACTS_FILE_PATH, )
@@ -37,4 +35,3 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     except ValueError as err:
         logger.error(f"No valid contract found in fresh data for symbol '{parsed_symbol}': {err}")
         raise
-

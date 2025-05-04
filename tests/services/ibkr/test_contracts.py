@@ -1,10 +1,9 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
 from app.services.ibkr.contracts import get_contract_id
 from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
-
 
 
 @patch('app.services.ibkr.contracts.logger')
