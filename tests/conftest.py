@@ -143,7 +143,6 @@ def mock_process_trading_data(monkeypatch):
     return mock
 
 
-# Flask app fixtures
 @pytest.fixture
 def app():
     app = Flask(__name__)
