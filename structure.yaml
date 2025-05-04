@@ -37,7 +37,7 @@ trading-bot/
 │   │   ├── api_utils.py                          # General API utilities
 │   │   ├── file_utils.py                         # File utilities  
 │   │   ├── generic_utils.py                      # Generic utilities
-│   │   └──  logger.py                             # Logger setup           
+│   │   └── logger.py                             # Logger setup           
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
