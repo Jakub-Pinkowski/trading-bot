@@ -65,7 +65,7 @@ trading-bot/
 └── structure.yaml                                # App's structure
 
 # Functionality
-# TODO: Create an automatic tool that logs and maintains the session. Similar to ibeam (https://github.com/Voyz/ibeam)
+# TODO: Create an automatic tool that logs in and maintains the session. Similar to ibeam (https://github.com/Voyz/ibeam)
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
@@ -76,10 +76,8 @@ trading-bot/
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
-# BUG: Error when there are no alerts/trades to analyze
 
 # Developer
-# TODO: Add proper logging everywhere in the app
 # TODO: Set up a database
 # TODO: Set up UI
 # TODO: Add/update unit tests for every component
