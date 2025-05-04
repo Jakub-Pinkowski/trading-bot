@@ -128,6 +128,21 @@ def reset_aggressive_trading(monkeypatch):
     monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", False)
 
 
+# Webhook fixtures
+@pytest.fixture
+def mock_validate_ip(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.routes.webhook.validate_ip", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_process_trading_data(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.routes.webhook.safe_process_trading_data", mock)
+    return mock
+
+
 # Flask app fixtures
 @pytest.fixture
 def app():
