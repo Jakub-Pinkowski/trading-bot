@@ -3,13 +3,13 @@ import os
 
 from config import LOGS_DIR
 
-# Create the logs directory if it doesn't exist
-if not os.path.exists(LOGS_DIR):
-    os.makedirs(LOGS_DIR)
-
 
 # Custom logger
 def get_logger(name="app"):
+    # Create the logs directory if it doesn't exist
+    if not os.path.exists(LOGS_DIR):
+        os.makedirs(LOGS_DIR)
+
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # Set the logger to the lowest level to handle all logs
 
