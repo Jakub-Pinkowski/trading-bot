@@ -6,41 +6,6 @@ from flask import Flask
 from app.routes.webhook import webhook_blueprint
 
 
-# IBKR Orders fixtures
-@pytest.fixture(autouse=False)
-def mock_get_contract_position(monkeypatch):
-    mock = MagicMock()
-    monkeypatch.setattr("app.services.ibkr.orders.get_contract_position", mock)
-    return mock
-
-
-@pytest.fixture
-def mock_api_post_orders(monkeypatch):
-    mock = MagicMock()
-    monkeypatch.setattr("app.services.ibkr.orders.api_post", mock)
-    return mock
-
-
-@pytest.fixture
-def mock_logger_orders(monkeypatch):
-    mock = MagicMock()
-    monkeypatch.setattr("app.services.ibkr.orders.logger", mock)
-    return mock
-
-
-@pytest.fixture
-def mock_suppress_messages(monkeypatch):
-    mock = MagicMock()
-    monkeypatch.setattr("app.services.ibkr.orders.suppress_messages", mock)
-    return mock
-
-
-@pytest.fixture(autouse=True)
-def reset_aggressive_trading(monkeypatch):
-    # Reset AGGRESSIVE_TRADING to False unless individually overridden
-    monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", False)
-
-
 # IBKR Connection fixtures
 @pytest.fixture
 def mock_logger_connection(monkeypatch):
@@ -104,6 +69,41 @@ def mock_get_closest_contract(monkeypatch):
     mock = MagicMock()
     monkeypatch.setattr("app.services.ibkr.contracts.get_closest_contract", mock)
     return mock
+
+
+# IBKR Orders fixtures
+@pytest.fixture(autouse=False)
+def mock_get_contract_position(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr.orders.get_contract_position", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_api_post_orders(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr.orders.api_post", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_logger_orders(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr.orders.logger", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_suppress_messages(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("app.services.ibkr.orders.suppress_messages", mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def reset_aggressive_trading(monkeypatch):
+    # Reset AGGRESSIVE_TRADING to False unless individually overridden
+    monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", False)
 
 
 # Flask app fixtures
