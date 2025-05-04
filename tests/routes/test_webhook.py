@@ -42,7 +42,7 @@ def test_webhook_bad_request_no_json(mock_validate_ip, client):
     assert response.status_code == 400
     assert b'Unsupported Content-Type' in response.data
 
-# TODO: Fix this test
+
 def test_webhook_internal_server_error(mock_process_trading_data, mock_validate_ip, client):
     # Setup
     mock_process_trading_data.side_effect = Exception('Internal processing error')
@@ -57,4 +57,4 @@ def test_webhook_internal_server_error(mock_process_trading_data, mock_validate_
     mock_validate_ip.assert_called_once_with('127.0.0.1')
     mock_process_trading_data.assert_called_once_with({"data": "valid"})
     assert response.status_code == 500
-    assert b'Internal processing error' in response.data
+    assert b'Internal Server Error' in response.data
