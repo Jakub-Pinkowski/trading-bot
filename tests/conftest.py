@@ -160,22 +160,3 @@ def flask_app():
     app = Flask(__name__)
     with app.app_context():
         yield app
-
-
-# Utils fixtures
-@pytest.fixture
-def mock_response_factory():
-    def _make_mock_response(data=None, raise_exc=None):
-        def json_func():
-            return data if data is not None else {"data": "test_data"}
-
-        def raise_for_status_func():
-            if raise_exc:
-                raise raise_exc
-
-        response = type("MockResponse", (), {})()
-        response.json = json_func
-        response.raise_for_status = raise_for_status_func
-        return response
-
-    return _make_mock_response
