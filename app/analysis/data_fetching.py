@@ -32,7 +32,7 @@ def get_tw_alerts_data():
     files = [f for f in os.listdir(TW_ALERTS_DIR) if f.startswith("TradingView_Alerts_Log_") and f.endswith(".csv")]
 
     if not files:
-        logger.error(f"No files found in '{TW_ALERTS_DIR}' with prefix 'TradingView_Alerts_Log_'.")
+        logger.warning(f"No files found in '{TW_ALERTS_DIR}' with prefix 'TradingView_Alerts_Log_'.")
         return pd.DataFrame()  # Return empty DataFrame if missing
 
     try:
@@ -45,7 +45,7 @@ def get_tw_alerts_data():
     alerts_file_path = os.path.join(TW_ALERTS_DIR, latest_file)
 
     if not os.path.exists(alerts_file_path):
-        logger.error(f"The file '{alerts_file_path}' does not exist.")
+        logger.warning(f"The file '{alerts_file_path}' does not exist.")
         return pd.DataFrame()
 
     try:
