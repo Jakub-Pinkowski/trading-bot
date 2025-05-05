@@ -16,7 +16,11 @@ def pre_clean_tw_alerts_data(df):
 
     # Rename the `Time` column to `timestamp` and convert to datetime
     df = df.rename(columns={'Time': 'timestamp'})
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    try:
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+    except Exception as e:
+        logger.error(f"Failed to convert 'timestamp' to datetime: {e}")
+        return pd.DataFrame()
 
     # Remove timezone information to keep dtype as datetime64[ns]
     if isinstance(df['timestamp'].dtype, pd.DatetimeTZDtype):
