@@ -1,5 +1,9 @@
 import pandas as pd
 
+from app.utils.logger import get_logger
+
+logger = get_logger()
+
 # NOTE: Those are TW multipliers, might not with properly with actual trades
 # Contract multipliers
 contract_multipliers = {
@@ -37,7 +41,6 @@ contract_multipliers = {
     'MYM': 0.5,
     'M2K': 5,
 }
-
 
 
 def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multiplier_, open_trades, processed_trades):
@@ -104,6 +107,8 @@ def match_trades(trades, is_alerts=False):
         size = 1 if is_alerts else row['size']
         commission = 0 if is_alerts else row['commission']
         multiplier = contract_multipliers.get(symbol, 1)
+        if symbol not in contract_multipliers:
+            logger.warning(f"Symbol '{symbol}' not in contract_multipliers. Using multiplier=1.")
 
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 
