@@ -1,15 +1,14 @@
 # PyCharm specific files
 .idea/
+__pycache__/
+
+# macOS
+.DS_Store
 
 # Virtual environments
 venv/
 .venv/
-env/
-ENV/
 *.env
-
-# DS_Store for macOS
-.DS_Store
 
 # Client portal
 clientportal/
@@ -17,11 +16,8 @@ clientportal/
 # Data
 data/
 
-#Logs
+# Logs
 logs/
 
-# Cache
-__pycache__/
-
 # Strategies
-/strategies
+strategies/
