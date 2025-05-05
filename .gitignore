@@ -22,3 +22,6 @@ logs/
 
 # Cache
 __pycache__/
+
+# Strategies
+/strategies
