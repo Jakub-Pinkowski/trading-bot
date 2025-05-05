@@ -81,6 +81,7 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Developer
+# TODO: Use logger in all the aoo
 # TODO: Set up a database
 # TODO: Set up UI
 # TODO: Add/update unit tests for every component
