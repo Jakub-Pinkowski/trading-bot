@@ -48,6 +48,8 @@ def mock_logging_setup():
 
 
 def test_get_logger_creates_logs_dir():
+    """Test that get_logger creates the logs directory if it doesn't exist"""
+
     with patch("app.utils.logger.os.path.exists", return_value=False), \
             patch("app.utils.logger.os.makedirs") as mock_makedirs, \
             patch("app.utils.logger.logging"):
@@ -56,6 +58,8 @@ def test_get_logger_creates_logs_dir():
 
 
 def test_get_logger_default_name(mock_logging_setup):
+    """Test that get_logger uses the default name 'app' when no name is provided"""
+
     logger = get_logger()
 
     mock_logging_setup['logging'].getLogger.assert_called_once_with("app")
@@ -63,6 +67,7 @@ def test_get_logger_default_name(mock_logging_setup):
 
 def test_get_logger_custom_name(mock_logging_setup):
     """Test that get_logger uses a custom name if provided"""
+
     logger = get_logger("custom_logger")
 
     mock_logging_setup['logging'].getLogger.assert_called_once_with("custom_logger")
@@ -70,6 +75,7 @@ def test_get_logger_custom_name(mock_logging_setup):
 
 def test_get_logger_sets_level(mock_logging_setup):
     """Test that get_logger sets the logger level to DEBUG"""
+
     logger = get_logger()
 
     mock_logging_setup['logger'].setLevel.assert_called_once_with(mock_logging_setup['logging'].DEBUG)
@@ -77,6 +83,7 @@ def test_get_logger_sets_level(mock_logging_setup):
 
 def test_get_logger_creates_formatter(mock_logging_setup):
     """Test that get_logger creates a formatter with the expected format"""
+
     logger = get_logger()
 
     mock_logging_setup['logging'].Formatter.assert_called_once_with(
@@ -86,6 +93,7 @@ def test_get_logger_creates_formatter(mock_logging_setup):
 
 def test_get_logger_creates_debug_handler(mock_logging_setup):
     """Test that get_logger creates a debug handler with the expected configuration"""
+
     logger = get_logger()
 
     # Check that the debug handler was created with the correct file path
@@ -100,6 +108,7 @@ def test_get_logger_creates_debug_handler(mock_logging_setup):
 
 def test_get_logger_creates_info_handler(mock_logging_setup):
     """Test that get_logger creates an info handler with the expected configuration"""
+
     logger = get_logger()
 
     # Check that the info handler was created with the correct file path
@@ -114,6 +123,7 @@ def test_get_logger_creates_info_handler(mock_logging_setup):
 
 def test_get_logger_creates_error_handler(mock_logging_setup):
     """Test that get_logger creates an error handler with the expected configuration"""
+
     logger = get_logger()
 
     # Check that the error handler was created with the correct file path
@@ -127,6 +137,7 @@ def test_get_logger_creates_error_handler(mock_logging_setup):
 
 def test_get_logger_creates_console_handler(mock_logging_setup):
     """Test that get_logger creates a console handler with the expected configuration"""
+
     logger = get_logger()
 
     # Check that the console handler was created

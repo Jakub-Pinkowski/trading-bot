@@ -25,6 +25,7 @@ def mock_response_factory():
 
 
 def test_get_headers_without_payload():
+    """Test that get_headers returns the expected default headers when no payload is provided"""
     # Call get_headers function without any payload parameter
     headers = get_headers()
 

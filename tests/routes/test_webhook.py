@@ -2,6 +2,7 @@ from werkzeug.exceptions import Forbidden
 
 
 def test_webhook_successful(mock_process_trading_data, mock_validate_ip, client):
+    """Test that webhook endpoint successfully processes valid requests"""
     # Setup
     response = client.post('/webhook',
                            json={"data": "valid"},
@@ -15,6 +16,7 @@ def test_webhook_successful(mock_process_trading_data, mock_validate_ip, client)
 
 
 def test_webhook_unallowed_ip(mock_validate_ip, client):
+    """Test that webhook endpoint returns 403 Forbidden for unallowed IP addresses"""
     # Setup
     mock_validate_ip.side_effect = Forbidden(description='Forbidden IP')
 
@@ -31,6 +33,7 @@ def test_webhook_unallowed_ip(mock_validate_ip, client):
 
 
 def test_webhook_bad_request_no_json(mock_validate_ip, client):
+    """Test that webhook endpoint returns 400 Bad Request for non-JSON content"""
     # Setup & Execute
     response = client.post('/webhook',
                            data="some data",
@@ -44,6 +47,7 @@ def test_webhook_bad_request_no_json(mock_validate_ip, client):
 
 
 def test_webhook_internal_server_error(mock_process_trading_data, mock_validate_ip, client):
+    """Test that webhook endpoint returns 500 Internal Server Error when processing fails"""
     # Setup
     mock_process_trading_data.side_effect = Exception('Internal processing error')
 

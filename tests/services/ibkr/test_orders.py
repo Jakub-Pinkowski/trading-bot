@@ -3,6 +3,8 @@ from config import QUANTITY_TO_TRADE
 
 
 def test_place_order_new_buy_position(mock_get_contract_position, mock_api_post_orders):
+    """Test that place_order creates a new buy position when no position exists"""
+
     # Mock contract position to return 0 (no existing position) and configure API response
     mock_get_contract_position.return_value = 0  # No existing position
     mock_api_post_orders.return_value = {"id": "123456"}
@@ -20,6 +22,8 @@ def test_place_order_new_buy_position(mock_get_contract_position, mock_api_post_
 
 
 def test_place_order_new_sell_position(mock_get_contract_position, mock_api_post_orders):
+    """Test that place_order creates a new sell position when no position exists"""
+
     # Mock contract position to return 0 (no existing position) and configure API response
     mock_get_contract_position.return_value = 0
     mock_api_post_orders.return_value = {"id": "123456"}
@@ -37,6 +41,8 @@ def test_place_order_new_sell_position(mock_get_contract_position, mock_api_post
 
 
 def test_place_order_existing_same_position(mock_get_contract_position):
+    """Test that place_order takes no action when the desired position already exists"""
+
     # Test case 1: Mock existing long position (1) and attempt to buy more
     mock_get_contract_position.return_value = 1
 
@@ -62,6 +68,8 @@ def test_place_order_existing_same_position(mock_get_contract_position):
 def test_place_order_reverse_position_aggressive(
         monkeypatch, mock_get_contract_position, mock_api_post_orders
 ):
+    """Test that place_order reverses an existing position with double quantity in aggressive mode"""
+
     # Enable aggressive trading mode and mock existing long position with API response
     monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", True)
     mock_get_contract_position.return_value = 1  # existing long
@@ -82,6 +90,8 @@ def test_place_order_reverse_position_aggressive(
 def test_place_order_reverse_position_not_aggressive(
         mock_get_contract_position, mock_api_post_orders
 ):
+    """Test that place_order reverses an existing position with standard quantity in non-aggressive mode"""
+
     # Mock existing short position and API response (with default non-aggressive mode)
     mock_get_contract_position.return_value = -1  # existing short
     mock_api_post_orders.return_value = {"id": "123456"}
@@ -101,6 +111,8 @@ def test_place_order_reverse_position_not_aggressive(
 def test_place_order_with_message_suppression(
         mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
 ):
+    """Test that place_order handles message suppression before completing an order"""
+
     # Reset mock, set no existing position, and configure API to first return message IDs then success
     mock_get_contract_position.reset_mock()
     mock_get_contract_position.return_value = 0
@@ -123,6 +135,8 @@ def test_place_order_with_message_suppression(
 def test_place_order_insufficient_funds_error(
         mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
+    """Test that place_order handles and logs insufficient funds errors"""
+
     # Mock no existing position and API returning an insufficient funds error
     mock_get_contract_position.return_value = 0
     mock_api_post_orders.return_value = {"error": "available funds are insufficient"}
@@ -141,6 +155,8 @@ def test_place_order_insufficient_funds_error(
 def test_place_order_derivative_rules_error(
         mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
+    """Test that place_order handles and logs derivative rules compliance errors"""
+
     # Mock no existing position and API returning a derivative rules compliance error
     mock_get_contract_position.return_value = 0
     mock_api_post_orders.return_value = {"error": "does not comply with our order handling rules for derivatives"}
@@ -159,6 +175,8 @@ def test_place_order_derivative_rules_error(
 def test_place_order_unhandled_error(
         mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
+    """Test that place_order handles and logs unrecognized error types"""
+
     # Mock no existing position and API returning an unrecognized error type
     mock_get_contract_position.return_value = 0
     mock_api_post_orders.return_value = {"error": "some other error"}
@@ -177,6 +195,8 @@ def test_place_order_unhandled_error(
 def test_place_order_unexpected_exception(
         mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
+    """Test that place_order catches and logs unexpected exceptions"""
+
     # Mock no existing position and API raising an unexpected exception
     mock_get_contract_position.return_value = 0
     mock_api_post_orders.side_effect = Exception("Test error")
