@@ -28,16 +28,16 @@ def test_get_contract_id_from_cache(
 def test_get_contract_id_cache_miss(
         mock_logger_contracts, mock_load_file, mock_save_file, mock_parse_symbol, mock_fetch_contract, mock_get_closest_contract
 ):
-    # Setup
+    # Mock symbol parsing, empty cache, contract fetching, and contract selection
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {}  # Empty cache
     mock_fetch_contract.return_value = [{"conid": "123456", "expiry": "20231215"}]
     mock_get_closest_contract.return_value = {"conid": "123456", "expiry": "20231215"}
 
-    # Execute
+    # Call get_contract_id with a symbol when the contract is not in cache
     result = get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
 
-    # Assert
+    # Verify correct contract ID is returned, cache is updated, and no errors are logged
     assert result == "123456"
     mock_parse_symbol.assert_called_once_with("ES")
     mock_load_file.assert_called_once()
@@ -51,16 +51,16 @@ def test_get_contract_id_cache_miss(
 def test_get_contract_id_cache_invalid(
         mock_logger_contracts, mock_load_file, mock_save_file, mock_parse_symbol, mock_fetch_contract, mock_get_closest_contract
 ):
-    # Setup
+    # Mock symbol parsing, invalid cache data, contract fetching, and contract selection
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {"ES": "invalid"}  # Invalid cache entry (not a list)
     mock_fetch_contract.return_value = [{"conid": "123456", "expiry": "20231215"}]
     mock_get_closest_contract.return_value = {"conid": "123456", "expiry": "20231215"}
 
-    # Execute
+    # Call get_contract_id with a symbol when the cache contains invalid data
     result = get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
 
-    # Assert
+    # Verify correct contract ID is returned, cache is refreshed with valid data, and no errors are logged
     assert result == "123456"
     mock_parse_symbol.assert_called_once_with("ES")
     mock_load_file.assert_called_once()
@@ -74,7 +74,7 @@ def test_get_contract_id_cache_invalid(
 def test_get_contract_id_cache_value_error(
         mock_logger_contracts, mock_load_file, mock_save_file, mock_parse_symbol, mock_fetch_contract, mock_get_closest_contract
 ):
-    # Setup
+    # Mock symbol parsing, cache data, and contract selection that first fails then succeeds
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {"ES": [{"conid": "123456", "expiry": "20231215"}]}
     mock_get_closest_contract.side_effect = [
@@ -83,10 +83,10 @@ def test_get_contract_id_cache_value_error(
     ]
     mock_fetch_contract.return_value = [{"conid": "123456", "expiry": "20231215"}]
 
-    # Execute
+    # Call get_contract_id with a symbol when get_closest_contract initially raises ValueError
     result = get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
 
-    # Assert
+    # Verify correct contract ID is returned after refreshing contracts, warning is logged, and no errors
     assert result == "123456"
     mock_parse_symbol.assert_called_once_with("ES")
     mock_load_file.assert_called_once_with(CONTRACTS_FILE_PATH)
@@ -103,15 +103,16 @@ def test_get_contract_id_cache_value_error(
 def test_get_contract_id_no_contracts_found(
         mock_logger_contracts, mock_load_file, mock_save_file, mock_parse_symbol, mock_fetch_contract
 ):
-    # Setup
+    # Mock symbol parsing, empty cache, and contract fetching that returns no contracts
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {}  # Empty cache
     mock_fetch_contract.return_value = []  # No contracts found
 
-    # Execute & Assert
+    # Verify get_contract_id raises ValueError when no contracts are found for the symbol
     with pytest.raises(ValueError) as context:
         get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
 
+    # Verify error message, API calls, and that error is logged but cache is not updated
     assert "No contracts found for symbol" in str(context.value)
     mock_parse_symbol.assert_called_once_with("ES")
     mock_load_file.assert_called_once()
