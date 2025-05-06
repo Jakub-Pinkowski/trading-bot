@@ -151,13 +151,15 @@ def test_get_tw_alerts_data_no_files(mock_listdir):
     mock_listdir.assert_called_once()
 
 
-# BUG: Datetime issues, fix later
 @patch('app.analysis.data_fetching.load_data_from_json_files')
 @patch('app.analysis.data_fetching.fetch_trades_data')
 def test_get_trades_data(mock_fetch_trades, mock_load_data, sample_trades_data):
     """Test getting trades data."""
 
-    # Setup mocks
+    # Make sure 'trade_time' is within the last 24 hours to avoid recursion
+    now = pd.Timestamp.now()
+    sample_trades_data['trade_time'] = [now - pd.Timedelta(hours=1)]
+
     mock_load_data.return_value = sample_trades_data
 
     # Call the function
