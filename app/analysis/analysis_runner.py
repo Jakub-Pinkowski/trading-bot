@@ -1,5 +1,5 @@
 from app.analysis.data_cleaning import clean_alerts_data, clean_trades_data
-from app.analysis.data_fetching import get_alerts_data, get_tw_alerts_data, get_trades_data
+from app.analysis.data_fetching import get_tw_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
@@ -15,7 +15,6 @@ logger = get_logger()
 def run_analysis():
     print("Running analysis...")
     # Fetch raw data
-    alerts_data = get_alerts_data()
     tw_alerts_data = get_tw_alerts_data()
     trades_data = get_trades_data()
 
