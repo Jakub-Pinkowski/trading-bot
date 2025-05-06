@@ -47,11 +47,11 @@ def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multi
     if symbol_ not in open_trades:
         open_trades[symbol_] = []
 
-    if open_trades[symbol_] and ((side_ == 'B' and open_trades[symbol_][0]['side'] == 'S') or
-                                 (side_ == 'S' and open_trades[symbol_][0]['side'] == 'B')):
-        # Closing an opposite position (B -> S or S -> B)
-        open_trade = open_trades[symbol_].pop(0)
-        closing_size = min(open_trade['size'], size_)  # Close as many as possible
+    # Try to close with existing open positions (opposite side only)
+    while open_trades[symbol_] and ((side_ == 'B' and open_trades[symbol_][0]['side'] == 'S') or
+                                    (side_ == 'S' and open_trades[symbol_][0]['side'] == 'B')) and size_ > 0:
+        open_trade = open_trades[symbol_][0]
+        closing_size = min(open_trade['size'], size_)
         processed_trades.append({
             'symbol': symbol_,
             'entry_time': open_trade['trade_time'],
@@ -65,7 +65,14 @@ def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multi
             'size': closing_size,
             'total_commission': commission_ + open_trade['commission'],
         })
-        size_ -= closing_size  # Remaining size to open a new position
+
+        # Reduce sizes
+        open_trade['size'] -= closing_size
+        size_ -= closing_size
+
+        # Remove open trade if fully consumed
+        if open_trade['size'] == 0:
+            open_trades[symbol_].pop(0)
 
     # If there's still a remaining size, open a new position
     if size_ > 0:
