@@ -120,7 +120,5 @@ As noted in `structure.yaml`, there are several planned enhancements:
 - Automatic tool for IBKR login and session maintenance
 - Handling near delivery cases for futures positions
 - Google Sheets integration for data analysis
-- Continuous integration with automated testing
 - Database integration
 - User interface
-- Additional unit tests
