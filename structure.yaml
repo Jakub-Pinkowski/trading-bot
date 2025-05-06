@@ -76,6 +76,7 @@ trading-bot/
 # NOTE: On 04.05 at 00:01 - User is not authenticated. At 00:00:06 - Unexpected error while tickling IBKR API: 503 Server Error: Service Unavailable for url.
 # NOTE: 0n 04.05 at 20:34 - Unexpected error while tickling IBKR API.
 # NOTE: On 05.05 at 01:15 - User is not authenticated
+# NOTE: On 06.05 at 01:41 - User is not authenticated
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
