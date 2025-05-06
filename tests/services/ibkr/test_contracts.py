@@ -7,15 +7,15 @@ from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
 def test_get_contract_id_from_cache(
         mock_logger_contracts, mock_load_file, mock_parse_symbol, mock_get_closest_contract
 ):
-    # Setup
+    # Mock symbol parsing, cache loading with valid data, and contract selection
     mock_parse_symbol.return_value = "ES"
     mock_load_file.return_value = {"ES": [{"conid": "123456", "expiry": "20231215"}]}
     mock_get_closest_contract.return_value = {"conid": "123456", "expiry": "20231215"}
 
-    # Execute
+    # Call get_contract_id with a symbol and default expiry days
     result = get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
 
-    # Assert
+    # Verify correct contract ID is returned, cache is used, and no warnings are logged
     assert result == "123456"
     mock_parse_symbol.assert_called_once_with("ES")
     mock_load_file.assert_called_once()
