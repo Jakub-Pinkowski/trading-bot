@@ -26,6 +26,7 @@ def mock_response_factory():
 
 def test_get_headers_without_payload():
     """Test that get_headers returns the expected default headers when no payload is provided"""
+
     # Call get_headers function without any payload parameter
     headers = get_headers()
 
@@ -39,6 +40,8 @@ def test_get_headers_without_payload():
 
 
 def test_get_headers_with_payload():
+    """Test that get_headers includes Content-Length header when payload is provided"""
+
     # Create a sample payload dictionary to pass to the function
     payload = {"key": "value"}
 
@@ -57,6 +60,8 @@ def test_get_headers_with_payload():
 
 
 def test_api_get_success(monkeypatch, mock_response_factory):
+    """Test that api_get successfully returns data from a successful API response"""
+
     # Mock the requests.get function to return a successful response and set a test BASE_URL
     def mock_get(url, verify, headers):
         return mock_response_factory()
@@ -72,6 +77,8 @@ def test_api_get_success(monkeypatch, mock_response_factory):
 
 
 def test_api_get_http_error(monkeypatch, mock_response_factory):
+    """Test that api_get raises HTTPError when the API request fails"""
+
     # Mock the requests.get function to raise an HTTP error and set a test BASE_URL
     def mock_get(url, verify, headers):
         return mock_response_factory(raise_exc=requests.HTTPError("404 Client Error"))
@@ -85,6 +92,8 @@ def test_api_get_http_error(monkeypatch, mock_response_factory):
 
 
 def test_api_post_success(monkeypatch, mock_response_factory):
+    """Test that api_post successfully returns data from a successful API response"""
+
     # Mock the requests.post function to return a successful response and set a test BASE_URL
     def mock_post(url, json, verify, headers):
         return mock_response_factory()
@@ -101,6 +110,8 @@ def test_api_post_success(monkeypatch, mock_response_factory):
 
 
 def test_api_post_http_error(monkeypatch, mock_response_factory):
+    """Test that api_post raises HTTPError when the API request fails"""
+
     # Mock the requests.post function to raise an HTTP error and set a test BASE_URL
     def mock_post(url, json, verify, headers):
         return mock_response_factory(raise_exc=requests.HTTPError("500 Server Error"))

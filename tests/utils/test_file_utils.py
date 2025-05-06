@@ -27,6 +27,8 @@ def sample_dataframe():
 
 
 def test_load_file_existing_file(sample_json_data):
+    """Test that load_file correctly loads and returns JSON data from an existing file"""
+
     # Mock file existence and open operation, prepare JSON data for loading
     with patch("os.path.exists", return_value=True), \
             patch("builtins.open", mock_open(read_data=json.dumps(sample_json_data))), \
@@ -38,6 +40,8 @@ def test_load_file_existing_file(sample_json_data):
 
 
 def test_load_file_nonexistent_file():
+    """Test that load_file returns an empty dictionary when the file doesn't exist"""
+
     # Mock file existence to return False (file doesn't exist)
     with patch("os.path.exists", return_value=False):
         # Call load_file function with a nonexistent filename
@@ -47,6 +51,8 @@ def test_load_file_nonexistent_file():
 
 
 def test_save_file(sample_json_data):
+    """Test that save_file creates directories and writes JSON data to the specified file"""
+
     # Create mock objects for file operations and directory creation
     m = mock_open()
     with patch("os.makedirs") as mock_makedirs, \
@@ -61,6 +67,8 @@ def test_save_file(sample_json_data):
 
 
 def test_json_to_dataframe_dict(sample_json_data):
+    """Test that json_to_dataframe correctly converts a dictionary to a DataFrame"""
+
     # No additional setup needed, using the sample_json_data fixture
     # Convert the dictionary data to a DataFrame using json_to_dataframe
     result = json_to_dataframe(sample_json_data)
@@ -71,6 +79,8 @@ def test_json_to_dataframe_dict(sample_json_data):
 
 
 def test_json_to_dataframe_list():
+    """Test that json_to_dataframe correctly converts a list of dictionaries to a DataFrame"""
+
     # Create a list of dictionaries to test list-type JSON data conversion
     data = [{"name": "Item 1", "value": 100}, {"name": "Item 2", "value": 200}]
     # Convert the list data to a DataFrame using json_to_dataframe
@@ -84,7 +94,8 @@ def test_json_to_dataframe_list():
 
 
 def test_json_to_dataframe_empty():
-    # No setup needed, testing with an empty dictionary
+    """Test that json_to_dataframe returns an empty DataFrame when given an empty dictionary"""
+
     # Convert an empty dictionary to a DataFrame using json_to_dataframe
     result = json_to_dataframe({})
     # Verify the result is an empty DataFrame
@@ -93,6 +104,8 @@ def test_json_to_dataframe_empty():
 
 
 def test_json_to_dataframe_with_date_fields():
+    """Test that json_to_dataframe correctly converts date string fields to datetime objects"""
+
     # Create test data with date strings that should be converted to datetime objects
     data = [
         {"name": "Item 1", "date": "2023-01-01"},
@@ -106,6 +119,8 @@ def test_json_to_dataframe_with_date_fields():
 
 
 def test_save_to_csv_new_file(sample_dataframe):
+    """Test that save_to_csv correctly saves a DataFrame to a new CSV file"""
+
     # Mock file existence check to return False (file doesn't exist) and patch DataFrame.to_csv
     with patch("os.path.exists", return_value=False), \
             patch.object(pd.DataFrame, "to_csv") as mock_to_csv:
@@ -116,6 +131,8 @@ def test_save_to_csv_new_file(sample_dataframe):
 
 
 def test_save_to_csv_existing_file(sample_dataframe):
+    """Test that save_to_csv appends data to an existing CSV file"""
+
     # Create an existing dataframe and mock file existence, read_csv, to_csv, and concat operations
     existing_df = pd.DataFrame({
         "name": ["Item 3"],
@@ -133,6 +150,8 @@ def test_save_to_csv_existing_file(sample_dataframe):
 
 
 def test_save_to_csv_with_dict():
+    """Test that save_to_csv correctly converts a dictionary to a DataFrame before saving"""
+
     # Create a dictionary to test dictionary-to-csv conversion and mock file operations
     data = {"key1": "value1", "key2": "value2"}
     expected_df = pd.DataFrame([("key1", "value1"), ("key2", "value2")], columns=["Key", "Value"])
@@ -148,6 +167,8 @@ def test_save_to_csv_with_dict():
 
 
 def test_save_to_csv_invalid_data_type():
+    """Test that save_to_csv raises ValueError when given an invalid data type"""
+
     # No setup needed, testing error handling with invalid data type
     # Call save_to_csv with a string (invalid data type) and verify it raises the expected ValueError
     with pytest.raises(ValueError, match="Data must be either a Pandas DataFrame or a dictionary."):
@@ -159,6 +180,8 @@ def test_save_to_csv_invalid_data_type():
 @patch("app.utils.file_utils.json_to_dataframe")
 @patch("pandas.concat")
 def test_load_data_from_json_files(mock_concat, mock_json_to_df, mock_load_file, mock_glob):
+    """Test that load_data_from_json_files correctly loads and combines data from multiple JSON files"""
+
     # Mock all dependencies: glob to find files, load_file to read JSON, json_to_dataframe for conversion, and pandas.concat
     mock_glob.return_value = ["file1.json", "file2.json"]
     mock_load_file.side_effect = [{"data1": "value1"}, {"data2": "value2"}]
@@ -185,6 +208,8 @@ def test_load_data_from_json_files(mock_concat, mock_json_to_df, mock_load_file,
 
 @patch("app.utils.file_utils.glob")
 def test_load_data_from_json_files_no_files(mock_glob):
+    """Test that load_data_from_json_files returns an empty DataFrame when no files are found"""
+
     # Mock glob to return an empty list, simulating no matching files found
     mock_glob.return_value = []
 

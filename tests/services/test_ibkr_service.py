@@ -4,6 +4,8 @@ from app.services.ibkr_service import process_trading_data
 
 
 def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data correctly processes normal trading data and places an order"""
+
     # Configure mocks to return expected values and create normal trading data with "dummy" set to "NO"
     mock_get_contract_id.return_value = "123456"
     mock_place_order.return_value = {"id": "order123"}
@@ -25,6 +27,8 @@ def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order,
 
 
 def test_process_trading_data_dummy(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data doesn't place orders when in dummy mode"""
+
     # Configure mock and create trading data with "dummy" set to "YES" to test dummy mode
     mock_get_contract_id.return_value = "123456"
     trading_data = {
@@ -44,6 +48,8 @@ def test_process_trading_data_dummy(mock_logger_ibkr_service, mock_place_order, 
 
 
 def test_process_trading_data_sell(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data correctly processes sell orders"""
+
     # Configure mocks and create trading data with "side" set to "S" (sell) to test sell orders
     mock_get_contract_id.return_value = "123456"
     mock_place_order.return_value = {"id": "order123"}
@@ -65,6 +71,8 @@ def test_process_trading_data_sell(mock_logger_ibkr_service, mock_place_order, m
 
 
 def test_process_trading_data_missing_fields(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data handles trading data with missing fields"""
+
     # Configure mock and create trading data with missing "dummy" field to test default behavior
     mock_get_contract_id.return_value = "123456"
     trading_data = {
@@ -84,6 +92,8 @@ def test_process_trading_data_missing_fields(mock_logger_ibkr_service, mock_plac
 
 
 def test_process_trading_data_error_handling(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data propagates exceptions from get_contract_id"""
+
     # Configure mock to raise an exception when get_contract_id is called and create normal trading data
     mock_get_contract_id.side_effect = ValueError("Test error")
     trading_data = {
