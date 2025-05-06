@@ -28,11 +28,11 @@ trading-bot/
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
-│   │   │   ├── contract_utils.py                 # Contracts utilities
+│   │   │   ├── contracts_utils.py                # Contracts utilities
 │   │   │   ├── ibkr_utils.py                     # Generic IBKR utilities
 │   │   │   └── orders_utils.py                   # Orders utilities
 │   │   ├── routes_utils/
-│   │   │   └── orders_utils.py                   # Webhook utilities
+│   │   │   └── webhook_utils.py                  # Webhook utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # General API utilities
 │   │   ├── file_utils.py                         # File utilities  
