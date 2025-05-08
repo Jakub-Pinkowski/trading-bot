@@ -68,6 +68,8 @@ trading-bot/
 # Functionality
 # BUG: 2025-05-07 00:40:21,409 - app - ERROR - No contracts found for symbol: MNG
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Add new strategies
+# TODO: Handle new strategies difference in accumulating one side positions
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Virtual Machine
@@ -78,7 +80,7 @@ trading-bot/
 # NOTE: On 05.05 at 01:15 - User is not authenticated
 # NOTE: On 06.05 at 01:41 - User is not authenticated
 # NOTE: On 07.05 at 01:31 - User is not authenticated
-# NOTE: On 08.05 at 01:47 - User is not authenticated
+# NOTE: On 08.05 at 01:47 - User is not authenticated, Execution of job "tickle_ibkr_api (trigger: interval[0:01:00], next run at: 2025-05-08 12:56:56 CEST)" skipped: maximum number of running instances reached (5)
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration
