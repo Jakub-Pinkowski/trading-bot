@@ -69,7 +69,8 @@ trading-bot/
 # BUG: 2025-05-07 00:40:21,409 - app - ERROR - No contracts found for symbol: MNG
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
 # TODO: Add new strategies
-# TODO: Handle new strategies difference in accumulating one side positions
+# TODO: Handle new strategies difference in accumulating one side positions (multiple buys in a row for example)
+# TODO: Handle the strategy differences in B/S alerts vs plotting in TradingView
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Virtual Machine
