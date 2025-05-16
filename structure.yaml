@@ -54,7 +54,10 @@ trading-bot/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
 │   └── info.logs                                 # Info logs 
-├── strategies/                                   # TradingView strategies
+├── strategies/
+│   ├── indicators/                               # Indicators
+│   ├── strategies/                               # Strategies
+│   ├── tw_indicators/                            # TW indicators
 ├── tests/                                        # Tests directory
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
