@@ -13,8 +13,4 @@ def parse_symbol(symbol):
 
     parsed_symbol = match.group(1)
 
-    # Convert special tickers if needed
-    if parsed_symbol == "MHG":
-        parsed_symbol = "MHNG"
-
     return parsed_symbol

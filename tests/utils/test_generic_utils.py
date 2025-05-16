@@ -14,14 +14,6 @@ def test_parse_symbol_valid():
     assert parse_symbol("AAPL-B") == "AAPL"
 
 
-def test_parse_symbol_special_case():
-    """Test that parse_symbol correctly handles the special case of MHG symbol conversion to MHNG"""
-
-    assert parse_symbol("MHG") == "MHNG"
-    assert parse_symbol("MHG123") == "MHNG"
-    assert parse_symbol("MHG.US") == "MHNG"
-
-
 @patch("app.utils.generic_utils.logger")
 def test_parse_symbol_invalid(mock_logger):
     """Test that parse_symbol raises ValueError for invalid symbol formats and logs errors"""
