@@ -1,0 +1,27 @@
+// NOTE: Worst indicator I've seen
+//@version=6
+indicator(title="Indicator MACD", overlay=true)
+
+// === INPUTS ===
+fastLength      = input.int(12, title="MACD Fast Length", minval=1)
+slowLength      = input.int(26, title="MACD Slow Length", minval=1)
+signalSmoothing = input.int(9, title="MACD Signal Smoothing", minval=1)
+
+// === MACD CALCULATION ===
+[macdLine, signalLine, _] = ta.macd(close, fastLength, slowLength, signalSmoothing)
+
+// === SIGNALS ===
+// Buy signal: MACD crosses above Signal line
+buy  = ta.crossover(macdLine, signalLine)
+// Sell signal: MACD crosses below Signal line
+sell = ta.crossunder(macdLine, signalLine)
+
+// === PLOTS ===
+plotshape(buy,  title="Buy",  text="Buy",  style=shape.labeldown, location=location.abovebar,
+          color=color.green, textcolor=color.white, size=size.small)
+plotshape(sell, title="Sell", text="Sell", style=shape.labelup,   location=location.belowbar,
+          color=color.red,   textcolor=color.white, size=size.small)
+
+// === ALERTS ===
+alertcondition(buy,  title="MACD Buy",  message="MACD Buy signal on {{ticker}} at {{close}}")
+alertcondition(sell, title="MACD Sell", message="MACD Sell signal on {{ticker}} at {{close}}")
