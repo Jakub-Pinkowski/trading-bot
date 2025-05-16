@@ -1,0 +1,63 @@
+// TODO: Fix this
+//@version=6
+strategy(title="Strategy ATR/EMA/RSI", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === Parameters ===
+src = close
+keyvalue      = input.float(3.5, title="ATR Multiplier. Adjusts stop size", step=0.5)
+atrperiod     = input.int(14, title="ATR Period")
+emaLen        = input.int(9, title="EMA Period")
+rsiPeriod     = input.int(14, title="RSI Period", minval=2)
+rsiUpper      = input.int(55, title="RSI Upper Threshold")
+rsiLower      = input.int(45, title="RSI Lower Threshold")
+
+// === ATR Trailing Stop ===
+xATR  = ta.atr(atrperiod)
+nLoss = keyvalue * xATR
+
+var float xATRTrailingStop = na
+xATRTrailingStop := src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0) ? math.max(nz(xATRTrailingStop[1]), src - nLoss) :
+   src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0) ? math.min(nz(xATRTrailingStop[1]), src + nLoss) :
+   src > nz(xATRTrailingStop[1], 0) ? src - nLoss : src + nLoss
+
+plot(xATRTrailingStop, color=color.new(color.orange, 0), title="Trailing Stop")
+
+// === EMA for Signal Logic ===
+ema9 = ta.ema(src, emaLen)
+plot(ema9, title="EMA 9", color=color.new(color.blue, 0))
+
+bullishCandle = close > open        // Current candle is bullish
+bearishCandle = close < open        // Current candle is bearish
+
+rsiValue = ta.rsi(close, rsiPeriod)
+
+// Entry signal conditions
+buy_signal_raw  = ta.crossover(ema9, xATRTrailingStop)
+sell_signal_raw = ta.crossunder(ema9, xATRTrailingStop)
+
+// Momentum filter application
+buy  = buy_signal_raw  and bullishCandle and rsiValue > rsiUpper
+sell = sell_signal_raw and bearishCandle and rsiValue < rsiLower
+
+isBarClosed = barstate.isconfirmed
+
+// === STRATEGY LOGIC: Auto Flip ===
+if (buy and isBarClosed)
+    strategy.close("Short")
+    strategy.entry("Long",  strategy.long)
+if (sell and isBarClosed)
+    strategy.close("Long")
+    strategy.entry("Short", strategy.short)
+
+// Trailing stops for both position types
+if (strategy.position_size > 0)
+    strategy.exit("Long Exit", "Long", stop=xATRTrailingStop)
+if (strategy.position_size < 0)
+    strategy.exit("Short Exit", "Short", stop=xATRTrailingStop)
+
+// Plots & Alerts
+plotshape(buy and isBarClosed, title="Buy", text='Buy', style=shape.labeldown, location=location.abovebar, color=color.aqua, textcolor=color.black, size=size.tiny)
+plotshape(sell and isBarClosed, title="Sell", text='Sell', style=shape.labelup, location=location.belowbar, color=color.orange, textcolor=color.black, size=size.tiny)
+
+alertcondition(buy and isBarClosed, title='B', message='{"symbol":"{{ticker}}","side":"B","price":{{close}}}')
+alertcondition(sell and isBarClosed, title='S', message='{"symbol":"{{ticker}}","side":"S","price":{{close}}}')

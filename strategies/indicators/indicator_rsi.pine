@@ -1,0 +1,24 @@
+//@version=6
+indicator(title="Indicator RSI", overlay=true)
+
+// === INPUTS ===
+rsiPeriod  = input.int(14, title="RSI Period", minval=2)
+overbought = input.int(65, title="Overbought Level")
+oversold   = input.int(35, title="Oversold Level")
+
+// === RSI CALCULATION ===
+rsiValue = ta.rsi(close, rsiPeriod)
+
+// === SIGNALS ===
+// Buy signal: RSI crosses above oversold level
+buy  = ta.crossover(rsiValue, oversold)
+// Sell signal: RSI crosses below overbought level
+sell = ta.crossunder(rsiValue, overbought)
+
+// === PLOTS ===
+plotshape(buy, title="Buy", text="Buy", style=shape.labelup,   location=location.belowbar, color=color.green, textcolor=color.white, size=size.small)
+plotshape(sell, title="Sell", text="Sell", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+
+// === ALERTS ===
+alertcondition(buy,  title="RSI Buy",  message="RSI Buy signal on {{ticker}} at {{close}}")
+alertcondition(sell, title="RSI Sell", message="RSI Sell signal on {{ticker}} at {{close}}")
