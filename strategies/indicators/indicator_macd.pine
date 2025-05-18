@@ -1,27 +1,74 @@
-// NOTE: Worst indicator I've seen
 //@version=6
-indicator(title="Indicator MACD", overlay=true)
+indicator(title="MACD (Moving Average Convergence Divergence)", overlay=false)
 
 // === INPUTS ===
-fastLength      = input.int(12, title="MACD Fast Length", minval=1)
-slowLength      = input.int(26, title="MACD Slow Length", minval=1)
-signalSmoothing = input.int(9, title="MACD Signal Smoothing", minval=1)
+fastLength = input.int(12, title="MACD Fast Length", minval=1)
+slowLength = input.int(26, title="MACD Slow Length", minval=1)
+signalLength = input.int(9, title="MACD Signal Smoothing", minval=1)
+useHistogram = input.bool(true, title="Use Histogram for Signals")
+useZeroCross = input.bool(false, title="Use Zero Line Crosses")
+// Added inputs for reducing trade frequency
+minSignalStrength = input.float(0.0002, title="Minimum Signal Strength", step=0.0001, tooltip="Minimum MACD line value to consider a signal valid")
+cooldownPeriod = input.int(10, title="Signal Cooldown Period", minval=1, tooltip="Minimum number of bars between signals")
 
 // === MACD CALCULATION ===
-[macdLine, signalLine, _] = ta.macd(close, fastLength, slowLength, signalSmoothing)
+[macdLine, signalLine, histLine] = ta.macd(close, fastLength, slowLength, signalLength)
 
 // === SIGNALS ===
-// Buy signal: MACD crosses above Signal line
-buy  = ta.crossover(macdLine, signalLine)
-// Sell signal: MACD crosses below Signal line
-sell = ta.crossunder(macdLine, signalLine)
+// Signal line crossovers
+crossoverBuy = ta.crossover(macdLine, signalLine)
+crossoverSell = ta.crossunder(macdLine, signalLine)
+
+// Histogram reversals
+histogramReversalBuy = histLine > histLine[1] and histLine[1] < histLine[2] and histLine < 0
+histogramReversalSell = histLine < histLine[1] and histLine[1] > histLine[2] and histLine > 0
+
+// Zero line crosses
+zeroLineBuy = ta.crossover(macdLine, 0)
+zeroLineSell = ta.crossunder(macdLine, 0)
+
+// Signal strength filter
+signalStrengthOK = math.abs(macdLine - signalLine) >= minSignalStrength
+
+// Cooldown timer to reduce trade frequency
+var int lastSignalBar = -cooldownPeriod
+cooldownOK = bar_index - lastSignalBar >= cooldownPeriod
+
+// Combined signals based on user preferences with additional filters
+rawBuy = useHistogram ? histogramReversalBuy : useZeroCross ? zeroLineBuy : crossoverBuy
+rawSell = useHistogram ? histogramReversalSell : useZeroCross ? zeroLineSell : crossoverSell
+
+// Apply filters to reduce frequency
+buy = rawBuy and signalStrengthOK and cooldownOK
+sell = rawSell and signalStrengthOK and cooldownOK
+
+// Update last signal bar
+if buy or sell
+    lastSignalBar := bar_index
 
 // === PLOTS ===
-plotshape(buy,  title="Buy",  text="Buy",  style=shape.labeldown, location=location.abovebar,
-          color=color.green, textcolor=color.white, size=size.small)
-plotshape(sell, title="Sell", text="Sell", style=shape.labelup,   location=location.belowbar,
-          color=color.red,   textcolor=color.white, size=size.small)
+// Plot MACD components
+macdColor = macdLine > signalLine ? color.green : color.red
+signalColor = color.new(#FF9800, 0)  // Orange color for signal line
+histColor = histLine > 0 ? (histLine > histLine[1] ? color.green : color.new(color.green, 50)) :
+                          (histLine < histLine[1] ? color.red : color.new(color.red, 50))
+
+// Plot MACD line, signal line, and histogram
+// plot(macdLine, title="MACD Line", color=macdColor, linewidth=2)
+// plot(signalLine, title="Signal Line", color=signalColor, linewidth=1)
+// plot(histLine, title="Histogram", color=histColor, style=plot.style_columns)
+
+// // Plot zero line
+// plot(0, title="Zero Line", color=color.new(color.gray, 50), linewidth=1, style=plot.style_line)
+
+// Plot buy/sell signals
+plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar,
+          color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar,
+          color=color.red, textcolor=color.white, size=size.tiny)
 
 // === ALERTS ===
-alertcondition(buy,  title="MACD Buy",  message="MACD Buy signal on {{ticker}} at {{close}}")
-alertcondition(sell, title="MACD Sell", message="MACD Sell signal on {{ticker}} at {{close}}")
+alertcondition(buy, title="MACD Buy",
+               message="MACD Buy signal on {{ticker}} at {{close}}")
+alertcondition(sell, title="MACD Sell",
+               message="MACD Sell signal on {{ticker}} at {{close}}")
