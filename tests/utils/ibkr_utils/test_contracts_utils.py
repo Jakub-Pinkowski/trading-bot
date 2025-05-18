@@ -11,6 +11,7 @@ from config import MIN_DAYS_UNTIL_EXPIRY
 @patch('app.utils.ibkr_utils.contracts_utils.api_get')
 def test_fetch_contract_success(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract successfully fetches and returns contract data."""
+
     # Setup mocks
     mock_parse_symbol.return_value = "ES"
     mock_api_get.return_value = {"ES": [{"conid": "123456", "expirationDate": "20231215"}]}
@@ -28,6 +29,7 @@ def test_fetch_contract_success(mock_api_get, mock_parse_symbol):
 @patch('app.utils.ibkr_utils.contracts_utils.api_get')
 def test_fetch_contract_api_error(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract handles API errors gracefully."""
+
     # Setup mocks
     mock_parse_symbol.return_value = "ES"
     mock_api_get.side_effect = Exception("API error")
@@ -45,6 +47,7 @@ def test_fetch_contract_api_error(mock_api_get, mock_parse_symbol):
 @patch('app.utils.ibkr_utils.contracts_utils.api_get')
 def test_fetch_contract_empty_response(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract handles empty API responses."""
+
     # Setup mocks
     mock_parse_symbol.return_value = "ES"
     mock_api_get.return_value = {}
@@ -60,6 +63,7 @@ def test_fetch_contract_empty_response(mock_api_get, mock_parse_symbol):
 
 def test_get_closest_contract_valid():
     """Test that get_closest_contract returns the closest valid contract."""
+
     # Create test data with multiple contracts
     today = datetime.today()
     future_date1 = today + timedelta(days=MIN_DAYS_UNTIL_EXPIRY + 10)
@@ -79,6 +83,7 @@ def test_get_closest_contract_valid():
 
 def test_get_closest_contract_no_valid_contracts():
     """Test that get_closest_contract raises ValueError when no valid contracts are available."""
+
     # Create test data with only expired contracts
     today = datetime.today()
     past_date = today - timedelta(days=1)
@@ -94,6 +99,7 @@ def test_get_closest_contract_no_valid_contracts():
 
 def test_get_closest_contract_empty_list():
     """Test that get_closest_contract raises ValueError when given an empty list."""
+
     # Verify the function raises ValueError when given an empty list
     with pytest.raises(ValueError, match="No valid .* contracts available"):
         get_closest_contract([])
@@ -101,6 +107,7 @@ def test_get_closest_contract_empty_list():
 
 def test_get_closest_contract_custom_min_days():
     """Test that get_closest_contract respects custom min_days_until_expiry."""
+
     # Create test data with contracts at different future dates
     today = datetime.today()
     future_date1 = today + timedelta(days=10)  # This would be valid with default MIN_DAYS_UNTIL_EXPIRY
