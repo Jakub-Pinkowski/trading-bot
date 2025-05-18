@@ -35,11 +35,11 @@ plot(emaFast, title="EMA Fast", color=color.blue, linewidth=2, display=maType ==
 plot(emaSlow, title="EMA Slow", color=color.red, linewidth=2, display=maType == "EMA" ? display.all : display.none)
 
 // SMA plots
-plot(smaFast, title="SMA Fast", color=color.green, linewidth=2, display=maType == "SMA" ? display.all : display.none)
-plot(smaSlow, title="SMA Slow", color=color.orange, linewidth=2, display=maType == "SMA" ? display.all : display.none)
+plot(smaFast, title="SMA Fast", color=color.blue, linewidth=2, display=maType == "SMA" ? display.all : display.none)
+plot(smaSlow, title="SMA Slow", color=color.red, linewidth=2, display=maType == "SMA" ? display.all : display.none)
 
 // WMA plot
-plot(wma, title="WMA", color=color.purple, linewidth=2, display=maType == "WMA" ? display.all : display.none)
+plot(wma, title="WMA", color=color.blue, linewidth=2, display=maType == "WMA" ? display.all : display.none)
 
 // Signal plots
 plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.tiny)

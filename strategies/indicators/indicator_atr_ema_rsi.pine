@@ -18,7 +18,7 @@ var int pos = 0
 pos := src[1] < nz(xATRTrailingStop[1], 0) and src > nz(xATRTrailingStop[1], 0) ? 1 :
    src[1] > nz(xATRTrailingStop[1], 0) and src < nz(xATRTrailingStop[1], 0) ? -1 : nz(pos[1], 0)
 
-xcolor = pos == -1 ? color.orange : pos == 1 ? color.aqua : color.blue
+xcolor = pos == -1 ? color.red : pos == 1 ? color.green : color.blue
 
 plot(xATRTrailingStop, color=xcolor, title="Trailing Stop")
 
@@ -49,8 +49,8 @@ sell = sell_signal_raw and bearishCandle and rsiValue < rsiLower
 isBarClosed = barstate.isconfirmed
 
 // === Plot BUY/SELL signals ===
-plotshape(buy and isBarClosed, title="Buy", text='Buy', style=shape.labeldown, location=location.abovebar, color=color.aqua, textcolor=color.black, size=size.tiny)
-plotshape(sell and isBarClosed, title="Sell", text='Sell', style=shape.labelup, location=location.belowbar, color=color.orange, textcolor=color.black, size=size.tiny)
+plotshape(buy and isBarClosed, title="Buy", text='Buy', style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sell and isBarClosed, title="Sell", text='Sell', style=shape.labelup, location=location.belowbar, color=color.red, textcolor=color.white, size=size.tiny)
 
 // === Alerts ===
 alertcondition(buy and isBarClosed, title='B', message='{"symbol":"{{ticker}}","side":"B","price":{{close}}}')
