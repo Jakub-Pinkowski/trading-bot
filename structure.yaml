@@ -88,6 +88,8 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Backtesting
+# NOTE: Possible data providers: polygon.io or databento.com
+# NOTE: Check out obside.com
 # TODO: Stitch multiple futures conids together
 # TODO: Find out what's the exact IBKR futures cut-off for trading
 
