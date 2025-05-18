@@ -1,0 +1,68 @@
+// TODO: Make the lines nicer
+//@version=6
+indicator(title="ATR (Average True Range)", overlay=true)
+
+// === INPUTS ===
+atrPeriod = input.int(14, title="ATR Period", minval=1)
+atrMultiplier = input.float(2.0, title="ATR Multiplier for Stops", step=0.1, minval=0.1)
+useTrailingStop = input.bool(true, title="Use Trailing Stop")
+useVolatilityBreakout = input.bool(false, title="Use Volatility Breakout Signals")
+
+// === ATR CALCULATION ===
+atrValue = ta.atr(atrPeriod)
+
+// === TRAILING STOP CALCULATION ===
+// Initialize trailing stop variables
+var float longStop = na
+var float shortStop = na
+var int trend = 0  // 1 for uptrend, -1 for downtrend
+
+// Update trailing stops
+if (trend >= 0)  // In uptrend or no trend yet
+    longStop := math.max(nz(longStop, close - atrMultiplier * atrValue), close - atrMultiplier * atrValue)
+    if (close < longStop)
+        trend := -1
+        shortStop := close + atrMultiplier * atrValue
+else  // In downtrend
+    shortStop := math.min(nz(shortStop, close + atrMultiplier * atrValue), close + atrMultiplier * atrValue)
+    if (close > shortStop)
+        trend := 1
+        longStop := close - atrMultiplier * atrValue
+
+// === VOLATILITY BREAKOUT SIGNALS ===
+// High volatility: ATR is significantly higher than its moving average
+atrMA = ta.sma(atrValue, atrPeriod)
+highVolatility = atrValue > atrMA * 1.5
+
+// Breakout signals
+breakoutUp = highVolatility and close > close[1] + atrValue
+breakoutDown = highVolatility and close < close[1] - atrValue
+
+// === SIGNALS ===
+// Trailing stop signals
+trailingStopBuy = trend == 1 and trend[1] == -1
+trailingStopSell = trend == -1 and trend[1] == 1
+
+// Combined signals
+buy = useTrailingStop ? trailingStopBuy : (useVolatilityBreakout and breakoutUp)
+sell = useTrailingStop ? trailingStopSell : (useVolatilityBreakout and breakoutDown)
+
+// === PLOTS ===
+// Plot trailing stops
+plot(trend > 0 ? longStop : na, title="Long Stop", color=color.green, linewidth=2)
+plot(trend < 0 ? shortStop : na, title="Short Stop", color=color.red, linewidth=2)
+
+// Plot ATR value as a reference
+plot(atrValue, title="ATR Value", color=color.blue, linewidth=1, display=display.none)
+
+// Signal plots
+plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, 
+          color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar, 
+          color=color.red, textcolor=color.white, size=size.tiny)
+
+// === ALERTS ===
+alertcondition(buy, title="ATR Buy", 
+               message="ATR Buy signal on {{ticker}} at {{close}}")
+alertcondition(sell, title="ATR Sell", 
+               message="ATR Sell signal on {{ticker}} at {{close}}")

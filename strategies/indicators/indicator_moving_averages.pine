@@ -1,0 +1,50 @@
+//@version=6
+indicator(title="Moving Averages (EMA/SMA/WMA)", overlay=true)
+
+// === INPUTS ===
+emaFastLength = input.int(9, title="EMA Fast Length", minval=1)
+emaSlowLength = input.int(21, title="EMA Slow Length", minval=1)
+smaFastLength = input.int(20, title="SMA Fast Length", minval=1)
+smaSlowLength = input.int(50, title="SMA Slow Length", minval=1)
+wmaLength = input.int(14, title="WMA Length", minval=1)
+maType = input.string("EMA", title="Default MA Type", options=["EMA", "SMA", "WMA"])
+
+// === MOVING AVERAGES CALCULATION ===
+emaFast = ta.ema(close, emaFastLength)
+emaSlow = ta.ema(close, emaSlowLength)
+smaFast = ta.sma(close, smaFastLength)
+smaSlow = ta.sma(close, smaSlowLength)
+wma = ta.wma(close, wmaLength)
+
+// === SIGNALS ===
+// Buy signal: Fast MA crosses above Slow MA
+emaBuy = ta.crossover(emaFast, emaSlow)
+smaBuy = ta.crossover(smaFast, smaSlow)
+
+// Sell signal: Fast MA crosses below Slow MA
+emaSell = ta.crossunder(emaFast, emaSlow)
+smaSell = ta.crossunder(smaFast, smaSlow)
+
+// Use selected MA type for signals
+buy = maType == "EMA" ? emaBuy : maType == "SMA" ? smaBuy : false
+sell = maType == "EMA" ? emaSell : maType == "SMA" ? smaSell : false
+
+// === PLOTS ===
+// EMA plots
+plot(emaFast, title="EMA Fast", color=color.blue, linewidth=2, display=maType == "EMA" ? display.all : display.none)
+plot(emaSlow, title="EMA Slow", color=color.red, linewidth=2, display=maType == "EMA" ? display.all : display.none)
+
+// SMA plots
+plot(smaFast, title="SMA Fast", color=color.green, linewidth=2, display=maType == "SMA" ? display.all : display.none)
+plot(smaSlow, title="SMA Slow", color=color.orange, linewidth=2, display=maType == "SMA" ? display.all : display.none)
+
+// WMA plot
+plot(wma, title="WMA", color=color.purple, linewidth=2, display=maType == "WMA" ? display.all : display.none)
+
+// Signal plots
+plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar, color=color.red, textcolor=color.white, size=size.tiny)
+
+// === ALERTS ===
+alertcondition(buy, title="MA Buy", message="Moving Average Buy signal on {{ticker}} at {{close}}")
+alertcondition(sell, title="MA Sell", message="Moving Average Sell signal on {{ticker}} at {{close}}")
