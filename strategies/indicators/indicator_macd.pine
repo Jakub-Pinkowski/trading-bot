@@ -1,3 +1,4 @@
+// TODO: Add more plotting
 //@version=6
 indicator(title="MACD (Moving Average Convergence Divergence)", overlay=false)
 
@@ -52,14 +53,6 @@ macdColor = macdLine > signalLine ? color.green : color.red
 signalColor = color.new(#FF9800, 0)  // Orange color for signal line
 histColor = histLine > 0 ? (histLine > histLine[1] ? color.green : color.new(color.green, 50)) :
                           (histLine < histLine[1] ? color.red : color.new(color.red, 50))
-
-// Plot MACD line, signal line, and histogram
-// plot(macdLine, title="MACD Line", color=macdColor, linewidth=2)
-// plot(signalLine, title="Signal Line", color=signalColor, linewidth=1)
-// plot(histLine, title="Histogram", color=histColor, style=plot.style_columns)
-
-// // Plot zero line
-// plot(0, title="Zero Line", color=color.new(color.gray, 50), linewidth=1, style=plot.style_line)
 
 // Plot buy/sell signals
 plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar,
