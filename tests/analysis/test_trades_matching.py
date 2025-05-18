@@ -224,7 +224,7 @@ def test_format_processed_trades():
     # Verify the result is a DataFrame with the expected structure
     assert isinstance(result, pd.DataFrame)
     assert len(result) == 1
-    
+
     # Verify the values are formatted correctly
     assert result.iloc[0]["entry_price"] == 192.26
     assert result.iloc[0]["exit_price"] == 195.50

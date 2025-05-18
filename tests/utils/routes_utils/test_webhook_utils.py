@@ -128,7 +128,7 @@ def test_safe_process_trading_data_exception(mock_logger, mock_process_trading_d
     # Call the function with test data
     data = {"symbol": "AAPL", "side": "B", "price": 150.0}
     safe_process_trading_data(data)
-    
+
     # Verify that process_trading_data was called and the exception was logged
     mock_process_trading_data.assert_called_once_with(data)
     mock_logger.exception.assert_called_once()

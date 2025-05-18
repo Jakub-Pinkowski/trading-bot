@@ -4,6 +4,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger()
 
+
 def process_trading_data(trading_data):
     logger.info(f"Trading data received: {trading_data}")
 

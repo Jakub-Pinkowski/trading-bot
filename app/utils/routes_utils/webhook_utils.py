@@ -25,7 +25,6 @@ def parse_request_data(request):
         abort(400, description='Unsupported Content-Type')
 
 
-
 def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):
     # Don't save if it's just the dummy data
     if 'dummy' in data:
