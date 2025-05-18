@@ -149,6 +149,22 @@ def test_save_to_csv_existing_file(sample_dataframe):
         mock_to_csv.assert_called_once()
 
 
+def test_save_to_csv_existing_file_read_error(sample_dataframe):
+    """Test that save_to_csv handles exceptions when reading an existing CSV file"""
+
+    # Mock file existence to return True, but read_csv to raise an exception
+    with patch("os.path.exists", return_value=True), \
+            patch("pandas.read_csv", side_effect=Exception("CSV read error")), \
+            patch("app.utils.file_utils.logger.error") as mock_logger_error, \
+            patch.object(pd.DataFrame, "to_csv") as mock_to_csv:
+        # Call save_to_csv with sample dataframe and a test filename that "exists but can't be read"
+        save_to_csv(sample_dataframe, "test_file.csv")
+
+        # Verify error was logged and to_csv was still called to save the new data
+        mock_logger_error.assert_called_once()
+        mock_to_csv.assert_called_once()
+
+
 def test_save_to_csv_with_dict():
     """Test that save_to_csv correctly converts a dictionary to a DataFrame before saving"""
 

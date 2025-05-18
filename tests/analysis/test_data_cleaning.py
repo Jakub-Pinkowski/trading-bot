@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 
@@ -164,3 +166,14 @@ def test_clean_trades_data(sample_trades_data):
     assert isinstance(result.iloc[0]["commission"], float)
     assert isinstance(result.iloc[0]["net_amount"], float)
     assert isinstance(result.iloc[0]["price"], float)
+
+
+def test_pre_clean_tw_alerts_data_exception(sample_tw_alerts_data):
+    """Test exception handling in pre_clean_tw_alerts_data."""
+
+    # Mock pd.to_datetime to raise an exception
+    with patch('pandas.to_datetime', side_effect=Exception("Test exception")):
+        result = pre_clean_tw_alerts_data(sample_tw_alerts_data)
+
+        # Check that an empty DataFrame is returned
+        assert result.empty

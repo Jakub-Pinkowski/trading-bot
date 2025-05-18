@@ -20,10 +20,10 @@ def validate_ip(remote_addr):
 def parse_request_data(request):
     if request.content_type.startswith('application/json'):
         data = request.get_json()
+        return data
     else:
         abort(400, description='Unsupported Content-Type')
 
-    return data
 
 
 def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):

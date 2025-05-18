@@ -130,3 +130,28 @@ def test_get_contract_id_no_contracts_found(
     mock_save_file.assert_not_called()
     mock_logger_contracts.error.assert_called_once()
     mock_logger_contracts.warning.assert_not_called()
+
+
+def test_get_contract_id_no_valid_contract_in_fresh_data(
+        mock_logger_contracts, mock_load_file, mock_save_file, mock_parse_symbol, mock_fetch_contract, mock_get_closest_contract
+):
+    """Test that get_contract_id raises ValueError when no valid contract is found in fresh data"""
+
+    # Mock symbol parsing, empty cache, contract fetching, and contract selection that fails
+    mock_parse_symbol.return_value = "ES"
+    mock_load_file.return_value = {}  # Empty cache
+    mock_fetch_contract.return_value = [{"conid": "123456", "expiry": "20231215"}]
+    mock_get_closest_contract.side_effect = ValueError("No valid contract found")
+
+    # Verify get_contract_id raises ValueError when no valid contract is found
+    with pytest.raises(ValueError) as context:
+        get_contract_id("ES", MIN_DAYS_UNTIL_EXPIRY)
+
+    # Verify error message, API calls, and that error is logged
+    assert "No valid contract found" in str(context.value)
+    mock_parse_symbol.assert_called_once_with("ES")
+    mock_load_file.assert_called_once()
+    mock_fetch_contract.assert_called_once_with("ES")
+    mock_save_file.assert_called_once()
+    mock_logger_contracts.error.assert_called_once()
+    mock_logger_contracts.warning.assert_not_called()

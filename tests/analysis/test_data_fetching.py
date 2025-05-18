@@ -151,6 +151,66 @@ def test_get_tw_alerts_data_no_files(mock_listdir):
     mock_listdir.assert_called_once()
 
 
+@patch('app.analysis.data_fetching.os.listdir')
+def test_get_tw_alerts_data_invalid_date_format(mock_listdir):
+    """Test getting TradingView alerts data with invalid date format in filename."""
+
+    # Setup mock to return files with invalid date format
+    mock_listdir.return_value = ['TradingView_Alerts_Log_invalid-date.csv']
+
+    # Call the function
+    result = get_tw_alerts_data()
+
+    # Verify the result is an empty DataFrame
+    assert result.empty
+
+    # Verify the mock was called
+    mock_listdir.assert_called_once()
+
+
+@patch('app.analysis.data_fetching.os.listdir')
+@patch('app.analysis.data_fetching.os.path.exists')
+def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
+    """Test getting TradingView alerts data when file doesn't exist."""
+
+    # Setup mocks
+    mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
+    mock_exists.return_value = False
+
+    # Call the function
+    result = get_tw_alerts_data()
+
+    # Verify the result is an empty DataFrame
+    assert result.empty
+
+    # Verify the mocks were called
+    mock_listdir.assert_called_once()
+    mock_exists.assert_called_once()
+
+
+@patch('app.analysis.data_fetching.os.listdir')
+@patch('app.analysis.data_fetching.os.path.exists')
+@patch('app.analysis.data_fetching.pd.read_csv')
+def test_get_tw_alerts_data_read_exception(mock_read_csv, mock_exists, mock_listdir):
+    """Test getting TradingView alerts data when reading file raises exception."""
+
+    # Setup mocks
+    mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
+    mock_exists.return_value = True
+    mock_read_csv.side_effect = Exception("Error reading file")
+
+    # Call the function
+    result = get_tw_alerts_data()
+
+    # Verify the result is an empty DataFrame
+    assert result.empty
+
+    # Verify the mocks were called
+    mock_listdir.assert_called_once()
+    mock_exists.assert_called_once()
+    mock_read_csv.assert_called_once()
+
+
 @patch('app.analysis.data_fetching.load_data_from_json_files')
 @patch('app.analysis.data_fetching.fetch_trades_data')
 def test_get_trades_data(mock_fetch_trades, mock_load_data, sample_trades_data):
