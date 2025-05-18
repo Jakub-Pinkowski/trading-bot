@@ -8,6 +8,11 @@ trading-bot/
 │   │   ├── dataset_metrics.py                    # Dataset metrics
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── trades_matching.py                    # Matching trades
+│   ├── backtesting/
+│   │   ├── __init__.py
+│   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
+│   │   ├── data_cleaning.py                      # Data cleaning logic
+│   │   └── data_fetching.py                      # Data fetching logic           
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
@@ -25,6 +30,7 @@ trading-bot/
 │   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
+│   │   ├── backtesting_utils/
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
