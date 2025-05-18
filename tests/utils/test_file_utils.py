@@ -118,6 +118,36 @@ def test_json_to_dataframe_with_date_fields():
     assert pd.api.types.is_datetime64_dtype(result["date"])
 
 
+def test_json_to_dataframe_unsupported_format():
+    """Test that json_to_dataframe raises ValueError when given an unsupported data format"""
+
+    # Test with a string (unsupported format)
+    with pytest.raises(ValueError, match="Unsupported data format. Provide either dictionary or list."):
+        json_to_dataframe("unsupported_format")
+
+
+def test_json_to_dataframe_dict_with_index_orient():
+    """Test that json_to_dataframe correctly handles orient='index' parameter"""
+
+    # Create test data
+    data = {
+        "item1": {"name": "Item 1", "value": 100},
+        "item2": {"name": "Item 2", "value": 200}
+    }
+
+    # Convert to DataFrame with orient='index'
+    result = json_to_dataframe(data, orient='index', index_name='custom_index')
+
+    # Verify the result has the expected structure
+    assert isinstance(result, pd.DataFrame)
+    assert 'custom_index' in result.columns
+    assert 'name' in result.columns
+    assert 'value' in result.columns
+    assert result['custom_index'].tolist() == ['item1', 'item2']
+    assert result['name'].tolist() == ['Item 1', 'Item 2']
+    assert result['value'].tolist() == [100, 200]
+
+
 def test_save_to_csv_new_file(sample_dataframe):
     """Test that save_to_csv correctly saves a DataFrame to a new CSV file"""
 

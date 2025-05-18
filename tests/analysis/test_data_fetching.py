@@ -330,3 +330,22 @@ def test_fetch_trades_data_no_data(mock_api_get):
 
     # Verify the mock was called
     mock_api_get.assert_called_once()
+
+
+@patch('app.analysis.data_fetching.api_get')
+@patch('app.analysis.data_fetching.time.sleep')
+def test_fetch_trades_data_retry_success(mock_sleep, mock_api_get, sample_trades_json):
+    """Test fetching trades data with retry that succeeds."""
+
+    # Setup mock to return None on first call, then data on second call
+    mock_api_get.side_effect = [None, sample_trades_json]
+
+    # Call the function
+    result = fetch_trades_data(max_retries=2, retry_delay=0.1)
+
+    # Verify the result
+    assert result["success"] is True
+
+    # Verify the mocks were called
+    assert mock_api_get.call_count == 2
+    mock_sleep.assert_called_once_with(0.1)
