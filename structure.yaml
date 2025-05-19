@@ -89,7 +89,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: Possible data providers: polygon.io or databento.com
-# NOTE: Check out obside.com
 # TODO: When testing play around with indicator's values
 # TODO: Stitch multiple futures conids together
 # TODO: Find out what's the exact IBKR futures cut-off for trading
