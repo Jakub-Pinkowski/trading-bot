@@ -18,7 +18,7 @@ var int pos = 0
 pos := src[1] < nz(xATRTrailingStop[1], 0) and src > nz(xATRTrailingStop[1], 0) ? 1 :
    src[1] > nz(xATRTrailingStop[1], 0) and src < nz(xATRTrailingStop[1], 0) ? -1 : nz(pos[1], 0)
 
-xcolor = pos == -1 ? color.red : pos == 1 ? color.green : color.blue
+xcolor = pos == -1 ? color.yellow : pos == 1 ? #7E57C2 : color.blue
 
 plot(xATRTrailingStop, color=xcolor, title="Trailing Stop")
 
