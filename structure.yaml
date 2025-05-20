@@ -56,6 +56,7 @@ trading-bot/
 │   │   ├── alerts/                               # Raw alerts data
 │   │   ├── trades/                               # Raw trades data
 │   │   └── tw_alerts/                            # Raw TW alerts
+├── historical_data/
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
@@ -88,9 +89,7 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Backtesting
-# NOTE: Possible data providers: polygon.io or databento.com
 # TODO: When testing play around with indicator's values
-# TODO: Stitch multiple futures conids together
 # TODO: Find out what's the exact IBKR futures cut-off for trading
 
 # Developer
