@@ -90,7 +90,7 @@ trading-bot/
 
 # Backtesting
 # TODO: Compare TW downloaded data vs live-data on the website
-# TODO:
+# TODO: Consider putting a trailing stop on each position
 # TODO: When testing play around with indicator's values
 # TODO: Find out what's the exact IBKR futures cut-off for trading
 
