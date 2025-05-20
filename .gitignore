@@ -15,6 +15,7 @@ clientportal/
 
 # Data
 data/
+historical_data/
 
 # Logs
 logs/
