@@ -16,6 +16,7 @@ clientportal/
 # Data
 data/
 historical_data/
+tw_fetching.py
 
 # Logs
 logs/
