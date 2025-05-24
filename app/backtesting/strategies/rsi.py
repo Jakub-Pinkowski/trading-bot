@@ -2,6 +2,11 @@ import pandas as pd
 
 from app.backtesting.indicators.rsi import calculate_rsi
 
+# Define parameters
+RSI_PERIOD = 14
+LOWER = 30
+UPPER = 70
+
 
 def format_trades(trades):
     formatted_trades = []
@@ -21,9 +26,9 @@ def format_trades(trades):
 
 def rsi_strategy_trades(
         df: pd.DataFrame,
-        rsi_period: int = 14,
-        lower: int = 30,
-        upper: int = 70,
+        rsi_period: int = RSI_PERIOD,
+        lower: int = LOWER,
+        upper: int = UPPER,
 ):
     rsi = calculate_rsi(df["close"], period=rsi_period)
     trades = []
