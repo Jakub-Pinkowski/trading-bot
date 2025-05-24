@@ -75,23 +75,6 @@ def rsi_strategy_trades(
 
         prev_rsi = current_rsi
 
-    # Close open trade at the end of data
-    if position is not None and entry_idx is not None and entry_idx < len(df) - 1:
-        price = df["close"].iloc[-1]
-        idx = df.index[-1]
-        side = position
-        pnl = (price - entry_price) * side
-        trades.append({
-            "entry_idx": entry_idx,
-            "entry_time": df.index[entry_idx],
-            "entry_price": entry_price,
-            "exit_idx": len(df) - 1,
-            "exit_time": idx,
-            "exit_price": price,
-            "side": "long" if side == 1 else "short",
-            "pnl": pnl,
-        })
-
     trades = format_trades(trades)
 
     return trades
