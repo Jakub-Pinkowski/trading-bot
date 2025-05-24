@@ -126,16 +126,12 @@ def extract_trades(df):
             entry_time = None
             entry_price = None
 
-    return format_trades(trades)
+    trades = format_trades(trades)
+
+    return trades
 
 
 def ema_crossover_strategy_trades(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
-    """
-    Runs the EMA crossover with trailing stop strategy:
-    1. Adds EMA indicators.
-    2. Generates signals for trade entries and exits
-    3. Extracts formatted trade results.
-    """
     df = add_ema_indicators(df, ema_short, ema_long)
     df = generate_signals(df, ema_short, ema_long)
     trades = extract_trades(df)

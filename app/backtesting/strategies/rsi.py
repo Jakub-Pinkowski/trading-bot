@@ -74,12 +74,6 @@ def extract_trades(df):
 
 
 def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
-    """
-    1. Receives a DataFrame with OHLCV data (index should be datetime).
-    2. Adds RSI as an indicator to the DataFrame.
-    3. Generates buy/sell signals using RSI crossovers.
-    4. Extracts the resulting trades.
-    """
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df)
