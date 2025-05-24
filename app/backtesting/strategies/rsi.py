@@ -28,7 +28,7 @@ def rsi_strategy_trades(
     rsi = calculate_rsi(df["close"], period=rsi_period)
     trades = []
     position = None  # +1 for long, -1 for short
-    entry_idx = None
+    entry_time = None
     entry_price = None
 
     prev_rsi = rsi.iloc[0]
@@ -54,15 +54,13 @@ def rsi_strategy_trades(
 
         if flip is not None:
             # Close existing, open new flip
-            if position is not None and entry_idx is not None:
+            if position is not None and entry_time is not None:
                 exit_price = price
                 side = position  # The side we *held* until now
                 pnl = (exit_price - entry_price) * side
                 trades.append({
-                    "entry_idx": entry_idx,
-                    "entry_time": df.index[entry_idx],
+                    "entry_time": entry_time,
                     "entry_price": entry_price,
-                    "exit_idx": i,
                     "exit_time": idx,
                     "exit_price": exit_price,
                     "side": "long" if side == 1 else "short",
@@ -70,7 +68,7 @@ def rsi_strategy_trades(
                 })
             # Open a new position after flip
             position = flip
-            entry_idx = i
+            entry_time = idx
             entry_price = price
 
         prev_rsi = current_rsi
