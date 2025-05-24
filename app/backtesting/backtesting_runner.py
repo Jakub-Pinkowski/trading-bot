@@ -1,8 +1,22 @@
-from app.backtesting.data_fetching import fetch_data
+import pandas as pd
+
+from app.backtesting.strategies.rsi import rsi_strategy_trades
+from config import HISTORICAL_DATA_DIR
 
 
 def run_backtesting():
     print("run backtesting")
+    tested_month = "1!"
     symbol = "ZW"
+    interval = '4h'
 
-    market_data = fetch_data(symbol)
+    # Load parquet file
+    filepath = f"{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet"
+
+    df = pd.read_parquet(filepath)
+
+    trades = rsi_strategy_trades(df)
+    for trade in trades:
+        print(trade)
+
+    return trades
