@@ -24,9 +24,8 @@ def rsi_strategy_trades(
         rsi_period: int = 14,
         lower: int = 30,
         upper: int = 70,
-        price_col: str = "close"
 ):
-    rsi = calculate_rsi(df[price_col], period=rsi_period)
+    rsi = calculate_rsi(df["close"], period=rsi_period)
     trades = []
     position = None  # +1 for long, -1 for short
     entry_idx = None
@@ -35,7 +34,7 @@ def rsi_strategy_trades(
     prev_rsi = rsi.iloc[0]
     for i in range(1, len(df)):
         current_rsi = rsi.iloc[i]
-        price = df[price_col].iloc[i]
+        price = df["close"].iloc[i]
         idx = df.index[i]
 
         # Ignore until RSI is available
@@ -78,7 +77,7 @@ def rsi_strategy_trades(
 
     # Close open trade at the end of data
     if position is not None and entry_idx is not None and entry_idx < len(df) - 1:
-        price = df[price_col].iloc[-1]
+        price = df["close"].iloc[-1]
         idx = df.index[-1]
         side = position
         pnl = (price - entry_price) * side
@@ -93,6 +92,6 @@ def rsi_strategy_trades(
             "pnl": pnl,
         })
 
-    trades = format_trades()
+    trades = format_trades(trades)
 
     return trades

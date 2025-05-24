@@ -14,6 +14,7 @@ def run_backtesting():
     filepath = f"{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet"
 
     df = pd.read_parquet(filepath)
+    print(df)
 
     trades = rsi_strategy_trades(df)
     for trade in trades:
