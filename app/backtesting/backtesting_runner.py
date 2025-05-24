@@ -14,6 +14,8 @@ strategies = [
 ]
 
 
+# TODO: Improve strategies to return not only a list of trades but some more info, summaries etc.
+# TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 def run_backtesting():
     for tested_month in tested_months:
         for symbol in symbols:
