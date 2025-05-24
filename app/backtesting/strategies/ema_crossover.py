@@ -28,7 +28,7 @@ def generate_signals(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
 
     pos = 0  # +1=long, -1=short, 0=flat
     trail_stop = None
-    trail_perc = TRAIL
+    trail_percentage = TRAIL
 
     for i in range(1, len(df)):
         ema_short_now = df['ema_short'].iloc[i]
@@ -45,13 +45,13 @@ def generate_signals(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
 
         # Manage trailing stop for long
         if pos == 1:
-            trail_stop = max(trail_stop, close * (1 - trail_perc))
+            trail_stop = max(trail_stop, close * (1 - trail_percentage))
             if close < trail_stop:
                 exit_long = True
 
         # Manage trailing stop for short
         if pos == -1:
-            trail_stop = min(trail_stop, close * (1 + trail_perc))
+            trail_stop = min(trail_stop, close * (1 + trail_percentage))
             if close > trail_stop:
                 exit_short = True
 
@@ -59,11 +59,11 @@ def generate_signals(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
         if buy_signal:
             df.at[idx, 'signal'] = 1
             pos = 1
-            trail_stop = close * (1 - trail_perc)
+            trail_stop = close * (1 - trail_percentage)
         elif sell_signal:
             df.at[idx, 'signal'] = -1
             pos = -1
-            trail_stop = close * (1 + trail_perc)
+            trail_stop = close * (1 + trail_percentage)
         elif exit_long:
             df.at[idx, 'signal'] = 2
             pos = 0

@@ -14,6 +14,12 @@ def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
 
 
 def generate_signals(df, lower=LOWER, upper=UPPER):
+    """
+    Signals:
+        1: Long entry
+       -1: Short entry
+        0: No action
+    """
     df = df.copy()
     df['signal'] = 0
     prev_rsi = df['rsi'].shift(1)
