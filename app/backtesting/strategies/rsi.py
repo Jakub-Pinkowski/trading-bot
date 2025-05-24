@@ -28,15 +28,15 @@ def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     return df
 
 
-def generate_rsi_signals(df, lower=LOWER, upper=UPPER):
+def generate_signals(df, lower=LOWER, upper=UPPER):
     df = df.copy()
     df['signal'] = 0
     prev_rsi = df['rsi'].shift(1)
 
-    # Buy signal: RSI crosses below lower threshold
+    # Buy signal: RSI crosses below a lower threshold
     df.loc[(prev_rsi > lower) & (df['rsi'] <= lower), 'signal'] = 1
 
-    # Sell signal: RSI crosses above upper threshold
+    # Sell signal: RSI crosses above an upper threshold
     df.loc[(prev_rsi < upper) & (df['rsi'] >= upper), 'signal'] = -1
 
     return df
@@ -78,7 +78,9 @@ def extract_trades_from_signals(df):
             entry_time = idx
             entry_price = price
 
-    return format_trades(trades)
+    trades = format_trades(trades)
+
+    return trades
 
 
 def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
@@ -89,6 +91,6 @@ def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
     4. Extracts the resulting trades.
     """
     df = add_rsi_indicator(df, rsi_period)
-    df = generate_rsi_signals(df, lower, upper)
+    df = generate_signals(df, lower, upper)
     trades = extract_trades_from_signals(df)
     return trades
