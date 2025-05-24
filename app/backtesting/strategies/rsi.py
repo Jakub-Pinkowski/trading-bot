@@ -1,25 +1,10 @@
-from app.backtesting.indicators.rsi import calculate_rsi
+from app.backtesting.indicators import calculate_rsi
+from app.utils.backtesting_utils.backtesting_utils import format_trades
 
 # Define parameters
 RSI_PERIOD = 14
 LOWER = 30
 UPPER = 70
-
-
-def format_trades(trades):
-    formatted_trades = []
-    for trade in trades:
-        formatted_trade = {
-            "entry_time": str(trade["entry_time"]),
-            "entry_price": float(trade["entry_price"]),
-            "exit_time": str(trade["exit_time"]),
-            "exit_price": float(trade["exit_price"]),
-            "side": str(trade["side"]),
-            "pnl": float(trade["pnl"]),
-        }
-        formatted_trades.append(formatted_trade)
-
-    return formatted_trades
 
 
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
@@ -42,16 +27,15 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
     return df
 
 
-def extract_trades_from_signals(df):
+def extract_trades(df):
     trades = []
-    position = None  # +1 for long, -1 for short
+    position = None
     entry_time = None
     entry_price = None
 
-    for i, row in df.iterrows():
+    for idx, row in df.iterrows():
         signal = row['signal']
         price = row['close']
-        idx = row.name
 
         flip = None
         if signal == 1 and position != 1:
@@ -92,5 +76,5 @@ def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
     """
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
-    trades = extract_trades_from_signals(df)
+    trades = extract_trades(df)
     return trades

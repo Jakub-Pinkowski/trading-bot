@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 
 
+# RSI
 def calculate_rsi(prices, period=14):
     delta = prices.diff()
     gain = delta.clip(lower=0)
@@ -22,3 +24,30 @@ def calculate_rsi(prices, period=14):
     rsi = 100 - (100 / (1 + rs))
     rsi[:period] = np.nan  # First period points are undefined
     return rsi
+
+
+# EMA
+def calculate_ema(prices, period=9):
+    ema = prices.ewm(span=period, adjust=False).mean()
+    ema[:period - 1] = np.nan  # First period points are undefined
+    return ema
+
+
+# ATR
+def calculate_atr(df, period=14):
+    high = df['high']
+    low = df['low']
+    close = df['close']
+
+    prev_close = close.shift(1)
+
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+    atr = true_range.ewm(span=period, adjust=False).mean()
+    atr[:period - 1] = np.nan  # First period points are undefined
+
+    return atr
