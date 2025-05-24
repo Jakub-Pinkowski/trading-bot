@@ -75,8 +75,8 @@ trading-bot/
 └── structure.yaml                                # App's structure
 
 # Trading
-# BUG: 2025-05-07 00:40:21,409 - app - ERROR - No contracts found for symbol: MNG
 # TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
 # Strategies
