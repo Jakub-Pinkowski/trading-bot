@@ -91,6 +91,7 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Backtesting
+# TODO: Add logger everywhere
 # TODO: Compare TW downloaded data vs live-data on the website
 # TODO: Consider putting a trailing stop on each position
 # TODO: When testing play around with indicator's values
