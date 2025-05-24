@@ -11,8 +11,7 @@ trading-bot/
 │   ├── backtesting/
 │   │   ├── __init__.py
 │   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
-│   │   ├── data_cleaning.py                      # Data cleaning logic
-│   │   └── data_fetching.py                      # Data fetching logic           
+│   │   ├── data_cleaning.py                      # Data cleaning logic       
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
