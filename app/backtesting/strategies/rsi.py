@@ -46,11 +46,11 @@ def rsi_strategy_trades(
         flip = None
 
         # Buy entry: RSI crosses BELOW oversold level
-        if position != 1 and prev_rsi > lower and current_rsi <= lower:
+        if position != 1 and prev_rsi > lower >= current_rsi:
             flip = 1  # Go long
 
         # Sell entry: RSI crosses ABOVE overbought level
-        elif position != -1 and prev_rsi < upper and current_rsi >= upper:
+        elif position != -1 and prev_rsi < upper <= current_rsi:
             flip = -1  # Go short
 
         if flip is not None:
@@ -69,14 +69,14 @@ def rsi_strategy_trades(
                     "side": "long" if side == 1 else "short",
                     "pnl": pnl,
                 })
-            # Open new position after flip
+            # Open a new position after flip
             position = flip
             entry_idx = i
             entry_price = price
 
         prev_rsi = current_rsi
 
-    # Close open trade at end of data
+    # Close open trade at the end of data
     if position is not None and entry_idx is not None and entry_idx < len(df) - 1:
         price = df[price_col].iloc[-1]
         idx = df.index[-1]
