@@ -1,33 +1,9 @@
-import numpy as np
 import pandas as pd
 
-
-# NOTE: RSI works fine
-# TODO: I migth want to instead keep on adding new indicators like EMA, RSI etc. to my dt and then apply strategy
-def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
-    delta = prices.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-
-    avg_gain = gain.rolling(window=period, min_periods=period).mean()
-    avg_loss = loss.rolling(window=period, min_periods=period).mean()
-
-    # Initialize the recursive values with the rolling mean at index `period`
-    for i in range(period, len(prices)):
-        if i == period:
-            # For the very first point, leave as is (already set by rolling)
-            continue
-        # Recursive calculation, starting after first rolling value
-        avg_gain.iat[i] = (avg_gain.iat[i - 1] * (period - 1) + gain.iat[i]) / period
-        avg_loss.iat[i] = (avg_loss.iat[i - 1] * (period - 1) + loss.iat[i]) / period
-
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    rsi[:period] = np.nan  # First period points are undefined
-    return rsi
+from app.backtesting.indicators.rsi import calculate_rsi
 
 
-def format_rsi_trades(trades):
+def format_trades(trades):
     formatted_trades = []
     for trade in trades:
         formatted_trade = {
@@ -39,6 +15,7 @@ def format_rsi_trades(trades):
             "pnl": float(trade["pnl"]),
         }
         formatted_trades.append(formatted_trade)
+
     return formatted_trades
 
 
@@ -120,4 +97,4 @@ def rsi_strategy_trades(
             "pnl": pnl,
         })
 
-    return format_rsi_trades(trades)
+    return format_trades(trades)
