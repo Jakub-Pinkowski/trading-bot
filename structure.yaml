@@ -9,6 +9,7 @@ trading-bot/
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
+│   │   ├── strategies/                           # Trading strategies to backtest
 │   │   ├── __init__.py
 │   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
 │   │   ├── data_cleaning.py                      # Data cleaning logic       
@@ -56,6 +57,8 @@ trading-bot/
 │   │   ├── trades/                               # Raw trades data
 │   │   └── tw_alerts/                            # Raw TW alerts
 ├── historical_data/
+│   ├── 1!/                                       # Front month
+│   ├── 2!/                                       # Next month
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs

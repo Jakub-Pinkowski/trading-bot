@@ -23,9 +23,10 @@ ALLOWED_IPS = {
     '95.91.215.232'
 }
 
-# Data Directories
+# Data directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
+HISTORICAL_DATA_DIR = os.path.join(BASE_DIR, "historical_data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
