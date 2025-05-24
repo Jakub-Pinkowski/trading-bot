@@ -1,0 +1,74 @@
+//@version=6
+indicator(title="Indicator EMA Crossover", overlay=true)
+
+src = close
+
+// === Inputs ===
+emaLen = input.int(9, title="EMA 9 Period")
+ema21Len = input.int(21, title="EMA 21 Period")
+trailPerc = input.float(2, title="Trailing Stop %", minval=0.1, step=0.1)  // Trailing stop percent
+
+// === EMA ===
+ema9 = ta.ema(src, emaLen)
+ema21 = ta.ema(src, ema21Len)
+
+plot(ema9, title="EMA 9", color=color.blue)
+plot(ema21, title="EMA 21", color=color.rgb(212, 241, 43))
+
+// === EMA Cloud Shading ===
+bullishTrend = ema9 > ema21
+bearishTrend = ema9 < ema21
+
+fill(plot(ema9, title="EMA 9 (cloud)", color=na), plot(ema21, title="EMA 21 (cloud)", color=na), color=bullishTrend ? color.new(color.green, 85) : bearishTrend ? color.new(color.red, 85) : na, title="EMA Cloud")
+
+// === Position tracking ===
+var int pos = 0  // 1 = long, -1 = short, 0 = flat
+
+// === EMA Crossover Signals ===
+buySignal  = ta.crossover(ema9, ema21) and pos == 0
+sellSignal = ta.crossunder(ema9, ema21) and pos == 0
+
+// === Trailing Stop Calculation ===
+var float trailStopBuy = na
+var float trailStopSell = na
+
+trailFactor = trailPerc / 100
+
+// Manage trailing stop for long
+if (buySignal)
+    trailStopBuy := close * (1 - trailFactor)
+else if (pos == 1)
+    trailStopBuy := math.max(trailStopBuy, close * (1 - trailFactor))
+
+// Manage trailing stop for short
+if (sellSignal)
+    trailStopSell := close * (1 + trailFactor)
+else if (pos == -1)
+    trailStopSell := math.min(trailStopSell, close * (1 + trailFactor))
+
+// === Exit conditions ===
+exitLong  = pos == 1 and close < trailStopBuy
+exitShort = pos == -1 and close > trailStopSell
+
+// === Update position state ===
+if buySignal
+    pos := 1
+if sellSignal
+    pos := -1
+if exitLong or exitShort
+    pos := 0
+
+// === Plot signals ===
+isBarClosed = barstate.isconfirmed
+
+plotshape(buySignal and isBarClosed, title="Buy", text='Buy', style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sellSignal and isBarClosed, title="Sell", text='Sell', style=shape.labelup, location=location.belowbar, color=color.red, textcolor=color.white, size=size.tiny)
+
+plotshape(exitLong and isBarClosed, title="Exit Long", text="Exit Long", style=shape.labelup, location=location.belowbar, color=color.orange, textcolor=color.white, size=size.small)
+plotshape(exitShort and isBarClosed, title="Exit Short", text="Exit Short", style=shape.labeldown, location=location.abovebar, color=color.purple, textcolor=color.white, size=size.small)
+
+// === Alerts ===
+alertcondition(buySignal and isBarClosed, title="Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
+alertcondition(sellSignal and isBarClosed, title="Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
+alertcondition(exitLong and isBarClosed, title="Exit Long Alert", message='{"symbol":"{{ticker}}","side":"Exit Long","price":{{close}}}')
+alertcondition(exitShort and isBarClosed, title="Exit Short Alert", message='{"symbol":"{{ticker}}","side":"Exit Short","price":{{close}}}')
