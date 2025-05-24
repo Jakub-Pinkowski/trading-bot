@@ -25,10 +25,10 @@ def format_trades(trades):
 
 
 def rsi_strategy_trades(
-        df: pd.DataFrame,
-        rsi_period: int = RSI_PERIOD,
-        lower: int = LOWER,
-        upper: int = UPPER,
+        df,
+        rsi_period=RSI_PERIOD,
+        lower=LOWER,
+        upper=UPPER,
 ):
     rsi = calculate_rsi(df["close"], period=rsi_period)
     trades = []

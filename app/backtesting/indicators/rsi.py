@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
 
 
-def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
+def calculate_rsi(prices, period=14):
     delta = prices.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
