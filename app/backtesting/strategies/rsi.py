@@ -47,14 +47,10 @@ def rsi_strategy_trades(
 
         # Buy entry: RSI crosses BELOW oversold level
         if position != 1 and prev_rsi > lower and current_rsi <= lower:
-            print(f"RSI crossed below {lower} (OVERSOLD, BUY) on {idx} (RSI={current_rsi:.2f})")
-
             flip = 1  # Go long
 
         # Sell entry: RSI crosses ABOVE overbought level
         elif position != -1 and prev_rsi < upper and current_rsi >= upper:
-            print(f"RSI crossed above {upper} (OVERBOUGHT, SELL) on {idx} (RSI={current_rsi:.2f})")
-
             flip = -1  # Go short
 
         if flip is not None:
@@ -97,4 +93,6 @@ def rsi_strategy_trades(
             "pnl": pnl,
         })
 
-    return format_trades(trades)
+    trades = format_trades()
+
+    return trades
