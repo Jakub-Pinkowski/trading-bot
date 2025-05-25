@@ -7,14 +7,14 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 # Define parameters
 tested_months = ["1!"]
 symbols = ["ZW"]
-intervals = ["4h"]
+intervals = ["30m"]
 strategies = [
     ("RSI", rsi_strategy_trades),
     # ("EMA Crossover", ema_crossover_strategy_trades),
 ]
 
 # Strategy parameters
-rollover = False
+rollover = True
 
 with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
