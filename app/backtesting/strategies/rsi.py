@@ -36,7 +36,6 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
 
 
 def extract_trades(df, switch_dates, rollover):
-    print(switch_dates)
     trades = []
     position = None
     entry_time = None
@@ -78,7 +77,6 @@ def extract_trades(df, switch_dates, rollover):
         # Open a new position on the next iteration (only if rollover enabled)
         if must_reopen is not None and position is None:
             if rollover:
-                print(must_reopen, current_time)
                 position = must_reopen
                 entry_time = idx
                 entry_price = price
@@ -111,9 +109,6 @@ def extract_trades(df, switch_dates, rollover):
 
     trades = format_trades(trades)
 
-    for trade in trades:
-        print(trade)
-
     return trades
 
 
@@ -123,7 +118,6 @@ def compute_summary(trades):
         "num_trades": len(trades),
         "total_pnl": total_pnl
     }
-    print(f"Summary: {summary}")
     return summary
 
 

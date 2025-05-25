@@ -77,7 +77,7 @@ def generate_signals(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
     return df
 
 
-def extract_trades(df):
+def extract_trades(df, switch_dates, rollover):
     trades = []
     position = None
     entry_time = None
@@ -131,8 +131,8 @@ def extract_trades(df):
     return trades
 
 
-def ema_crossover_strategy_trades(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
+def ema_crossover_strategy_trades(df, switch_dates, rollover, ema_short=EMA_SHORT, ema_long=EMA_LONG):
     df = add_ema_indicators(df, ema_short, ema_long)
     df = generate_signals(df, ema_short, ema_long)
-    trades = extract_trades(df)
+    trades = extract_trades(df, switch_dates, rollover)
     return trades

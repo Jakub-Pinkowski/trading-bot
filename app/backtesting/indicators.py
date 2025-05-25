@@ -26,7 +26,6 @@ def calculate_rsi(prices, period=14):
     return rsi
 
 
-# TODO: Compare with TradingView
 # EMA
 def calculate_ema(prices, period=9):
     ema = prices.ewm(span=period, adjust=False).mean()
