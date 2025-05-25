@@ -50,7 +50,7 @@ def extract_trades(df):
             flip = -1  # Short
 
         if flip is not None:
-            # Close existing position
+            # Close the existing position
             if position is not None and entry_time is not None:
                 exit_price = price
                 side = position
@@ -63,7 +63,7 @@ def extract_trades(df):
                     "side": "long" if side == 1 else "short",
                     "pnl": pnl,
                 })
-            # Open new position
+            # Open a new position
             position = flip
             entry_time = idx
             entry_price = price
@@ -73,8 +73,20 @@ def extract_trades(df):
     return trades
 
 
+# TODO: Add way more data
+def compute_summary(trades):
+    total_pnl = sum(trade['pnl'] for trade in trades)
+    summary = {
+        "num_trades": len(trades),
+        "total_pnl": total_pnl
+    }
+    print(f"Summary: {summary}")
+    return summary
+
+
 def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df)
+    summary = compute_summary(trades)
     return trades
