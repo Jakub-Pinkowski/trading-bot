@@ -9,9 +9,6 @@ LOWER = 30
 UPPER = 70
 
 
-# TODO: Add some more options later. For example rollover vs close the position
-
-
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     df = df.copy()
     df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
@@ -38,7 +35,7 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
     return df
 
 
-def extract_trades(df, switch_dates):
+def extract_trades(df, switch_dates, rollover):
     print(switch_dates)
     trades = []
     position = None
@@ -54,7 +51,7 @@ def extract_trades(df, switch_dates):
         signal = row['signal']
         price = row['close']
 
-        # Roll logic: close at switch, and defer re-open to the next row
+        # Roll or close logic at a contract switch
         while next_switch and current_time >= next_switch:
             if position is not None and entry_time is not None:
                 exit_price = price
@@ -68,19 +65,23 @@ def extract_trades(df, switch_dates):
                     "pnl": pnl,
                     "rolled": True,
                 })
-                must_reopen = position  # Mark to reopen with the same direction
+                if rollover:
+                    must_reopen = position  # Mark to reopen with the same direction
+                else:
+                    must_reopen = None  # Do NOT reopen if ROLLOVER is False
                 entry_time = None
                 entry_price = None
                 position = None
             next_switch_idx += 1
             next_switch = switch_dates[next_switch_idx] if next_switch_idx < len(switch_dates) else None
 
-        # Open a new position on the next iteration
+        # Open a new position on the next iteration (only if rollover enabled)
         if must_reopen is not None and position is None:
-            print(must_reopen, current_time)
-            position = must_reopen
-            entry_time = idx
-            entry_price = price
+            if rollover:
+                print(must_reopen, current_time)
+                position = must_reopen
+                entry_time = idx
+                entry_price = price
             must_reopen = None
 
         flip = None
@@ -116,7 +117,6 @@ def extract_trades(df, switch_dates):
     return trades
 
 
-# TODO: Add way more data
 def compute_summary(trades):
     total_pnl = sum(trade['pnl'] for trade in trades)
     summary = {
@@ -127,9 +127,9 @@ def compute_summary(trades):
     return summary
 
 
-def rsi_strategy_trades(df, switch_dates, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
-    trades = extract_trades(df, switch_dates)
+    trades = extract_trades(df, switch_dates, rollover)
     summary = compute_summary(trades)
     return trades

@@ -13,6 +13,9 @@ strategies = [
     # ("EMA Crossover", ema_crossover_strategy_trades),
 ]
 
+# Strategy parameters
+rollover = False
+
 with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
 
@@ -37,4 +40,4 @@ def run_backtesting():
 
                 for strategy_name, strategy_function in strategies:
                     print(f"Running strategy: {strategy_name}")
-                    trades = strategy_function(df, switch_dates)
+                    trades = strategy_function(df, switch_dates, rollover)
