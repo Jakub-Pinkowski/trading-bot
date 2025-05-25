@@ -1,6 +1,7 @@
 import pandas as pd
 import yaml
 
+from app.backtesting.strategies.ema_crossover import ema_crossover_strategy_trades
 from app.backtesting.strategies.rsi import rsi_strategy_trades
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
@@ -10,7 +11,7 @@ symbols = ["ZW"]
 intervals = ["30m"]
 strategies = [
     ("RSI", rsi_strategy_trades),
-    # ("EMA Crossover", ema_crossover_strategy_trades),
+    ("EMA Crossover", ema_crossover_strategy_trades),
 ]
 
 # Strategy parameters

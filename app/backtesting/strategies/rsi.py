@@ -9,6 +9,9 @@ LOWER = 30
 UPPER = 70
 
 
+# TODO: Trading View's strategy doesn't trigger BUY/SELL on RSI crossover
+# TODO: On TradingView we always enter a position a cancle after the RSI, here on the same cancle
+
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     df = df.copy()
     df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
@@ -40,26 +43,33 @@ def extract_trades(df, switch_dates, rollover):
     position = None
     entry_time = None
     entry_price = None
+    entry_rsi = None  # Store entry RSI
     next_switch_idx = 0
     next_switch = switch_dates[next_switch_idx] if switch_dates else None
-    rows = list(df.iterrows())
     must_reopen = None  # Track if we need to reopen after a roll
+
+    prev_row = None
 
     for idx, row in df.iterrows():
         current_time = pd.to_datetime(idx)
         signal = row['signal']
         price = row['close']
+        rsi = row.get('rsi', None)
 
-        # Roll or close logic at a contract switch
         while next_switch and current_time >= next_switch:
-            if position is not None and entry_time is not None:
-                exit_price = price
+            # On rollover: close at the price of *last bar before switch* (prev_row)
+            if position is not None and entry_time is not None and prev_row is not None:
+                exit_price = prev_row['close']
+                exit_rsi = prev_row.get('rsi', None)
+
                 pnl = (exit_price - entry_price) * position
                 trades.append({
                     "entry_time": entry_time,
                     "entry_price": entry_price,
+                    "entry_rsi": entry_rsi,
                     "exit_time": current_time,
                     "exit_price": exit_price,
+                    "exit_rsi": exit_rsi,
                     "side": "long" if position == 1 else "short",
                     "pnl": pnl,
                     "rolled": True,
@@ -70,6 +80,7 @@ def extract_trades(df, switch_dates, rollover):
                     must_reopen = None  # Do NOT reopen if ROLLOVER is False
                 entry_time = None
                 entry_price = None
+                entry_rsi = None
                 position = None
             next_switch_idx += 1
             next_switch = switch_dates[next_switch_idx] if next_switch_idx < len(switch_dates) else None
@@ -80,6 +91,7 @@ def extract_trades(df, switch_dates, rollover):
                 position = must_reopen
                 entry_time = idx
                 entry_price = price
+                entry_rsi = rsi
             must_reopen = None
 
         flip = None
@@ -92,13 +104,16 @@ def extract_trades(df, switch_dates, rollover):
             # Close the existing position
             if position is not None and entry_time is not None:
                 exit_price = price
+                exit_rsi = rsi
                 side = position
                 pnl = (exit_price - entry_price) * side
                 trades.append({
                     "entry_time": entry_time,
                     "entry_price": entry_price,
+                    "entry_rsi": entry_rsi,
                     "exit_time": idx,
                     "exit_price": exit_price,
+                    "exit_rsi": exit_rsi,
                     "side": "long" if side == 1 else "short",
                     "pnl": pnl,
                 })
@@ -106,6 +121,12 @@ def extract_trades(df, switch_dates, rollover):
             position = flip
             entry_time = idx
             entry_price = price
+            entry_rsi = rsi
+
+        prev_row = row
+
+    for trade in trades:
+        print(trade)
 
     trades = format_trades(trades)
 
@@ -122,6 +143,7 @@ def compute_summary(trades):
 
 
 def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+    print(rollover)
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df, switch_dates, rollover)
