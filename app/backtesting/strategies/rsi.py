@@ -1,3 +1,5 @@
+import pandas as pd
+
 from app.backtesting.indicators import calculate_rsi
 from app.utils.backtesting_utils.backtesting_utils import format_trades
 
@@ -36,15 +38,50 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
     return df
 
 
-def extract_trades(df):
+def extract_trades(df, switch_dates):
+    print(switch_dates)
     trades = []
     position = None
     entry_time = None
     entry_price = None
+    next_switch_idx = 0
+    next_switch = switch_dates[next_switch_idx] if switch_dates else None
+    rows = list(df.iterrows())
+    must_reopen = None  # Track if we need to reopen after a roll
 
     for idx, row in df.iterrows():
+        current_time = pd.to_datetime(idx)
         signal = row['signal']
         price = row['close']
+
+        # Roll logic: close at switch, and defer re-open to the next row
+        while next_switch and current_time >= next_switch:
+            if position is not None and entry_time is not None:
+                exit_price = price
+                pnl = (exit_price - entry_price) * position
+                trades.append({
+                    "entry_time": entry_time,
+                    "entry_price": entry_price,
+                    "exit_time": current_time,
+                    "exit_price": exit_price,
+                    "side": "long" if position == 1 else "short",
+                    "pnl": pnl,
+                    "rolled": True,
+                })
+                must_reopen = position  # Mark to reopen with the same direction
+                entry_time = None
+                entry_price = None
+                position = None
+            next_switch_idx += 1
+            next_switch = switch_dates[next_switch_idx] if next_switch_idx < len(switch_dates) else None
+
+        # Open a new position on the next iteration
+        if must_reopen is not None and position is None:
+            print(must_reopen, current_time)
+            position = must_reopen
+            entry_time = idx
+            entry_price = price
+            must_reopen = None
 
         flip = None
         if signal == 1 and position != 1:
@@ -73,6 +110,9 @@ def extract_trades(df):
 
     trades = format_trades(trades)
 
+    for trade in trades:
+        print(trade)
+
     return trades
 
 
@@ -88,9 +128,8 @@ def compute_summary(trades):
 
 
 def rsi_strategy_trades(df, switch_dates, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
-    print(switch_dates)
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
-    trades = extract_trades(df)
+    trades = extract_trades(df, switch_dates)
     summary = compute_summary(trades)
     return trades

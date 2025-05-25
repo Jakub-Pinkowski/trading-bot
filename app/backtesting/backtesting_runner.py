@@ -6,7 +6,7 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
 # Define parameters
 tested_months = ["1!"]
-symbols = ["ZW", "ZS"]
+symbols = ["ZW"]
 intervals = ["4h"]
 strategies = [
     ("RSI", rsi_strategy_trades),
