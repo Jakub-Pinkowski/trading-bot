@@ -15,7 +15,7 @@ strategies = [
 ]
 
 # Strategy parameters
-rollover = True
+rollover = False
 
 with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
