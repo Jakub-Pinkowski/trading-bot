@@ -38,6 +38,8 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
     return df
 
 
+# TODO: Retest and fix once I correct switch dates data
+# TODO: Outsource repetitive logic
 def extract_trades(df, switch_dates, rollover):
     trades = []
     position = None
@@ -49,6 +51,8 @@ def extract_trades(df, switch_dates, rollover):
     must_reopen = None  # Track if we need to reopen after a roll
 
     prev_row = None
+    skip_signal_this_bar = False
+
 
     for idx, row in df.iterrows():
         current_time = pd.to_datetime(idx)
@@ -72,10 +76,11 @@ def extract_trades(df, switch_dates, rollover):
                     "exit_rsi": exit_rsi,
                     "side": "long" if position == 1 else "short",
                     "pnl": pnl,
-                    "rolled": True,
+                    "switch": True,
                 })
                 if rollover:
                     must_reopen = position  # Mark to reopen with the same direction
+                    skip_signal_this_bar = True  # Skip signal for this bar, only one trade per bar allowed
                 else:
                     must_reopen = None  # Do NOT reopen if ROLLOVER is False
                 entry_time = None
@@ -93,6 +98,12 @@ def extract_trades(df, switch_dates, rollover):
                 entry_price = price
                 entry_rsi = rsi
             must_reopen = None
+
+        if skip_signal_this_bar:
+            skip_signal_this_bar = False  # skip *this* bar only
+            prev_row = row
+            continue
+
 
         flip = None
         if signal == 1 and position != 1:
