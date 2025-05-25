@@ -10,8 +10,6 @@ UPPER = 70
 
 
 # TODO: Trading View's strategy doesn't trigger BUY/SELL on RSI crossover
-# TODO: On TradingView we always enter a position a cancle after the RSI, here on the same cancle
-
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     df = df.copy()
     df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
@@ -38,7 +36,6 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
     return df
 
 
-# TODO: Retest and fix once I correct switch dates data
 # TODO: Outsource repetitive logic
 # TODO: Looks to be fine but test MORE
 def extract_trades(df, switch_dates, rollover):
@@ -55,7 +52,6 @@ def extract_trades(df, switch_dates, rollover):
     skip_signal_this_bar = False
     queued_signal = None  # Holds a signal to execute on the next bar
     queued_signal_row = None  # Holds the row at which the signal was queued
-
 
     for idx, row in df.iterrows():
         current_time = pd.to_datetime(idx)
@@ -103,7 +99,6 @@ def extract_trades(df, switch_dates, rollover):
                 entry_price = price_open  # CHANGED: open new trade at open
                 entry_rsi = rsi
             must_reopen = None
-
 
         if skip_signal_this_bar:
             skip_signal_this_bar = False  # skip *this* bar only
