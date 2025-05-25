@@ -7,6 +7,9 @@ LOWER = 30
 UPPER = 70
 
 
+# TODO: Add some more options later. For example rollover vs close the position
+
+
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     df = df.copy()
     df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
@@ -84,7 +87,8 @@ def compute_summary(trades):
     return summary
 
 
-def rsi_strategy_trades(df, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+def rsi_strategy_trades(df, switch_dates, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+    print(switch_dates)
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df)

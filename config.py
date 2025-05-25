@@ -33,6 +33,7 @@ ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
 
+
 TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
 
@@ -46,6 +47,7 @@ TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw
 TW_ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw_alerts_dataset_metrics.csv")
 TRADES_PER_TRADE_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_per_trade_metrics.csv")
 TRADES_DATASET_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_dataset_metrics.csv")
+SWITCH_DATES_FILE_PATH = os.path.join(HISTORICAL_DATA_DIR, "contract_switch_dates.yaml")
 
 # Strategy
 MIN_DAYS_UNTIL_EXPIRY = 60

@@ -1,7 +1,8 @@
 import pandas as pd
+import yaml
 
 from app.backtesting.strategies.rsi import rsi_strategy_trades
-from config import HISTORICAL_DATA_DIR
+from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
 # Define parameters
 tested_months = ["1!"]
@@ -12,6 +13,9 @@ strategies = [
     # ("EMA Crossover", ema_crossover_strategy_trades),
 ]
 
+with open(SWITCH_DATES_FILE_PATH) as f:
+    switch_dates_dict = yaml.safe_load(f)
+
 
 # TODO: Add contract switch dates for all symbols
 # TODO: Consider closing contracts before contract switch dates instead of rolling it
@@ -20,6 +24,9 @@ strategies = [
 def run_backtesting():
     for tested_month in tested_months:
         for symbol in symbols:
+            switch_dates = switch_dates_dict.get(symbol, [])
+            switch_dates = [pd.to_datetime(dt) for dt in switch_dates]
+
             for interval in intervals:
                 print(f"Processing: Month={tested_month}, Symbol={symbol}, Interval={interval}")
 
@@ -32,5 +39,4 @@ def run_backtesting():
 
                 for strategy_name, strategy_function in strategies:
                     print(f"Running strategy: {strategy_name}")
-                    print(df)
-                    trades = strategy_function(df)
+                    trades = strategy_function(df, switch_dates)
