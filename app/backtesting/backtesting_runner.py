@@ -18,8 +18,6 @@ with open(SWITCH_DATES_FILE_PATH) as f:
 
 
 # TODO: Add contract switch dates for all symbols
-# TODO: Consider closing contracts before contract switch dates instead of rolling it
-# TODO: Improve strategies to return not only a list of trades but some more info, summaries etc.
 # TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 def run_backtesting():
     for tested_month in tested_months:
