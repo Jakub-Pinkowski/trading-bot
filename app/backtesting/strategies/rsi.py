@@ -9,159 +9,210 @@ LOWER = 30
 UPPER = 70
 
 
-def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
-    df = df.copy()
-    df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
-    return df
+class RSIStrategy:
+    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+        self.rsi_period = rsi_period
+        self.lower = lower
+        self.upper = upper
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.entry_rsi = None
+        self.next_switch_idx = 0
+        self.next_switch = None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.queued_signal_row = None
+        self.trades = []
 
+    def add_rsi_indicator(self, df):
+        df = df.copy()
+        df['rsi'] = calculate_rsi(df["close"], period=self.rsi_period)
+        return df
 
-def generate_signals(df, lower=LOWER, upper=UPPER):
-    """
-    Signals:
-        1: Long entry
-       -1: Short entry
-        0: No action
-    """
-    df = df.copy()
-    df['signal'] = 0
-    prev_rsi = df['rsi'].shift(1)
+    def generate_signals(self, df):
+        """
+        Signals:
+            1: Long entry
+           -1: Short entry
+            0: No action
+        """
+        df = df.copy()
+        df['signal'] = 0
+        prev_rsi = df['rsi'].shift(1)
 
-    # Buy signal: RSI crosses below a lower threshold
-    df.loc[(prev_rsi > lower) & (df['rsi'] <= lower), 'signal'] = 1
+        # Buy signal: RSI crosses below a lower threshold
+        df.loc[(prev_rsi > self.lower) & (df['rsi'] <= self.lower), 'signal'] = 1
 
-    # Sell signal: RSI crosses above an upper threshold
-    df.loc[(prev_rsi < upper) & (df['rsi'] >= upper), 'signal'] = -1
+        # Sell signal: RSI crosses above an upper threshold
+        df.loc[(prev_rsi < self.upper) & (df['rsi'] >= self.upper), 'signal'] = -1
 
-    return df
+        return df
 
-
-# TODO: Outsource repetitive logic
-def extract_trades(df, switch_dates, rollover):
-    trades = []
-    position = None
-    entry_time = None
-    entry_price = None
-    entry_rsi = None  # Store entry RSI
-    next_switch_idx = 0
-    next_switch = switch_dates[next_switch_idx] if switch_dates else None
-    must_reopen = None  # Track if we need to reopen after a roll
-
-    prev_row = None
-    skip_signal_this_bar = False
-    queued_signal = None  # Holds a signal to execute on the next bar
-    queued_signal_row = None  # Holds the row at which the signal was queued
-
-    for idx, row in df.iterrows():
-        current_time = pd.to_datetime(idx)
-        signal = row['signal']
-        price_open = row['open']
-        price_close = row['close']
-        rsi = row.get('rsi', None)
-
-        # Handle contract switches
-        while next_switch and current_time >= next_switch:
+    def _handle_contract_switch(self, current_time, idx, price_open, rsi):
+        """Handle contract switches"""
+        while self.next_switch and current_time >= self.next_switch:
             # On rollover: close at the price of *last bar before switch* (prev_row)
-            if position is not None and entry_time is not None and prev_row is not None:
-                exit_price = prev_row['open']
-                exit_rsi = prev_row.get('rsi', None)
+            if self.position is not None and self.entry_time is not None and self.prev_row is not None:
+                self._close_position_at_switch(current_time)
+            self.next_switch_idx += 1
+            self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
 
-                pnl = (exit_price - entry_price) * position
-                trades.append({
-                    "entry_time": entry_time,
-                    "entry_price": entry_price,
-                    "entry_rsi": entry_rsi,
-                    "exit_time": current_time,
-                    "exit_price": exit_price,
-                    "exit_rsi": exit_rsi,
-                    "side": "long" if position == 1 else "short",
-                    "pnl": pnl,
-                    "switch": True,
-                })
-                if rollover:
-                    must_reopen = position  # Mark to reopen with the same direction
-                    skip_signal_this_bar = True  # Skip signal for this bar, only one trade per bar allowed
-                else:
-                    must_reopen = None  # Do NOT reopen if ROLLOVER is False
-                entry_time = None
-                entry_price = None
-                entry_rsi = None
-                position = None
-            next_switch_idx += 1
-            next_switch = switch_dates[next_switch_idx] if next_switch_idx < len(switch_dates) else None
+    def _close_position_at_switch(self, current_time):
+        """Close position at contract switch"""
+        exit_price = self.prev_row['open']
+        exit_rsi = self.prev_row.get('rsi', None)
 
-        # Open a new position on the next iteration (only if rollover enabled)
-        if must_reopen is not None and position is None:
-            if rollover:
-                position = must_reopen
-                entry_time = idx
-                entry_price = price_open  # CHANGED: open new trade at open
-                entry_rsi = rsi
-            must_reopen = None
+        pnl = (exit_price - self.entry_price) * self.position
+        self.trades.append({
+            "entry_time": self.entry_time,
+            "entry_price": self.entry_price,
+            "entry_rsi": self.entry_rsi,
+            "exit_time": current_time,
+            "exit_price": exit_price,
+            "exit_rsi": exit_rsi,
+            "side": "long" if self.position == 1 else "short",
+            "pnl": pnl,
+            "switch": True,
+        })
+        if self.rollover:
+            self.must_reopen = self.position  # Mark to reopen with the same direction
+            self.skip_signal_this_bar = True  # Skip signal for this bar, only one trade per bar allowed
+        else:
+            self.must_reopen = None  # Do NOT reopen if ROLLOVER is False
+        self._reset_position()
 
-        if skip_signal_this_bar:
-            skip_signal_this_bar = False  # skip *this* bar only
-            prev_row = row
-            continue
+    def _reset_position(self):
+        """Reset position variables"""
+        self.entry_time = None
+        self.entry_price = None
+        self.entry_rsi = None
+        self.position = None
 
-        # Execute queued signal from the previous bar
-        if queued_signal is not None:
+    def _handle_reopen(self, idx, price_open, rsi):
+        """Handle reopening position after rollover"""
+        if self.must_reopen is not None and self.position is None:
+            if self.rollover:
+                self.position = self.must_reopen
+                self.entry_time = idx
+                self.entry_price = price_open
+                self.entry_rsi = rsi
+            self.must_reopen = None
+
+    def _execute_queued_signal(self, idx, price_open, rsi):
+        """Execute queued signal from the previous bar"""
+        if self.queued_signal is not None:
             flip = None
-            if queued_signal == 1 and position != 1:
+            if self.queued_signal == 1 and self.position != 1:
                 flip = 1
-            elif queued_signal == -1 and position != -1:
+            elif self.queued_signal == -1 and self.position != -1:
                 flip = -1
 
             if flip is not None:
                 # Close if currently in position
-                if position is not None and entry_time is not None:
-                    exit_price = price_open
-                    exit_rsi = rsi
-                    side = position
-                    pnl = (exit_price - entry_price) * side
-                    trades.append({
-                        "entry_time": entry_time,
-                        "entry_price": entry_price,
-                        "entry_rsi": entry_rsi,
-                        "exit_time": idx,
-                        "exit_price": exit_price,
-                        "exit_rsi": exit_rsi,
-                        "side": "long" if side == 1 else "short",
-                        "pnl": pnl,
-                    })
+                if self.position is not None and self.entry_time is not None:
+                    self._close_current_position(idx, price_open, rsi)
                 # Open a new position at this (current) bar
-                position = flip
-                entry_time = idx
-                entry_price = price_open
-                entry_rsi = rsi
+                self._open_new_position(flip, idx, price_open, rsi)
 
             # Reset after using
-            queued_signal = None
-            queued_signal_row = None
+            self.queued_signal = None
+            self.queued_signal_row = None
 
-        # Set/overwrite queued_signal for next bar execution
-        if signal != 0:
-            queued_signal = signal
+    def _close_current_position(self, idx, price_open, rsi):
+        """Close current position"""
+        exit_price = price_open
+        exit_rsi = rsi
+        side = self.position
+        pnl = (exit_price - self.entry_price) * side
+        self.trades.append({
+            "entry_time": self.entry_time,
+            "entry_price": self.entry_price,
+            "entry_rsi": self.entry_rsi,
+            "exit_time": idx,
+            "exit_price": exit_price,
+            "exit_rsi": exit_rsi,
+            "side": "long" if side == 1 else "short",
+            "pnl": pnl,
+        })
 
-        prev_row = row
+    def _open_new_position(self, direction, idx, price_open, rsi):
+        """Open a new position"""
+        self.position = direction
+        self.entry_time = idx
+        self.entry_price = price_open
+        self.entry_rsi = rsi
 
-    trades = format_trades(trades)
+    def extract_trades(self, df, switch_dates, rollover):
+        """Extract trades based on signals"""
+        self.trades = []
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.entry_rsi = None
+        self.next_switch_idx = 0
+        self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.queued_signal_row = None
+        self.switch_dates = switch_dates
+        self.rollover = rollover
 
-    return trades
+        for idx, row in df.iterrows():
+            current_time = pd.to_datetime(idx)
+            signal = row['signal']
+            price_open = row['open']
+            price_close = row['close']
+            rsi = row.get('rsi', None)
 
+            # Handle contract switches
+            self._handle_contract_switch(current_time, idx, price_open, rsi)
 
-def compute_summary(trades):
-    total_pnl = sum(trade['pnl'] for trade in trades)
-    summary = {
-        "num_trades": len(trades),
-        "total_pnl": total_pnl
-    }
-    return summary
+            # Open a new position on the next iteration (only if rollover enabled)
+            self._handle_reopen(idx, price_open, rsi)
+
+            if self.skip_signal_this_bar:
+                self.skip_signal_this_bar = False  # skip *this* bar only
+                self.prev_row = row
+                continue
+
+            # Execute queued signal from the previous bar
+            self._execute_queued_signal(idx, price_open, rsi)
+
+            # Set/overwrite queued_signal for next bar execution
+            if signal != 0:
+                self.queued_signal = signal
+
+            self.prev_row = row
+
+        return format_trades(self.trades)
+
+    def compute_summary(self, trades):
+        """Compute summary of trades"""
+        total_pnl = sum(trade['pnl'] for trade in trades)
+        summary = {
+            "num_trades": len(trades),
+            "total_pnl": total_pnl
+        }
+        return summary
+
+    def run(self, df, switch_dates, rollover):
+        """Run the RSI strategy"""
+        df = self.add_rsi_indicator(df)
+        df = self.generate_signals(df)
+        trades = self.extract_trades(df, switch_dates, rollover)
+        summary = self.compute_summary(trades)
+        print(summary)
+        return trades
 
 
 def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
-    df = add_rsi_indicator(df, rsi_period)
-    df = generate_signals(df, lower, upper)
-    trades = extract_trades(df, switch_dates, rollover)
-    summary = compute_summary(trades)
-    print(summary)
-    return trades
+    """
+    Function to maintain backward compatibility with the existing backtesting system
+    """
+    strategy = RSIStrategy(rsi_period, lower, upper)
+    return strategy.run(df, switch_dates, rollover)
