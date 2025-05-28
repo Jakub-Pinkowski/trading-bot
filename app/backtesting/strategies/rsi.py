@@ -6,7 +6,7 @@ from app.utils.backtesting_utils.backtesting_utils import format_trades
 # Define parameters
 RSI_PERIOD = 14
 LOWER = 30
-UPPER = 65
+UPPER = 70
 
 
 class RSIStrategy:
