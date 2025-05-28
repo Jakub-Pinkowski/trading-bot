@@ -166,4 +166,5 @@ def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df, switch_dates, rollover)
     summary = compute_summary(trades)
+    print(summary)
     return trades

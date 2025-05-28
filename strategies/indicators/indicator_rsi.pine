@@ -9,16 +9,18 @@ oversold   = input.int(30, title="Oversold Level")
 // === RSI CALCULATION ===
 rsiValue = ta.rsi(close, rsiPeriod)
 
-// === SIGNALS ===
-// Buy signal: RSI crosses above oversold level
-buy  = ta.crossunder(rsiValue, oversold)
-// Sell signal: RSI crosses below overbought level
-sell = ta.crossover(rsiValue, overbought)
+// === SIGNALS ON BAR CLOSE ===
+rsiCrossUnder = ta.crossunder(rsiValue, oversold)
+rsiCrossOver  = ta.crossover(rsiValue, overbought)
+
+// === DELAY SIGNAL TO BAR N+1 ===
+buy  = rsiCrossUnder[1]
+sell = rsiCrossOver[1]
 
 // === PLOTS ===
-plotshape(buy, title="Buy", text="Buy", style=shape.labeldown,   location=location.abovebar, color=color.green, textcolor=color.white, size=size.small)
+plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.small)
 plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar, color=color.red, textcolor=color.white, size=size.small)
 
-// === ALERTS ===
-alertcondition(buy,  title="RSI Buy",  message="RSI Buy signal on {{ticker}} at {{close}}")
-alertcondition(sell, title="RSI Sell", message="RSI Sell signal on {{ticker}} at {{close}}")
+// === ALERTS (triggered at open of N+1) ===
+alertcondition(buy,  title="RSI Buy",  message="RSI Buy signal on {{ticker}} at {{open}}")
+alertcondition(sell, title="RSI Sell", message="RSI Sell signal on {{ticker}} at {{open}}")
