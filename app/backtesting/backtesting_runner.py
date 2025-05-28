@@ -1,17 +1,14 @@
 import pandas as pd
 import yaml
 
-from app.backtesting.strategies.rsi import rsi_strategy_trades
+from app.backtesting.strategies.rsi import RSIStrategy
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
 # Define parameters
 tested_months = ["1!"]
 symbols = ["ZW", 'ZC', 'ZS', 'ZL']
 intervals = ["4h"]
-strategies = [
-    ("RSI", rsi_strategy_trades),
-    # ("EMA Crossover", ema_crossover_strategy_trades),
-]
+strategies = [("RSI", RSIStrategy()), ]
 
 # Strategy parameters
 rollover = False
@@ -38,5 +35,5 @@ def run_backtesting():
                     print(f"Failed to read file: {filepath}\nReason: {e}")
                     continue
 
-                for strategy_name, strategy_function in strategies:
-                    trades = strategy_function(df, switch_dates, rollover)
+                for strategy_name, strategy_instance in strategies:
+                    trades, summary = strategy_instance.run(df, switch_dates, rollover)

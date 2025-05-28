@@ -207,12 +207,4 @@ class RSIStrategy:
         trades = self.extract_trades(df, switch_dates, rollover)
         summary = self.compute_summary(trades)
         print(summary)
-        return trades
-
-
-def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
-    """
-    Function to maintain backward compatibility with the existing backtesting system
-    """
-    strategy = RSIStrategy(rsi_period, lower, upper)
-    return strategy.run(df, switch_dates, rollover)
+        return trades, summary
