@@ -17,7 +17,6 @@ class RSIStrategy:
         self.position = None
         self.entry_time = None
         self.entry_price = None
-        self.entry_rsi = None
         self.next_switch_idx = 0
         self.next_switch = None
         self.must_reopen = None
@@ -34,8 +33,6 @@ class RSIStrategy:
         df = self.add_rsi_indicator(df)
         df = self.generate_signals(df)
         trades = self.extract_trades(df, switch_dates, rollover)
-        for trade in trades:
-            print(trade)
         summary = self.compute_summary(trades)
         print(summary)
         return trades, summary
@@ -70,7 +67,6 @@ class RSIStrategy:
         self.position = None
         self.entry_time = None
         self.entry_price = None
-        self.entry_rsi = None
         self.next_switch_idx = 0
         self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
         self.must_reopen = None
@@ -85,13 +81,12 @@ class RSIStrategy:
             current_time = pd.to_datetime(idx)
             signal = row['signal']
             price_open = row['open']
-            rsi = row.get('rsi', None)
 
             # Handle contract switches
             self._handle_contract_switch(current_time)
 
             # Open a new position on the next iteration (only if rollover enabled)
-            self._handle_reopen(idx, price_open, rsi)
+            self._handle_reopen(idx, price_open)
 
             if self.skip_signal_this_bar:
                 self.skip_signal_this_bar = False  # skip *this* bar only
@@ -99,7 +94,7 @@ class RSIStrategy:
                 continue
 
             # Execute queued signal from the previous bar
-            self._execute_queued_signal(idx, price_open, rsi)
+            self._execute_queued_signal(idx, price_open)
 
             # Set/overwrite queued_signal for next bar execution
             if signal != 0:
@@ -133,7 +128,6 @@ class RSIStrategy:
     def _close_position_at_switch(self, current_time):
         """Close position at contract switch"""
         exit_price = self.prev_row['open']
-        exit_rsi = self.prev_row.get('rsi', None)
 
         pnl = (exit_price - self.entry_price) * self.position
         self.trades.append({
@@ -156,20 +150,18 @@ class RSIStrategy:
         """Reset position variables"""
         self.entry_time = None
         self.entry_price = None
-        self.entry_rsi = None
         self.position = None
 
-    def _handle_reopen(self, idx, price_open, rsi):
+    def _handle_reopen(self, idx, price_open):
         """Handle reopening position after rollover"""
         if self.must_reopen is not None and self.position is None:
             if self.rollover:
                 self.position = self.must_reopen
                 self.entry_time = idx
                 self.entry_price = price_open
-                self.entry_rsi = rsi
             self.must_reopen = None
 
-    def _execute_queued_signal(self, idx, price_open, rsi):
+    def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
         if self.queued_signal is not None:
             flip = None
@@ -181,18 +173,17 @@ class RSIStrategy:
             if flip is not None:
                 # Close if currently in position
                 if self.position is not None and self.entry_time is not None:
-                    self._close_current_position(idx, price_open, rsi)
+                    self._close_current_position(idx, price_open)
                 # Open a new position at this (current) bar
-                self._open_new_position(flip, idx, price_open, rsi)
+                self._open_new_position(flip, idx, price_open)
 
             # Reset after using
             self.queued_signal = None
             self.queued_signal_row = None
 
-    def _close_current_position(self, idx, price_open, rsi):
+    def _close_current_position(self, idx, price_open):
         """Close current position"""
         exit_price = price_open
-        exit_rsi = rsi
         side = self.position
         pnl = (exit_price - self.entry_price) * side
         self.trades.append({
@@ -204,9 +195,8 @@ class RSIStrategy:
             "pnl": pnl,
         })
 
-    def _open_new_position(self, direction, idx, price_open, rsi):
+    def _open_new_position(self, direction, idx, price_open):
         """Open a new position"""
         self.position = direction
         self.entry_time = idx
         self.entry_price = price_open
-        self.entry_rsi = rsi
