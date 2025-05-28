@@ -23,7 +23,6 @@ class RSIStrategy:
         self.prev_row = None
         self.skip_signal_this_bar = False
         self.queued_signal = None
-        self.queued_signal_row = None
         self.trades = []
         self.switch_dates = None
         self.rollover = False
@@ -73,7 +72,6 @@ class RSIStrategy:
         self.prev_row = None
         self.skip_signal_this_bar = False
         self.queued_signal = None
-        self.queued_signal_row = None
         self.switch_dates = switch_dates
         self.rollover = rollover
 
@@ -179,7 +177,6 @@ class RSIStrategy:
 
             # Reset after using
             self.queued_signal = None
-            self.queued_signal_row = None
 
     def _close_current_position(self, idx, price_open):
         """Close current position"""
