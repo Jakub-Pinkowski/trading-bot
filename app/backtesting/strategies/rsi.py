@@ -9,7 +9,6 @@ LOWER = 30
 UPPER = 70
 
 
-# TODO: Trading View's strategy doesn't trigger BUY/SELL on RSI crossover
 def add_rsi_indicator(df, rsi_period=RSI_PERIOD):
     df = df.copy()
     df['rsi'] = calculate_rsi(df["close"], period=rsi_period)
@@ -37,7 +36,6 @@ def generate_signals(df, lower=LOWER, upper=UPPER):
 
 
 # TODO: Outsource repetitive logic
-# TODO: Looks to be fine but test MORE
 def extract_trades(df, switch_dates, rollover):
     trades = []
     position = None
@@ -116,7 +114,6 @@ def extract_trades(df, switch_dates, rollover):
             if flip is not None:
                 # Close if currently in position
                 if position is not None and entry_time is not None:
-                    print("price open and close: ", price_open, price_close)
                     exit_price = price_open
                     exit_rsi = rsi
                     side = position
@@ -165,7 +162,6 @@ def compute_summary(trades):
 
 
 def rsi_strategy_trades(df, switch_dates, rollover, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
-    print(rollover)
     df = add_rsi_indicator(df, rsi_period)
     df = generate_signals(df, lower, upper)
     trades = extract_trades(df, switch_dates, rollover)

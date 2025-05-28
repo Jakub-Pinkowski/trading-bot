@@ -11,9 +11,9 @@ rsiValue = ta.rsi(close, rsiPeriod)
 
 // === SIGNALS ===
 // Buy signal: RSI crosses above oversold level
-buy  = ta.crossover(rsiValue, oversold)
+buy  = ta.crossunder(rsiValue, oversold)
 // Sell signal: RSI crosses below overbought level
-sell = ta.crossunder(rsiValue, overbought)
+sell = ta.crossover(rsiValue, overbought)
 
 // === PLOTS ===
 plotshape(buy, title="Buy", text="Buy", style=shape.labeldown,   location=location.abovebar, color=color.green, textcolor=color.white, size=size.small)
