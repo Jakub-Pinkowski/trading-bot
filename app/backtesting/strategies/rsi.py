@@ -34,6 +34,8 @@ class RSIStrategy:
         df = self.add_rsi_indicator(df)
         df = self.generate_signals(df)
         trades = self.extract_trades(df, switch_dates, rollover)
+        for trade in trades:
+            print(trade)
         summary = self.compute_summary(trades)
         print(summary)
         return trades, summary
@@ -137,10 +139,8 @@ class RSIStrategy:
         self.trades.append({
             "entry_time": self.entry_time,
             "entry_price": self.entry_price,
-            "entry_rsi": self.entry_rsi,
             "exit_time": current_time,
             "exit_price": exit_price,
-            "exit_rsi": exit_rsi,
             "side": "long" if self.position == 1 else "short",
             "pnl": pnl,
             "switch": True,
@@ -198,10 +198,8 @@ class RSIStrategy:
         self.trades.append({
             "entry_time": self.entry_time,
             "entry_price": self.entry_price,
-            "entry_rsi": self.entry_rsi,
             "exit_time": idx,
             "exit_price": exit_price,
-            "exit_rsi": exit_rsi,
             "side": "long" if side == 1 else "short",
             "pnl": pnl,
         })
