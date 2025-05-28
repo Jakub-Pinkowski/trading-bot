@@ -8,10 +8,12 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 tested_months = ["1!"]
 symbols = ["ZW", 'ZC', 'ZS', 'ZL']
 intervals = ["4h"]
-strategies = [("RSI", RSIStrategy()), ]
 
 # Strategy parameters
 rollover = False
+
+# Strategies setup
+strategies = [("RSI", RSIStrategy(rollover=rollover))]
 
 with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
@@ -36,4 +38,4 @@ def run_backtesting():
                     continue
 
                 for strategy_name, strategy_instance in strategies:
-                    trades, summary = strategy_instance.run(df, switch_dates, rollover)
+                    trades, summary = strategy_instance.run(df, switch_dates)

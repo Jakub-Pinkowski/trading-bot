@@ -10,7 +10,7 @@ UPPER = 70
 
 
 class RSIStrategy:
-    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER):
+    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False):
         self.rsi_period = rsi_period
         self.lower = lower
         self.upper = upper
@@ -25,13 +25,13 @@ class RSIStrategy:
         self.queued_signal = None
         self.trades = []
         self.switch_dates = None
-        self.rollover = False
+        self.rollover = rollover
 
-    def run(self, df, switch_dates, rollover):
+    def run(self, df, switch_dates):
         """Run the RSI strategy"""
         df = self.add_rsi_indicator(df)
         df = self.generate_signals(df)
-        trades = self.extract_trades(df, switch_dates, rollover)
+        trades = self.extract_trades(df, switch_dates)
         summary = self.compute_summary(trades)
         print(summary)
         return trades, summary
@@ -60,7 +60,7 @@ class RSIStrategy:
 
         return df
 
-    def extract_trades(self, df, switch_dates, rollover):
+    def extract_trades(self, df, switch_dates):
         """Extract trades based on signals"""
         self.trades = []
         self.position = None
@@ -73,7 +73,6 @@ class RSIStrategy:
         self.skip_signal_this_bar = False
         self.queued_signal = None
         self.switch_dates = switch_dates
-        self.rollover = rollover
 
         for idx, row in df.iterrows():
             current_time = pd.to_datetime(idx)
