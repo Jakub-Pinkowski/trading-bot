@@ -20,7 +20,7 @@ with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
 
 
-# TODO: Add contract switch dates for all symbols
+# TODO: Add contract switch dates for missing symbols
 # TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 def run_backtesting():
     for tested_month in tested_months:
@@ -39,5 +39,4 @@ def run_backtesting():
                     continue
 
                 for strategy_name, strategy_function in strategies:
-                    print(f"Running strategy: {strategy_name}")
                     trades = strategy_function(df, switch_dates, rollover)

@@ -144,9 +144,6 @@ def extract_trades(df, switch_dates, rollover):
 
         prev_row = row
 
-    for trade in trades:
-        print(trade)
-
     trades = format_trades(trades)
 
     return trades
