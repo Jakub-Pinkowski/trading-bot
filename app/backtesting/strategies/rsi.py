@@ -14,6 +14,10 @@ class RSIStrategy:
         self.rsi_period = rsi_period
         self.lower = lower
         self.upper = upper
+        self.switch_dates = None
+        self.rollover = rollover
+
+        # Initialize attributes that are reset in _reset()
         self.position = None
         self.entry_time = None
         self.entry_price = None
@@ -24,11 +28,12 @@ class RSIStrategy:
         self.skip_signal_this_bar = False
         self.queued_signal = None
         self.trades = []
-        self.switch_dates = None
-        self.rollover = rollover
+
+        self._reset()
 
     def run(self, df, switch_dates):
         """Run the RSI strategy"""
+        df = df.copy() 
         df = self.add_rsi_indicator(df)
         df = self.generate_signals(df)
         trades = self.extract_trades(df, switch_dates)
@@ -37,7 +42,6 @@ class RSIStrategy:
         return trades, summary
 
     def add_rsi_indicator(self, df):
-        df = df.copy()
         df['rsi'] = calculate_rsi(df["close"], period=self.rsi_period)
         return df
 
@@ -48,7 +52,6 @@ class RSIStrategy:
            -1: Short entry
             0: No action
         """
-        df = df.copy()
         df['signal'] = 0
         prev_rsi = df['rsi'].shift(1)
 
@@ -62,17 +65,9 @@ class RSIStrategy:
 
     def extract_trades(self, df, switch_dates):
         """Extract trades based on signals"""
-        self.trades = []
-        self.position = None
-        self.entry_time = None
-        self.entry_price = None
-        self.next_switch_idx = 0
-        self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
-        self.must_reopen = None
-        self.prev_row = None
-        self.skip_signal_this_bar = False
-        self.queued_signal = None
         self.switch_dates = switch_dates
+        self._reset()
+        self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
 
         for idx, row in df.iterrows():
             current_time = pd.to_datetime(idx)
@@ -142,6 +137,19 @@ class RSIStrategy:
         else:
             self.must_reopen = None  # Do NOT reopen if ROLLOVER is False
         self._reset_position()
+
+    def _reset(self):
+        """Reset all state variables"""
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.next_switch_idx = 0
+        self.next_switch = None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.trades = []
 
     def _reset_position(self):
         """Reset position variables"""
