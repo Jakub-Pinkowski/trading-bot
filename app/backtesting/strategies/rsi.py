@@ -26,6 +26,8 @@ class RSIStrategy:
         self.queued_signal = None
         self.queued_signal_row = None
         self.trades = []
+        self.switch_dates = None
+        self.rollover = False
 
     def add_rsi_indicator(self, df):
         df = df.copy()
@@ -51,7 +53,7 @@ class RSIStrategy:
 
         return df
 
-    def _handle_contract_switch(self, current_time, idx, price_open, rsi):
+    def _handle_contract_switch(self, current_time):
         """Handle contract switches"""
         while self.next_switch and current_time >= self.next_switch:
             # On rollover: close at the price of *last bar before switch* (prev_row)
@@ -166,11 +168,10 @@ class RSIStrategy:
             current_time = pd.to_datetime(idx)
             signal = row['signal']
             price_open = row['open']
-            price_close = row['close']
             rsi = row.get('rsi', None)
 
             # Handle contract switches
-            self._handle_contract_switch(current_time, idx, price_open, rsi)
+            self._handle_contract_switch(current_time)
 
             # Open a new position on the next iteration (only if rollover enabled)
             self._handle_reopen(idx, price_open, rsi)
@@ -191,7 +192,8 @@ class RSIStrategy:
 
         return format_trades(self.trades)
 
-    def compute_summary(self, trades):
+    @staticmethod
+    def compute_summary(trades):
         """Compute summary of trades"""
         total_pnl = sum(trade['pnl'] for trade in trades)
         summary = {
