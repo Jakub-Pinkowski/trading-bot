@@ -63,6 +63,7 @@ class BaseStrategy:
             # Handle contract switches. Close an old position and potentially open a new one
             self._handle_contract_switch(current_time, idx, price_open)
 
+            # Skip signal for this bar if we are in a rollover position, and we are about to switch
             if self.skip_signal_this_bar:
                 self.skip_signal_this_bar = False  # skip *this* bar only
                 self.prev_row = row
@@ -83,8 +84,9 @@ class BaseStrategy:
 
     def _handle_trailing_stop(self, idx, price_high, price_low):
         """Manage trailing stop trigger and update logic."""
+
+        # Check if a trailing stop has been triggered
         if self.position is not None and self.trailing_stop is not None:
-            # Trailing stop triggered?
             if self.position == 1 and price_low <= self.trailing_stop:
                 self._close_position(idx, self.trailing_stop, switch=False)
             elif self.position == -1 and price_high >= self.trailing_stop:
@@ -109,6 +111,7 @@ class BaseStrategy:
             self.next_switch_idx += 1
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
 
+        # Reopen on the following contract if rollover is enabled
         if self.must_reopen is not None and self.position is None:
             if self.rollover:
                 self.position = self.must_reopen
