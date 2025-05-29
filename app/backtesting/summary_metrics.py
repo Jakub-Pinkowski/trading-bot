@@ -24,6 +24,7 @@ def calculate_summary_metrics(trades):
     total_gross_profit = sum(trade['pnl_dollars'] for trade in winning_trades) if winning_trades else 0
     total_gross_loss = sum(trade['pnl_dollars'] for trade in losing_trades) if losing_trades else 0
 
+    # Profit factor
     profit_factor = abs(total_gross_profit / total_gross_loss) if total_gross_loss != 0 else float('inf')
 
     # Averages based on gross values
@@ -33,45 +34,38 @@ def calculate_summary_metrics(trades):
 
     avg_duration_hours = sum(trade['duration_hours'] for trade in trades) / total_trades if total_trades > 0 else 0
 
-    # Drawdown calculation
-    equity_curve = []
-    current_equity = 0
-    max_equity = 0
-    max_drawdown = 0
+    # Average return % based on margin requirements
+    avg_trade_return_pct = (
+        sum(trade['return_pct'] for trade in trades) / total_trades
+        if total_trades > 0 else 0
+    )
 
-    for trade in trades:
-        current_equity += trade['pnl_dollars']
-        equity_curve.append(current_equity)
+    # Total commission paid
+    total_commission_paid = sum(trade.get('commission', 0) for trade in trades)
 
-        if current_equity > max_equity:
-            max_equity = current_equity
+    # Total margin used (sum of individual trade margin requirements)
+    total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
 
-        drawdown = max_equity - current_equity
-        if drawdown > max_drawdown:
-            max_drawdown = drawdown
-
-    # Sharpe ratio using gross PnL
-    if total_trades > 1:
-        returns = [trade['pnl_dollars'] for trade in trades]
-        avg_return = sum(returns) / len(returns)
-        std_dev = (sum((ret - avg_return) ** 2 for ret in returns) / (len(returns) - 1)) ** 0.5
-        sharpe_ratio = avg_return / std_dev if std_dev > 0 else 0
-    else:
-        sharpe_ratio = 0
+    # Commission as % of margin
+    commission_pct_on_margin = (
+        (total_commission_paid / total_margin_used) * 100
+        if total_margin_used > 0 else 0
+    )
 
     return {
         "total_trades": total_trades,
         "winning_trades": win_count,
         "losing_trades": loss_count,
         "win_rate": round(win_rate, 2),
+        "avg_trade_duration_hours": round(avg_duration_hours, 2),
         "total_gross_pnl": round(total_gross_pnl, 2),
-        "profit_factor": round(profit_factor, 2),
         "avg_trade_gross_pnl": round(avg_trade_pnl, 2),
+        "avg_trade_return_pct": round(avg_trade_return_pct, 2),
         "avg_win_gross": round(avg_win, 2),
         "avg_loss_gross": round(avg_loss, 2),
-        "avg_trade_duration_hours": round(avg_duration_hours, 2),
-        "max_drawdown": round(max_drawdown, 2),
-        "sharpe_ratio": round(sharpe_ratio, 2),
+        "profit_factor": round(profit_factor, 2),
+        "total_commission_paid": round(total_commission_paid, 2),
+        "commission_pct_on_margin": round(commission_pct_on_margin, 2),
     }
 
 
@@ -81,12 +75,13 @@ def print_summary_metrics(summary):
     print(f"Total Trades: {summary['total_trades']}")
     print(f"Winning Trades: {summary['winning_trades']} ({summary['win_rate']}%)")
     print(f"Losing Trades: {summary['losing_trades']}")
-    print(f"Total Gross PnL: ${summary['total_gross_pnl']}")
-    print(f"Profit Factor: {summary['profit_factor']}")
-    print(f"Avg Trade PnL: ${summary['avg_trade_gross_pnl']}")
-    print(f"Avg Win: ${summary['avg_win_gross']}")
-    print(f"Avg Loss: ${summary['avg_loss_gross']}")
     print(f"Avg Trade Duration: {summary['avg_trade_duration_hours']} hours")
-    print(f"Max Drawdown: ${summary['max_drawdown']}")
-    print(f"Sharpe Ratio: {summary['sharpe_ratio']}")
+    print(f"Total Gross PnL: ${summary['total_gross_pnl']} ")
+    print(f"Avg Trade PnL: ${summary['avg_trade_gross_pnl']} ")
+    print(f"Avg PnL %: {summary['avg_trade_return_pct']}%")
+    print(f"Avg Win: ${summary['avg_win_gross']}")
+    print(f"Avg Loss: $ {summary['avg_loss_gross']}")
+    print(f"Profit Factor: {summary['profit_factor']}")
+    print(f"Total Commission Paid: ${summary['total_commission_paid']}")
+    print(f"Commission as % of Margin: {summary['commission_pct_on_margin']}%")
     print("=============================\n")

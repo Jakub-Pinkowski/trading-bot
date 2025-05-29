@@ -65,7 +65,6 @@ def calculate_trade_metrics(trade, symbol):
 
     trade_with_metrics['return_pct'] = round(return_pct, 2)
 
-
     return trade_with_metrics
 
 
@@ -75,12 +74,12 @@ def print_trade_metrics(trade):
     print(f"Entry: {trade['entry_time']} at {trade['entry_price']}")
     print(f"Exit: {trade['exit_time']} at {trade['exit_price']}")
     print(f"Side: {trade['side']}")
-    print(f"Contract value: ${trade['contract_value']}")
-    print(f"Margin requirement: ${trade['margin_requirement']}")
     print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
+    print(f"Contract value: {trade['contract_value']}$")
+    print(f"Margin requirement: ${trade['margin_requirement']}")
     print(f"PnL (points): {trade['pnl_points']}")
-    print(f"PnL (dollars): ${trade['pnl_dollars']}")
-    print(f"Commission: ${trade['commission']}")
-    print(f"Net PnL: ${trade['net_pnl']}")
+    print(f"PnL (dollars): {trade['pnl_dollars']}$")
+    print(f"Commission: {trade['commission']}$")
+    print(f"Net PnL: {trade['net_pnl']}$")
     print(f"Return: {trade['return_pct']}%")
     print("=====================\n")
