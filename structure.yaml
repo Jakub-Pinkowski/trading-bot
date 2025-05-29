@@ -90,9 +90,9 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Backtesting
+# TODO: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO: Compare indicators with TradingView (ATR, MACD and BB to be done)
 # TODO: Add contract switch dates for missing symbols
-# TODO: Build separate logic for metrics/summaries
 # TODO: When testing play around with indicator's values
 # TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 # TODO: Align my own backtesting to TW's alerts
