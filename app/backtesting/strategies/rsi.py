@@ -158,7 +158,6 @@ class RSIStrategy:
             self.queued_signal = None
 
     def _close_position(self, exit_time, exit_price, switch=False):
-        """General method for closing a position"""
         trade = {
             "entry_time": self.entry_time,
             "entry_price": self.entry_price,
@@ -172,7 +171,6 @@ class RSIStrategy:
         self._reset_position()
 
     def _open_new_position(self, direction, idx, price_open):
-        """Open a new position"""
         self.position = direction
         self.entry_time = idx
         self.entry_price = price_open
