@@ -14,7 +14,7 @@ logger = get_logger()
 
 # Define parameters
 tested_months = ["1!"]
-symbols = ['ZL']
+symbols = ['ZW']
 intervals = ["4h"]
 
 # Strategy parameters

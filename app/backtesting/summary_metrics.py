@@ -71,6 +71,18 @@ def calculate_summary_metrics(trades):
 
 def print_summary_metrics(summary):
     """ Print summary metrics in a formatted way. """
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
+    avg_trade_return_pct = summary['avg_trade_return_pct']
+    if avg_trade_return_pct > 0:
+        color = GREEN
+    elif avg_trade_return_pct < 0:
+        color = RED
+    else:
+        color = RESET  # default terminal color
+
     print("\n====== SUMMARY METRICS ======")
     print(f"Total Trades: {summary['total_trades']}")
     print(f"Winning Trades: {summary['winning_trades']} ({summary['win_rate']}%)")
@@ -78,10 +90,10 @@ def print_summary_metrics(summary):
     print(f"Avg Trade Duration: {summary['avg_trade_duration_hours']} hours")
     print(f"Total Gross PnL: ${summary['total_gross_pnl']} ")
     print(f"Avg Trade PnL: ${summary['avg_trade_gross_pnl']} ")
-    print(f"Avg PnL %: {summary['avg_trade_return_pct']}%")
     print(f"Avg Win: ${summary['avg_win_gross']}")
     print(f"Avg Loss: $ {summary['avg_loss_gross']}")
     print(f"Profit Factor: {summary['profit_factor']}")
     print(f"Total Commission Paid: ${summary['total_commission_paid']}")
     print(f"Commission as % of Margin: {summary['commission_pct_on_margin']}%")
+    print(f"Avg PnL %: {color}{avg_trade_return_pct}%{RESET}")
     print("=============================\n")
