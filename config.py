@@ -92,3 +92,8 @@ CONTRACT_MULTIPLIERS = {
     'MYM': 0.5,
     'M2K': 5,
 }
+
+# TODO: Add margin requirements for each contract from official IBKR website
+MARGIN_REQUIREMENTS = {
+
+}

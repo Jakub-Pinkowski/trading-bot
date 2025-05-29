@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+# BUG: RSI's trades are COMPLETELY wrong
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None):
         self.switch_dates = None
@@ -154,6 +155,7 @@ class BaseStrategy:
 
     def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
+
         if self.queued_signal is not None:
             flip = None
             if self.queued_signal == 1 and self.position != 1:

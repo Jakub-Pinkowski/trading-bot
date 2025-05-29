@@ -1,7 +1,7 @@
 import pandas as pd
 import yaml
 
-from app.backtesting.per_trade_metrics import calculate_trade_metrics, print_trade_metrics
+from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.macd import MACDStrategy
@@ -19,7 +19,7 @@ intervals = ["4h"]
 
 # Strategy parameters
 rollover = False
-trailing = 2  # in %
+trailing = None  # in %
 
 # Strategies setup
 strategies = [
@@ -54,12 +54,15 @@ def run_backtesting():
                     # Get the trades
                     trades = strategy_instance.run(df, switch_dates)
 
+                    for trade in trades:
+                        print(trade)
+
                     # Calculate metrics for each trade
                     trades_with_metrics = []
                     for trade in trades:
                         trade_with_metrics = calculate_trade_metrics(trade, symbol)
                         trades_with_metrics.append(trade_with_metrics)
-                        print_trade_metrics(trade_with_metrics)
+                        # print_trade_metrics(trade_with_metrics)
 
                     # Calculate and print summary metrics
                     if trades_with_metrics:

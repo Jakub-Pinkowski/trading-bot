@@ -13,16 +13,18 @@ def calculate_trade_metrics(trade, symbol):
     # Create a copy of the trade to avoid modifying the original
     trade_with_metrics = trade.copy()
 
-    # Determine contract value based on the symbol
+    # Determine the contract multiplier for the symbol
     if symbol in CONTRACT_MULTIPLIERS:
-        contract_value = CONTRACT_MULTIPLIERS[symbol]
+        contract_multiplier = CONTRACT_MULTIPLIERS[symbol]
     else:
         logger.error(f"No contract multiplier found for symbol: {symbol}")
         raise ValueError(f"No contract multiplier found for symbol: {symbol}")
 
     # Notional value of the contract
-    contract_value = trade['entry_price'] * contract_value
+    contract_value = trade['entry_price'] * contract_multiplier
     trade_with_metrics['contract_value'] = round(contract_value, 2)
+
+    # TODO: Add margin requirement here
 
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
@@ -38,7 +40,7 @@ def calculate_trade_metrics(trade, symbol):
     trade_with_metrics['pnl_points'] = round(pnl_points, 2)
 
     # Calculate PnL in dollars
-    pnl_dollars = pnl_points * contract_value
+    pnl_dollars = pnl_points * contract_multiplier
     trade_with_metrics['pnl_dollars'] = round(pnl_dollars, 2)
 
     # Fixed commission per trade
@@ -50,7 +52,7 @@ def calculate_trade_metrics(trade, symbol):
     trade_with_metrics['net_pnl'] = round(net_pnl, 2)
 
     # Calculate return percentage
-    initial_capital_used = trade['entry_price'] * contract_value
+    initial_capital_used = trade['entry_price'] * contract_multiplier
     if initial_capital_used != 0:
         return_pct = (net_pnl / initial_capital_used) * 100
     else:
