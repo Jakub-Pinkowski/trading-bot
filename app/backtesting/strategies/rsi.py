@@ -9,6 +9,8 @@ LOWER = 30
 UPPER = 70
 
 
+# TODO: Add a commission
+# TODO: Add more metrics besides just PnL
 class RSIStrategy:
     def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False):
         self.rsi_period = rsi_period

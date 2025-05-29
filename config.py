@@ -33,7 +33,6 @@ ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
 
-
 TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
 
@@ -56,3 +55,40 @@ AGGRESSIVE_TRADING = True
 
 # Analysis
 TIMEFRAME_TO_ANALYZE = 7  # In days
+
+# NOTE: TW multipliers, might not with properly with actual trades
+CONTRACT_MULTIPLIERS = {
+    'CL': 1000,
+    'NG': 10000,
+    'GC': 100,
+    'SI': 5000,
+    'HG': 25000,
+    'PL': 50,
+    'ZC': 50,
+    'ZS': 50,
+    'ZL': 600,
+    'ZW': 50,
+    'SB': 1120,
+    'NQ': 20,
+    'ES': 50,
+    'YM': 5,
+    'RTY': 50,
+    'ZB': 114,
+    'MCL': 100,
+    'MNG': 1000,
+    'MGC': 10,
+    'SIL': 1000,
+    'MHG': 2500,
+    'MHNG': 2500,
+    'PLM': 10,
+    'MZC': 500,
+    'MZS': 500,
+    'MZL': 6000,
+    'MZW': 500,
+    'MBT': 0.1,
+    'MET': 0.1,
+    'MNQ': 2,
+    'MES': 5,
+    'MYM': 0.5,
+    'M2K': 5,
+}
