@@ -1,7 +1,6 @@
 import pandas as pd
 
 
-# BUG: RSI's trades are COMPLETELY wrong
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None):
         self.switch_dates = None
