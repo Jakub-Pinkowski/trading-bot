@@ -51,6 +51,7 @@ def run_backtesting():
 
                 for strategy_name, strategy_instance in strategies:
                     print(f"\nRunning strategy: {strategy_name}")
+                    # Get the trades
                     trades = strategy_instance.run(df, switch_dates)
 
                     # Calculate metrics for each trade

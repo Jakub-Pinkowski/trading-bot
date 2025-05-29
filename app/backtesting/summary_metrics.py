@@ -1,3 +1,8 @@
+from app.utils.logger import get_logger
+
+logger = get_logger()
+
+
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades. """
 
@@ -16,6 +21,7 @@ def calculate_summary_metrics(trades):
     # Ensure all trades have metrics calculated
     for trade in trades:
         if 'pnl_points' not in trade:
+            logger.error("All trades must have metrics calculated before calling calculate_summary_metrics")
             raise ValueError("All trades must have metrics calculated before calling calculate_summary_metrics")
 
     trades_with_metrics = trades

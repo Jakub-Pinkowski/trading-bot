@@ -20,6 +20,10 @@ def calculate_trade_metrics(trade, symbol):
         logger.error(f"No contract multiplier found for symbol: {symbol}")
         raise ValueError(f"No contract multiplier found for symbol: {symbol}")
 
+    # Notional value of the contract
+    contract_value = trade['entry_price'] * contract_value
+    trade_with_metrics['contract_value'] = round(contract_value, 2)
+
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
     trade_with_metrics['duration'] = trade_duration
@@ -37,9 +41,8 @@ def calculate_trade_metrics(trade, symbol):
     pnl_dollars = pnl_points * contract_value
     trade_with_metrics['pnl_dollars'] = round(pnl_dollars, 2)
 
-    # Use fixed commission per trade
+    # Fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
-
     trade_with_metrics['commission'] = round(total_commission, 2)
 
     # Calculate net PnL (after commission)
@@ -48,7 +51,6 @@ def calculate_trade_metrics(trade, symbol):
 
     # Calculate return percentage
     initial_capital_used = trade['entry_price'] * contract_value
-
     if initial_capital_used != 0:
         return_pct = (net_pnl / initial_capital_used) * 100
     else:
@@ -59,17 +61,13 @@ def calculate_trade_metrics(trade, symbol):
     return trade_with_metrics
 
 
-def print_trade_metrics(trade, symbol=None):
+def print_trade_metrics(trade):
     """ Print metrics for a single trade in a formatted way. """
-    if 'pnl_points' not in trade:
-        if symbol is None:
-            raise ValueError("Symbol must be provided for trade without metrics")
-        trade = calculate_trade_metrics(trade, symbol)
-
     print("\n=== TRADE METRICS ===")
     print(f"Entry: {trade['entry_time']} at {trade['entry_price']}")
     print(f"Exit: {trade['exit_time']} at {trade['exit_price']}")
     print(f"Side: {trade['side']}")
+    print(f"Contract value: ${trade['contract_value']}")
     print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
     print(f"PnL (points): {trade['pnl_points']}")
     print(f"PnL (dollars): ${trade['pnl_dollars']}")
