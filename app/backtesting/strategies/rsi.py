@@ -72,11 +72,8 @@ class RSIStrategy:
             signal = row['signal']
             price_open = row['open']
 
-            # Handle contract switches
-            self._handle_contract_switch(current_time)
-
-            # Open a new position on the next iteration (only if rollover enabled)
-            self._handle_reopen(idx, price_open)
+            # Handle contract switches. Close an old position and potentially open a new one
+            self._handle_contract_switch(current_time, idx, price_open)
 
             if self.skip_signal_this_bar:
                 self.skip_signal_this_bar = False  # skip *this* bar only
@@ -96,7 +93,8 @@ class RSIStrategy:
 
     # --- Private methods ---
 
-    def _handle_contract_switch(self, current_time):
+    def _handle_contract_switch(self, current_time, idx, price_open):
+
         """Handle contract switches"""
         while self.next_switch and current_time >= self.next_switch:
             # On rollover: close at the price of *last bar before switch* (prev_row)
@@ -104,6 +102,13 @@ class RSIStrategy:
                 self._close_position_at_switch(current_time)
             self.next_switch_idx += 1
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
+
+        if self.must_reopen is not None and self.position is None:
+            if self.rollover:
+                self.position = self.must_reopen
+                self.entry_time = idx
+                self.entry_price = price_open
+            self.must_reopen = None
 
     def _close_position_at_switch(self, current_time):
         exit_price = self.prev_row['open']
@@ -135,15 +140,6 @@ class RSIStrategy:
         self.entry_time = None
         self.entry_price = None
         self.position = None
-
-    def _handle_reopen(self, idx, price_open):
-        """Handle reopening position after rollover"""
-        if self.must_reopen is not None and self.position is None:
-            if self.rollover:
-                self.position = self.must_reopen
-                self.entry_time = idx
-                self.entry_price = price_open
-            self.must_reopen = None
 
     def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
