@@ -1,5 +1,5 @@
 from app.utils.logger import get_logger
-from config import CONTRACT_MULTIPLIERS
+from config import CONTRACT_MULTIPLIERS, MARGIN_REQUIREMENTS
 
 logger = get_logger()
 
@@ -13,18 +13,24 @@ def calculate_trade_metrics(trade, symbol):
     # Create a copy of the trade to avoid modifying the original
     trade_with_metrics = trade.copy()
 
-    # Determine the contract multiplier for the symbol
+    # Get the contract multiplier for the symbol
     if symbol in CONTRACT_MULTIPLIERS:
         contract_multiplier = CONTRACT_MULTIPLIERS[symbol]
     else:
         logger.error(f"No contract multiplier found for symbol: {symbol}")
         raise ValueError(f"No contract multiplier found for symbol: {symbol}")
 
+    # Get the margin requirement for the symbol
+    if symbol in MARGIN_REQUIREMENTS:
+        margin_requirement = MARGIN_REQUIREMENTS[symbol]
+    else:
+        logger.error(f"No margin requirement found for symbol: {symbol}")
+        raise ValueError(f"No margin requirement found for symbol: {symbol}")
+    trade_with_metrics['margin_requirement'] = round(margin_requirement, 2)
+
     # Notional value of the contract
     contract_value = trade['entry_price'] * contract_multiplier
     trade_with_metrics['contract_value'] = round(contract_value, 2)
-
-    # TODO: Add margin requirement here
 
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
@@ -51,14 +57,14 @@ def calculate_trade_metrics(trade, symbol):
     net_pnl = pnl_dollars - total_commission
     trade_with_metrics['net_pnl'] = round(net_pnl, 2)
 
-    # Calculate return percentage
-    initial_capital_used = trade['entry_price'] * contract_multiplier
-    if initial_capital_used != 0:
-        return_pct = (net_pnl / initial_capital_used) * 100
+    # Calculate return percentage based on the initial margin requirement
+    if margin_requirement != 0:
+        return_pct = (net_pnl / margin_requirement) * 100
     else:
         return_pct = 0
 
     trade_with_metrics['return_pct'] = round(return_pct, 2)
+
 
     return trade_with_metrics
 
@@ -70,6 +76,7 @@ def print_trade_metrics(trade):
     print(f"Exit: {trade['exit_time']} at {trade['exit_price']}")
     print(f"Side: {trade['side']}")
     print(f"Contract value: ${trade['contract_value']}")
+    print(f"Margin requirement: ${trade['margin_requirement']}")
     print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
     print(f"PnL (points): {trade['pnl_points']}")
     print(f"PnL (dollars): ${trade['pnl_dollars']}")

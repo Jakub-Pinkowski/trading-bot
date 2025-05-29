@@ -54,7 +54,6 @@ def run_backtesting():
                     # Get the trades
                     trades = strategy_instance.run(df, switch_dates)
 
-
                     # Calculate metrics for each trade
                     trades_with_metrics = []
                     for trade in trades:

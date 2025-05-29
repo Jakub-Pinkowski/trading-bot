@@ -95,5 +95,8 @@ CONTRACT_MULTIPLIERS = {
 
 # TODO: Add margin requirements for each contract from official IBKR website
 MARGIN_REQUIREMENTS = {
-
+    'ZW': 2968.06,
+    'ZC': 1713.66,
+    'ZS': 3504.81,
+    'ZL': 3587.25,
 }
