@@ -2,6 +2,7 @@ import pandas as pd
 import yaml
 
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.rsi import RSIStrategy
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
@@ -17,7 +18,7 @@ rollover = False
 
 # Strategies setup
 strategies = [
-    # ("RSI", RSIStrategy(rollover=rollover)),
+    ("RSI", RSIStrategy(rollover=rollover)),
     ("EMA Crossover", EMACrossoverStrategy(rollover=rollover)),
 ]
 
@@ -35,7 +36,7 @@ def run_backtesting():
             switch_dates = [pd.to_datetime(dt) for dt in switch_dates]
 
             for interval in intervals:
-                logger.info(f"Processing: Month={tested_month}, Symbol={symbol}, Interval={interval}")
+                print(f"Processing: Month={tested_month}, Symbol={symbol}, Interval={interval}")
 
                 filepath = f"{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet"
                 try:
@@ -45,6 +46,7 @@ def run_backtesting():
                     continue
 
                 for strategy_name, strategy_instance in strategies:
+                    print(f"Running strategy: {strategy_name}")
                     trades = strategy_instance.run(df, switch_dates)
 
                     for trade in trades:
