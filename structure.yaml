@@ -10,9 +10,17 @@ trading-bot/
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
 │   │   ├── strategies/                           # Trading strategies to backtest
+│   │   │   ├── __init__.py
+│   │   │   ├── base_strategy.py                  # Base strategy class
+│   │   │   ├── bollinger_bands.py                # Bollinger Bands strategy
+│   │   │   ├── ema_crossover.py                  # EMA Crossover strategy
+│   │   │   ├── macd.py                           # MACD strategy
+│   │   │   └── rsi.py                            # RSI strategy
 │   │   ├── __init__.py
 │   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
-│   │   ├── data_cleaning.py                      # Data cleaning logic       
+│   │   ├── indicators.py                         # Technical indicators
+│   │   ├── per_trade_metrics.py                  # Per trade metrics
+│   │   └── summary_metrics.py                    # Summary metrics
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
@@ -31,6 +39,8 @@ trading-bot/
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── backtesting_utils/
+│   │   │   ├── __init__.py
+│   │   │   └── backtesting_utils.py               # Backtesting utilities
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
@@ -82,13 +92,6 @@ trading-bot/
 # TODO: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
 # NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
 
-# Strategies
-# TODO: Add new strategies
-# TODO: Update TW strategies to BUY/SELL on n+1 candle
-
-# Data analysis
-# TODO: Add automatic Google Sheets integration
-
 # Backtesting
 # TODO: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO: Compare indicators with TradingView (ATR, MACD and BB to be done)
@@ -96,6 +99,13 @@ trading-bot/
 # TODO: When testing play around with indicator's values
 # TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 # TODO: Align my own backtesting to TW's alerts
+
+# Strategies
+# TODO: Add new strategies
+# TODO: Update TW strategies to BUY/SELL on n+1 candle
+
+# Data analysis
+# TODO: Add automatic Google Sheets integration
 
 # Developer
 # TODO: Add e2e tests
