@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 from config import LOGS_DIR
 
@@ -18,33 +19,36 @@ def get_logger(name="app"):
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-    # File handler for DEBUG only (logs DEBUG)
-    debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debug.log"))
-    debug_handler.setLevel(logging.DEBUG)
-    debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
-    debug_handler.setFormatter(formatter)
-
-    # File handler for INFO only (logs INFO and WARNING)
-    info_handler = logging.FileHandler(os.path.join(LOGS_DIR, "info.log"))
-    info_handler.setLevel(logging.INFO)
-    info_handler.addFilter(lambda record: record.levelno < logging.ERROR)
-    info_handler.setFormatter(formatter)
-
-    # File handler for ERROR and CRITICAL only
-    error_handler = logging.FileHandler(os.path.join(LOGS_DIR, "error.log"))
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(formatter)
-
-    # Console handler for ERROR and CRITICAL
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.ERROR)
-    console_handler.setFormatter(formatter)
+    # Check if we're running in a test environment
+    is_test_environment = 'pytest' in sys.modules
 
     # Add handlers to the logger in the correct order
     if not logger.handlers:
-        logger.addHandler(debug_handler)
-        logger.addHandler(info_handler)
-        logger.addHandler(error_handler)
+        if not is_test_environment:
+            # File handler for DEBUG only (logs DEBUG)
+            debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debug.log"))
+            debug_handler.setLevel(logging.DEBUG)
+            debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
+            debug_handler.setFormatter(formatter)
+            logger.addHandler(debug_handler)
+
+            # File handler for INFO only (logs INFO and WARNING)
+            info_handler = logging.FileHandler(os.path.join(LOGS_DIR, "info.log"))
+            info_handler.setLevel(logging.INFO)
+            info_handler.addFilter(lambda record: record.levelno < logging.ERROR)
+            info_handler.setFormatter(formatter)
+            logger.addHandler(info_handler)
+
+            # File handler for ERROR and CRITICAL only
+            error_handler = logging.FileHandler(os.path.join(LOGS_DIR, "error.log"))
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(formatter)
+            logger.addHandler(error_handler)
+
+        # Console handler for ERROR and CRITICAL (always added, even in tests)
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.ERROR)
+        console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
     return logger

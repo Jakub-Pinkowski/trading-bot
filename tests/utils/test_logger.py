@@ -10,10 +10,14 @@ from app.utils.logger import get_logger
 @pytest.fixture
 def mock_logging_setup():
     """Fixture to mock all logging components"""
+    # Create a mock sys.modules that doesn't include 'pytest'
+    mock_sys_modules = {}
+
     with patch("app.utils.logger.logging") as mock_logging, \
             patch("app.utils.logger.os.path.exists", return_value=True), \
             patch("app.utils.logger.os.makedirs") as mock_makedirs, \
-            patch("app.utils.logger.LOGS_DIR", "/mock/logs"):
+            patch("app.utils.logger.LOGS_DIR", "/mock/logs"), \
+            patch("app.utils.logger.sys.modules", mock_sys_modules):  # Mock sys.modules to not include 'pytest'
         # Create mock logger and handlers
         mock_logger = MagicMock(spec=logging.Logger)
         mock_logger.handlers = []
