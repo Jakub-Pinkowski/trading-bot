@@ -31,9 +31,6 @@ with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
 
 
-# TODO: Build separate logic for metrics/summaries
-# TODO: Add contract switch dates for missing symbols
-# TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 def run_backtesting():
     for tested_month in tested_months:
         for symbol in symbols:

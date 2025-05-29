@@ -90,9 +90,11 @@ trading-bot/
 # TODO: Add automatic Google Sheets integration
 
 # Backtesting
-# TODO: Compare TW downloaded data vs live-data on the website
-# TODO: Consider putting a trailing stop on each position
+# TODO: Compare indicators with TradingView (ATR, MACD and BB to be done)
+# TODO: Add contract switch dates for missing symbols
+# TODO: Build separate logic for metrics/summaries
 # TODO: When testing play around with indicator's values
+# TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 # TODO: Align my own backtesting to TW's alerts
 
 # Developer
