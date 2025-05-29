@@ -1,138 +1,178 @@
+import pandas as pd
+
 from app.backtesting.indicators import calculate_ema
-from app.utils.backtesting_utils.backtesting_utils import format_trades
 
 # Define parameters
 EMA_SHORT = 9
 EMA_LONG = 21
-TRAIL = 0.02  # in %
 
 
-def add_ema_indicators(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
-    df = df.copy()
-    df['ema_short'] = calculate_ema(df['close'], ema_short)
-    df['ema_long'] = calculate_ema(df['close'], ema_long)
-    return df
+class EMACrossoverStrategy:
+    def __init__(self, ema_short=EMA_SHORT, ema_long=EMA_LONG, rollover=False):
+        self.ema_short = ema_short
+        self.ema_long = ema_long
+        self.switch_dates = None
+        self.rollover = rollover
 
+        # Initialize attributes that are reset in _reset()
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.next_switch_idx = 0
+        self.next_switch = None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.trades = []
 
-def generate_signals(df, ema_short=EMA_SHORT, ema_long=EMA_LONG):
-    """
-    Signals:
-        1: Long entry
-       -1: Short entry
-        2: Exit long
-       -2: Exit short
-        0: No action
-    """
-    df = df.copy()
-    df['signal'] = 0
+        self._reset()
 
-    pos = 0  # +1=long, -1=short, 0=flat
-    trail_stop = None
-    trail_percentage = TRAIL
+    def run(self, df, switch_dates):
+        """Run the EMA crossover strategy"""
+        df = df.copy()
+        df = self.add_ema_indicators(df)
+        df = self.generate_signals(df)
+        trades = self.extract_trades(df, switch_dates)
+        return trades
 
-    for i in range(1, len(df)):
-        ema_short_now = df['ema_short'].iloc[i]
-        ema_long_now = df['ema_long'].iloc[i]
-        ema_short_prev = df['ema_short'].iloc[i - 1]
-        ema_long_prev = df['ema_long'].iloc[i - 1]
-        close = df['close'].iloc[i]
-        idx = df.index[i]
+    def add_ema_indicators(self, df):
+        df['ema_short'] = calculate_ema(df["close"], period=self.ema_short)
+        df['ema_long'] = calculate_ema(df["close"], period=self.ema_long)
+        return df
 
-        buy_signal = ema_short_prev <= ema_long_prev and ema_short_now > ema_long_now and pos == 0
-        sell_signal = ema_short_prev >= ema_long_prev and ema_short_now < ema_long_now and pos == 0
-        exit_long = False
-        exit_short = False
+    def generate_signals(self, df):
+        """
+        Signals:
+            1: Long entry (short EMA crosses above long EMA)
+           -1: Short entry (short EMA crosses below long EMA)
+            0: No action
+        """
+        df['signal'] = 0
 
-        # Manage trailing stop for long
-        if pos == 1:
-            trail_stop = max(trail_stop, close * (1 - trail_percentage))
-            if close < trail_stop:
-                exit_long = True
+        # Previous values for crossover detection
+        prev_ema_short = df['ema_short'].shift(1)
+        prev_ema_long = df['ema_long'].shift(1)
 
-        # Manage trailing stop for short
-        if pos == -1:
-            trail_stop = min(trail_stop, close * (1 + trail_percentage))
-            if close > trail_stop:
-                exit_short = True
+        # Buy signal: Short EMA crosses above Long EMA
+        df.loc[(prev_ema_short <= prev_ema_long) & (df['ema_short'] > df['ema_long']), 'signal'] = 1
 
-        # Signal logic
-        if buy_signal:
-            df.at[idx, 'signal'] = 1
-            pos = 1
-            trail_stop = close * (1 - trail_percentage)
-        elif sell_signal:
-            df.at[idx, 'signal'] = -1
-            pos = -1
-            trail_stop = close * (1 + trail_percentage)
-        elif exit_long:
-            df.at[idx, 'signal'] = 2
-            pos = 0
-            trail_stop = None
-        elif exit_short:
-            df.at[idx, 'signal'] = -2
-            pos = 0
-            trail_stop = None
-        # else: signal is 0 by default
+        # Sell signal: Short EMA crosses below Long EMA
+        df.loc[(prev_ema_short >= prev_ema_long) & (df['ema_short'] < df['ema_long']), 'signal'] = -1
 
-    return df
+        return df
 
+    def extract_trades(self, df, switch_dates):
+        """Extract trades based on signals"""
+        self.switch_dates = switch_dates
+        self._reset()
+        self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
 
-def extract_trades(df, switch_dates, rollover):
-    trades = []
-    position = None
-    entry_time = None
-    entry_price = None
+        for idx, row in df.iterrows():
+            current_time = pd.to_datetime(idx)
+            signal = row['signal']
+            price_open = row['open']
 
-    for idx, row in df.iterrows():
-        signal = row['signal']
-        price = row['close']
+            # Handle contract switches. Close an old position and potentially open a new one
+            self._handle_contract_switch(current_time, idx, price_open)
 
-        if signal == 1 and position is None:
-            # Long entry
-            position = 1
-            entry_time = idx
-            entry_price = price
-        elif signal == -1 and position is None:
-            # Short entry
-            position = -1
-            entry_time = idx
-            entry_price = price
-        elif signal == 2 and position == 1:
-            # Exit long
-            pnl = price - entry_price
-            trades.append({
-                "entry_time": entry_time,
-                "entry_price": entry_price,
-                "exit_time": idx,
-                "exit_price": price,
-                "side": "long",
-                "pnl": pnl,
-            })
-            position = None
-            entry_time = None
-            entry_price = None
-        elif signal == -2 and position == -1:
-            # Exit short
-            pnl = entry_price - price
-            trades.append({
-                "entry_time": entry_time,
-                "entry_price": entry_price,
-                "exit_time": idx,
-                "exit_price": price,
-                "side": "short",
-                "pnl": pnl,
-            })
-            position = None
-            entry_time = None
-            entry_price = None
+            if self.skip_signal_this_bar:
+                self.skip_signal_this_bar = False  # skip *this* bar only
+                self.prev_row = row
+                continue
 
-    trades = format_trades(trades)
+            # Execute queued signal from the previous bar
+            self._execute_queued_signal(idx, price_open)
 
-    return trades
+            # Set/overwrite queued_signal for next bar execution
+            if signal != 0:
+                self.queued_signal = signal
 
+            self.prev_row = row
 
-def ema_crossover_strategy_trades(df, switch_dates, rollover, ema_short=EMA_SHORT, ema_long=EMA_LONG):
-    df = add_ema_indicators(df, ema_short, ema_long)
-    df = generate_signals(df, ema_short, ema_long)
-    trades = extract_trades(df, switch_dates, rollover)
-    return trades
+        return self.trades
+
+    # --- Private methods ---
+
+    def _handle_contract_switch(self, current_time, idx, price_open):
+        while self.next_switch and current_time >= self.next_switch:
+            # On rollover date close at the price of *last bar before switch* (prev_row)
+            if self.position is not None and self.entry_time is not None and self.prev_row is not None:
+                self._close_position_at_switch(current_time)
+            self.next_switch_idx += 1
+            self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
+
+        if self.must_reopen is not None and self.position is None:
+            if self.rollover:
+                self.position = self.must_reopen
+                self.entry_time = idx
+                self.entry_price = price_open
+            self.must_reopen = None
+
+    def _close_position_at_switch(self, current_time):
+        exit_price = self.prev_row['open']
+        prev_position = self.position
+
+        self._close_position(current_time, exit_price, switch=True)
+
+        if self.rollover:
+            self.must_reopen = prev_position  # Use previous position value
+            self.skip_signal_this_bar = True
+        else:
+            self.must_reopen = None
+
+    def _reset(self):
+        """Reset all state variables"""
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.next_switch_idx = 0
+        self.next_switch = None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.trades = []
+
+    def _reset_position(self):
+        """Reset position variables"""
+        self.entry_time = None
+        self.entry_price = None
+        self.position = None
+
+    def _execute_queued_signal(self, idx, price_open):
+        """Execute queued signal from the previous bar"""
+        if self.queued_signal is not None:
+            flip = None
+            if self.queued_signal == 1 and self.position != 1:
+                flip = 1
+            elif self.queued_signal == -1 and self.position != -1:
+                flip = -1
+
+            if flip is not None:
+                # Close if currently in position
+                if self.position is not None and self.entry_time is not None:
+                    self._close_position(idx, price_open, switch=False)
+                # Open a new position at this (current) bar
+                self._open_new_position(flip, idx, price_open)
+
+            # Reset after using
+            self.queued_signal = None
+
+    def _close_position(self, exit_time, exit_price, switch=False):
+        trade = {
+            "entry_time": self.entry_time,
+            "entry_price": self.entry_price,
+            "exit_time": exit_time,
+            "exit_price": exit_price,
+            "side": "long" if self.position == 1 else "short",
+        }
+        if switch:
+            trade["switch"] = True
+        self.trades.append(trade)
+        self._reset_position()
+
+    def _open_new_position(self, direction, idx, price_open):
+        self.position = direction
+        self.entry_time = idx
+        self.entry_price = price_open
