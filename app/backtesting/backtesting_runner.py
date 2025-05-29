@@ -1,11 +1,12 @@
 import pandas as pd
 import yaml
 
+from app.backtesting.per_trade_metrics import calculate_trade_metrics, print_trade_metrics
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.trade_metrics import calculate_trade_metrics, calculate_summary_metrics, print_trade_metrics, print_summary_metrics
+from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
