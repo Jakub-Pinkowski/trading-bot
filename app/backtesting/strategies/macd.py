@@ -26,7 +26,6 @@ class MACDStrategy(BaseStrategy):
         df['signal_line'] = macd_data['signal_line']
         df['histogram'] = macd_data['histogram']
 
-        print(df)
         return df
 
     def generate_signals(self, df):

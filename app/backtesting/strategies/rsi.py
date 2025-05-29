@@ -8,8 +8,8 @@ UPPER = 70
 
 
 class RSIStrategy(BaseStrategy):
-    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False):
-        super().__init__(rollover=rollover)
+    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False, trailing=None):
+        super().__init__(rollover=rollover, trailing=trailing)
         self.rsi_period = rsi_period
         self.lower = lower
         self.upper = upper

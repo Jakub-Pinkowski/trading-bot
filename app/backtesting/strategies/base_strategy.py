@@ -2,14 +2,16 @@ import pandas as pd
 
 
 class BaseStrategy:
-    def __init__(self, rollover=False):
+    def __init__(self, rollover=False, trailing=None):
         self.switch_dates = None
         self.rollover = rollover
+        self.trailing = trailing
 
         # Initialize attributes that are reset in _reset()
         self.position = None
         self.entry_time = None
         self.entry_price = None
+        self.trailing_stop = None
         self.next_switch_idx = 0
         self.next_switch = None
         self.must_reopen = None
@@ -52,6 +54,27 @@ class BaseStrategy:
             current_time = pd.to_datetime(idx)
             signal = row['signal']
             price_open = row['open']
+            price_high = row['high']
+            price_low = row['low']
+
+            # Check if a trailing stop is triggered
+            if self.position is not None and self.trailing_stop is not None:
+                if self.position == 1 and price_low <= self.trailing_stop:  # Long position stop triggered
+                    print(self.trailing_stop)
+                    self._close_position(idx, self.trailing_stop, switch=False)
+                elif self.position == -1 and price_high >= self.trailing_stop:  # Short position stop triggered
+                    self._close_position(idx, self.trailing_stop, switch=False)
+
+            # If the position is still open, update trailing stop if price moved favorably
+            if self.position is not None and self.trailing_stop is not None:
+                if self.position == 1:  # Long position
+                    new_stop = round(price_high * (1 - self.trailing / 100), 2)
+                    if new_stop > self.trailing_stop:
+                        self.trailing_stop = new_stop
+                elif self.position == -1:  # Short position
+                    new_stop = round(price_low * (1 + self.trailing / 100), 2)
+                    if new_stop < self.trailing_stop:
+                        self.trailing_stop = new_stop
 
             # Handle contract switches. Close an old position and potentially open a new one
             self._handle_contract_switch(current_time, idx, price_open)
@@ -106,6 +129,7 @@ class BaseStrategy:
         self.position = None
         self.entry_time = None
         self.entry_price = None
+        self.trailing_stop = None
         self.next_switch_idx = 0
         self.next_switch = None
         self.must_reopen = None
@@ -119,6 +143,7 @@ class BaseStrategy:
         self.entry_time = None
         self.entry_price = None
         self.position = None
+        self.trailing_stop = None
 
     def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
@@ -156,3 +181,10 @@ class BaseStrategy:
         self.position = direction
         self.entry_time = idx
         self.entry_price = price_open
+
+        # Set initial trailing stop if trailing is enabled
+        if self.trailing is not None:
+            if direction == 1:  # Long position
+                self.trailing_stop = round(price_open * (1 - self.trailing / 100), 2)
+            else:  # Short position
+                self.trailing_stop = round(price_open * (1 + self.trailing / 100), 2)

@@ -23,7 +23,6 @@ class BollingerBandsStrategy(BaseStrategy):
         df['upper_band'] = bb_data['upper_band']
         df['lower_band'] = bb_data['lower_band']
 
-        print(df)
         return df
 
     def generate_signals(self, df):
