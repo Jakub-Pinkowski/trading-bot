@@ -57,24 +57,8 @@ class BaseStrategy:
             price_high = row['high']
             price_low = row['low']
 
-            # Check if a trailing stop is triggered
-            if self.position is not None and self.trailing_stop is not None:
-                if self.position == 1 and price_low <= self.trailing_stop:  # Long position stop triggered
-                    print(self.trailing_stop)
-                    self._close_position(idx, self.trailing_stop, switch=False)
-                elif self.position == -1 and price_high >= self.trailing_stop:  # Short position stop triggered
-                    self._close_position(idx, self.trailing_stop, switch=False)
-
-            # If the position is still open, update trailing stop if price moved favorably
-            if self.position is not None and self.trailing_stop is not None:
-                if self.position == 1:  # Long position
-                    new_stop = round(price_high * (1 - self.trailing / 100), 2)
-                    if new_stop > self.trailing_stop:
-                        self.trailing_stop = new_stop
-                elif self.position == -1:  # Short position
-                    new_stop = round(price_low * (1 + self.trailing / 100), 2)
-                    if new_stop < self.trailing_stop:
-                        self.trailing_stop = new_stop
+            # Handle trailing stop logic if enabled
+            self._handle_trailing_stop(idx, price_high, price_low)
 
             # Handle contract switches. Close an old position and potentially open a new one
             self._handle_contract_switch(current_time, idx, price_open)
@@ -96,6 +80,26 @@ class BaseStrategy:
         return self.trades
 
     # --- Private methods ---
+
+    def _handle_trailing_stop(self, idx, price_high, price_low):
+        """Manage trailing stop trigger and update logic."""
+        if self.position is not None and self.trailing_stop is not None:
+            # Trailing stop triggered?
+            if self.position == 1 and price_low <= self.trailing_stop:
+                self._close_position(idx, self.trailing_stop, switch=False)
+            elif self.position == -1 and price_high >= self.trailing_stop:
+                self._close_position(idx, self.trailing_stop, switch=False)
+
+        # Update trailing stop if position still open and price moved favorably
+        if self.position is not None and self.trailing_stop is not None:
+            if self.position == 1:  # Long position
+                new_stop = round(price_high * (1 - self.trailing / 100), 2)
+                if new_stop > self.trailing_stop:
+                    self.trailing_stop = new_stop
+            elif self.position == -1:  # Short position
+                new_stop = round(price_low * (1 + self.trailing / 100), 2)
+                if new_stop < self.trailing_stop:
+                    self.trailing_stop = new_stop
 
     def _handle_contract_switch(self, current_time, idx, price_open):
         while self.next_switch and current_time >= self.next_switch:

@@ -7,8 +7,8 @@ EMA_LONG = 21
 
 
 class EMACrossoverStrategy(BaseStrategy):
-    def __init__(self, ema_short=EMA_SHORT, ema_long=EMA_LONG, rollover=False):
-        super().__init__(rollover=rollover)
+    def __init__(self, ema_short=EMA_SHORT, ema_long=EMA_LONG, rollover=False, trailing=None):
+        super().__init__(rollover=rollover, trailing=trailing)
         self.ema_short = ema_short
         self.ema_long = ema_long
 

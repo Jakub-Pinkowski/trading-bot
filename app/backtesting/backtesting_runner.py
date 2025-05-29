@@ -1,6 +1,9 @@
 import pandas as pd
 import yaml
 
+from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
+from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
@@ -19,9 +22,9 @@ trailing = 2  # in %
 # Strategies setup
 strategies = [
     ("RSI", RSIStrategy(rollover=rollover, trailing=trailing)),
-    # ("EMA Crossover", EMACrossoverStrategy(rollover=rollover)),
-    # ("Bollinger Bands", BollingerBandsStrategy(rollover=rollover)),
-    # ("MACD", MACDStrategy(rollover=rollover)),
+    ("EMA Crossover", EMACrossoverStrategy(rollover=rollover, trailing=trailing)),
+    ("Bollinger Bands", BollingerBandsStrategy(rollover=rollover, trailing=trailing)),
+    ("MACD", MACDStrategy(rollover=rollover, trailing=trailing)),
 ]
 
 with open(SWITCH_DATES_FILE_PATH) as f:

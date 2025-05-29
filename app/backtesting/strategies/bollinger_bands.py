@@ -7,8 +7,8 @@ NUM_STD = 2
 
 
 class BollingerBandsStrategy(BaseStrategy):
-    def __init__(self, period=PERIOD, num_std=NUM_STD, rollover=False):
-        super().__init__(rollover=rollover)
+    def __init__(self, period=PERIOD, num_std=NUM_STD, rollover=False, trailing=None):
+        super().__init__(rollover=rollover, trailing=trailing)
         self.period = period
         self.num_std = num_std
 
