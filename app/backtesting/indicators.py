@@ -4,18 +4,6 @@ import pandas as pd
 
 # MACD
 def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
-    """
-    Calculate MACD (Moving Average Convergence Divergence)
-
-    Args:
-        prices: Series of prices
-        fast_period: Period for fast EMA
-        slow_period: Period for slow EMA
-        signal_period: Period for signal line EMA
-
-    Returns:
-        DataFrame with MACD line, signal line, and histogram
-    """
     # Calculate fast and slow EMAs
     fast_ema = prices.ewm(span=fast_period, adjust=False).mean()
     slow_ema = prices.ewm(span=slow_period, adjust=False).mean()
@@ -36,7 +24,7 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
         'histogram': histogram
     })
 
-    # First points are undefined
+    # The first points are undefined
     result.iloc[:slow_period - 1] = np.nan
 
     return result
@@ -44,18 +32,7 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
 
 # Bollinger Bands
 def calculate_bollinger_bands(prices, period=20, num_std=2):
-    """
-    Calculate Bollinger Bands
-
-    Args:
-        prices: Series of prices
-        period: Period for moving average
-        num_std: Number of standard deviations for bands
-
-    Returns:
-        DataFrame with middle band, upper band, and lower band
-    """
-    # Calculate middle band (SMA)
+    # Calculate a middle band (SMA)
     middle_band = prices.rolling(window=period).mean()
 
     # Calculate standard deviation
@@ -72,7 +49,7 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
         'lower_band': lower_band
     })
 
-    # First points are undefined
+    # The first points are undefined
     result.iloc[:period - 1] = np.nan
 
     return result
@@ -92,7 +69,7 @@ def calculate_rsi(prices, period=14):
         if i == period:
             # For the very first point, leave as is (already set by rolling)
             continue
-        # Recursive calculation, starting after first rolling value
+        # Recursive calculation, starting after the first rolling value
         avg_gain.iat[i] = (avg_gain.iat[i - 1] * (period - 1) + gain.iat[i]) / period
         avg_loss.iat[i] = (avg_loss.iat[i - 1] * (period - 1) + loss.iat[i]) / period
 
