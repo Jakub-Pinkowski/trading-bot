@@ -93,10 +93,8 @@ class RSIStrategy:
     # --- Private methods ---
 
     def _handle_contract_switch(self, current_time, idx, price_open):
-
-        """Handle contract switches"""
         while self.next_switch and current_time >= self.next_switch:
-            # On rollover: close at the price of *last bar before switch* (prev_row)
+            # On rollover date close at the price of *last bar before switch* (prev_row)
             if self.position is not None and self.entry_time is not None and self.prev_row is not None:
                 self._close_position_at_switch(current_time)
             self.next_switch_idx += 1
