@@ -106,16 +106,16 @@ class RSIStrategy:
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
 
     def _close_position_at_switch(self, current_time):
-        """Close position at contract switch"""
         exit_price = self.prev_row['open']
+        prev_position = self.position
 
         self._close_position(current_time, exit_price, switch=True)
 
         if self.rollover:
-            self.must_reopen = self.position  # Mark to reopen with the same direction
-            self.skip_signal_this_bar = True  # Skip signal for this bar, only one trade per bar allowed
+            self.must_reopen = prev_position  # Use previous position value
+            self.skip_signal_this_bar = True
         else:
-            self.must_reopen = None  # Do NOT reopen if ROLLOVER is False
+            self.must_reopen = None
 
     def _reset(self):
         """Reset all state variables"""

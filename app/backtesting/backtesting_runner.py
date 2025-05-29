@@ -13,7 +13,7 @@ symbols = ['ZL']
 intervals = ["4h"]
 
 # Strategy parameters
-rollover = False
+rollover = True
 
 # Strategies setup
 strategies = [("RSI", RSIStrategy(rollover=rollover))]
