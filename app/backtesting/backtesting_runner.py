@@ -9,7 +9,7 @@ logger = get_logger()
 
 # Define parameters
 tested_months = ["1!"]
-symbols = ["ZW", 'ZC', 'ZS', 'ZL']
+symbols = ['ZL']
 intervals = ["4h"]
 
 # Strategy parameters
@@ -22,6 +22,7 @@ with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
 
 
+# TODO: Build separate logic for metrics/summaries
 # TODO: Add contract switch dates for missing symbols
 # TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
 def run_backtesting():
@@ -41,4 +42,7 @@ def run_backtesting():
                     continue
 
                 for strategy_name, strategy_instance in strategies:
-                    trades, summary = strategy_instance.run(df, switch_dates)
+                    trades = strategy_instance.run(df, switch_dates)
+
+                    for trade in trades:
+                        print(trade)

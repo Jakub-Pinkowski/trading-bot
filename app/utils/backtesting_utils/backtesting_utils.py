@@ -7,6 +7,5 @@ def format_trades(trades):
             "exit_time": str(trade["exit_time"]),
             "exit_price": float(trade["exit_price"]),
             "side": str(trade["side"]),
-            "pnl": float(trade["pnl"]),
         })
     return formatted_trades

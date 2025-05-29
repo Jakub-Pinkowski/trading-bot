@@ -9,8 +9,6 @@ LOWER = 30
 UPPER = 70
 
 
-# TODO: Add a commission
-# TODO: Add more metrics besides just PnL
 class RSIStrategy:
     def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False):
         self.rsi_period = rsi_period
@@ -35,13 +33,11 @@ class RSIStrategy:
 
     def run(self, df, switch_dates):
         """Run the RSI strategy"""
-        df = df.copy() 
+        df = df.copy()
         df = self.add_rsi_indicator(df)
         df = self.generate_signals(df)
         trades = self.extract_trades(df, switch_dates)
-        summary = self.compute_summary(trades)
-        print(summary)
-        return trades, summary
+        return trades
 
     def add_rsi_indicator(self, df):
         df['rsi'] = calculate_rsi(df["close"], period=self.rsi_period)
@@ -98,16 +94,6 @@ class RSIStrategy:
 
         return format_trades(self.trades)
 
-    @staticmethod
-    def compute_summary(trades):
-        """Compute summary of trades"""
-        total_pnl = sum(trade['pnl'] for trade in trades)
-        summary = {
-            "num_trades": len(trades),
-            "total_pnl": total_pnl
-        }
-        return summary
-
     # --- Private methods ---
 
     def _handle_contract_switch(self, current_time):
@@ -123,22 +109,13 @@ class RSIStrategy:
         """Close position at contract switch"""
         exit_price = self.prev_row['open']
 
-        pnl = (exit_price - self.entry_price) * self.position
-        self.trades.append({
-            "entry_time": self.entry_time,
-            "entry_price": self.entry_price,
-            "exit_time": current_time,
-            "exit_price": exit_price,
-            "side": "long" if self.position == 1 else "short",
-            "pnl": pnl,
-            "switch": True,
-        })
+        self._close_position(current_time, exit_price, switch=True)
+
         if self.rollover:
             self.must_reopen = self.position  # Mark to reopen with the same direction
             self.skip_signal_this_bar = True  # Skip signal for this bar, only one trade per bar allowed
         else:
             self.must_reopen = None  # Do NOT reopen if ROLLOVER is False
-        self._reset_position()
 
     def _reset(self):
         """Reset all state variables"""
@@ -180,26 +157,26 @@ class RSIStrategy:
             if flip is not None:
                 # Close if currently in position
                 if self.position is not None and self.entry_time is not None:
-                    self._close_current_position(idx, price_open)
+                    self._close_position(idx, price_open, switch=False)
                 # Open a new position at this (current) bar
                 self._open_new_position(flip, idx, price_open)
 
             # Reset after using
             self.queued_signal = None
 
-    def _close_current_position(self, idx, price_open):
-        """Close current position"""
-        exit_price = price_open
-        side = self.position
-        pnl = (exit_price - self.entry_price) * side
-        self.trades.append({
+    def _close_position(self, exit_time, exit_price, switch=False):
+        """General method for closing a position"""
+        trade = {
             "entry_time": self.entry_time,
             "entry_price": self.entry_price,
-            "exit_time": idx,
+            "exit_time": exit_time,
             "exit_price": exit_price,
-            "side": "long" if side == 1 else "short",
-            "pnl": pnl,
-        })
+            "side": "long" if self.position == 1 else "short",
+        }
+        if switch:
+            trade["switch"] = True
+        self.trades.append(trade)
+        self._reset_position()
 
     def _open_new_position(self, direction, idx, price_open):
         """Open a new position"""
