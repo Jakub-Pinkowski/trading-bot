@@ -58,6 +58,7 @@ def calculate_summary_metrics(trades):
         "losing_trades": loss_count,
         "win_rate": round(win_rate, 2),
         "avg_trade_duration_hours": round(avg_duration_hours, 2),
+        "total_margin_used": round(total_margin_used, 2),
         "total_gross_pnl": round(total_gross_pnl, 2),
         "avg_trade_gross_pnl": round(avg_trade_pnl, 2),
         "avg_trade_return_pct": round(avg_trade_return_pct, 2),
@@ -88,6 +89,7 @@ def print_summary_metrics(summary):
     print(f"Winning Trades: {summary['winning_trades']} ({summary['win_rate']}%)")
     print(f"Losing Trades: {summary['losing_trades']}")
     print(f"Avg Trade Duration: {summary['avg_trade_duration_hours']} hours")
+    print(f"Total Money Invested (Margin): ${summary.get('total_margin_used', 0)}")
     print(f"Total Gross PnL: ${summary['total_gross_pnl']} ")
     print(f"Avg Trade PnL: ${summary['avg_trade_gross_pnl']} ")
     print(f"Avg Win: ${summary['avg_win_gross']}")

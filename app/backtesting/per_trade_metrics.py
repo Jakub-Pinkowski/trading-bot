@@ -4,7 +4,7 @@ from config import CONTRACT_MULTIPLIERS, MARGIN_REQUIREMENTS
 logger = get_logger()
 
 # Fixed commission per trade in dollars
-COMMISSION_PER_TRADE = 2.0
+COMMISSION_PER_TRADE = 4
 
 
 def calculate_trade_metrics(trade, symbol):

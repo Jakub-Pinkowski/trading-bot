@@ -15,7 +15,7 @@ logger = get_logger()
 # Define parameters
 tested_months = ["1!"]
 symbols = ['ZW']
-intervals = ["4h"]
+intervals = ["15m"]
 
 # Strategy parameters
 rollover = False
