@@ -84,8 +84,7 @@ trading-bot/
 
 # Strategies
 # TODO: Add new strategies
-# TODO: Handle new strategies difference in accumulating one side positions (multiple buys in a row for example)
-# TODO: Handle the strategy differences in B/S alerts vs plotting in TradingView
+# TODO: Update TW strategies to BUY/SELL on n+1 candle
 
 # Data analysis
 # TODO: Add automatic Google Sheets integration

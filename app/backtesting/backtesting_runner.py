@@ -1,7 +1,7 @@
 import pandas as pd
 import yaml
 
-from app.backtesting.strategies.rsi import RSIStrategy
+from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
@@ -16,7 +16,10 @@ intervals = ["4h"]
 rollover = False
 
 # Strategies setup
-strategies = [("RSI", RSIStrategy(rollover=rollover))]
+strategies = [
+    # ("RSI", RSIStrategy(rollover=rollover)),
+    ("EMA Crossover", EMACrossoverStrategy(rollover=rollover)),
+]
 
 with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
