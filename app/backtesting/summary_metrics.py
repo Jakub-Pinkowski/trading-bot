@@ -2,6 +2,10 @@ from app.utils.logger import get_logger
 
 logger = get_logger()
 
+from app.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades. """
@@ -76,3 +80,20 @@ def calculate_summary_metrics(trades):
         "max_drawdown": round(max_drawdown, 2),
         "sharpe_ratio": round(sharpe_ratio, 2),
     }
+
+
+def print_summary_metrics(summary):
+    """ Print summary metrics in a formatted way."""
+    print("\n====== SUMMARY METRICS ======")
+    print(f"Total Trades: {summary['total_trades']}")
+    print(f"Winning Trades: {summary['winning_trades']} ({summary['win_rate']}%)")
+    print(f"Losing Trades: {summary['losing_trades']}")
+    print(f"Total Net PnL: ${summary['total_net_pnl']}")
+    print(f"Profit Factor: {summary['profit_factor']}")
+    print(f"Avg Trade PnL: ${summary['avg_trade_pnl']}")
+    print(f"Avg Win: ${summary['avg_win']}")
+    print(f"Avg Loss: ${summary['avg_loss']}")
+    print(f"Avg Trade Duration: {summary['avg_trade_duration_hours']} hours")
+    print(f"Max Drawdown: ${summary['max_drawdown']}")
+    print(f"Sharpe Ratio: {summary['sharpe_ratio']}")
+    print("=============================\n")
