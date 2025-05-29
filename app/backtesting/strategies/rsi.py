@@ -1,7 +1,6 @@
 import pandas as pd
 
 from app.backtesting.indicators import calculate_rsi
-from app.utils.backtesting_utils.backtesting_utils import format_trades
 
 # Define parameters
 RSI_PERIOD = 14
@@ -89,7 +88,7 @@ class RSIStrategy:
 
             self.prev_row = row
 
-        return format_trades(self.trades)
+        return self.trades
 
     # --- Private methods ---
 
