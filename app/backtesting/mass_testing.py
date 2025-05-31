@@ -171,6 +171,40 @@ class MassTester:
 
         return self.results
 
+    def get_top_strategies(self, metric="profit_factor", ascending=False, min_trades=5):
+        """ Get top-performing strategies based on a specific metric."""
+        if not self.results:
+            logger.error("No results available. Run tests first.")
+            raise ValueError("No results available. Run tests first.")
+
+        results_dataframe = self._results_to_dataframe()
+
+        # Filter by minimum trades
+        results_dataframe = results_dataframe[results_dataframe["total_trades"] >= min_trades]
+
+        # Sort by metric
+        results_dataframe = results_dataframe.sort_values(by=metric, ascending=ascending)
+
+        return results_dataframe
+
+    # TODO [MEDIUM]: Format the output to be more readable.
+    def compare_strategies(self, group_by=None, metrics=None):
+        """ Compare strategies by grouping and averaging metrics. """
+        if not self.results:
+            logger.error("No results available. Run tests first.")
+            raise ValueError("No results available. Run tests first.")
+
+        group_by_columns = group_by or ["strategy"]
+        metrics_list = metrics or ["total_trades", "win_rate", "profit_factor", "total_gross_pnl", "avg_trade_return_pct"]
+
+        results_dataframe = self._results_to_dataframe()
+
+        grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
+        grouped = grouped.sort_values(by="profit_factor", ascending=False)
+
+        return grouped
+
+    # --- Private methods ---
     def _results_to_dataframe(self):
         """Convert results to a pandas DataFrame."""
 
@@ -226,36 +260,3 @@ class MassTester:
                 print(f"Results saved to {json_filename}")
         except Exception as error:
             logger.error(f"Failed to save results: {error}")
-
-    def get_top_strategies(self, metric="profit_factor", ascending=False, min_trades=5):
-        """ Get top-performing strategies based on a specific metric."""
-        if not self.results:
-            logger.error("No results available. Run tests first.")
-            raise ValueError("No results available. Run tests first.")
-
-        results_dataframe = self._results_to_dataframe()
-
-        # Filter by minimum trades
-        results_dataframe = results_dataframe[results_dataframe["total_trades"] >= min_trades]
-
-        # Sort by metric
-        results_dataframe = results_dataframe.sort_values(by=metric, ascending=ascending)
-
-        return results_dataframe
-
-    # TODO [MEDIUM]: Format the output to be more readable.
-    def compare_strategies(self, group_by=None, metrics=None):
-        """ Compare strategies by grouping and averaging metrics. """
-        if not self.results:
-            logger.error("No results available. Run tests first.")
-            raise ValueError("No results available. Run tests first.")
-
-        group_by_columns = group_by or ["strategy"]
-        metrics_list = metrics or ["total_trades", "win_rate", "profit_factor", "total_gross_pnl", "avg_trade_return_pct"]
-
-        results_dataframe = self._results_to_dataframe()
-
-        grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
-        grouped = grouped.sort_values(by="profit_factor", ascending=False)
-
-        return grouped
