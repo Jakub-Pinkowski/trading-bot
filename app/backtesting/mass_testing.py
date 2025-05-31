@@ -23,7 +23,7 @@ class MassTester:
 
     def __init__(self, tested_months=None, symbols=None, intervals=None, output_dir=None):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
-        self.strategies = None
+        self.strategies = []
         self.tested_months = tested_months or ["1!"]
         self.symbols = symbols or ["ZW"]
         self.intervals = intervals or ["4h"]
