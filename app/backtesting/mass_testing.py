@@ -1,6 +1,5 @@
 import itertools
 import json
-import os
 from datetime import datetime
 
 import pandas as pd
@@ -21,21 +20,16 @@ logger = get_logger()
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
-    def __init__(self, tested_months=None, symbols=None, intervals=None, output_dir=None):
+    def __init__(self, tested_months=None, symbols=None, intervals=None):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = []
         self.tested_months = tested_months or ["1!"]
         self.symbols = symbols or ["ZW"]
         self.intervals = intervals or ["4h"]
-        self.output_dir = output_dir or BACKTESTING_DATA_DIR
 
         # Load switch dates
         with open(SWITCH_DATES_FILE_PATH) as switch_dates_file:
             self.switch_dates_dict = yaml.safe_load(switch_dates_file)
-
-        # Create an output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
 
         # Initialize results storage
         self.results = []
@@ -205,7 +199,7 @@ class MassTester:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
             # Save individual test results to JSON
-            json_filename = f"{self.output_dir}/mass_test_results_{timestamp}.json"
+            json_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json"
             with open(json_filename, 'w') as result_file:
                 json.dump(self.results, result_file, indent=2)
 
@@ -213,7 +207,7 @@ class MassTester:
             results_df = self._results_to_dataframe()
             if not results_df.empty:
                 # Save detailed results
-                csv_filename = f"{self.output_dir}/mass_test_results_{timestamp}.csv"
+                csv_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv"
                 results_df.to_csv(csv_filename, index=False)
 
                 # Save summary grouped by strategy
@@ -224,7 +218,7 @@ class MassTester:
                     'total_gross_pnl': 'sum',
                     'avg_trade_return_pct': 'mean'
                 }).reset_index()
-                summary_filename = f"{self.output_dir}/mass_test_summary_{timestamp}.csv"
+                summary_filename = f"{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv"
                 summary_df.to_csv(summary_filename, index=False)
 
                 print(f"Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}")
