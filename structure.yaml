@@ -55,6 +55,7 @@ trading-bot/
 │   │   ├── generic_utils.py                      # Generic utilities
 │   │   └── logger.py                             # Logger setup           
 │   └── __init__.py
+├── backtesting_data/                             # Backtesting results data
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
 │   ├── analysis/
