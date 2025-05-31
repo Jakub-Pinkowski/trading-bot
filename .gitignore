@@ -17,6 +17,8 @@ clientportal/
 data/
 historical_data/
 tw_fetching.py
+mass_test_results/
+backtesting_data/
 
 # Logs
 logs/

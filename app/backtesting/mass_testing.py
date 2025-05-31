@@ -13,7 +13,7 @@ from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
 from app.utils.logger import get_logger
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
+from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR
 
 logger = get_logger()
 
@@ -21,13 +21,13 @@ logger = get_logger()
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
-    def __init__(self, tested_months=None, symbols=None, intervals=None, output_dir="mass_test_results"):
+    def __init__(self, tested_months=None, symbols=None, intervals=None, output_dir=None):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = None
         self.tested_months = tested_months or ["1!"]
         self.symbols = symbols or ["ZW"]
         self.intervals = intervals or ["4h"]
-        self.output_dir = output_dir
+        self.output_dir = output_dir or BACKTESTING_DATA_DIR
 
         # Load switch dates
         with open(SWITCH_DATES_FILE_PATH) as switch_dates_file:
@@ -115,6 +115,7 @@ class MassTester:
     def run_tests(self, verbose=True, save_results=True):
         """ Run all tests with the configured parameters. """
         if not hasattr(self, 'strategies') or not self.strategies:
+            logger.error("No strategies added for testing. Use add_*_tests methods first.")
             raise ValueError("No strategies added for testing. Use add_*_tests methods first.")
 
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
@@ -178,6 +179,7 @@ class MassTester:
 
     def _results_to_dataframe(self):
         """Convert results to a pandas DataFrame."""
+
         if not self.results:
             logger.warning("No results available to convert to DataFrame.")
             return pd.DataFrame()
