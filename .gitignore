@@ -14,11 +14,10 @@ venv/
 clientportal/
 
 # Data
+backtesting_data/
 data/
 historical_data/
 tw_fetching.py
-mass_test_results/
-backtesting_data/
 
 # Logs
 logs/

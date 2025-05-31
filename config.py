@@ -25,17 +25,17 @@ ALLOWED_IPS = {
 
 # Data directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+BACKTESTING_DATA_DIR = os.path.join(BASE_DIR, "backtesting_data")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 HISTORICAL_DATA_DIR = os.path.join(BASE_DIR, "historical_data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
-BACKTESTING_DATA_DIR = os.path.join(BASE_DIR, "backtesting_data")
 
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
 
-TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
+TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
 
 ALERTS_DIR = os.path.join(RAW_DATA_DIR, "alerts")
 TRADES_DIR = os.path.join(RAW_DATA_DIR, "trades")
