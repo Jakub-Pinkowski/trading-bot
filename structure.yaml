@@ -82,7 +82,9 @@ trading-bot/
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
 ├── analyze.py                                    # Run analysis
+├── backtest.py                                   # Run a single backtest
 ├── config.py                                     # App configuration
+├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script

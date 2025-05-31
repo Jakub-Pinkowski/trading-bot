@@ -33,6 +33,7 @@ with open(SWITCH_DATES_FILE_PATH) as f:
     switch_dates_dict = yaml.safe_load(f)
 
 
+# NOTE: This is rather obsolete with the introduction of mass-testing
 def run_backtesting():
     for tested_month in tested_months:
         for symbol in symbols:
