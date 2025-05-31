@@ -27,6 +27,7 @@ class MassTester:
                  intervals=None,
                  output_dir="mass_test_results"):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
+        self.strategies = None
         self.tested_months = tested_months or ["1!"]
         self.symbols = symbols or ["ZW"]
         self.intervals = intervals or ["4h"]
@@ -43,126 +44,88 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    def add_rsi_tests(self,
-                      rsi_periods=None,
-                      lower_thresholds=None,
-                      upper_thresholds=None,
-                      rollovers=None,
-                      trailing_stops=None):
-        """ Add RSI strategy tests with different parameter combinations. """
-        rsi_periods = rsi_periods or [14]
-        lower_thresholds = lower_thresholds or [30]
-        upper_thresholds = upper_thresholds or [70]
-        rollovers = rollovers or [False]
-        trailing_stops = trailing_stops or [None]
+    def add_strategy_tests(
+            self,
+            *,
+            strategy_class,
+            param_grid: dict,
+            name_template: str
+    ):
+        """ Generic method for adding strategy tests with all combinations of given parameters. """
+        # Ensure every parameter has at least one value (use [None] if empty)
+        for param_name, values_list in param_grid.items():
+            if not values_list:
+                param_grid[param_name] = [None]
 
-        # Generate all combinations of parameters
-        parameter_combinations = list(itertools.product(
-            rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops
-        ))
+        # Extract the names of the parameters to preserve order.
+        param_names = list(param_grid.keys())
 
-        # Create strategy instances for each combination
-        for rsi_period, lower_threshold, upper_threshold, rollover, trailing_stop in parameter_combinations:
-            strategy_name = f"RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},rollover={rollover},trailing={trailing_stop})"
-            strategy_instance = RSIStrategy(
-                rsi_period=rsi_period,
-                lower=lower_threshold,
-                upper=upper_threshold,
-                rollover=rollover,
-                trailing=trailing_stop
-            )
-            self._add_strategy(strategy_name, strategy_instance)
+        # Generate all possible combinations of parameter values using Cartesian product.
+        param_value_combinations = itertools.product(*(param_grid[param_name] for param_name in param_names))
 
-    def add_ema_crossover_tests(self,
-                                ema_shorts=None,
-                                ema_longs=None,
-                                rollovers=None,
-                                trailing_stops=None):
-        """ Add EMA Crossover strategy tests with different parameter combinations."""
-        ema_shorts = ema_shorts or [9]
-        ema_longs = ema_longs or [21]
-        rollovers = rollovers or [False]
-        trailing_stops = trailing_stops or [None]
+        # Loop over parameter values:
+        for param_values in param_value_combinations:
+            # Create a dictionary mapping parameter names to their values.
+            strategy_params = dict(zip(param_names, param_values))
 
-        # Generate all combinations of parameters
-        parameter_combinations = list(itertools.product(
-            ema_shorts, ema_longs, rollovers, trailing_stops
-        ))
+            # Generate a descriptive name for the strategy instance using the template and parameters.
+            strategy_name = name_template.format(**strategy_params)
 
-        # Create strategy instances for each combination
-        for ema_short, ema_long, rollover, trailing_stop in parameter_combinations:
-            strategy_name = f"EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing_stop})"
-            strategy_instance = EMACrossoverStrategy(
-                ema_short=ema_short,
-                ema_long=ema_long,
-                rollover=rollover,
-                trailing=trailing_stop
-            )
-            self._add_strategy(strategy_name, strategy_instance)
+            # Instantiate the strategy class with the generated parameters.
+            strategy_instance = strategy_class(**strategy_params)
 
-    def add_macd_tests(self,
-                       fast_periods=None,
-                       slow_periods=None,
-                       signal_periods=None,
-                       rollovers=None,
-                       trailing_stops=None):
-        """ Add MACD strategy tests with different parameter combinations. """
-        fast_periods = fast_periods or [12]
-        slow_periods = slow_periods or [26]
-        signal_periods = signal_periods or [9]
-        rollovers = rollovers or [False]
-        trailing_stops = trailing_stops or [None]
+            # Add the tuple (strategy name, strategy instance) to self.strategies for later use.
+            self.strategies.append((strategy_name, strategy_instance))
 
-        # Generate all combinations of parameters
-        parameter_combinations = list(itertools.product(
-            fast_periods, slow_periods, signal_periods, rollovers, trailing_stops
-        ))
+    def add_rsi_tests(self, rsi_periods=None, lower_thresholds=None, upper_thresholds=None, rollovers=None, trailing_stops=None):
+        self.add_strategy_tests(
+            strategy_class=RSIStrategy,
+            param_grid={
+                'rsi_period': rsi_periods or [14],
+                'lower': lower_thresholds or [30],
+                'upper': upper_thresholds or [70],
+                'rollover': rollovers or [False],
+                'trailing': trailing_stops or [None]
+            },
+            name_template="RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})"
+        )
 
-        # Create strategy instances for each combination
-        for fast_period, slow_period, signal_period, rollover, trailing_stop in parameter_combinations:
-            strategy_name = f"MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing_stop})"
-            strategy_instance = MACDStrategy(
-                fast_period=fast_period,
-                slow_period=slow_period,
-                signal_period=signal_period,
-                rollover=rollover,
-                trailing=trailing_stop
-            )
-            self._add_strategy(strategy_name, strategy_instance)
+    def add_ema_crossover_tests(self, ema_shorts=None, ema_longs=None, rollovers=None, trailing_stops=None):
+        self.add_strategy_tests(
+            strategy_class=EMACrossoverStrategy,
+            param_grid={
+                'ema_short': ema_shorts or [9],
+                'ema_long': ema_longs or [21],
+                'rollover': rollovers or [False],
+                'trailing': trailing_stops or [None]
+            },
+            name_template="EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})"
+        )
 
-    def add_bollinger_bands_tests(self,
-                                  periods=None,
-                                  num_stds=None,
-                                  rollovers=None,
-                                  trailing_stops=None):
-        """ Add Bollinger Bands strategy tests with different parameter combinations. """
-        periods = periods or [20]
-        num_stds = num_stds or [2.0]
-        rollovers = rollovers or [False]
-        trailing_stops = trailing_stops or [None]
+    def add_macd_tests(self, fast_periods=None, slow_periods=None, signal_periods=None, rollovers=None, trailing_stops=None):
+        self.add_strategy_tests(
+            strategy_class=MACDStrategy,
+            param_grid={
+                'fast_period': fast_periods or [12],
+                'slow_period': slow_periods or [26],
+                'signal_period': signal_periods or [9],
+                'rollover': rollovers or [False],
+                'trailing': trailing_stops or [None]
+            },
+            name_template="MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})"
+        )
 
-        # Generate all combinations of parameters
-        parameter_combinations = list(itertools.product(
-            periods, num_stds, rollovers, trailing_stops
-        ))
-
-        # Create strategy instances for each combination
-        for period, num_std, rollover, trailing_stop in parameter_combinations:
-            strategy_name = f"BB(period={period},std={num_std},rollover={rollover},trailing={trailing_stop})"
-            strategy_instance = BollingerBandsStrategy(
-                period=period,
-                num_std=num_std,
-                rollover=rollover,
-                trailing=trailing_stop
-            )
-            self._add_strategy(strategy_name, strategy_instance)
-
-    def _add_strategy(self, strategy_name, strategy_instance):
-        """ Add a strategy to the list of strategies to test. """
-        if not hasattr(self, 'strategies'):
-            self.strategies = []
-
-        self.strategies.append((strategy_name, strategy_instance))
+    def add_bollinger_bands_tests(self, periods=None, num_stds=None, rollovers=None, trailing_stops=None):
+        self.add_strategy_tests(
+            strategy_class=BollingerBandsStrategy,
+            param_grid={
+                'period': periods or [20],
+                'num_std': num_stds or [2.0],
+                'rollover': rollovers or [False],
+                'trailing': trailing_stops or [None]
+            },
+            name_template="BB(period={period},std={num_std},rollover={rollover},trailing={trailing})"
+        )
 
     def run_tests(self, verbose=True, save_results=True):
         """ Run all tests with the configured parameters. """
