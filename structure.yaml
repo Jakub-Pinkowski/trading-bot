@@ -88,29 +88,27 @@ trading-bot/
 └── structure.yaml                                # App's structure
 
 # Trading
-# TODO: Handle near delivery cases where I still hold a position close to the Close-Out date
-# TODO: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
-# NOTE: The month of the futures doesn't matter all that much as price movements are largely similar
+# TODO [LOW]: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
+# TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Backtesting
-# TODO: Mass train AI to try a lot of different strategies to find some with the most potential
-# TODO: Compare indicators with TradingView (ATR, MACD and BB to be done)
-# TODO: Add contract switch dates for missing symbols
-# TODO: When testing play around with indicator's values
-# TODO: Improve the backtesting so I can easily load them up in Google Sheets later for graphs etc.
-# TODO: Align my own backtesting to TW's alerts
+# TODO [HIGH]: Test very thoroughly all the strategies
+# TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
+# TODO [MEDIUM]: Add contract switch dates for missing symbols
+# TODO [LOW]: Align my own backtesting to TW's alerts
 
 # Strategies
-# TODO: Add new strategies
-# TODO: Update TW strategies to BUY/SELL on n+1 candle
+# TODO [LOW]: Update TW strategies to BUY/SELL on n+1 candle after backtesting
+# TODO [LOW]: Add new strategies after backtesting
 
 # Data analysis
-# TODO: Add automatic Google Sheets integration
+# TODO [LOW]: Add automatic Google Sheets integration
 
 # Developer
-# TODO: Add e2e tests
-# TODO: Set up a database
-# TODO: Set up UI
+# TODO [LOW]: Add docstrings EVERYWHERE
+# TODO [LOW]: Add e2e tests
+# TODO [LOW]: Set up a database
+# TODO [LOW]: Set up UI
 
 # Virtual Machine
 # NOTE: On 28.04 at 01:17 - User is not authenticated
