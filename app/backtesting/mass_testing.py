@@ -52,6 +52,7 @@ class MassTester:
             name_template: str
     ):
         """ Generic method for adding strategy tests with all combinations of given parameters. """
+
         # Ensure every parameter has at least one value (use [None] if empty)
         for param_name, values_list in param_grid.items():
             if not values_list:
@@ -63,18 +64,12 @@ class MassTester:
         # Generate all possible combinations of parameter values using Cartesian product.
         param_value_combinations = itertools.product(*(param_grid[param_name] for param_name in param_names))
 
-        # Loop over parameter values:
+        # Loop over parameter values to create strategy instances and store them in self.strategies.
         for param_values in param_value_combinations:
-            # Create a dictionary mapping parameter names to their values.
             strategy_params = dict(zip(param_names, param_values))
-
-            # Generate a descriptive name for the strategy instance using the template and parameters.
             strategy_name = name_template.format(**strategy_params)
-
-            # Instantiate the strategy class with the generated parameters.
             strategy_instance = strategy_class(**strategy_params)
 
-            # Add the tuple (strategy name, strategy instance) to self.strategies for later use.
             self.strategies.append((strategy_name, strategy_instance))
 
     def add_rsi_tests(self, rsi_periods=None, lower_thresholds=None, upper_thresholds=None, rollovers=None, trailing_stops=None):
