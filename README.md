@@ -3,7 +3,7 @@
 ## Overview
 
 This project is an automated trading and analytics application designed for working with financial data and the Interactive Brokers (IBKR)
-API. It focuses on streamlining the processes of trading, data fetching, analysis, and performance evaluation.
+API. It focuses on streamlining the processes of trading, data fetching, analysis, backtesting, and performance evaluation.
 
 ## Key Features
 
@@ -11,10 +11,14 @@ API. It focuses on streamlining the processes of trading, data fetching, analysi
 - **Webhook Support**: Receives trading alerts and commands (e.g., from TradingView) via webhooks.
 - **Data Analysis**: Cleans, matches, and analyzes both alerts and trade data, providing per-trade and aggregate metrics to evaluate
   performance.
+- **Backtesting Framework**: Tests multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover) against historical data to
+  evaluate performance.
+- **Historical Data Management**: Organizes and processes historical market data for different contract months and time intervals.
 - **Comprehensive Logging**: Maintains detailed logs for debugging, error tracking, and info-level monitoring.
-- **Modular Architecture**: The codebase is organized into modules for routing, analysis, IBKR services, and utilities, ensuring clarity and
+- **Modular Architecture**: The codebase is organized into modules for routing, analysis, backtesting, IBKR services, and utilities,
+  ensuring clarity and
   maintainability.
-- **Extensive Utilities**: Includes a variety of utilities for data cleaning, fetching, file handling, logging, and more.
+- **Extensive Utilities**: Includes a variety of utilities for data cleaning, fetching, file handling, logging, backtesting, and more.
 - **Extensible Data Structure**: Separates raw and processed data, supports analysis on alerts, trades, and specialized alerts (TW Alerts).
 - **Configuration and Security**: Uses environment variables and config files for easy setup and to keep sensitive data secure.
 
@@ -68,6 +72,22 @@ This will:
 - Calculate metrics
 - Save the results to CSV files
 
+### Running Backtests
+
+To run backtests on historical data using various trading strategies:
+
+```bash
+python backtest.py
+```
+
+This will:
+
+- Load historical data for specified symbols and time intervals
+- Run multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover)
+- Calculate per-trade metrics for each strategy
+- Generate summary performance metrics
+- Display results for strategy comparison
+
 ### Webhook Integration
 
 The application accepts POST requests at the `/webhook` endpoint. The request should contain trading alert data in JSON format. The
@@ -91,6 +111,7 @@ The project follows a modular structure:
 
 - `app/`: Main application code
   - `analysis/`: Data analysis modules
+  - `backtesting/`: Backtesting framework and strategies
   - `routes/`: Flask routes for webhooks
   - `services/`: Services for interacting with IBKR
   - `utils/`: Utility functions
@@ -99,6 +120,9 @@ The project follows a modular structure:
   - `analysis/`: Processed data for analysis
   - `contracts/`: Contract information
   - `raw_data/`: Raw data from alerts and trades
+- `historical_data/`: Historical market data for backtesting
+  - `1!/`: Front month contract data
+  - `2!/`: Next month contract data
 - `logs/`: Application logs
 - `strategies/`: TradingView strategies
 - `tests/`: Test suite
@@ -109,6 +133,8 @@ For a detailed breakdown of the project structure, see `structure.yaml`.
 
 - Automated trading based on external alerts.
 - Continuous analysis of trade and alert performance.
+- Backtesting trading strategies against historical data to evaluate performance.
+- Comparing different trading strategies to identify the most profitable approaches.
 - Fetching and preparing financial datasets for further analysis.
 - Logging trading activities and analysis operations for audit or debugging.
 - Running analyses on historical data to derive actionable insights.
@@ -122,3 +148,8 @@ As noted in `structure.yaml`, there are several planned enhancements:
 - Google Sheets integration for data analysis
 - Database integration
 - User interface
+- Improved backtesting capabilities:
+  - Mass training AI to test different strategies
+  - Improving visualization of backtesting results
+- New trading strategies and improvements to existing ones
+- Aligning backtesting results with TradingView alerts
