@@ -49,4 +49,3 @@ by_interval = tester.compare_strategies(group_by=["strategy", "interval"])
 print(by_interval.head(20))
 
 print(f"\nResults have been saved")
-print("You can load and analyze these results later using the JSON files.")

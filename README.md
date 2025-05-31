@@ -88,6 +88,105 @@ This will:
 - Generate summary performance metrics
 - Display results for strategy comparison
 
+### Mass Backtesting
+
+To run mass backtesting with multiple parameter combinations:
+
+```bash
+python mass_backtest.py
+```
+
+The mass_backtest.py script provides a powerful way to test many combinations of:
+
+- Symbols (e.g., ZW, ZC, ZS)
+- Timeframes (e.g., 1h, 4h, 1d)
+- Strategies (RSI, EMA Crossover, MACD, Bollinger Bands)
+- Strategy-specific parameters (e.g., RSI periods, EMA lengths)
+- Common parameters (rollover, trailing stops)
+
+#### Configuration
+
+Instead of using command-line options, all settings are configured directly in the `mass_backtest.py` file. To customize your backtesting:
+
+1. Open the `mass_backtest.py` file in a text editor
+2. Modify the parameters in the MassTester initialization and strategy configuration sections
+3. Run the script without any command-line arguments
+
+Example configuration in `mass_backtest.py`:
+
+class MassTester:
+pass
+
+class MassTester:
+pass
+
+```python
+# Initialize the mass tester with multiple symbols and timeframes
+tester = MassTester(
+  tested_months=["1!"],  # Front month contracts
+  symbols=["ZW", "ZC", "ZS"],  # Wheat, Corn, Soybeans
+  intervals=["1h", "4h"]  # 1-hour and 4-hour timeframes
+)
+
+# Add RSI strategy tests with various parameter combinations
+tester.add_rsi_tests(
+  rsi_periods=[7, 14, 21],  # Test different RSI periods
+  lower_thresholds=[20, 30],  # Test different oversold thresholds
+  upper_thresholds=[70, 80],  # Test different overbought thresholds
+  rollovers=[False, True],  # Test with and without a rollover
+  trailing_stops=[None, 1.0, 2.0]  # Test with different trailing stops
+)
+```
+
+#### Available Configuration Options
+
+The following configuration options are available in the `mass_backtest.py` file:
+
+- Data selection: `tested_months`, `symbols`, `intervals`
+- Strategy methods:
+  - `add_rsi_tests()`: Configure RSI strategy tests
+  - `add_ema_crossover_tests()`: Configure EMA Crossover strategy tests
+  - `add_macd_tests()`: Configure MACD strategy tests
+  - `add_bollinger_bands_tests()`: Configure Bollinger Bands strategy tests
+- Output options: `verbose`, `save_results` (in the `run_tests()` method)
+
+#### Programmatic Usage
+
+You can also use the MassTester class directly in your Python code:
+
+```python
+from app.backtesting.mass_testing import MassTester
+
+# Initialize the tester
+tester = MassTester(
+  tested_months=["1!"],
+  symbols=["ZW", "ZC"],
+  intervals=["4h", "1d"]
+)
+
+# Add strategy tests
+tester.add_rsi_tests(
+  rsi_periods=[7, 14, 21],
+  lower_thresholds=[20, 30],
+  upper_thresholds=[70, 80],
+  rollovers=[False, True],
+  trailing_stops=[None, 1.0]
+)
+
+# Run tests
+tester.run_tests()
+
+# Analyze results
+top_strategies = tester.get_top_strategies(metric="profit_factor")
+print(top_strategies)
+```
+
+A complete example script is available in the `examples/mass_test_example.py` file, which demonstrates:
+
+- Testing multiple strategies (RSI and EMA Crossover)
+- Using various parameter combinations
+- Analyzing results in different ways (by profit factor, win rate, symbol, timeframe)
+
 ### Webhook Integration
 
 The application accepts POST requests at the `/webhook` endpoint. The request should contain trading alert data in JSON format. The
@@ -149,7 +248,7 @@ As noted in `structure.yaml`, there are several planned enhancements:
 - Database integration
 - User interface
 - Improved backtesting capabilities:
-  - Mass training AI to test different strategies
   - Improving visualization of backtesting results
+  - Advanced parameter optimization techniques
 - New trading strategies and improvements to existing ones
 - Aligning backtesting results with TradingView alerts
