@@ -21,11 +21,7 @@ logger = get_logger()
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
-    def __init__(self,
-                 tested_months=None,
-                 symbols=None,
-                 intervals=None,
-                 output_dir="mass_test_results"):
+    def __init__(self, tested_months=None, symbols=None, intervals=None, output_dir="mass_test_results"):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = None
         self.tested_months = tested_months or ["1!"]
@@ -44,13 +40,7 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    def add_strategy_tests(
-            self,
-            *,
-            strategy_class,
-            param_grid: dict,
-            name_template: str
-    ):
+    def add_strategy_tests(self, strategy_class, param_grid: dict, name_template: str):
         """ Generic method for adding strategy tests with all combinations of given parameters. """
 
         # Ensure every parameter has at least one value (use [None] if empty)
@@ -241,10 +231,7 @@ class MassTester:
         except Exception as error:
             logger.error(f"Failed to save results: {error}")
 
-    def get_top_strategies(self,
-                           metric="profit_factor",
-                           ascending=False,
-                           min_trades=5):
+    def get_top_strategies(self, metric="profit_factor", ascending=False, min_trades=5):
         """ Get top-performing strategies based on a specific metric."""
         if not self.results:
             logger.error("No results available. Run tests first.")
@@ -260,9 +247,7 @@ class MassTester:
 
         return results_dataframe
 
-    def compare_strategies(self,
-                           group_by=None,
-                           metrics=None):
+    def compare_strategies(self, group_by=None, metrics=None):
         """ Compare strategies by grouping and averaging metrics. """
         if not self.results:
             logger.error("No results available. Run tests first.")
