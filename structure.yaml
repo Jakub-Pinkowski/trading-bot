@@ -95,6 +95,7 @@ trading-bot/
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Backtesting
+# TODO [HIGH]: Normalize the tests to use percentage values only to account for different contract values per symbol
 # TODO [HIGH]: Test very thoroughly all the strategies
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
