@@ -14,19 +14,18 @@ def calculate_trade_metrics(trade, symbol):
     trade_with_metrics = trade.copy()
 
     # Get the contract multiplier for the symbol
-    if symbol in CONTRACT_MULTIPLIERS:
-        contract_multiplier = CONTRACT_MULTIPLIERS[symbol]
-    else:
+    contract_multiplier = CONTRACT_MULTIPLIERS.get(symbol)
+    if contract_multiplier is None:
         logger.error(f"No contract multiplier found for symbol: {symbol}")
         raise ValueError(f"No contract multiplier found for symbol: {symbol}")
 
     # Get the margin requirement for the symbol
-    if symbol in MARGIN_REQUIREMENTS:
-        margin_requirement = MARGIN_REQUIREMENTS[symbol]
-    else:
+    margin_requirement = MARGIN_REQUIREMENTS.get(symbol)
+    if margin_requirement is None:
         logger.error(f"No margin requirement found for symbol: {symbol}")
         raise ValueError(f"No margin requirement found for symbol: {symbol}")
     trade_with_metrics['margin_requirement'] = round(margin_requirement, 2)
+
 
     # Notional value of the contract
     contract_value = trade['entry_price'] * contract_multiplier
@@ -40,8 +39,11 @@ def calculate_trade_metrics(trade, symbol):
     # Calculate PnL in points
     if trade['side'] == 'long':
         pnl_points = trade['exit_price'] - trade['entry_price']
-    else:  # short
+    elif trade['side'] == 'short':
         pnl_points = trade['entry_price'] - trade['exit_price']
+    else:
+        logger.error(f"Unknown trade side: {trade['side']}")
+        raise ValueError(f"Unknown trade side: {trade['side']}")
 
     trade_with_metrics['pnl_points'] = round(pnl_points, 2)
 
@@ -58,12 +60,10 @@ def calculate_trade_metrics(trade, symbol):
     trade_with_metrics['net_pnl'] = round(net_pnl, 2)
 
     # Calculate return percentage based on the initial margin requirement
-    if margin_requirement != 0:
-        return_pct = (net_pnl / margin_requirement) * 100
-    else:
-        return_pct = 0
-
+    return_pct = (net_pnl / margin_requirement) * 100 if margin_requirement != 0 else 0
     trade_with_metrics['return_pct'] = round(return_pct, 2)
+
+    print(trade_with_metrics)
 
     return trade_with_metrics
 
