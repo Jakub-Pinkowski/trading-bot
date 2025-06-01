@@ -8,13 +8,13 @@ tester = MassTester(
 )
 
 # Add RSI strategy tests with various parameter combinations
-tester.add_rsi_tests(
-    rsi_periods=[7, 14, 21],  # Test different RSI periods
-    lower_thresholds=[20, 30],  # Test different oversold thresholds
-    upper_thresholds=[70, 80],  # Test different overbought thresholds
-    rollovers=[False, True],  # Test with and without a rollover
-    trailing_stops=[None, 1.0, 2.0]  # Test with different trailing stops
-)
+# tester.add_rsi_tests(
+#     rsi_periods=[7, 14, 21],  # Test different RSI periods
+#     lower_thresholds=[20, 30],  # Test different oversold thresholds
+#     upper_thresholds=[70, 80],  # Test different overbought thresholds
+#     rollovers=[False, True],  # Test with and without a rollover
+#     trailing_stops=[None, 1.0, 2.0]  # Test with different trailing stops
+# )
 
 # Add EMA Crossover strategy tests
 tester.add_ema_crossover_tests(

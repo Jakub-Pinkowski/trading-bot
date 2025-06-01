@@ -227,10 +227,11 @@ class MassTester:
             for result in self.results
         ])
 
+    # TODO [MEDIUM]: Format the output to be more readable.
     def _save_results(self):
         """Save results to JSON and CSV files."""
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M")
 
             # Save individual test results to JSON
             json_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json"
