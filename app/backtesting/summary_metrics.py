@@ -3,6 +3,33 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+def calculate_max_drawdown(trades):
+    """Calculate the maximum drawdown given a list of trades. """
+    if not trades:
+        return 0, 0
+
+    cumulative_pnl = []
+    cum_sum = 0
+    for trade in trades:
+        cum_sum += trade['pnl_dollars']
+        cumulative_pnl.append(cum_sum)
+
+    peak = cumulative_pnl[0] if cumulative_pnl else 0
+    max_drawdown = 0
+    max_drawdown_pct = 0
+    for val in cumulative_pnl:
+        if val > peak:
+            peak = val
+        drawdown = peak - val
+        drawdown_pct = (drawdown / peak) * 100 if peak != 0 else 0
+        if drawdown > max_drawdown:
+            max_drawdown = drawdown
+        if drawdown_pct > max_drawdown_pct:
+            max_drawdown_pct = drawdown_pct
+
+    return round(max_drawdown, 2), round(max_drawdown_pct, 2)
+
+
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades using GROSS PnL. """
 
@@ -52,6 +79,9 @@ def calculate_summary_metrics(trades):
         if total_margin_used > 0 else 0
     )
 
+    # Calculate drawdown
+    max_drawdown, max_drawdown_pct = calculate_max_drawdown(trades)
+
     return {
         "total_trades": total_trades,
         "winning_trades": win_count,
@@ -67,6 +97,8 @@ def calculate_summary_metrics(trades):
         "profit_factor": round(profit_factor, 2),
         "total_commission_paid": round(total_commission_paid, 2),
         "commission_pct_on_margin": round(commission_pct_on_margin, 2),
+        "max_drawdown": max_drawdown,
+        "max_drawdown_pct": max_drawdown_pct,
     }
 
 
@@ -97,5 +129,6 @@ def print_summary_metrics(summary):
     print(f"Profit Factor: {summary['profit_factor']}")
     print(f"Total Commission Paid: ${summary['total_commission_paid']}")
     print(f"Commission as % of Margin: {summary['commission_pct_on_margin']}%")
+    print(f"Max Drawdown: ${summary.get('max_drawdown', 0)} ({summary.get('max_drawdown_pct', 0)}%)")
     print(f"Avg PnL %: {color}{avg_trade_return_pct}%{RESET}")
     print("=============================\n")
