@@ -31,7 +31,7 @@ def calculate_max_drawdown(trades):
 
 
 def calculate_summary_metrics(trades):
-    """ Calculate summary metrics for a list of trades using GROSS PnL. """
+    """ Calculate summary metrics for a list of trades """
 
     if not trades:
         logger.error("No trades provided to calculate_summary_metrics")
