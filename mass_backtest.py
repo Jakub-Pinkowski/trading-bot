@@ -33,10 +33,10 @@ print("\n===== TOP STRATEGIES BY PROFIT FACTOR =====")
 top_by_profit = tester.get_top_strategies(metric="profit_factor", min_trades=10)
 print(top_by_profit.head(10))
 
-# Get top strategies by win rate
-print("\n===== TOP STRATEGIES BY WIN RATE =====")
-top_by_winrate = tester.get_top_strategies(metric="win_rate", min_trades=10)
-print(top_by_winrate.head(10))
+# Get top strategies by average return percentage with at least 10 trades
+print("\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE =====")
+top_by_trade_return_pct = tester.get_top_strategies(metric="avg_trade_return_pct", min_trades=10)
+print(top_by_trade_return_pct.head(10))
 
 # Compare strategies by symbol
 print("\n===== STRATEGY COMPARISON BY SYMBOL =====")

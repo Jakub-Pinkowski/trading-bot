@@ -195,7 +195,7 @@ class MassTester:
             raise ValueError("No results available. Run tests first.")
 
         group_by_columns = group_by or ["strategy"]
-        metrics_list = metrics or ["total_trades", "win_rate", "profit_factor", "total_gross_pnl", "avg_trade_return_pct"]
+        metrics_list = metrics or ["total_trades", "win_rate", "profit_factor", "avg_trade_return_pct", "max_drawdown_pct"]
 
         results_dataframe = self._results_to_dataframe()
 
@@ -221,8 +221,8 @@ class MassTester:
                 "total_trades": result["metrics"]["total_trades"],
                 "win_rate": result["metrics"]["win_rate"],
                 "profit_factor": result["metrics"]["profit_factor"],
-                "total_gross_pnl": result["metrics"]["total_gross_pnl"],
-                "avg_trade_return_pct": result["metrics"]["avg_trade_return_pct"]
+                "avg_trade_return_pct": result["metrics"]["avg_trade_return_pct"],
+                "max_drawdown_pct": result["metrics"]["max_drawdown_pct"]
             }
             for result in self.results
         ])
@@ -250,8 +250,8 @@ class MassTester:
                     'total_trades': 'sum',
                     'win_rate': 'mean',
                     'profit_factor': 'mean',
-                    'total_gross_pnl': 'sum',
-                    'avg_trade_return_pct': 'mean'
+                    'avg_trade_return_pct': 'mean',
+                    'max_drawdown_pct': 'mean'
                 }).reset_index()
                 summary_filename = f"{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv"
                 summary_df.to_csv(summary_filename, index=False)

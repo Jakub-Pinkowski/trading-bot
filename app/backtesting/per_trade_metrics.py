@@ -63,8 +63,6 @@ def calculate_trade_metrics(trade, symbol):
     return_pct = (net_pnl / margin_requirement) * 100 if margin_requirement != 0 else 0
     trade_with_metrics['return_pct'] = round(return_pct, 2)
 
-    print(trade_with_metrics)
-
     return trade_with_metrics
 
 
