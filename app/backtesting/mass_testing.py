@@ -171,7 +171,7 @@ class MassTester:
 
         return self.results
 
-    def get_top_strategies(self, metric="profit_factor", ascending=False, min_trades=5):
+    def get_top_strategies(self, metric="profit_factor", min_trades=5):
         """ Get top-performing strategies based on a specific metric."""
         if not self.results:
             logger.error("No results available. Run tests first.")
@@ -182,8 +182,8 @@ class MassTester:
         # Filter by minimum trades
         results_dataframe = results_dataframe[results_dataframe["total_trades"] >= min_trades]
 
-        # Sort by metric
-        results_dataframe = results_dataframe.sort_values(by=metric, ascending=ascending)
+        # Sort by the metric in descending order
+        results_dataframe = results_dataframe.sort_values(by=metric, ascending=False)
 
         return results_dataframe
 
