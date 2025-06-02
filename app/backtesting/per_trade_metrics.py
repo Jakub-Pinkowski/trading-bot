@@ -59,8 +59,8 @@ def calculate_trade_metrics(trade, symbol):
     trade_with_metrics['return_percentage_of_margin'] = round(return_percentage, 2)
 
     # Calculate PnL as a percentage of entry price (contract value)
-    profit_percentage_of_contract_value = (net_pnl / (trade['entry_price'] * contract_multiplier)) * 100
-    trade_with_metrics['profit_percentage_of_contract_value'] = round(profit_percentage_of_contract_value, 2)
+    return_percentage_of_contract = (net_pnl / (trade['entry_price'] * contract_multiplier)) * 100
+    trade_with_metrics['return_percentage_of_contract'] = round(return_percentage_of_contract, 2)
 
     # ===== DOLLAR-BASED METRICS (FOR REFERENCE) =====
     trade_with_metrics['margin_requirement'] = round(margin_requirement, 2)
@@ -85,7 +85,7 @@ def calculate_trade_metrics(trade, symbol):
         # Normalized metrics (percentages)
         "commission_percentage_of_margin": trade_with_metrics['commission_percentage_of_margin'],
         "return_percentage_of_margin": trade_with_metrics['return_percentage_of_margin'],
-        "profit_percentage_of_contract_value": trade_with_metrics['profit_percentage_of_contract_value'],
+        "return_percentage_of_contract": trade_with_metrics['return_percentage_of_contract'],
         # Dollar-based metrics
         "margin_requirement": trade_with_metrics['margin_requirement'],
         "commission": trade_with_metrics['commission'],
@@ -125,7 +125,7 @@ def print_trade_metrics(trade):
     print("\n--- NORMALIZED METRICS (PERCENTAGES) ---")
     print(f"Commission as % of Margin: {trade['commission_percentage_of_margin']}%")
     print(f"Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}")
-    print(f"Profit % of Contract Value: {color}{trade['profit_percentage_of_contract_value']}%{RESET}")
+    print(f"Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}")
 
     # Dollar-based metrics (for reference)
     print("\n--- DOLLAR-BASED METRICS (FOR REFERENCE) ---")
