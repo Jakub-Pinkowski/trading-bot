@@ -26,11 +26,13 @@ def calculate_trade_metrics(trade, symbol):
         raise ValueError(f"No margin requirement found for symbol: {symbol}")
 
     # ===== TRADE DETAILS =====
+
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
     trade_duration_hours = round(trade_duration.total_seconds() / 3600)
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
+
     # Fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
 
@@ -56,6 +58,7 @@ def calculate_trade_metrics(trade, symbol):
     return_percentage_of_contract = round((net_pnl / (trade['entry_price'] * contract_multiplier)) * 100, 2)
 
     # ===== DOLLAR-BASED METRICS (FOR REFERENCE) =====
+
     margin_requirement = round(margin_requirement, 2)
     total_commission = round(total_commission, 2)
     pnl_points = round(pnl_points, 2)
@@ -115,6 +118,7 @@ def print_trade_metrics(trade):
     print("\n--- NORMALIZED METRICS (PERCENTAGES) ---")
     print(f"Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}")
     print(f"Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}")
+    print(f"Commission % of Return: {trade['commission_percentage']}%")
 
     # Dollar-based metrics (for reference)
     print("\n--- DOLLAR-BASED METRICS (FOR REFERENCE) ---")
