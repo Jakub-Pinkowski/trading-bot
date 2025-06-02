@@ -4,7 +4,7 @@ from app.backtesting.mass_testing import MassTester
 tester = MassTester(
     tested_months=["1!"],  # Front month contracts
     symbols=["ZW", "ZC", "ZS"],  # Wheat, Corn, Soybeans
-    intervals=["5m", "15m"]  # 1-hour and 4-hour timeframes
+    intervals=["1h", "4h"]  # 1-hour and 4-hour timeframes
 )
 
 # Add RSI strategy tests with various parameter combinations
@@ -34,9 +34,9 @@ top_by_profit = tester.get_top_strategies(metric="profit_factor", min_trades=10)
 print(top_by_profit.head(10))
 
 # Get top strategies by average return percentage with at least 10 trades
-print("\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE =====")
-top_by_trade_return_pct = tester.get_top_strategies(metric="avg_trade_return_pct", min_trades=10)
-print(top_by_trade_return_pct.head(10))
+print("\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE OF MARGIN =====")
+top_by_trade_return_percentage = tester.get_top_strategies(metric="average_trade_return_percentage_of_margin", min_trades=10)
+print(top_by_trade_return_percentage.head(10))
 
 # Compare strategies by symbol
 print("\n===== STRATEGY COMPARISON BY SYMBOL =====")

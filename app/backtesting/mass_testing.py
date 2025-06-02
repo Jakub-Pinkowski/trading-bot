@@ -146,6 +146,7 @@ class MassTester:
                         for trade in trades_list:
                             trade_with_metrics = calculate_trade_metrics(trade, symbol)
                             trades_with_metrics_list.append(trade_with_metrics)
+                            print(trade_with_metrics)
 
                         if trades_with_metrics_list:
                             summary_metrics = calculate_summary_metrics(trades_with_metrics_list)
@@ -200,19 +201,19 @@ class MassTester:
         metrics_list = metrics or [
             "total_trades",
             "win_rate",
-            "total_return_pct",
-            "avg_trade_return_pct",
-            "avg_win_pct",
-            "avg_loss_pct",
-            "max_drawdown_pct",
+            "total_return_percentage_of_margin",
+            "average_trade_return_percentage_of_margin",
+            "average_win_percentage_of_margin",
+            "average_loss_percentage_of_margin",
+            "maximum_drawdown_percentage",
             "profit_factor"
         ]
 
         results_dataframe = self._results_to_dataframe()
 
         grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
-        # Sort by total_return_pct by default for normalized comparison
-        grouped = grouped.sort_values(by="total_return_pct", ascending=False)
+        # Sort by total_return_percentage_of_margin by default for normalized comparison
+        grouped = grouped.sort_values(by="total_return_percentage_of_margin", ascending=False)
 
         return grouped
 
@@ -234,11 +235,11 @@ class MassTester:
                 "total_trades": result["metrics"]["total_trades"],
                 "win_rate": result["metrics"]["win_rate"],
                 # Percentage-based metrics (for normalized comparison)
-                "total_return_pct": result["metrics"].get("total_return_pct", 0),
-                "avg_trade_return_pct": result["metrics"]["avg_trade_return_pct"],
-                "avg_win_pct": result["metrics"].get("avg_win_pct", 0),
-                "avg_loss_pct": result["metrics"].get("avg_loss_pct", 0),
-                "max_drawdown_pct": result["metrics"]["max_drawdown_pct"],
+                "total_return_percentage_of_margin": result["metrics"].get("total_return_percentage_of_margin", 0),
+                "average_trade_return_percentage_of_margin": result["metrics"]["average_trade_return_percentage_of_margin"],
+                "average_win_percentage_of_margin": result["metrics"].get("average_win_percentage_of_margin", 0),
+                "average_loss_percentage_of_margin": result["metrics"].get("average_loss_percentage_of_margin", 0),
+                "maximum_drawdown_percentage": result["metrics"]["maximum_drawdown_percentage"],
                 # Other metrics
                 "profit_factor": result["metrics"]["profit_factor"],
                 # Dollar-based metrics (for reference)
@@ -271,11 +272,11 @@ class MassTester:
                     'total_trades': 'sum',
                     'win_rate': 'mean',
                     # Percentage-based metrics (for normalized comparison)
-                    'total_return_pct': 'mean',
-                    'avg_trade_return_pct': 'mean',
-                    'avg_win_pct': 'mean',
-                    'avg_loss_pct': 'mean',
-                    'max_drawdown_pct': 'mean',
+                    'total_return_percentage_of_margin': 'mean',
+                    'average_trade_return_percentage_of_margin': 'mean',
+                    'average_win_percentage_of_margin': 'mean',
+                    'average_loss_percentage_of_margin': 'mean',
+                    'maximum_drawdown_percentage': 'mean',
                     # Other metrics
                     'profit_factor': 'mean'
                 }).reset_index()
