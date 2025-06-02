@@ -9,41 +9,41 @@ logger = get_logger()
 
 
 def tickle_ibkr_api():
-    endpoint = "tickle"
+    endpoint = 'tickle'
     payload = {}
 
     try:
         response = api_post(endpoint, payload)
-        logger.info("IBKR API tickle response: %s", response)
+        logger.info('IBKR API tickle response: %s', response)
 
         # No session error
-        if "error" in response and response["error"] == "no session":
-            logger.error(f"IBKR API responded with error: {response}")
+        if 'error' in response and response['error'] == 'no session':
+            logger.error(f'IBKR API responded with error: {response}')
             return
 
         # User not authenticated error
-        if "iserver" in response and "authStatus" in response["iserver"]:
-            auth_status = response["iserver"]["authStatus"]
-            if not auth_status.get("authenticated", False):
-                logger.error("IBKR API responded with User is not authenticated. ", response)
+        if 'iserver' in response and 'authStatus' in response['iserver']:
+            auth_status = response['iserver']['authStatus']
+            if not auth_status.get('authenticated', False):
+                logger.error('IBKR API responded with User is not authenticated. ', response)
                 return
-            if not auth_status.get("connected", False):
-                logger.error("IBKR API responded with User is not connected. ", response)
+            if not auth_status.get('connected', False):
+                logger.error('IBKR API responded with User is not connected. ', response)
                 return
 
 
     except ValueError as ve:
-        logger.error(f"Tickle IBKR API Error: {ve}")
+        logger.error(f'Tickle IBKR API Error: {ve}')
 
     except Exception as err:
-        logger.error(f"Unexpected error while tickling IBKR API: {err}")
+        logger.error(f'Unexpected error while tickling IBKR API: {err}')
 
 
 def log_missed_job(event):
     if event.scheduled_run_time:
         logger.warning(
-            f"Run time of job '{event.job_id}' was missed. "
-            f"Scheduled run time: {event.scheduled_run_time}."
+            f'Run time of job \'{event.job_id}\' was missed. '
+            f'Scheduled run time: {event.scheduled_run_time}.'
         )
 
 

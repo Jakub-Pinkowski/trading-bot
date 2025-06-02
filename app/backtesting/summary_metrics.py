@@ -47,7 +47,7 @@ def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades """
 
     if not trades or len(trades) == 0:
-        logger.error("No trades provided to calculate_summary_metrics")
+        logger.error('No trades provided to calculate_summary_metrics')
         return {}
 
     # ===== BASIC TRADE STATISTICS =====
@@ -110,43 +110,43 @@ def calculate_summary_metrics(trades):
 
     return {
         # Basic trade statistics
-        "total_trades": total_trades,
-        "winning_trades": win_count,
-        "losing_trades": loss_count,
-        "win_rate": round(win_rate, 2),
-        "avg_trade_duration_hours": round(avg_duration_hours, 2),
+        'total_trades': total_trades,
+        'winning_trades': win_count,
+        'losing_trades': loss_count,
+        'win_rate': round(win_rate, 2),
+        'avg_trade_duration_hours': round(avg_duration_hours, 2),
 
         # Dollar-based metrics
-        "total_margin_used": round(total_margin_used, 2),
-        "avg_margin_requirement": round(avg_margin_requirement, 2),
-        "total_net_pnl": round(total_net_pnl, 2),
-        "avg_trade_net_pnl": round(avg_trade_pnl, 2),
-        "avg_win_net": round(avg_win, 2),
-        "avg_loss_net": round(avg_loss, 2),
+        'total_margin_used': round(total_margin_used, 2),
+        'avg_margin_requirement': round(avg_margin_requirement, 2),
+        'total_net_pnl': round(total_net_pnl, 2),
+        'avg_trade_net_pnl': round(avg_trade_pnl, 2),
+        'avg_win_net': round(avg_win, 2),
+        'avg_loss_net': round(avg_loss, 2),
 
         # Normalized metrics (percentages)
-        "total_return_percentage_of_margin": round(total_return_percentage_of_margin, 2),
-        "average_trade_return_percentage_of_margin": round(average_trade_return_percentage_of_margin, 2),
-        "average_win_percentage_of_margin": round(average_win_percentage_of_margin, 2),
-        "average_loss_percentage_of_margin": round(average_loss_percentage_of_margin, 2),
+        'total_return_percentage_of_margin': round(total_return_percentage_of_margin, 2),
+        'average_trade_return_percentage_of_margin': round(average_trade_return_percentage_of_margin, 2),
+        'average_win_percentage_of_margin': round(average_win_percentage_of_margin, 2),
+        'average_loss_percentage_of_margin': round(average_loss_percentage_of_margin, 2),
 
         # Commission metrics
-        "total_commission_paid": round(total_commission_paid, 2),
-        "commission_percentage_of_margin": round(commission_percentage_of_margin, 2),
+        'total_commission_paid': round(total_commission_paid, 2),
+        'commission_percentage_of_margin': round(commission_percentage_of_margin, 2),
 
         # Risk metrics
-        "profit_factor": round(profit_factor, 2),
-        "max_drawdown": max_drawdown,
-        "maximum_drawdown_percentage": maximum_drawdown_percentage,
-        "return_to_drawdown_ratio": round(return_to_drawdown_ratio, 2),
+        'profit_factor': round(profit_factor, 2),
+        'max_drawdown': max_drawdown,
+        'maximum_drawdown_percentage': maximum_drawdown_percentage,
+        'return_to_drawdown_ratio': round(return_to_drawdown_ratio, 2),
     }
 
 
 def print_summary_metrics(summary):
     """ Print summary metrics in a formatted way. """
-    GREEN = "\033[92m"
-    RED = "\033[91m"
-    RESET = "\033[0m"
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
 
     average_trade_return_percentage = summary['average_trade_return_percentage_of_margin']
     if average_trade_return_percentage > 0:
@@ -156,41 +156,41 @@ def print_summary_metrics(summary):
     else:
         color = RESET  # default terminal color
 
-    print("\n====== SUMMARY METRICS ======")
+    print('\n====== SUMMARY METRICS ======')
 
     # ===== BASIC TRADE STATISTICS =====
-    print("\n--- BASIC TRADE STATISTICS ---")
-    print(f"Total Trades: {summary['total_trades']}")
-    print(f"Winning Trades: {summary['winning_trades']} ({summary['win_rate']}%)")
-    print(f"Losing Trades: {summary['losing_trades']}")
-    print(f"Avg Trade Duration: {summary['avg_trade_duration_hours']} hours")
+    print('\n--- BASIC TRADE STATISTICS ---')
+    print(f'Total Trades: {summary["total_trades"]}')
+    print(f'Winning Trades: {summary["winning_trades"]} ({summary["win_rate"]}%)')
+    print(f'Losing Trades: {summary["losing_trades"]}')
+    print(f'Avg Trade Duration: {summary["avg_trade_duration_hours"]} hours')
 
     # ===== DOLLAR-BASED METRICS =====
-    print("\n--- DOLLAR-BASED METRICS ---")
-    print(f"Total Money Invested (Margin): ${summary.get('total_margin_used', 0):,.2f}")
-    print(f"Avg Margin Requirement per Trade: ${summary.get('avg_margin_requirement', 0):,.2f}")
-    print(f"Total Net PnL: ${summary['total_net_pnl']:,.2f}")
-    print(f"Avg Trade PnL: ${summary['avg_trade_net_pnl']:,.2f}")
-    print(f"Avg Win: ${summary['avg_win_net']:,.2f}")
-    print(f"Avg Loss: ${summary['avg_loss_net']:,.2f}")
+    print('\n--- DOLLAR-BASED METRICS ---')
+    print(f'Total Money Invested (Margin): ${summary.get("total_margin_used", 0):,.2f}')
+    print(f'Avg Margin Requirement per Trade: ${summary.get("avg_margin_requirement", 0):,.2f}')
+    print(f'Total Net PnL: ${summary["total_net_pnl"]:,.2f}')
+    print(f'Avg Trade PnL: ${summary["avg_trade_net_pnl"]:,.2f}')
+    print(f'Avg Win: ${summary["avg_win_net"]:,.2f}')
+    print(f'Avg Loss: ${summary["avg_loss_net"]:,.2f}')
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
-    print("\n--- NORMALIZED METRICS (PERCENTAGES) ---")
-    print(f"Total Return Percentage of Margin: {color}{summary['total_return_percentage_of_margin']}%{RESET}")
-    print(f"Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}")
-    print(f"Average Win Percentage of Margin: {GREEN}{summary['average_win_percentage_of_margin']}%{RESET}")
-    print(f"Average Loss Percentage of Margin: {RED}{summary['average_loss_percentage_of_margin']}%{RESET}")
+    print('\n--- NORMALIZED METRICS (PERCENTAGES) ---')
+    print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{RESET}')
+    print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}')
+    print(f'Average Win Percentage of Margin: {GREEN}{summary["average_win_percentage_of_margin"]}%{RESET}')
+    print(f'Average Loss Percentage of Margin: {RED}{summary["average_loss_percentage_of_margin"]}%{RESET}')
 
     # ===== COMMISSION METRICS =====
-    print("\n--- COMMISSION METRICS ---")
-    print(f"Total Commission Paid: ${summary['total_commission_paid']:,.2f}")
-    print(f"Commission Percentage of Margin: {summary['commission_percentage_of_margin']}%")
+    print('\n--- COMMISSION METRICS ---')
+    print(f'Total Commission Paid: ${summary["total_commission_paid"]:,.2f}')
+    print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')
 
     # ===== RISK METRICS =====
-    print("\n--- RISK METRICS ---")
-    print(f"Profit Factor: {summary['profit_factor']}")
-    print(f"Max Drawdown: ${summary.get('max_drawdown', 0):,.2f}")
-    print(f"Maximum Drawdown Percentage: {summary.get('maximum_drawdown_percentage', 0)}%")
-    print(f"Return to Drawdown Ratio: {summary.get('return_to_drawdown_ratio', 0)}")
+    print('\n--- RISK METRICS ---')
+    print(f'Profit Factor: {summary["profit_factor"]}')
+    print(f'Max Drawdown: ${summary.get("max_drawdown", 0):,.2f}')
+    print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
+    print(f'Return to Drawdown Ratio: {summary.get("return_to_drawdown_ratio", 0)}')
 
-    print("=============================\n")
+    print('=============================\n')

@@ -6,7 +6,7 @@ logger = get_logger()
 
 
 def process_trading_data(trading_data):
-    logger.info(f"Trading data received: {trading_data}")
+    logger.info(f'Trading data received: {trading_data}')
 
     dummy = trading_data.get('dummy')
     symbol = trading_data.get('symbol')
@@ -15,8 +15,8 @@ def process_trading_data(trading_data):
 
     contract = get_contract_id(symbol)
 
-    if dummy == "YES":
+    if dummy == 'YES':
         return
 
     order = place_order(contract, side)
-    logger.info(f"Order placed: {order}")
+    logger.info(f'Order placed: {order}')

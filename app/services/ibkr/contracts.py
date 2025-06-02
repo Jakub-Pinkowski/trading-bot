@@ -17,13 +17,13 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
             closest_contract = get_closest_contract(contract_list, min_days_until_expiry)
             return closest_contract['conid']
         except ValueError as err:
-            logger.warning(f"Cache invalid for symbol '{parsed_symbol}': {err}")
+            logger.warning(f'Cache invalid for symbol \'{parsed_symbol}\': {err}')
 
     # Cache miss or invalid entry; fetch and update cache
     fresh_contracts = fetch_contract(symbol)
     if not fresh_contracts:
-        logger.error(f"No contracts found for symbol: {parsed_symbol}")
-        raise ValueError(f"No contracts found for symbol: {parsed_symbol}")
+        logger.error(f'No contracts found for symbol: {parsed_symbol}')
+        raise ValueError(f'No contracts found for symbol: {parsed_symbol}')
 
     # Update cache with fresh data
     contracts_cache[parsed_symbol] = fresh_contracts
