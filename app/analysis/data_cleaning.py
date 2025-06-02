@@ -19,7 +19,7 @@ def pre_clean_tw_alerts_data(df):
     try:
         df['timestamp'] = pd.to_datetime(df['timestamp'])
     except Exception as e:
-        logger.error(f"Failed to convert 'timestamp' to datetime: {e}")
+        logger.error(f'Failed to convert \'timestamp\' to datetime: {e}')
         return pd.DataFrame()
 
     # Remove timezone information to keep dtype as datetime64[ns]
@@ -34,7 +34,7 @@ def pre_clean_tw_alerts_data(df):
 
 def pre_clean_alerts_data(df):
     # Remove the dummy column and order columns if they exist
-    df = df.drop(columns=[col for col in ["dummy", "order"] if col in df.columns])
+    df = df.drop(columns=[col for col in ['dummy', 'order'] if col in df.columns])
 
     return df
 
@@ -49,15 +49,15 @@ def clean_alerts_data(df, tw_alerts=False):
     df = df.sort_values('timestamp').reset_index(drop=True)
 
     # Clean the symbol and change the name of the column to match the trade data
-    df["symbol"] = df["symbol"].apply(parse_symbol)
-    if "timestamp" in df.columns:
-        df = df.rename(columns={"timestamp": "trade_time"})
+    df['symbol'] = df['symbol'].apply(parse_symbol)
+    if 'timestamp' in df.columns:
+        df = df.rename(columns={'timestamp': 'trade_time'})
 
     # Drop rows with missing or invalid data
     df = df.dropna().reset_index(drop=True)
 
     # Remove consecutive orders on the same side for a given symbol
-    mask = df.groupby("symbol")["side"].transform(lambda x: x != x.shift())
+    mask = df.groupby('symbol')['side'].transform(lambda x: x != x.shift())
     df = df[mask]
 
     return df
@@ -65,35 +65,35 @@ def clean_alerts_data(df, tw_alerts=False):
 
 def clean_trades_data(trades_df):
     columns_needed = [
-        "symbol",
-        "side",
-        "size",
-        "price",
-        "trade_time",
-        "commission",
-        "net_amount",
+        'symbol',
+        'side',
+        'size',
+        'price',
+        'trade_time',
+        'commission',
+        'net_amount',
     ]
 
     cleaned_df = trades_df[columns_needed].copy()
 
     # Ensure correct datatypes explicitly
-    cleaned_df["trade_time"] = pd.to_datetime(cleaned_df["trade_time"])
-    cleaned_df["size"] = cleaned_df["size"].astype(float)
-    cleaned_df["commission"] = cleaned_df["commission"].astype(float)
-    cleaned_df["net_amount"] = cleaned_df["net_amount"].astype(float)
+    cleaned_df['trade_time'] = pd.to_datetime(cleaned_df['trade_time'])
+    cleaned_df['size'] = cleaned_df['size'].astype(float)
+    cleaned_df['commission'] = cleaned_df['commission'].astype(float)
+    cleaned_df['net_amount'] = cleaned_df['net_amount'].astype(float)
 
     # Convert fractional price strings properly
-    cleaned_df["price"] = cleaned_df["price"].apply(fractional_to_decimal)
+    cleaned_df['price'] = cleaned_df['price'].apply(fractional_to_decimal)
 
     # Reorder columns
     reordered_columns = [
-        "trade_time",
-        "symbol",
-        "side",
-        "price",
-        "size",
-        "commission",
-        "net_amount",
+        'trade_time',
+        'symbol',
+        'side',
+        'price',
+        'size',
+        'commission',
+        'net_amount',
     ]
     cleaned_df = cleaned_df[reordered_columns]
 

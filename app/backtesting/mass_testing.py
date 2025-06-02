@@ -23,9 +23,9 @@ class MassTester:
     def __init__(self, tested_months=None, symbols=None, intervals=None):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = []
-        self.tested_months = tested_months or ["1!"]
-        self.symbols = symbols or ["ZW"]
-        self.intervals = intervals or ["4h"]
+        self.tested_months = tested_months or ['1!']
+        self.symbols = symbols or ['ZW']
+        self.intervals = intervals or ['4h']
 
         # Load switch dates
         with open(SWITCH_DATES_FILE_PATH) as switch_dates_file:
@@ -66,7 +66,7 @@ class MassTester:
                 'rollover': rollovers or [False],
                 'trailing': trailing_stops or [None]
             },
-            name_template="RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})"
+            name_template='RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
         )
 
     def add_ema_crossover_tests(self, ema_shorts=None, ema_longs=None, rollovers=None, trailing_stops=None):
@@ -78,7 +78,7 @@ class MassTester:
                 'rollover': rollovers or [False],
                 'trailing': trailing_stops or [None]
             },
-            name_template="EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})"
+            name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
         )
 
     def add_macd_tests(self, fast_periods=None, slow_periods=None, signal_periods=None, rollovers=None, trailing_stops=None):
@@ -91,7 +91,7 @@ class MassTester:
                 'rollover': rollovers or [False],
                 'trailing': trailing_stops or [None]
             },
-            name_template="MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})"
+            name_template='MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
         )
 
     def add_bollinger_bands_tests(self, periods=None, num_stds=None, rollovers=None, trailing_stops=None):
@@ -103,18 +103,18 @@ class MassTester:
                 'rollover': rollovers or [False],
                 'trailing': trailing_stops or [None]
             },
-            name_template="BB(period={period},std={num_std},rollover={rollover},trailing={trailing})"
+            name_template='BB(period={period},std={num_std},rollover={rollover},trailing={trailing})'
         )
 
     def run_tests(self, verbose=True, save_results=True):
         """ Run all tests with the configured parameters. """
         if not hasattr(self, 'strategies') or not self.strategies:
-            logger.error("No strategies added for testing. Use add_*_tests methods first.")
-            raise ValueError("No strategies added for testing. Use add_*_tests methods first.")
+            logger.error('No strategies added for testing. Use add_*_tests methods first.')
+            raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
 
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
         if verbose:
-            print(f"Running {total_combinations} test combinations...")
+            print(f'Running {total_combinations} test combinations...')
 
         # Clear previous results
         self.results = []
@@ -127,18 +127,18 @@ class MassTester:
 
                 for interval in self.intervals:
                     if verbose:
-                        print(f"\nProcessing: Month={tested_month}, Symbol={symbol}, Interval={interval}")
+                        print(f'\nProcessing: Month={tested_month}, Symbol={symbol}, Interval={interval}')
 
-                    filepath = f"{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet"
+                    filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
                     try:
                         df = pd.read_parquet(filepath)
                     except Exception as error:
-                        logger.error(f"Failed to read file: {filepath}\nReason: {error}")
+                        logger.error(f'Failed to read file: {filepath}\nReason: {error}')
                         continue
 
                     for strategy_name, strategy_instance in self.strategies:
                         if verbose:
-                            print(f"\nRunning strategy: {strategy_name}")
+                            print(f'\nRunning strategy: {strategy_name}')
 
                         trades_list = strategy_instance.run(df, switch_dates)
 
@@ -171,16 +171,16 @@ class MassTester:
 
         return self.results
 
-    def get_top_strategies(self, metric="profit_factor", min_trades=5):
+    def get_top_strategies(self, metric='profit_factor', min_trades=5):
         """ Get top-performing strategies based on a specific metric."""
         if not self.results:
-            logger.error("No results available. Run tests first.")
-            raise ValueError("No results available. Run tests first.")
+            logger.error('No results available. Run tests first.')
+            raise ValueError('No results available. Run tests first.')
 
         results_dataframe = self._results_to_dataframe()
 
         # Filter by minimum trades
-        results_dataframe = results_dataframe[results_dataframe["total_trades"] >= min_trades]
+        results_dataframe = results_dataframe[results_dataframe['total_trades'] >= min_trades]
 
         # Sort by the metric in descending order
         results_dataframe = results_dataframe.sort_values(by=metric, ascending=False)
@@ -191,28 +191,28 @@ class MassTester:
     def compare_strategies(self, group_by=None, metrics=None):
         """ Compare strategies by grouping and averaging metrics. """
         if not self.results:
-            logger.error("No results available. Run tests first.")
-            raise ValueError("No results available. Run tests first.")
+            logger.error('No results available. Run tests first.')
+            raise ValueError('No results available. Run tests first.')
 
-        group_by_columns = group_by or ["strategy"]
+        group_by_columns = group_by or ['strategy']
 
         # Default to percentage-based metrics for normalized comparison across symbols
         metrics_list = metrics or [
-            "total_trades",
-            "win_rate",
-            "total_return_percentage_of_margin",
-            "average_trade_return_percentage_of_margin",
-            "average_win_percentage_of_margin",
-            "average_loss_percentage_of_margin",
-            "maximum_drawdown_percentage",
-            "profit_factor"
+            'total_trades',
+            'win_rate',
+            'total_return_percentage_of_margin',
+            'average_trade_return_percentage_of_margin',
+            'average_win_percentage_of_margin',
+            'average_loss_percentage_of_margin',
+            'maximum_drawdown_percentage',
+            'profit_factor'
         ]
 
         results_dataframe = self._results_to_dataframe()
 
         grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
         # Sort by total_return_percentage_of_margin by default for normalized comparison
-        grouped = grouped.sort_values(by="total_return_percentage_of_margin", ascending=False)
+        grouped = grouped.sort_values(by='total_return_percentage_of_margin', ascending=False)
 
         # Round all numeric columns to 2 decimal places
         numeric_columns = grouped.select_dtypes(include=['float64', 'int64']).columns
@@ -225,29 +225,29 @@ class MassTester:
         """Convert results to a pandas DataFrame."""
 
         if not self.results:
-            logger.warning("No results available to convert to DataFrame.")
+            logger.warning('No results available to convert to DataFrame.')
             return pd.DataFrame()
 
         return pd.DataFrame([
             {
-                "month": result["month"],
-                "symbol": result["symbol"],
-                "interval": result["interval"],
-                "strategy": result["strategy"],
+                'month': result['month'],
+                'symbol': result['symbol'],
+                'interval': result['interval'],
+                'strategy': result['strategy'],
                 # Trade counts
-                "total_trades": result["metrics"]["total_trades"],
-                "win_rate": result["metrics"]["win_rate"],
+                'total_trades': result['metrics']['total_trades'],
+                'win_rate': result['metrics']['win_rate'],
                 # Percentage-based metrics (for normalized comparison)
-                "total_return_percentage_of_margin": result["metrics"].get("total_return_percentage_of_margin", 0),
-                "average_trade_return_percentage_of_margin": result["metrics"]["average_trade_return_percentage_of_margin"],
-                "average_win_percentage_of_margin": result["metrics"].get("average_win_percentage_of_margin", 0),
-                "average_loss_percentage_of_margin": result["metrics"].get("average_loss_percentage_of_margin", 0),
-                "maximum_drawdown_percentage": result["metrics"]["maximum_drawdown_percentage"],
+                'total_return_percentage_of_margin': result['metrics'].get('total_return_percentage_of_margin', 0),
+                'average_trade_return_percentage_of_margin': result['metrics']['average_trade_return_percentage_of_margin'],
+                'average_win_percentage_of_margin': result['metrics'].get('average_win_percentage_of_margin', 0),
+                'average_loss_percentage_of_margin': result['metrics'].get('average_loss_percentage_of_margin', 0),
+                'maximum_drawdown_percentage': result['metrics']['maximum_drawdown_percentage'],
                 # Other metrics
-                "profit_factor": result["metrics"]["profit_factor"],
+                'profit_factor': result['metrics']['profit_factor'],
                 # Dollar-based metrics (for reference)
-                "total_net_pnl": result["metrics"]["total_net_pnl"],
-                "avg_trade_net_pnl": result["metrics"]["avg_trade_net_pnl"]
+                'total_net_pnl': result['metrics']['total_net_pnl'],
+                'avg_trade_net_pnl': result['metrics']['avg_trade_net_pnl']
             }
             for result in self.results
         ])
@@ -256,10 +256,10 @@ class MassTester:
     def _save_results(self):
         """Save results to JSON and CSV files."""
         try:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M")
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H:%M')
 
             # Save individual test results to JSON
-            json_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json"
+            json_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json'
             with open(json_filename, 'w') as result_file:
                 json.dump(self.results, result_file, indent=2)
 
@@ -267,7 +267,7 @@ class MassTester:
             results_df = self._results_to_dataframe()
             if not results_df.empty:
                 # Save detailed results
-                csv_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv"
+                csv_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv'
                 results_df.to_csv(csv_filename, index=False)
 
                 # Save summary grouped by strategy with percentage-based metrics for normalized comparison
@@ -283,7 +283,7 @@ class MassTester:
                     # Other metrics
                     'profit_factor': 'mean'
                 }).reset_index()
-                summary_filename = f"{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv"
+                summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
 
                 # Round all numeric columns to 2 decimal places
                 numeric_columns = summary_df.select_dtypes(include=['float64', 'int64']).columns
@@ -291,8 +291,8 @@ class MassTester:
 
                 summary_df.to_csv(summary_filename, index=False)
 
-                print(f"Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}")
+                print(f'Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}')
             else:
-                print(f"Results saved to {json_filename}")
+                print(f'Results saved to {json_filename}')
         except Exception as error:
-            logger.error(f"Failed to save results: {error}")
+            logger.error(f'Failed to save results: {error}')

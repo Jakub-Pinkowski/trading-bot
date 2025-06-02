@@ -13,7 +13,7 @@ logger = get_logger()
 
 
 def run_analysis():
-    print("Running analysis...")
+    print('Running analysis...')
     # Fetch raw data
     alerts_data = get_alerts_data()
     tw_alerts_data = get_tw_alerts_data()
@@ -32,9 +32,9 @@ def run_analysis():
                     save_to_csv(
                         tw_alerts_dataset_metrics,
                         TW_ALERTS_DATASET_METRICS_FILE_PATH,
-                        dictionary_columns=["Metric", "Value"]
+                        dictionary_columns=['Metric', 'Value']
                     )
-                    logger.info("TW Alerts processed successfully.")
+                    logger.info('TW Alerts processed successfully.')
 
     # Process Trades
     if is_nonempty(trades_data):
@@ -49,6 +49,6 @@ def run_analysis():
                     save_to_csv(
                         trades_dataset_metrics,
                         TRADES_DATASET_METRICS_FILE_PATH,
-                        dictionary_columns=["Metric", "Value"]
+                        dictionary_columns=['Metric', 'Value']
                     )
-                    logger.info("Trades processed successfully.")
+                    logger.info('Trades processed successfully.')
