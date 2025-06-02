@@ -78,6 +78,9 @@ def calculate_summary_metrics(trades):
     # Total margin used (sum of individual trade margin requirements)
     total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
 
+    # Average margin requirement per trade
+    avg_margin_requirement = total_margin_used / total_trades if total_trades > 0 else 0
+
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
     # Return percentages
     total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
@@ -115,6 +118,7 @@ def calculate_summary_metrics(trades):
 
         # Dollar-based metrics
         "total_margin_used": round(total_margin_used, 2),
+        "avg_margin_requirement": round(avg_margin_requirement, 2),
         "total_net_pnl": round(total_net_pnl, 2),
         "avg_trade_net_pnl": round(avg_trade_pnl, 2),
         "avg_win_net": round(avg_win, 2),
@@ -163,11 +167,12 @@ def print_summary_metrics(summary):
 
     # ===== DOLLAR-BASED METRICS =====
     print("\n--- DOLLAR-BASED METRICS ---")
-    print(f"Total Money Invested (Margin): ${summary.get('total_margin_used', 0)}")
-    print(f"Total Net PnL: ${summary['total_net_pnl']} ")
-    print(f"Avg Trade PnL: ${summary['avg_trade_net_pnl']} ")
-    print(f"Avg Win: ${summary['avg_win_net']}")
-    print(f"Avg Loss: ${summary['avg_loss_net']}")
+    print(f"Total Money Invested (Margin): ${summary.get('total_margin_used', 0):,.2f}")
+    print(f"Avg Margin Requirement per Trade: ${summary.get('avg_margin_requirement', 0):,.2f}")
+    print(f"Total Net PnL: ${summary['total_net_pnl']:,.2f}")
+    print(f"Avg Trade PnL: ${summary['avg_trade_net_pnl']:,.2f}")
+    print(f"Avg Win: ${summary['avg_win_net']:,.2f}")
+    print(f"Avg Loss: ${summary['avg_loss_net']:,.2f}")
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
     print("\n--- NORMALIZED METRICS (PERCENTAGES) ---")
@@ -178,13 +183,13 @@ def print_summary_metrics(summary):
 
     # ===== COMMISSION METRICS =====
     print("\n--- COMMISSION METRICS ---")
-    print(f"Total Commission Paid: ${summary['total_commission_paid']}")
+    print(f"Total Commission Paid: ${summary['total_commission_paid']:,.2f}")
     print(f"Commission Percentage of Margin: {summary['commission_percentage_of_margin']}%")
 
     # ===== RISK METRICS =====
     print("\n--- RISK METRICS ---")
     print(f"Profit Factor: {summary['profit_factor']}")
-    print(f"Max Drawdown: ${summary.get('max_drawdown', 0)}")
+    print(f"Max Drawdown: ${summary.get('max_drawdown', 0):,.2f}")
     print(f"Maximum Drawdown Percentage: {summary.get('maximum_drawdown_percentage', 0)}%")
     print(f"Return to Drawdown Ratio: {summary.get('return_to_drawdown_ratio', 0)}")
 
