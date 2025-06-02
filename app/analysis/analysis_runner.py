@@ -6,8 +6,10 @@ from app.analysis.trades_matching import match_trades
 from app.utils.analysis_utils.analysis_utils import is_nonempty
 from app.utils.file_utils import save_to_csv
 from app.utils.logger import get_logger
-from config import TW_ALERTS_PER_TRADE_METRICS_FILE_PATH, TW_ALERTS_DATASET_METRICS_FILE_PATH, TRADES_PER_TRADE_METRICS_FILE_PATH, \
-    TRADES_DATASET_METRICS_FILE_PATH
+from config import (TW_ALERTS_PER_TRADE_METRICS_FILE_PATH,
+                    TW_ALERTS_DATASET_METRICS_FILE_PATH,
+                    TRADES_PER_TRADE_METRICS_FILE_PATH,
+                    TRADES_DATASET_METRICS_FILE_PATH)
 
 logger = get_logger()
 

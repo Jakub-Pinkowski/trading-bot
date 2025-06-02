@@ -36,7 +36,10 @@ def get_tw_alerts_data():
         return pd.DataFrame()  # Return empty DataFrame if missing
 
     try:
-        files.sort(key=lambda x: datetime.strptime(x.replace('TradingView_Alerts_Log_', '').replace('.csv', ''), '%Y-%m-%d'), reverse=True)
+        files.sort(
+            key=lambda x: datetime.strptime(x.replace('TradingView_Alerts_Log_', '').replace('.csv', ''), '%Y-%m-%d'),
+            reverse=True
+        )
     except ValueError as err:
         logger.error(f'Error parsing dates from filenames: {err}')
         return pd.DataFrame()
