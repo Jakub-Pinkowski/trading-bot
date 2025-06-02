@@ -6,7 +6,7 @@ from config import LOGS_DIR
 
 
 # Custom logger
-def get_logger(name="app"):
+def get_logger(name='app'):
     # Create the logs directory if it doesn't exist
     if not os.path.exists(LOGS_DIR):
         os.makedirs(LOGS_DIR)

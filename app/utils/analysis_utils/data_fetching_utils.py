@@ -5,13 +5,13 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
-def save_trades_data(trades_json, trades_dir, timezone="Europe/Berlin"):
+def save_trades_data(trades_json, trades_dir, timezone='Europe/Berlin'):
     trades_by_day = {}
 
     # Organize trades by extracting the date from each trade's timestamp
     for trade in trades_json:
-        trade_datetime = datetime.strptime(trade["trade_time"], "%Y%m%d-%H:%M:%S").astimezone(ZoneInfo(timezone))
-        trade_date = trade_datetime.strftime("%Y-%m-%d")
+        trade_datetime = datetime.strptime(trade['trade_time'], '%Y%m%d-%H:%M:%S').astimezone(ZoneInfo(timezone))
+        trade_date = trade_datetime.strftime('%Y-%m-%d')
         trades_by_day.setdefault(trade_date, []).append(trade)
 
     # Save unique trades only
@@ -27,11 +27,11 @@ def save_trades_data(trades_json, trades_dir, timezone="Europe/Berlin"):
                 existing_data = json.load(file)
                 if isinstance(existing_data, list):
                     for trade in existing_data:
-                        unique_trades[trade["execution_id"]] = trade
+                        unique_trades[trade['execution_id']] = trade
 
         # Add current trades (automatically overriding duplicates)
         for trade in daily_trades:
-            unique_trades[trade["execution_id"]] = trade
+            unique_trades[trade['execution_id']] = trade
 
         # Save back to file
         with open(daily_file_path, 'w') as file:

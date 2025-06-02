@@ -20,7 +20,7 @@ def load_file(file_path):
 
 def load_data_from_json_files(directory, file_prefix, date_fields, datetime_format, index_name):
     # Retrieve a sorted list of all JSON files matching the pattern
-    file_pattern = os.path.join(directory, f"{file_prefix}_*.json")
+    file_pattern = os.path.join(directory, f'{file_prefix}_*.json')
     files = sorted(glob(file_pattern))
 
     data_frames = []
@@ -59,7 +59,7 @@ def save_to_csv(data, file_path, dictionary_columns=None):
         try:
             existing = pd.read_csv(file_path)
         except Exception as e:
-            logger.error(f"Could not read existing CSV for deduplication: {e}")
+            logger.error(f'Could not read existing CSV for deduplication: {e}')
             existing = None
     else:
         existing = None
@@ -67,10 +67,10 @@ def save_to_csv(data, file_path, dictionary_columns=None):
     if isinstance(data, pd.DataFrame):
         new_data = data.copy()
     elif isinstance(data, dict):
-        columns = dictionary_columns if dictionary_columns else ["Key", "Value"]
+        columns = dictionary_columns if dictionary_columns else ['Key', 'Value']
         new_data = pd.DataFrame(list(data.items()), columns=columns)
     else:
-        raise ValueError("Data must be either a Pandas DataFrame or a dictionary.")
+        raise ValueError('Data must be either a Pandas DataFrame or a dictionary.')
 
     # Concatenate and deduplicate if file exists; else just save data
     if existing is not None:
@@ -95,7 +95,7 @@ def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='colu
     elif isinstance(data, list):
         df = pd.DataFrame(data)
     else:
-        raise ValueError("Unsupported data format. Provide either dictionary or list.")
+        raise ValueError('Unsupported data format. Provide either dictionary or list.')
 
     # Convert specified fields to datetime objects using a given format
     if date_fields:

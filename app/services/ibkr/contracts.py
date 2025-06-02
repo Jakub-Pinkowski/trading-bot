@@ -33,5 +33,5 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
         closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)
         return closest_contract['conid']
     except ValueError as err:
-        logger.error(f"No valid contract found in fresh data for symbol '{parsed_symbol}': {err}")
+        logger.error(f'No valid contract found in fresh data for symbol \'{parsed_symbol}\': {err}')
         raise

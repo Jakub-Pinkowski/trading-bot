@@ -8,8 +8,8 @@ logger = get_logger()
 def parse_symbol(symbol):
     match = re.match(r'^([A-Za-z]+)', symbol)
     if not match:
-        logger.error(f"Invalid symbol format: {symbol}")
-        raise ValueError(f"Invalid symbol format: {symbol}")
+        logger.error(f'Invalid symbol format: {symbol}')
+        raise ValueError(f'Invalid symbol format: {symbol}')
 
     parsed_symbol = match.group(1)
 

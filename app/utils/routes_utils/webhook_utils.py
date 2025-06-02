@@ -25,17 +25,17 @@ def parse_request_data(request):
         abort(400, description='Unsupported Content-Type')
 
 
-def save_alert_data_to_file(data, alerts_dir, timezone="Europe/Berlin"):
+def save_alert_data_to_file(data, alerts_dir, timezone='Europe/Berlin'):
     # Don't save if it's just the dummy data
     if 'dummy' in data:
         return
 
     # Current timestamp with timezone
     current_dt = datetime.now(ZoneInfo(timezone))
-    timestamp = current_dt.strftime("%y-%m-%d %H:%M:%S")
+    timestamp = current_dt.strftime('%y-%m-%d %H:%M:%S')
 
     # Preparing the daily file path
-    daily_file_name = f"alerts_{current_dt.strftime('%Y-%m-%d')}.json"
+    daily_file_name = f'alerts_{current_dt.strftime("%Y-%m-%d")}.json'
     daily_file_path = os.path.join(alerts_dir, daily_file_name)
 
     # Load existing data if the file already exists
@@ -53,5 +53,5 @@ def safe_process_trading_data(data):
         process_trading_data(data)
     except Exception as err:
         logger.exception(
-            f"Error processing TradingView webhook with data {data}: {err}"
+            f'Error processing TradingView webhook with data {data}: {err}'
         )
