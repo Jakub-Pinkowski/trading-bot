@@ -40,8 +40,8 @@ def calculate_trade_metrics(trade, symbol):
     elif trade['side'] == 'short':
         pnl_points = trade['entry_price'] - trade['exit_price']
     else:
-        logger.error(f'Unknown trade side: {trade["side"]}')
-        raise ValueError(f'Unknown trade side: {trade["side"]}')
+        logger.error(f'Unknown trade side: {trade['side']}')
+        raise ValueError(f'Unknown trade side: {trade['side']}')
 
     # Calculate gross PnL (before commission)
     gross_pnl = pnl_points * contract_multiplier
@@ -103,25 +103,25 @@ def print_trade_metrics(trade):
     print('\n====== TRADE METRICS ======')
 
     # Trade details
-    print(f'Entry Time: {trade["entry_time"]}')
-    print(f'Exit Time: {trade["exit_time"]}')
-    print(f'Duration: {trade["duration"]} ({trade["duration_hours"]:.2f} hours)')
-    print(f'Side: {trade["side"]}')
-    print(f'Entry Price: {trade["entry_price"]}')
-    print(f'Exit Price: {trade["exit_price"]}')
+    print(f'Entry Time: {trade['entry_time']}')
+    print(f'Exit Time: {trade['exit_time']}')
+    print(f'Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)')
+    print(f'Side: {trade['side']}')
+    print(f'Entry Price: {trade['entry_price']}')
+    print(f'Exit Price: {trade['exit_price']}')
 
     # Normalized metrics (percentages)
     print('\n--- NORMALIZED METRICS (PERCENTAGES) ---')
-    print(f'Net Return % of Margin: {color}{trade["return_percentage_of_margin"]}%{RESET}')
-    print(f'Return % of Contract: {color}{trade["return_percentage_of_contract"]}%{RESET}')
-    print(f'Commission % of Return: {trade["commission_percentage"]}%')
+    print(f'Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}')
+    print(f'Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}')
+    print(f'Commission % of Return: {trade['commission_percentage']}%')
 
     # Dollar-based metrics (for reference)
     print('\n--- DOLLAR-BASED METRICS (FOR REFERENCE) ---')
-    print(f'Margin Requirement: ${trade["margin_requirement"]}')
-    print(f'Commission (dollars): ${trade["commission"]}')
-    print(f'PnL (points): {color}{trade["pnl_points"]}{RESET}')
-    print(f'Gross PnL (dollars): {color}${trade["gross_pnl"]}{RESET}')
-    print(f'Net PnL (dollars): {color}${trade["net_pnl"]}{RESET}')
+    print(f'Margin Requirement: ${trade['margin_requirement']}')
+    print(f'Commission (dollars): ${trade['commission']}')
+    print(f'PnL (points): {color}{trade['pnl_points']}{RESET}')
+    print(f'Gross PnL (dollars): {color}${trade['gross_pnl']}{RESET}')
+    print(f'Net PnL (dollars): {color}${trade['net_pnl']}{RESET}')
 
     print('=============================\n')

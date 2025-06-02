@@ -78,7 +78,7 @@ def match_trades(trades, is_alerts=False):
         commission = 0 if is_alerts else row['commission']
         multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)
         if symbol not in CONTRACT_MULTIPLIERS:
-            logger.warning(f"Symbol '{symbol}' not in contract_multipliers. Using multiplier=1.")
+            logger.warning(f'Symbol \'{symbol}\' not in contract_multipliers. Using multiplier=1.')
 
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 

@@ -34,17 +34,17 @@ def get_contract_position(conid):
 
 
     except Exception as err:
-        logger.error(f"Error fetching contract position: {err}")
+        logger.error(f'Error fetching contract position: {err}')
         return 0
 
 
 def suppress_messages(message_ids):
-    endpoint = "iserver/questions/suppress"
-    suppression_data = {"messageIds": message_ids}
+    endpoint = 'iserver/questions/suppress'
+    suppression_data = {'messageIds': message_ids}
 
     try:
         suppression_response = api_post(endpoint, suppression_data)
-        logger.info(f"Suppression response: {suppression_response}")
+        logger.info(f'Suppression response: {suppression_response}')
 
     except Exception as err:
-        logger.error(f"Error suppressing messages: {err}")
+        logger.error(f'Error suppressing messages: {err}')

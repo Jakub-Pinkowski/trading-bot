@@ -26,21 +26,21 @@ def get_logger(name='app'):
     if not logger.handlers:
         if not is_test_environment:
             # File handler for DEBUG only (logs DEBUG)
-            debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debug.log"))
+            debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, 'debug.log'))
             debug_handler.setLevel(logging.DEBUG)
             debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
             debug_handler.setFormatter(formatter)
             logger.addHandler(debug_handler)
 
             # File handler for INFO only (logs INFO and WARNING)
-            info_handler = logging.FileHandler(os.path.join(LOGS_DIR, "info.log"))
+            info_handler = logging.FileHandler(os.path.join(LOGS_DIR, 'info.log'))
             info_handler.setLevel(logging.INFO)
             info_handler.addFilter(lambda record: record.levelno < logging.ERROR)
             info_handler.setFormatter(formatter)
             logger.addHandler(info_handler)
 
             # File handler for ERROR and CRITICAL only
-            error_handler = logging.FileHandler(os.path.join(LOGS_DIR, "error.log"))
+            error_handler = logging.FileHandler(os.path.join(LOGS_DIR, 'error.log'))
             error_handler.setLevel(logging.ERROR)
             error_handler.setFormatter(formatter)
             logger.addHandler(error_handler)

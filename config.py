@@ -10,7 +10,7 @@ PORT = os.getenv('PORT')
 BASE_URL = os.getenv('BASE_URL')
 
 # IBKR setup
-ACCOUNT_ID = "DUE343675"
+ACCOUNT_ID = 'DUE343675'
 ALLOWED_IPS = {
     '52.89.214.238',
     '34.212.75.30',

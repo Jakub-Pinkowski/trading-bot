@@ -76,7 +76,7 @@ def get_trades_data():
     if fetch_result.get('success'):
         return get_trades_data()
     else:
-        logger.error(f'Failed to fetch trades data: {fetch_result.get("error")}')
+        logger.error(f'Failed to fetch trades data: {fetch_result.get('error')}')
         return pd.DataFrame(columns=['conid', 'side', 'price', 'trade_time'])
 
 
