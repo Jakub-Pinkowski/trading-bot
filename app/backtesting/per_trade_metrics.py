@@ -54,11 +54,11 @@ def calculate_trade_metrics(trade, symbol):
     # Calculate net PnL (after commission)
     net_pnl = gross_pnl - total_commission
 
-    # Calculate return percentage based on the initial margin requirement
-    return_percentage = (net_pnl / margin_requirement) * 100
-    trade_with_metrics['return_percentage_of_margin'] = round(return_percentage, 2)
+    # Calculate return percentage as a percentage of the margin requirement
+    return_percentage_of_margin = (net_pnl / margin_requirement) * 100
+    trade_with_metrics['return_percentage_of_margin'] = round(return_percentage_of_margin, 2)
 
-    # Calculate PnL as a percentage of entry price (contract value)
+    # Calculate return percentage as a percentage of the contract value (entry price)
     return_percentage_of_contract = (net_pnl / (trade['entry_price'] * contract_multiplier)) * 100
     trade_with_metrics['return_percentage_of_contract'] = round(return_percentage_of_contract, 2)
 

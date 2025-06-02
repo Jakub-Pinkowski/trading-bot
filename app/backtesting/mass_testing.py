@@ -146,7 +146,6 @@ class MassTester:
                         for trade in trades_list:
                             trade_with_metrics = calculate_trade_metrics(trade, symbol)
                             trades_with_metrics_list.append(trade_with_metrics)
-                            print(trade_with_metrics)
 
                         if trades_with_metrics_list:
                             summary_metrics = calculate_summary_metrics(trades_with_metrics_list)
