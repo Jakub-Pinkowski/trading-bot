@@ -28,12 +28,17 @@ tester.add_ema_crossover_tests(
 print("Running backtests for all parameter combinations...")
 results = tester.run_tests(verbose=True, save_results=True)
 
-# Get top strategies by profit factor with at least 10 trades
+# Get top strategies by profit factor
 print("\n===== TOP STRATEGIES BY PROFIT FACTOR =====")
 top_by_profit = tester.get_top_strategies(metric="profit_factor", min_trades=10)
 print(top_by_profit.head(10))
 
-# Get top strategies by average return percentage with at least 10 trades
+# Get top strategies by total return percentage
+print("\n===== TOP STRATEGIES BY TOTAL TRADE RETURN PERCENTAGE =====")
+top_by_total_return_percentage = tester.get_top_strategies(metric="total_return_percentage_of_margin", min_trades=10)
+print(top_by_total_return_percentage.head(10))
+
+# Get top strategies by average return percentage
 print("\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE OF MARGIN =====")
 top_by_trade_return_percentage = tester.get_top_strategies(metric="average_trade_return_percentage_of_margin", min_trades=10)
 print(top_by_trade_return_percentage.head(10))
