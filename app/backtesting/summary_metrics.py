@@ -86,9 +86,11 @@ def calculate_summary_metrics(trades):
     total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
     average_trade_return_percentage_of_margin = total_return_percentage_of_margin / total_trades if total_trades > 0 else 0
     average_win_percentage_of_margin = sum(
-        trade['return_percentage_of_margin'] for trade in winning_trades) / win_count if win_count > 0 else 0
+        trade['return_percentage_of_margin'] for trade in winning_trades
+    ) / win_count if win_count > 0 else 0
     average_loss_percentage_of_margin = sum(
-        trade['return_percentage_of_margin'] for trade in losing_trades) / loss_count if loss_count > 0 else 0
+        trade['return_percentage_of_margin'] for trade in losing_trades
+    ) / loss_count if loss_count > 0 else 0
 
     # ===== COMMISSION METRICS =====
     # Total commission paid
@@ -106,7 +108,8 @@ def calculate_summary_metrics(trades):
 
     # Calculate return to a drawdown ratio (reward to risk)
     return_to_drawdown_ratio = total_return_percentage_of_margin / maximum_drawdown_percentage if maximum_drawdown_percentage > 0 else float(
-        'inf')
+        'inf'
+    )
 
     return {
         # Basic trade statistics
