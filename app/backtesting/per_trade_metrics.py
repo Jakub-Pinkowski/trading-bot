@@ -11,7 +11,7 @@ def calculate_trade_metrics(trade, symbol):
     """ Calculate metrics for a single trade. """
 
     # Create a copy of the trade to avoid modifying the original
-    trade_with_metrics = trade.copy()
+    trade = trade.copy()
 
     # Get the contract multiplier for the symbol
     contract_multiplier = CONTRACT_MULTIPLIERS.get(symbol)
@@ -28,16 +28,11 @@ def calculate_trade_metrics(trade, symbol):
     # ===== TRADE DETAILS =====
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
-    trade_with_metrics['duration'] = trade_duration
-    trade_with_metrics['duration_hours'] = trade_duration.total_seconds() / 3600
+    trade_duration_hours = round(trade_duration.total_seconds() / 3600)
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
     # Fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
-
-    # Calculate commission as percentage of margin
-    commission_percentage_of_margin = (total_commission / margin_requirement) * 100
-    trade_with_metrics['commission_percentage_of_margin'] = round(commission_percentage_of_margin, 2)
 
     # Calculate PnL in points
     if trade['side'] == 'long':
@@ -55,43 +50,38 @@ def calculate_trade_metrics(trade, symbol):
     net_pnl = gross_pnl - total_commission
 
     # Calculate return percentage as a percentage of the margin requirement
-    return_percentage_of_margin = (net_pnl / margin_requirement) * 100
-    trade_with_metrics['return_percentage_of_margin'] = round(return_percentage_of_margin, 2)
+    return_percentage_of_margin = round((net_pnl / margin_requirement) * 100, 2)
 
     # Calculate return percentage as a percentage of the contract value (entry price)
-    return_percentage_of_contract = (net_pnl / (trade['entry_price'] * contract_multiplier)) * 100
-    trade_with_metrics['return_percentage_of_contract'] = round(return_percentage_of_contract, 2)
+    return_percentage_of_contract = round((net_pnl / (trade['entry_price'] * contract_multiplier)) * 100, 2)
 
     # ===== DOLLAR-BASED METRICS (FOR REFERENCE) =====
-    trade_with_metrics['margin_requirement'] = round(margin_requirement, 2)
-    trade_with_metrics['commission'] = round(total_commission, 2)
-    trade_with_metrics['pnl_points'] = round(pnl_points, 2)
-    trade_with_metrics['gross_pnl'] = round(gross_pnl, 2)
-    trade_with_metrics['net_pnl'] = round(net_pnl, 2)
-
-    print_trade_metrics(trade_with_metrics)
+    margin_requirement = round(margin_requirement, 2)
+    total_commission = round(total_commission, 2)
+    pnl_points = round(pnl_points, 2)
+    gross_pnl = round(gross_pnl, 2)
+    net_pnl = round(net_pnl, 2)
 
     # Structure of trade_with_metrics dictionary
     return {
         # Original trade data
-        "entry_time": trade_with_metrics['entry_time'],
-        "exit_time": trade_with_metrics['exit_time'],
-        "side": trade_with_metrics['side'],
-        "entry_price": trade_with_metrics['entry_price'],
-        "exit_price": trade_with_metrics['exit_price'],
+        "entry_time": trade['entry_time'],
+        "exit_time": trade['exit_time'],
+        "entry_price": trade['entry_price'],
+        "exit_price": trade['exit_price'],
+        "side": trade['side'],
         # Trade details
-        "duration": trade_with_metrics['duration'],
-        "duration_hours": round(trade_with_metrics['duration_hours'], 2),
+        "duration": trade_duration,
+        "duration_hours": trade_duration_hours,
         # Normalized metrics (percentages)
-        "commission_percentage_of_margin": trade_with_metrics['commission_percentage_of_margin'],
-        "return_percentage_of_margin": trade_with_metrics['return_percentage_of_margin'],
-        "return_percentage_of_contract": trade_with_metrics['return_percentage_of_contract'],
+        "return_percentage_of_margin": return_percentage_of_margin,
+        "return_percentage_of_contract": return_percentage_of_contract,
         # Dollar-based metrics
-        "margin_requirement": trade_with_metrics['margin_requirement'],
-        "commission": trade_with_metrics['commission'],
-        "pnl_points": trade_with_metrics['pnl_points'],
-        "gross_pnl": trade_with_metrics['gross_pnl'],
-        "net_pnl": trade_with_metrics['net_pnl']
+        "margin_requirement": margin_requirement,
+        "commission": total_commission,
+        "pnl_points": pnl_points,
+        "gross_pnl": gross_pnl,
+        "net_pnl": net_pnl
     }
 
 
@@ -123,7 +113,6 @@ def print_trade_metrics(trade):
 
     # Normalized metrics (percentages)
     print("\n--- NORMALIZED METRICS (PERCENTAGES) ---")
-    print(f"Commission as % of Margin: {trade['commission_percentage_of_margin']}%")
     print(f"Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}")
     print(f"Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}")
 
