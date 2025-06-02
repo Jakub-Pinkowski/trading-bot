@@ -215,6 +215,10 @@ class MassTester:
         # Sort by total_return_percentage_of_margin by default for normalized comparison
         grouped = grouped.sort_values(by="total_return_percentage_of_margin", ascending=False)
 
+        # Round all numeric columns to 2 decimal places
+        numeric_columns = grouped.select_dtypes(include=['float64', 'int64']).columns
+        grouped[numeric_columns] = grouped[numeric_columns].round(2)
+
         return grouped
 
     # --- Private methods ---
