@@ -243,8 +243,8 @@ class MassTester:
                 # Other metrics
                 "profit_factor": result["metrics"]["profit_factor"],
                 # Dollar-based metrics (for reference)
-                "total_gross_pnl": result["metrics"]["total_gross_pnl"],
-                "avg_trade_gross_pnl": result["metrics"]["avg_trade_gross_pnl"]
+                "total_net_pnl": result["metrics"]["total_net_pnl"],
+                "avg_trade_net_pnl": result["metrics"]["avg_trade_net_pnl"]
             }
             for result in self.results
         ])
