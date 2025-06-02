@@ -6,6 +6,7 @@ from config import ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
 logger = get_logger()
 
 
+# TODO [MEDIUM]: Remove Aggressive trading variable as this is now integrates into the strategies instead
 def place_order(conid, side):
     contract_position = get_contract_position(conid)
 
