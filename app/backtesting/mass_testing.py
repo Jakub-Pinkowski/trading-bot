@@ -285,6 +285,11 @@ class MassTester:
                     'profit_factor': 'mean'
                 }).reset_index()
                 summary_filename = f"{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv"
+
+                # Round all numeric columns to 2 decimal places
+                numeric_columns = summary_df.select_dtypes(include=['float64', 'int64']).columns
+                summary_df[numeric_columns] = summary_df[numeric_columns].round(2)
+
                 summary_df.to_csv(summary_filename, index=False)
 
                 print(f"Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}")
