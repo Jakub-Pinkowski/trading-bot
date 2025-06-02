@@ -40,7 +40,8 @@ print(top_by_total_return_percentage.head(10))
 
 # Get top strategies by average return percentage
 print('\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE OF MARGIN =====')
-top_by_trade_return_percentage = tester.get_top_strategies(metric='average_trade_return_percentage_of_margin', min_trades=10)
+top_by_trade_return_percentage = tester.get_top_strategies(metric='average_trade_return_percentage_of_margin',
+                                                           min_trades=10)
 print(top_by_trade_return_percentage.head(10))
 
 # Compare strategies by symbol
