@@ -8,7 +8,14 @@ SIGNAL_PERIOD = 9
 
 
 class MACDStrategy(BaseStrategy):
-    def __init__(self, fast_period=FAST_PERIOD, slow_period=SLOW_PERIOD, signal_period=SIGNAL_PERIOD, rollover=False, trailing=None):
+    def __init__(
+        self,
+        fast_period=FAST_PERIOD,
+        slow_period=SLOW_PERIOD,
+        signal_period=SIGNAL_PERIOD,
+        rollover=False,
+        trailing=None
+    ):
         super().__init__(rollover=rollover, trailing=trailing)
         self.fast_period = fast_period
         self.slow_period = slow_period

@@ -56,7 +56,14 @@ class MassTester:
 
             self.strategies.append((strategy_name, strategy_instance))
 
-    def add_rsi_tests(self, rsi_periods=None, lower_thresholds=None, upper_thresholds=None, rollovers=None, trailing_stops=None):
+    def add_rsi_tests(
+        self,
+        rsi_periods=None,
+        lower_thresholds=None,
+        upper_thresholds=None,
+        rollovers=None,
+        trailing_stops=None
+    ):
         self.add_strategy_tests(
             strategy_class=RSIStrategy,
             param_grid={
@@ -69,7 +76,13 @@ class MassTester:
             name_template='RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
         )
 
-    def add_ema_crossover_tests(self, ema_shorts=None, ema_longs=None, rollovers=None, trailing_stops=None):
+    def add_ema_crossover_tests(
+        self,
+        ema_shorts=None,
+        ema_longs=None,
+        rollovers=None,
+        trailing_stops=None
+    ):
         self.add_strategy_tests(
             strategy_class=EMACrossoverStrategy,
             param_grid={
@@ -81,7 +94,14 @@ class MassTester:
             name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
         )
 
-    def add_macd_tests(self, fast_periods=None, slow_periods=None, signal_periods=None, rollovers=None, trailing_stops=None):
+    def add_macd_tests(
+        self,
+        fast_periods=None,
+        slow_periods=None,
+        signal_periods=None,
+        rollovers=None,
+        trailing_stops=None
+    ):
         self.add_strategy_tests(
             strategy_class=MACDStrategy,
             param_grid={
@@ -94,7 +114,13 @@ class MassTester:
             name_template='MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
         )
 
-    def add_bollinger_bands_tests(self, periods=None, num_stds=None, rollovers=None, trailing_stops=None):
+    def add_bollinger_bands_tests(
+        self,
+        periods=None,
+        num_stds=None,
+        rollovers=None,
+        trailing_stops=None
+    ):
         self.add_strategy_tests(
             strategy_class=BollingerBandsStrategy,
             param_grid={

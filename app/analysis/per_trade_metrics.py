@@ -87,10 +87,20 @@ def add_per_trade_metrics(matched_trades):
 
     # List all output columns, including new metrics
     output_columns = [
-        'symbol', 'entry_time', 'entry_side', 'entry_price', 'entry_net_amount',
-        'exit_time', 'exit_side', 'exit_price', 'exit_net_amount',
-        'size', 'total_commission',
-        'pnl', 'pnl_pct', 'trade_duration',
+        'symbol',
+        'entry_time',
+        'entry_side',
+        'entry_price',
+        'entry_net_amount',
+        'exit_time',
+        'exit_side',
+        'exit_price',
+        'exit_net_amount',
+        'size',
+        'total_commission',
+        'pnl',
+        'pnl_pct',
+        'trade_duration',
     ]
 
     # Convert the results to a DataFrame with explicit columns

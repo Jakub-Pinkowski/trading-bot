@@ -109,7 +109,9 @@ class BaseStrategy:
             if self.position is not None and self.entry_time is not None and self.prev_row is not None:
                 self._close_position_at_switch(current_time)
             self.next_switch_idx += 1
-            self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(self.switch_dates) else None
+            self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(
+                self.switch_dates
+            ) else None
 
         # Reopen on the following contract if rollover is enabled
         if self.must_reopen is not None and self.position is None:
