@@ -195,12 +195,24 @@ class MassTester:
             raise ValueError("No results available. Run tests first.")
 
         group_by_columns = group_by or ["strategy"]
-        metrics_list = metrics or ["total_trades", "win_rate", "profit_factor", "avg_trade_return_pct", "max_drawdown_pct"]
+
+        # Default to percentage-based metrics for normalized comparison across symbols
+        metrics_list = metrics or [
+            "total_trades",
+            "win_rate",
+            "total_return_pct",
+            "avg_trade_return_pct",
+            "avg_win_pct",
+            "avg_loss_pct",
+            "max_drawdown_pct",
+            "profit_factor"
+        ]
 
         results_dataframe = self._results_to_dataframe()
 
         grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
-        grouped = grouped.sort_values(by="profit_factor", ascending=False)
+        # Sort by total_return_pct by default for normalized comparison
+        grouped = grouped.sort_values(by="total_return_pct", ascending=False)
 
         return grouped
 
@@ -218,11 +230,20 @@ class MassTester:
                 "symbol": result["symbol"],
                 "interval": result["interval"],
                 "strategy": result["strategy"],
+                # Trade counts
                 "total_trades": result["metrics"]["total_trades"],
                 "win_rate": result["metrics"]["win_rate"],
-                "profit_factor": result["metrics"]["profit_factor"],
+                # Percentage-based metrics (for normalized comparison)
+                "total_return_pct": result["metrics"].get("total_return_pct", 0),
                 "avg_trade_return_pct": result["metrics"]["avg_trade_return_pct"],
-                "max_drawdown_pct": result["metrics"]["max_drawdown_pct"]
+                "avg_win_pct": result["metrics"].get("avg_win_pct", 0),
+                "avg_loss_pct": result["metrics"].get("avg_loss_pct", 0),
+                "max_drawdown_pct": result["metrics"]["max_drawdown_pct"],
+                # Other metrics
+                "profit_factor": result["metrics"]["profit_factor"],
+                # Dollar-based metrics (for reference)
+                "total_gross_pnl": result["metrics"]["total_gross_pnl"],
+                "avg_trade_gross_pnl": result["metrics"]["avg_trade_gross_pnl"]
             }
             for result in self.results
         ])
@@ -245,13 +266,18 @@ class MassTester:
                 csv_filename = f"{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv"
                 results_df.to_csv(csv_filename, index=False)
 
-                # Save summary grouped by strategy
+                # Save summary grouped by strategy with percentage-based metrics for normalized comparison
                 summary_df = results_df.groupby('strategy').agg({
                     'total_trades': 'sum',
                     'win_rate': 'mean',
-                    'profit_factor': 'mean',
+                    # Percentage-based metrics (for normalized comparison)
+                    'total_return_pct': 'mean',
                     'avg_trade_return_pct': 'mean',
-                    'max_drawdown_pct': 'mean'
+                    'avg_win_pct': 'mean',
+                    'avg_loss_pct': 'mean',
+                    'max_drawdown_pct': 'mean',
+                    # Other metrics
+                    'profit_factor': 'mean'
                 }).reset_index()
                 summary_filename = f"{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv"
                 summary_df.to_csv(summary_filename, index=False)

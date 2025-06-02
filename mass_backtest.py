@@ -4,7 +4,7 @@ from app.backtesting.mass_testing import MassTester
 tester = MassTester(
     tested_months=["1!"],  # Front month contracts
     symbols=["ZW", "ZC", "ZS"],  # Wheat, Corn, Soybeans
-    intervals=["1h", "4h"]  # 1-hour and 4-hour timeframes
+    intervals=["5m", "15m"]  # 1-hour and 4-hour timeframes
 )
 
 # Add RSI strategy tests with various parameter combinations
