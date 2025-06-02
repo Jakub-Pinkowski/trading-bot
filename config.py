@@ -59,10 +59,12 @@ TIMEFRAME_TO_ANALYZE = 7  # In days
 
 # NOTE: TW multipliers, might not with properly with actual trades
 CONTRACT_MULTIPLIERS = {
+    'CC': 10,
     'CL': 1000,
     'ES': 50,
     'GC': 100,
     'HG': 25000,
+    'KC': 37500,
     'MBT': 0.1,
     'M2K': 5,
     'MCL': 100,
@@ -86,6 +88,9 @@ CONTRACT_MULTIPLIERS = {
     'SB': 1120,
     'SI': 5000,
     'SIL': 1000,
+    'XC': 1000,
+    'XK': 1000,
+    'XW': 1000,
     'YM': 5,
     'ZB': 114,
     'ZC': 50,
@@ -94,7 +99,6 @@ CONTRACT_MULTIPLIERS = {
     'ZW': 50,
 }
 
-# TODO [MEDIUM]: Add margin requirements for each contract from official IBKR website
 MARGIN_REQUIREMENTS = {
     '6A': 2589.98,
     '6B': 2540.51,
@@ -119,8 +123,8 @@ MARGIN_REQUIREMENTS = {
     'MGC': 2513.58,
     'MET': 159.061,
     'MES': 1688.99,
+    'MNQ': 2437.05,
     'MHG': 1136.64,
-    'MNQ': 2445.81,
     'MNG': 805.827,
     'MZC': 176.701,
     'MZL': 368.232,

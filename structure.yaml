@@ -99,6 +99,7 @@ trading-bot/
 # TODO [HIGH]: Test very thoroughly all the strategies
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
+# TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Align my own backtesting to TW's alerts
 
 # Strategies
