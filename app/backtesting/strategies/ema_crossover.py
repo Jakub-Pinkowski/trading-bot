@@ -13,8 +13,8 @@ class EMACrossoverStrategy(BaseStrategy):
         self.ema_long = ema_long
 
     def add_indicators(self, df):
-        df['ema_short'] = calculate_ema(df["close"], period=self.ema_short)
-        df['ema_long'] = calculate_ema(df["close"], period=self.ema_long)
+        df['ema_short'] = calculate_ema(df['close'], period=self.ema_short)
+        df['ema_long'] = calculate_ema(df['close'], period=self.ema_long)
         return df
 
     def generate_signals(self, df):

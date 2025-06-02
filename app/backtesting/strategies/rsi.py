@@ -15,7 +15,7 @@ class RSIStrategy(BaseStrategy):
         self.upper = upper
 
     def add_indicators(self, df):
-        df['rsi'] = calculate_rsi(df["close"], period=self.rsi_period)
+        df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period)
         return df
 
     def generate_signals(self, df):

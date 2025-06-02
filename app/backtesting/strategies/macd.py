@@ -16,7 +16,7 @@ class MACDStrategy(BaseStrategy):
 
     def add_indicators(self, df):
         macd_data = calculate_macd(
-            df["close"],
+            df['close'],
             fast_period=self.fast_period,
             slow_period=self.slow_period,
             signal_period=self.signal_period

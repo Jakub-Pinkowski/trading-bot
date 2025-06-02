@@ -32,7 +32,7 @@ class BaseStrategy:
 
     def add_indicators(self, df):
         """Add indicators to the dataframe. To be implemented by subclasses."""
-        raise NotImplementedError("Subclasses must implement add_indicators method")
+        raise NotImplementedError('Subclasses must implement add_indicators method')
 
     def generate_signals(self, df):
         """
@@ -42,7 +42,7 @@ class BaseStrategy:
            -1: Short entry
             0: No action
         """
-        raise NotImplementedError("Subclasses must implement generate_signals method")
+        raise NotImplementedError('Subclasses must implement generate_signals method')
 
     def extract_trades(self, df, switch_dates):
         """Extract trades based on signals"""
@@ -174,14 +174,14 @@ class BaseStrategy:
 
     def _close_position(self, exit_time, exit_price, switch=False):
         trade = {
-            "entry_time": self.entry_time,
-            "entry_price": self.entry_price,
-            "exit_time": exit_time,
-            "exit_price": exit_price,
-            "side": "long" if self.position == 1 else "short",
+            'entry_time': self.entry_time,
+            'entry_price': self.entry_price,
+            'exit_time': exit_time,
+            'exit_price': exit_price,
+            'side': 'long' if self.position == 1 else 'short',
         }
         if switch:
-            trade["switch"] = True
+            trade['switch'] = True
         self.trades.append(trade)
         self._reset_position()
 

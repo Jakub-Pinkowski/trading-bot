@@ -14,7 +14,7 @@ class BollingerBandsStrategy(BaseStrategy):
 
     def add_indicators(self, df):
         bb_data = calculate_bollinger_bands(
-            df["close"],
+            df['close'],
             period=self.period,
             num_std=self.num_std
         )
