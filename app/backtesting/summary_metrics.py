@@ -98,22 +98,6 @@ def calculate_summary_metrics(trades):
     # Profit factor
     profit_factor = abs(total_net_profit / total_net_loss) if total_net_loss != 0 else float('inf')
 
-    # Calculate maximum consecutive wins and losses
-    consecutive_wins = 0
-    consecutive_losses = 0
-    max_consecutive_wins = 0
-    max_consecutive_losses = 0
-
-    for trade in trades:
-        if trade['return_percentage_of_margin'] > 0:
-            consecutive_wins += 1
-            consecutive_losses = 0
-            max_consecutive_wins = max(max_consecutive_wins, consecutive_wins)
-        else:
-            consecutive_losses += 1
-            consecutive_wins = 0
-            max_consecutive_losses = max(max_consecutive_losses, consecutive_losses)
-
     # Calculate drawdown
     max_drawdown, maximum_drawdown_percentage = calculate_max_drawdown(trades)
 
@@ -128,8 +112,6 @@ def calculate_summary_metrics(trades):
         "losing_trades": loss_count,
         "win_rate": round(win_rate, 2),
         "avg_trade_duration_hours": round(avg_duration_hours, 2),
-        "max_consecutive_wins": max_consecutive_wins,
-        "max_consecutive_losses": max_consecutive_losses,
 
         # Dollar-based metrics
         "total_margin_used": round(total_margin_used, 2),
@@ -204,8 +186,6 @@ def print_summary_metrics(summary):
     print(f"Profit Factor: {summary['profit_factor']}")
     print(f"Max Drawdown: ${summary.get('max_drawdown', 0)}")
     print(f"Maximum Drawdown Percentage: {summary.get('maximum_drawdown_percentage', 0)}%")
-    print(f"Max Consecutive Wins: {summary.get('max_consecutive_wins', 0)}")
-    print(f"Max Consecutive Losses: {summary.get('max_consecutive_losses', 0)}")
     print(f"Return to Drawdown Ratio: {summary.get('return_to_drawdown_ratio', 0)}")
 
     print("=============================\n")
