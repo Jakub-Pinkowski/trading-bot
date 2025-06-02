@@ -13,11 +13,7 @@ class BollingerBandsStrategy(BaseStrategy):
         self.num_std = num_std
 
     def add_indicators(self, df):
-        bb_data = calculate_bollinger_bands(
-            df['close'],
-            period=self.period,
-            num_std=self.num_std
-        )
+        bb_data = calculate_bollinger_bands(df['close'], period=self.period, num_std=self.num_std)
 
         df['middle_band'] = bb_data['middle_band']
         df['upper_band'] = bb_data['upper_band']

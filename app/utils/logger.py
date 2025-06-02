@@ -15,9 +15,7 @@ def get_logger(name='app'):
     logger.setLevel(logging.DEBUG)  # Set the logger to the lowest level to handle all logs
 
     # Formatter to ensure uniform log format
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Check if we're running in a test environment
     is_test_environment = 'pytest' in sys.modules
