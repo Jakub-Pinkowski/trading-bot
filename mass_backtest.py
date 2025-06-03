@@ -31,33 +31,6 @@ def main():
     # max_workers=None will use the number of processors on the machine
     results = tester.run_tests(verbose=False, save_results=True, max_workers=None)
 
-    # Get top strategies by profit factor
-    print('\n===== TOP STRATEGIES BY PROFIT FACTOR =====')
-    top_by_profit = tester.get_top_strategies(metric='profit_factor', min_trades=10)
-    print(top_by_profit.head(10))
-
-    # Get top strategies by total return percentage
-    print('\n===== TOP STRATEGIES BY TOTAL TRADE RETURN PERCENTAGE =====')
-    top_by_total_return_percentage = tester.get_top_strategies(metric='total_return_percentage_of_margin',
-                                                               min_trades=10)
-    print(top_by_total_return_percentage.head(10))
-
-    # Get top strategies by average return percentage
-    print('\n===== TOP STRATEGIES BY AVERAGE TRADE RETURN PERCENTAGE OF MARGIN =====')
-    top_by_trade_return_percentage = tester.get_top_strategies(metric='average_trade_return_percentage_of_margin',
-                                                               min_trades=10)
-    print(top_by_trade_return_percentage.head(10))
-
-    # Compare strategies by symbol
-    print('\n===== STRATEGY COMPARISON BY SYMBOL =====')
-    by_symbol = tester.compare_strategies(group_by=['strategy', 'symbol'])
-    print(by_symbol.head(20))
-
-    # Compare strategies by timeframe
-    print('\n===== STRATEGY COMPARISON BY TIMEFRAME =====')
-    by_interval = tester.compare_strategies(group_by=['strategy', 'interval'])
-    print(by_interval.head(20))
-
     print(f'\nResults have been saved')
 
 
