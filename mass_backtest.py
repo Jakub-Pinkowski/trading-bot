@@ -3,7 +3,7 @@ from app.backtesting.mass_testing import MassTester
 # Initialize the mass tester with multiple symbols and timeframes
 tester = MassTester(
     tested_months=['1!'],
-    symbols=['ZW', 'ZC', 'ZS'],
+    symbols=['ZW', 'ZC', 'ZS', 'ZL'],
     intervals=['5m', '15m', '30m']
 )
 
@@ -20,7 +20,7 @@ tester.add_rsi_tests(
 tester.add_ema_crossover_tests(
     ema_shorts=[5, 9, 13],
     ema_longs=[21, 34],
-    rollovers=[False],
+    rollovers=[False, True],
     trailing_stops=[None, 1.5]
 )
 

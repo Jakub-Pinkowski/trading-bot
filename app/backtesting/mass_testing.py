@@ -67,11 +67,11 @@ class MassTester:
         self.add_strategy_tests(
             strategy_class=RSIStrategy,
             param_grid={
-                'rsi_period': rsi_periods or [14],
-                'lower': lower_thresholds or [30],
-                'upper': upper_thresholds or [70],
-                'rollover': rollovers or [False],
-                'trailing': trailing_stops or [None]
+                'rsi_period': rsi_periods,
+                'lower': lower_thresholds,
+                'upper': upper_thresholds,
+                'rollover': rollovers,
+                'trailing': trailing_stops
             },
             name_template='RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
         )
@@ -86,10 +86,10 @@ class MassTester:
         self.add_strategy_tests(
             strategy_class=EMACrossoverStrategy,
             param_grid={
-                'ema_short': ema_shorts or [9],
-                'ema_long': ema_longs or [21],
-                'rollover': rollovers or [False],
-                'trailing': trailing_stops or [None]
+                'ema_short': ema_shorts,
+                'ema_long': ema_longs,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
             },
             name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
         )
@@ -105,11 +105,11 @@ class MassTester:
         self.add_strategy_tests(
             strategy_class=MACDStrategy,
             param_grid={
-                'fast_period': fast_periods or [12],
-                'slow_period': slow_periods or [26],
-                'signal_period': signal_periods or [9],
-                'rollover': rollovers or [False],
-                'trailing': trailing_stops or [None]
+                'fast_period': fast_periods,
+                'slow_period': slow_periods,
+                'signal_period': signal_periods,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
             },
             name_template='MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
         )
@@ -124,10 +124,10 @@ class MassTester:
         self.add_strategy_tests(
             strategy_class=BollingerBandsStrategy,
             param_grid={
-                'period': periods or [20],
-                'num_std': num_stds or [2.0],
-                'rollover': rollovers or [False],
-                'trailing': trailing_stops or [None]
+                'period': periods,
+                'num_std': num_stds,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
             },
             name_template='BB(period={period},std={num_std},rollover={rollover},trailing={trailing})'
         )
