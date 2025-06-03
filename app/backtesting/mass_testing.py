@@ -42,6 +42,7 @@ def _format_column_name(column_name):
     return ' '.join(word.capitalize() for word in column_name.split('_'))
 
 
+# TODO [LOW]: I might wanna split up this file once finished
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
@@ -347,7 +348,7 @@ class MassTester:
                 results_df_readable = results_df.rename(columns={col: _format_column_name(col) for col in
                                                                  results_df.columns})
 
-                # Save detailed results
+                # Save individual test results to CSV
                 csv_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv'
                 results_df_readable.to_csv(csv_filename, index=False)
 
