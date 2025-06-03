@@ -6,7 +6,7 @@ def main():
     tester = MassTester(
         tested_months=['1!'],
         symbols=['ZW', 'ZC', 'ZS', 'ZL'],
-        intervals=['5m', '15m', '30m']
+        intervals=['5m', '15m']
     )
 
     # Add RSI strategy tests with various parameter combinations
@@ -15,7 +15,7 @@ def main():
         lower_thresholds=[20, 30],
         upper_thresholds=[70, 80],
         rollovers=[False, True],
-        trailing_stops=[None, 1.0, 1.5, 2]
+        trailing_stops=[None, 2]
     )
 
     # Add EMA Crossover strategy tests
@@ -23,7 +23,7 @@ def main():
         ema_shorts=[5, 9],
         ema_longs=[21, 34],
         rollovers=[False, True],
-        trailing_stops=[None, 1.0, 1.5, 2]
+        trailing_stops=[None, 2]
     )
 
     # Run all tests in parallel

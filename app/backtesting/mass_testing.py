@@ -326,26 +326,69 @@ class MassTester:
                 results_df.to_csv(csv_filename, index=False)
 
                 # Save summary grouped by strategy with percentage-based metrics for normalized comparison
+                # Calculate additional statistics for each strategy
+                strategy_stats = {}
+                for strategy_name, group in results_df.groupby('strategy'):
+                    strategy_stats[strategy_name] = {
+                        'total_tests': len(group),
+                        'symbols_tested': ', '.join(group['symbol'].unique()),
+                        'intervals_tested': ', '.join(group['interval'].unique()),
+                    }
+
+                # Create a DataFrame with strategy statistics
+                strategy_stats_df = pd.DataFrame.from_dict(strategy_stats, orient='index').reset_index()
+                strategy_stats_df.rename(columns={'index': 'strategy'}, inplace=True)
+
+                # Aggregate metrics with mean only (removed min and max as requested)
                 summary_df = results_df.groupby('strategy').agg(
                     {
-                        'total_trades': 'sum',
-                        'win_rate': 'mean',
+                        'total_trades': ['sum'],
+                        'win_rate': ['mean'],
                         # Percentage-based metrics (for normalized comparison)
-                        'total_return_percentage_of_margin': 'mean',
-                        'average_trade_return_percentage_of_margin': 'mean',
-                        'average_win_percentage_of_margin': 'mean',
-                        'average_loss_percentage_of_margin': 'mean',
-                        'maximum_drawdown_percentage': 'mean',
-                        # Other metrics
-                        'profit_factor': 'mean'
+                        'total_return_percentage_of_margin': ['mean'],
+                        'average_trade_return_percentage_of_margin': ['mean'],
+                        'average_win_percentage_of_margin': ['mean'],
+                        'average_loss_percentage_of_margin': ['mean'],
+                        'maximum_drawdown_percentage': ['mean'],
+                        'profit_factor': ['mean']
                     }
-                ).reset_index()
-                summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
+                )
+
+                # Flatten the multi-level columns
+                summary_df.columns = ['_'.join(col).strip() for col in summary_df.columns.values]
+                summary_df.reset_index(inplace=True)
+
+                # Merge with strategy statistics
+                summary_df = pd.merge(summary_df, strategy_stats_df, on='strategy')
 
                 # Round all numeric columns to 2 decimal places
                 numeric_columns = summary_df.select_dtypes(include=['float64', 'int64']).columns
                 summary_df[numeric_columns] = summary_df[numeric_columns].round(2)
 
+                # Reorder columns
+                ordered_columns = [
+                    'strategy',
+                    'total_tests',
+                    'symbols_tested',
+                    'intervals_tested',
+                    'total_trades_sum',
+                    'win_rate_mean',
+                    'total_return_percentage_of_margin_mean',
+                    'average_trade_return_percentage_of_margin_mean',
+                    'average_win_percentage_of_margin_mean',
+                    'average_loss_percentage_of_margin_mean',
+                    'maximum_drawdown_percentage_mean',
+                    'profit_factor_mean'
+                ]
+
+                # Ensure all columns exist in the DataFrame
+                existing_columns = summary_df.columns.tolist()
+                ordered_columns = [col for col in ordered_columns if col in existing_columns]
+
+                # Reorder the DataFrame columns
+                summary_df = summary_df[ordered_columns]
+
+                summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
                 summary_df.to_csv(summary_filename, index=False)
 
                 print(f'Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}')
