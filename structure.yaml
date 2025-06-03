@@ -95,7 +95,10 @@ trading-bot/
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Backtesting
+# BUG [HIGH]: In summaries I sometimes have positive profit ratio but total return is negative
 # TODO [HIGH]: Test very thoroughly all the strategies
+# TODO [HIGH]: Test very thoroughly all summaries
+# TODO [HIGH]: Create comprehensive tests for the whole backtesting module
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time

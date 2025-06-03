@@ -218,7 +218,6 @@ class MassTester:
 
         return results_dataframe
 
-    # TODO [MEDIUM]: Format the output to be more readable.
     def compare_strategies(self, group_by=None, metrics=None):
         """ Compare strategies by grouping and averaging metrics. """
         if not self.results:
