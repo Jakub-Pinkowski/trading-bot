@@ -18,6 +18,30 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA
 logger = get_logger()
 
 
+def _format_column_name(column_name):
+    """Convert snake_case column names to Title Case with spaces for better readability.
+    Also provides shorter names for specific long column names."""
+    # Special cases for very long column names
+    column_name_mapping = {
+        'average_trade_return_percentage_of_margin': 'avg_return_%',
+        'average_win_percentage_of_margin': 'avg_win_%',
+        'total_return_percentage_of_margin': 'total_return_%',
+        'average_loss_percentage_of_margin': 'avg_loss_%',
+        'maximum_drawdown_percentage': 'max_drawdown_%',
+        'win_rate': 'win_rate_%'
+    }
+
+    # Check if this column has a special shorter name
+    if column_name in column_name_mapping:
+        # Get the shortened name and capitalize each word
+        shortened_name = column_name_mapping[column_name]
+        # Split by _ and capitalize each part
+        return ' '.join(word.capitalize() for word in shortened_name.split('_'))
+
+    # Default case: Replace underscores with spaces and capitalize each word
+    return ' '.join(word.capitalize() for word in column_name.split('_'))
+
+
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
@@ -307,7 +331,6 @@ class MassTester:
             ]
         )
 
-    # TODO [MEDIUM]: Format the output to be more readable.
     def _save_results(self):
         """Save results to JSON and CSV files."""
         try:
@@ -321,9 +344,13 @@ class MassTester:
             # Save summary to CSV
             results_df = self._results_to_dataframe()
             if not results_df.empty:
+                # Format column names for better readability
+                results_df_readable = results_df.rename(columns={col: _format_column_name(col) for col in
+                                                                 results_df.columns})
+
                 # Save detailed results
                 csv_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv'
-                results_df.to_csv(csv_filename, index=False)
+                results_df_readable.to_csv(csv_filename, index=False)
 
                 # Save summary grouped by strategy with percentage-based metrics for normalized comparison
                 strategy_group_aggregation = {
@@ -361,8 +388,12 @@ class MassTester:
                 for col in summary_df.select_dtypes(include='number'):
                     summary_df[col] = summary_df[col].round(2)
 
+                # Format column names for better readability
+                summary_df_readable = summary_df.rename(columns={col: _format_column_name(col) for col in
+                                                                 summary_df.columns})
+
                 summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
-                summary_df.to_csv(summary_filename, index=False)
+                summary_df_readable.to_csv(summary_filename, index=False)
 
                 print(f'Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}')
             else:
