@@ -33,6 +33,11 @@ def main():
 
     print(f'\nResults have been saved')
 
+    # Compare strategies by symbol
+    print('\n===== STRATEGY COMPARISON BY SYMBOL =====')
+    by_symbol = tester.compare_strategies(group_by=['strategy', 'symbol'])
+    print(by_symbol.head(20))
+
 
 if __name__ == '__main__':
     main()

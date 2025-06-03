@@ -96,6 +96,7 @@ trading-bot/
 
 # Backtesting
 # BUG [HIGH]: In summaries I sometimes have positive profit ratio but total return is negative
+# BUG [HIGH]: Strategy comparison returns different results then mass_testing save trades. The numbers look way more profitable in strategy comparison
 # TODO [HIGH]: Test very thoroughly all the strategies
 # TODO [HIGH]: Test very thoroughly all summaries
 # TODO [HIGH]: Create comprehensive tests for the whole backtesting module
