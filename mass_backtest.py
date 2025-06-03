@@ -2,26 +2,26 @@ from app.backtesting.mass_testing import MassTester
 
 # Initialize the mass tester with multiple symbols and timeframes
 tester = MassTester(
-    tested_months=['1!'],  # Front month contracts
-    symbols=['ZW', 'ZC', 'ZS'],  # Wheat, Corn, Soybeans
-    intervals=['5m', '15m', '30m']  # 1-hour and 4-hour timeframes
+    tested_months=['1!'],
+    symbols=['ZW', 'ZC', 'ZS'],
+    intervals=['5m', '15m', '30m']
 )
 
 # Add RSI strategy tests with various parameter combinations
 tester.add_rsi_tests(
-    rsi_periods=[7, 14, 21],  # Test different RSI periods
-    lower_thresholds=[20, 30],  # Test different oversold thresholds
-    upper_thresholds=[70, 80],  # Test different overbought thresholds
-    rollovers=[False, True],  # Test with and without a rollover
-    trailing_stops=[None, 1.0, 2.0]  # Test with different trailing stops
+    rsi_periods=[7, 14, 21],
+    lower_thresholds=[20, 30],
+    upper_thresholds=[70, 80],
+    rollovers=[False, True],
+    trailing_stops=[None, 1.0, 2.0]
 )
 
 # Add EMA Crossover strategy tests
 tester.add_ema_crossover_tests(
-    ema_shorts=[5, 9, 13],  # Test different short EMA periods
-    ema_longs=[21, 34],  # Test different long EMA periods
-    rollovers=[False],  # Only test without rollover
-    trailing_stops=[None, 1.5]  # Test with and without a trailing stop
+    ema_shorts=[5, 9, 13],
+    ema_longs=[21, 34],
+    rollovers=[False],
+    trailing_stops=[None, 1.5]
 )
 
 # Run all tests
