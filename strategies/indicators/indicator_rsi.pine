@@ -13,7 +13,7 @@ rsiValue = ta.rsi(close, rsiPeriod)
 rsiCrossUnder = ta.crossunder(rsiValue, oversold)
 rsiCrossOver  = ta.crossover(rsiValue, overbought)
 
-// === DELAY SIGNAL TO BAR N+1 ===
+// === SIGNALS ON BAR N+1 ===
 buy  = rsiCrossUnder[1]
 sell = rsiCrossOver[1]
 
