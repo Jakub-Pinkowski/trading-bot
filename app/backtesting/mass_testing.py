@@ -1,6 +1,5 @@
 import concurrent.futures
 import itertools
-import json
 from datetime import datetime
 
 import pandas as pd
@@ -330,75 +329,16 @@ class MassTester:
         )
 
     def _save_results(self):
-        """Save results to JSON, CSV, and one big parquet file."""
+        """Save results to one big parquet file."""
         try:
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H:%M')
-
-            # Save individual test results to JSON
-            json_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json'
-            with open(json_filename, 'w') as result_file:
-                json.dump(self.results, result_file, indent=2)
-
-            # Save summary to CSV
+            # Convert results to DataFrame
             results_df = self._results_to_dataframe()
             if not results_df.empty:
-                # Format column names for better readability
-                results_df_readable = results_df.rename(columns={col: _format_column_name(col) for col in
-                                                                 results_df.columns})
-
-                # Save individual test results to CSV
-                csv_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv'
-                results_df_readable.to_csv(csv_filename, index=False)
-
                 # Save all results to one big parquet file with unique entries
                 parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
                 save_to_parquet(results_df, parquet_filename)
-
-                # Save summary grouped by strategy with percentage-based metrics for normalized comparison
-                strategy_group_aggregation = {
-                    'interval': lambda x: ', '.join(sorted(x.unique())),
-                    'symbol': lambda x: ', '.join(sorted(x.unique())),
-                    'total_trades': 'sum',
-                    'win_rate': 'mean',
-                    'profit_factor': 'mean',
-                    'total_return_percentage_of_margin': 'mean',
-                    'average_trade_return_percentage_of_margin': 'mean',
-                    'average_win_percentage_of_margin': 'mean',
-                    'average_loss_percentage_of_margin': 'mean',
-                    'maximum_drawdown_percentage': 'mean',
-                }
-
-                # Create a summary DataFrame with per-strategy statistics calculated according to strategy_group_aggregation.
-                summary_df = (
-                    results_df.groupby('strategy', sort=False)
-                    .agg(strategy_group_aggregation)
-                    .rename(columns={
-                        'symbol': 'symbols_tested',
-                        'interval': 'intervals_tested'
-                    })
-                    .reset_index()
-                )
-
-                # Add total_tests as a separate Series
-                summary_df.insert(
-                    1,  # position after 'strategy'
-                    'total_tests',
-                    results_df.groupby('strategy').size().values
-                )
-
-                # Round all numeric columns to 2 decimal places
-                for col in summary_df.select_dtypes(include='number'):
-                    summary_df[col] = summary_df[col].round(2)
-
-                # Format column names for better readability
-                summary_df_readable = summary_df.rename(columns={col: _format_column_name(col) for col in
-                                                                 summary_df.columns})
-
-                summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
-                summary_df_readable.to_csv(summary_filename, index=False)
-
-                print(f'Results saved to {json_filename}, {csv_filename}, {parquet_filename}, and summary to {summary_filename}')
+                print(f'Results saved to {parquet_filename}')
             else:
-                print(f'Results saved to {json_filename}')
+                print('No results to save.')
         except Exception as error:
             logger.error(f'Failed to save results: {error}')
