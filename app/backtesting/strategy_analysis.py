@@ -50,14 +50,18 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def aggregate_strategies(self, min_trades=0):
-        """ Aggregate strategy results across different symbols and intervals. """
+    def aggregate_strategies(self, min_trades=0, interval=None):
+        """ Aggregate strategy results across different symbols and intervals."""
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
 
         # Filter by minimum trades
         filtered_df = self.results_df[self.results_df['total_trades'] >= min_trades]
+
+        # Filter by interval if provided
+        if interval:
+            filtered_df = filtered_df[filtered_df['interval'] == interval]
 
         # Group by strategy
         grouped = filtered_df.groupby('strategy')
@@ -80,7 +84,7 @@ class StrategyAnalyzer:
 
         return aggregated_df
 
-    def get_top_strategies(self, metric, min_trades, limit=30, aggregate=False):
+    def get_top_strategies(self, metric, min_trades, limit=30, aggregate=False, interval=None):
         """ Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
@@ -88,22 +92,27 @@ class StrategyAnalyzer:
 
         if aggregate:
             # Get aggregated strategies
-            df = self.aggregate_strategies(min_trades)
+            df = self.aggregate_strategies(min_trades, interval)
         else:
             # Filter by minimum trades
             df = self.results_df[self.results_df['total_trades'] >= min_trades]
+
+            # Filter by interval if provided
+            if interval:
+                df = df[df['interval'] == interval]
 
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
 
         # Save results to a CSV file with formatted column names
-        self.save_results_to_csv(metric, limit, df_to_save=sorted_df, aggregate=aggregate)
-        print(f"Top strategies by {metric} saved")
+        self.save_results_to_csv(metric, limit, df_to_save=sorted_df, aggregate=aggregate, interval=interval)
+        interval_msg = f" for {interval} interval" if interval else ""
+        print(f"Top strategies by {metric}{interval_msg} saved")
 
         return sorted_df
 
-    def save_results_to_csv(self, metric, limit, df_to_save, aggregate=False):
-        """ Save results to a human-readable CSV file with formatted column names. """
+    def save_results_to_csv(self, metric, limit, df_to_save, aggregate=False, interval=None):
+        """ Save results to a human-readable CSV file with formatted column names.   """
         if df_to_save is None:
             if self.results_df is None or self.results_df.empty:
                 logger.error('No results available to save. Load results first.')
@@ -124,9 +133,10 @@ class StrategyAnalyzer:
             # Create a timestamp in the format YYYY-MM-DD HH:MM
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-            # Create a filename based on the metric and whether it's aggregated
+            # Create a filename based on the metric, interval, and whether it's aggregated
             agg_suffix = "_aggregated" if aggregate else ""
-            filename = f"{timestamp} top_strategies_by_{metric}{agg_suffix}.csv"
+            interval_suffix = f"_{interval}" if interval else ""
+            filename = f"{timestamp} top_strategies_by_{metric}{interval_suffix}{agg_suffix}.csv"
 
             # Create the csv_results directory if it doesn't exist
             csv_dir = os.path.join(BACKTESTING_DATA_DIR, 'csv_results')

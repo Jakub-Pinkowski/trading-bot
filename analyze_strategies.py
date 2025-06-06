@@ -23,6 +23,20 @@ def main():
     # Get top aggregated strategies based on win rate with minimum 10 trades
     top_win_rate_aggregated = analyzer.get_top_strategies(metric='win_rate', min_trades=10, limit=30, aggregate=True)
 
+    # Get top strategies for a specific timeframe (e.g., 1h)
+    top_profit_factor_1h = analyzer.get_top_strategies(metric='profit_factor',
+                                                       min_trades=10,
+                                                       limit=30,
+                                                       aggregate=False,
+                                                       interval='1h')
+
+    # Get top aggregated strategies for a specific timeframe (e.g., 1h)
+    top_profit_factor_1h_aggregated = analyzer.get_top_strategies(metric='profit_factor',
+                                                                  min_trades=10,
+                                                                  limit=30,
+                                                                  aggregate=True,
+                                                                  interval='1h')
+
 
 if __name__ == "__main__":
     main()
