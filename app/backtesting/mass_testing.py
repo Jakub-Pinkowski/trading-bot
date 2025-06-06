@@ -20,7 +20,6 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA
 logger = get_logger()
 
 
-# File has been split as per TODO. Analysis logic moved to strategy_analysis.py
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
