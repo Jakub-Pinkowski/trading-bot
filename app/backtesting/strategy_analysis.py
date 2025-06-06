@@ -50,7 +50,8 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def get_top_strategies(self, metric, min_trades, limit=2):
+    # TODO [HIGH]: I need to aggregate strategies, not return individual ones
+    def get_top_strategies(self, metric, min_trades, limit=30):
         """Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
@@ -90,11 +91,8 @@ class StrategyAnalyzer:
             # Create a timestamp in the format YYYY-MM-DD HH:MM
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-            # Create a filename based on the metric or use 'all_strategies' if no metric is provided
-            if metric:
-                filename = f"{timestamp} top_strategies_by_{metric}.csv"
-            else:
-                filename = f"{timestamp} all_strategies.csv"
+            # Create a filename based on the metric
+            filename = f"{timestamp} top_strategies_by_{metric}.csv"
 
             # Create the csv_results directory if it doesn't exist
             csv_dir = os.path.join(BACKTESTING_DATA_DIR, 'csv_results')
@@ -106,7 +104,6 @@ class StrategyAnalyzer:
             # Save to CSV
             formatted_df.to_csv(file_path, index=False)
             print(f'Results saved to {file_path} (limited to {limit} rows)')
-            return file_path
         except Exception as error:
             logger.error(f'Failed to save results to CSV: {error}')
             raise
