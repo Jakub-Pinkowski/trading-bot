@@ -1,5 +1,7 @@
 import concurrent.futures
+import io
 import itertools
+import sys
 from datetime import datetime
 
 import pandas as pd
@@ -18,31 +20,7 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA
 logger = get_logger()
 
 
-def _format_column_name(column_name):
-    """Convert snake_case column names to Title Case with spaces for better readability.
-    Also provides shorter names for specific long column names."""
-    # Special cases for very long column names
-    column_name_mapping = {
-        'average_trade_return_percentage_of_margin': 'avg_return_%',
-        'average_win_percentage_of_margin': 'avg_win_%',
-        'total_return_percentage_of_margin': 'total_return_%',
-        'average_loss_percentage_of_margin': 'avg_loss_%',
-        'maximum_drawdown_percentage': 'max_drawdown_%',
-        'win_rate': 'win_rate_%'
-    }
-
-    # Check if this column has a special shorter name
-    if column_name in column_name_mapping:
-        # Get the shortened name and capitalize each word
-        shortened_name = column_name_mapping[column_name]
-        # Split by _ and capitalize each part
-        return ' '.join(word.capitalize() for word in shortened_name.split('_'))
-
-    # Default case: Replace underscores with spaces and capitalize each word
-    return ' '.join(word.capitalize() for word in column_name.split('_'))
-
-
-# TODO [LOW]: I might wanna split up this file once finished
+# File has been split as per TODO. Analysis logic moved to strategy_analysis.py
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
@@ -82,6 +60,7 @@ class MassTester:
 
             self.strategies.append((strategy_name, strategy_instance))
 
+    # NOTE: Tested and approved
     def add_rsi_tests(
         self,
         rsi_periods=None,
@@ -102,6 +81,7 @@ class MassTester:
             name_template='RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
         )
 
+    # NOTE: Tested and approved
     def add_ema_crossover_tests(
         self,
         ema_shorts=None,
@@ -120,6 +100,7 @@ class MassTester:
             name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
         )
 
+    # TODO [MEDIUM]: Still to be tested
     def add_macd_tests(
         self,
         fast_periods=None,
@@ -140,6 +121,7 @@ class MassTester:
             name_template='MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
         )
 
+    # TODO [MEDIUM]: Still to be tested
     def add_bollinger_bands_tests(
         self,
         periods=None,
@@ -213,22 +195,6 @@ class MassTester:
 
         return self.results
 
-    def get_top_strategies(self, metric='profit_factor', min_trades=5):
-        """ Get top-performing strategies based on a specific metric."""
-        if not self.results:
-            logger.error('No results available. Run tests first.')
-            raise ValueError('No results available. Run tests first.')
-
-        results_dataframe = self._results_to_dataframe()
-
-        # Filter by minimum trades
-        results_dataframe = results_dataframe[results_dataframe['total_trades'] >= min_trades]
-
-        # Sort by the metric in descending order
-        results_dataframe = results_dataframe.sort_values(by=metric, ascending=False)
-
-        return results_dataframe
-
     # --- Private methods ---
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""
@@ -258,9 +224,6 @@ class MassTester:
         if trades_with_metrics_list:
             summary_metrics = calculate_summary_metrics(trades_with_metrics_list)
             if verbose:
-                # Capture the output of print_summary_metrics instead of printing directly
-                import io
-                import sys
                 original_stdout = sys.stdout
                 string_io = io.StringIO()
                 sys.stdout = string_io
@@ -275,7 +238,7 @@ class MassTester:
                 'strategy': strategy_name,
                 'metrics': summary_metrics,
                 'timestamp': datetime.now().isoformat(),
-                'verbose_output': '\n'.join(output_buffer) if verbose else None  # Include verbose output in result
+                'verbose_output': '\n'.join(output_buffer) if verbose else None
             }
             return result
         else:
