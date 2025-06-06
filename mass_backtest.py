@@ -5,8 +5,8 @@ def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=['ZC', 'ZW', 'ZS'],
-        intervals=['1h', '4h']
+        symbols=['ZC', 'ZW', 'ZS', 'ZL'],
+        intervals=['1h', '30m']
     )
 
     # Add RSI strategy tests with various parameter combinations
