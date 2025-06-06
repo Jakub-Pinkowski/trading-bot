@@ -1,3 +1,6 @@
+import os
+from datetime import datetime
+
 import pandas as pd
 
 from app.utils.logger import get_logger
@@ -28,6 +31,8 @@ def _format_column_name(column_name):
 
     # Default case: Replace underscores with spaces and capitalize each word
     return ' '.join(word.capitalize() for word in column_name.split('_'))
+
+
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
@@ -45,8 +50,8 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def get_top_strategies(self, metric, min_trades=5):
-        """Get top-performing strategies based on a specific metric."""
+    def get_top_strategies(self, metric, min_trades, limit=2):
+        """Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
@@ -57,20 +62,23 @@ class StrategyAnalyzer:
         # Sort by the metric in descending order
         sorted_df = filtered_df.sort_values(by=metric, ascending=False)
 
+        # Save results to a CSV file with formatted column names
+        self.save_results_to_csv(metric=metric, df_to_save=sorted_df, limit=limit)
+        print(f"Top strategies by {metric} saved")
+
         return sorted_df
 
-    def save_results_to_csv(self, file_path, df=None, limit=30):
-        """Save results to a human-readable CSV file with formatted column names. """
-        # Use the provided DataFrame or fallback to self.results_df
-        results_to_save = df if df is not None else self.results_df
-
-        if results_to_save is None or results_to_save.empty:
-            logger.error('No results available to save. Load results first.')
-            raise ValueError('No results available to save. Load results first.')
+    def save_results_to_csv(self, metric, df_to_save, limit):
+        """Save results to a human-readable CSV file with formatted column names."""
+        if df_to_save is None:
+            if self.results_df is None or self.results_df.empty:
+                logger.error('No results available to save. Load results first.')
+                raise ValueError('No results available to save. Load results first.')
+            df_to_save = self.results_df
 
         try:
             # Create a copy of the DataFrame to avoid modifying the original
-            formatted_df = results_to_save.copy()
+            formatted_df = df_to_save.copy()
 
             # Limit the number of rows
             if limit and limit > 0:
@@ -79,10 +87,26 @@ class StrategyAnalyzer:
             # Rename columns for better readability
             formatted_df.columns = [_format_column_name(col) for col in formatted_df.columns]
 
+            # Create a timestamp in the format YYYY-MM-DD HH:MM
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+            # Create a filename based on the metric or use 'all_strategies' if no metric is provided
+            if metric:
+                filename = f"{timestamp} top_strategies_by_{metric}.csv"
+            else:
+                filename = f"{timestamp} all_strategies.csv"
+
+            # Create the csv_results directory if it doesn't exist
+            csv_dir = os.path.join(BACKTESTING_DATA_DIR, 'csv_results')
+            os.makedirs(csv_dir, exist_ok=True)
+
+            # Create the full file path
+            file_path = os.path.join(csv_dir, filename)
+
             # Save to CSV
             formatted_df.to_csv(file_path, index=False)
             print(f'Results saved to {file_path} (limited to {limit} rows)')
-            return True
+            return file_path
         except Exception as error:
             logger.error(f'Failed to save results to CSV: {error}')
             raise
