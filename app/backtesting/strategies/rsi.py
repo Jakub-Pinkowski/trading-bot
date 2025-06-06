@@ -7,7 +7,6 @@ LOWER = 30
 UPPER = 70
 
 
-# TODO [HIGH]: Rollover true/false should hav vastly different number of trades, check that!
 class RSIStrategy(BaseStrategy):
     def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False, trailing=None):
         super().__init__(rollover=rollover, trailing=trailing)

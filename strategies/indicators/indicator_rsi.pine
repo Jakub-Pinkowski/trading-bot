@@ -18,8 +18,8 @@ buy  = rsiCrossUnder[1]
 sell = rsiCrossOver[1]
 
 // === PLOTS ===
-plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, color=color.green, textcolor=color.white, size=size.small)
-plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar, color=color.red, textcolor=color.white, size=size.small)
+plotshape(buy, title="Buy", text="Buy", style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, size=size.small)
+plotshape(sell, title="Sell", text="Sell", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
 
 // === ALERTS (triggered at open of N+1) ===
 alertcondition(buy,  title="RSI Buy",  message="RSI Buy signal on {{ticker}} at {{open}}")
