@@ -63,12 +63,12 @@ class StrategyAnalyzer:
         sorted_df = filtered_df.sort_values(by=metric, ascending=False)
 
         # Save results to a CSV file with formatted column names
-        self.save_results_to_csv(metric=metric, df_to_save=sorted_df, limit=limit)
+        self.save_results_to_csv(metric, limit, df_to_save=sorted_df)
         print(f"Top strategies by {metric} saved")
 
         return sorted_df
 
-    def save_results_to_csv(self, metric, df_to_save, limit):
+    def save_results_to_csv(self, metric, limit, df_to_save):
         """Save results to a human-readable CSV file with formatted column names."""
         if df_to_save is None:
             if self.results_df is None or self.results_df.empty:
