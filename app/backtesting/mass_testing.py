@@ -312,14 +312,13 @@ class MassTester:
                     'total_trades': result['metrics']['total_trades'],
                     'win_rate': result['metrics']['win_rate'],
                     # Percentage-based metrics (for normalized comparison)
+                    'profit_factor': result['metrics']['profit_factor'],
                     'total_return_percentage_of_margin': result['metrics'].get('total_return_percentage_of_margin', 0),
                     'average_trade_return_percentage_of_margin': result['metrics'][
                         'average_trade_return_percentage_of_margin'],
                     'average_win_percentage_of_margin': result['metrics'].get('average_win_percentage_of_margin', 0),
                     'average_loss_percentage_of_margin': result['metrics'].get('average_loss_percentage_of_margin', 0),
                     'maximum_drawdown_percentage': result['metrics']['maximum_drawdown_percentage'],
-                    # Other metrics
-                    'profit_factor': result['metrics']['profit_factor'],
                     # Dollar-based metrics (for reference)
                     'total_net_pnl': result['metrics']['total_net_pnl'],
                     'avg_trade_net_pnl': result['metrics']['avg_trade_net_pnl']
