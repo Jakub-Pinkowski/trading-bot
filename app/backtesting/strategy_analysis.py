@@ -1,6 +1,7 @@
 import pandas as pd
 
 from app.utils.logger import get_logger
+from config import BACKTESTING_DATA_DIR
 
 logger = get_logger()
 
@@ -27,17 +28,14 @@ def _format_column_name(column_name):
 
     # Default case: Replace underscores with spaces and capitalize each word
     return ' '.join(word.capitalize() for word in column_name.split('_'))
-
-
-# TODO [HIGH]: Hardcode which results file to use using config
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
-    def __init__(self, results_file=None):
-        """Initialize the strategy analyzer with an optional result file path."""
+    def __init__(self):
+        """Initialize the strategy analyzer and load results from the default file."""
         self.results_df = None
-        if results_file:
-            self.load_results(results_file)
+        results_file = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+        self.load_results(results_file)
 
     def load_results(self, file_path):
         """Load results from a parquet file."""

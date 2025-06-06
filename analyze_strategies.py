@@ -15,6 +15,7 @@ def main():
     # Analyze the results using StrategyAnalyzer
     print("Analyzing strategy results from existing parquet file...")
 
+    # Initialize StrategyAnalyzer
     analyzer = StrategyAnalyzer()
 
     # Get top strategies based on a profit factor with minimum 5 trades
