@@ -100,13 +100,15 @@ trading-bot/
 # BUG [HIGH]: Strategy comparison returns different results then mass_testing save trades. The numbers look way more profitable in strategy comparison
 # TODO [HIGH]: Test very thoroughly all the strategies
 # RSI is good
-#
+# EMA is good
+
 # TODO [HIGH]: Test very thoroughly all summaries
 # TODO [HIGH]: Create comprehensive tests for the whole backtesting module
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Align my own backtesting to TW's alerts
+# TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
 
 # Strategies
 # TODO [LOW]: Update TW strategies to BUY/SELL on n+1 candle after backtesting
