@@ -37,6 +37,28 @@ def main():
                                                                   aggregate=True,
                                                                   interval='1h')
 
+    # Get top strategies for a specific symbol (e.g., ZW)
+    top_profit_factor_aapl = analyzer.get_top_strategies(metric='profit_factor',
+                                                         min_trades=10,
+                                                         limit=30,
+                                                         aggregate=False,
+                                                         symbol='ZW')
+
+    # Get top strategies for a specific symbol and timeframe (e.g., ZW and 1h)
+    top_profit_factor_aapl_1h = analyzer.get_top_strategies(metric='profit_factor',
+                                                            min_trades=10,
+                                                            limit=30,
+                                                            aggregate=True,
+                                                            interval='1h',
+                                                            symbol='ZW')
+
+    # Get top aggregated strategies for a specific symbol (e.g., ZW)
+    top_profit_factor_aapl_aggregated = analyzer.get_top_strategies(metric='profit_factor',
+                                                                    min_trades=10,
+                                                                    limit=30,
+                                                                    aggregate=True,
+                                                                    symbol='ZW')
+
 
 if __name__ == "__main__":
     main()
