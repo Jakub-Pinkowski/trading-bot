@@ -229,38 +229,6 @@ class MassTester:
 
         return results_dataframe
 
-    def compare_strategies(self, group_by=None, metrics=None):
-        """ Compare strategies by grouping and averaging metrics. """
-        if not self.results:
-            logger.error('No results available. Run tests first.')
-            raise ValueError('No results available. Run tests first.')
-
-        group_by_columns = group_by or ['strategy']
-
-        # Default to percentage-based metrics for normalized comparison across symbols
-        metrics_list = metrics or [
-            'total_trades',
-            'win_rate',
-            'total_return_percentage_of_margin',
-            'average_trade_return_percentage_of_margin',
-            'average_win_percentage_of_margin',
-            'average_loss_percentage_of_margin',
-            'maximum_drawdown_percentage',
-            'profit_factor'
-        ]
-
-        results_dataframe = self._results_to_dataframe()
-
-        grouped = results_dataframe.groupby(group_by_columns)[metrics_list].mean().reset_index()
-        # Sort by total_return_percentage_of_margin by default for normalized comparison
-        grouped = grouped.sort_values(by='total_return_percentage_of_margin', ascending=False)
-
-        # Round all numeric columns to 2 decimal places
-        numeric_columns = grouped.select_dtypes(include=['float64', 'int64']).columns
-        grouped[numeric_columns] = grouped[numeric_columns].round(2)
-
-        return grouped
-
     # --- Private methods ---
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""

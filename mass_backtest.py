@@ -5,23 +5,23 @@ def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=['ZW', 'ZC', 'ZS', 'ZL'],
-        intervals=['5m', '15m']
+        symbols=['ZC', 'ZW', 'ZS'],
+        intervals=['1h', '4h']
     )
 
     # Add RSI strategy tests with various parameter combinations
     tester.add_rsi_tests(
-        rsi_periods=[7, 14],
-        lower_thresholds=[20, 30],
-        upper_thresholds=[70, 80],
-        rollovers=[False, True],
+        rsi_periods=[10, 14],
+        lower_thresholds=[30],
+        upper_thresholds=[70],
+        rollovers=[False],
         trailing_stops=[None, 2]
     )
 
     # Add EMA Crossover strategy tests
     tester.add_ema_crossover_tests(
-        ema_shorts=[5, 9],
-        ema_longs=[21, 34],
+        ema_shorts=[9],
+        ema_longs=[21],
         rollovers=[False, True],
         trailing_stops=[None, 2]
     )
@@ -29,14 +29,9 @@ def main():
     # Run all tests in parallel
     print('Running backtests for all parameter combinations in parallel...')
     # max_workers=None will use the number of processors on the machine
-    results = tester.run_tests(verbose=False, save_results=True, max_workers=None)
+    results = tester.run_tests(verbose=True, save_results=True, max_workers=None)
 
     print(f'\nResults have been saved')
-
-    # Compare strategies by symbol
-    print('\n===== STRATEGY COMPARISON BY SYMBOL =====')
-    by_symbol = tester.compare_strategies(group_by=['strategy', 'symbol'])
-    print(by_symbol.head(20))
 
 
 if __name__ == '__main__':
