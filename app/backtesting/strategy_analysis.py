@@ -50,9 +50,8 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    # TODO [HIGH]: I need to aggregate strategies, not return individual ones
-    def get_top_strategies(self, metric, min_trades, limit=30):
-        """Get top-performing strategies based on a specific metric. """
+    def aggregate_strategies(self, min_trades=0):
+        """ Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
@@ -60,17 +59,51 @@ class StrategyAnalyzer:
         # Filter by minimum trades
         filtered_df = self.results_df[self.results_df['total_trades'] >= min_trades]
 
+        # Group by strategy
+        grouped = filtered_df.groupby('strategy')
+
+        # Calculate aggregated metrics
+        aggregated_df = pd.DataFrame({
+            'total_trades': grouped['total_trades'].sum(),
+            'symbol_count': grouped['symbol'].nunique(),
+            'interval_count': grouped['interval'].nunique(),
+            'win_rate': grouped['win_rate'].mean(),
+            'profit_factor': grouped['profit_factor'].mean(),
+            'total_return_percentage_of_margin': grouped['total_return_percentage_of_margin'].sum(),
+            'average_trade_return_percentage_of_margin': grouped['average_trade_return_percentage_of_margin'].mean(),
+            'average_win_percentage_of_margin': grouped['average_win_percentage_of_margin'].mean(),
+            'average_loss_percentage_of_margin': grouped['average_loss_percentage_of_margin'].mean(),
+            'maximum_drawdown_percentage': grouped['maximum_drawdown_percentage'].mean(),
+            'total_net_pnl': grouped['total_net_pnl'].sum(),
+            'avg_trade_net_pnl': grouped['avg_trade_net_pnl'].mean()
+        }).reset_index()
+
+        return aggregated_df
+
+    def get_top_strategies(self, metric, min_trades, limit=30, aggregate=False):
+        """ Get top-performing strategies based on a specific metric. """
+        if self.results_df is None or self.results_df.empty:
+            logger.error('No results available. Load results first.')
+            raise ValueError('No results available. Load results first.')
+
+        if aggregate:
+            # Get aggregated strategies
+            df = self.aggregate_strategies(min_trades)
+        else:
+            # Filter by minimum trades
+            df = self.results_df[self.results_df['total_trades'] >= min_trades]
+
         # Sort by the metric in descending order
-        sorted_df = filtered_df.sort_values(by=metric, ascending=False)
+        sorted_df = df.sort_values(by=metric, ascending=False)
 
         # Save results to a CSV file with formatted column names
-        self.save_results_to_csv(metric, limit, df_to_save=sorted_df)
+        self.save_results_to_csv(metric, limit, df_to_save=sorted_df, aggregate=aggregate)
         print(f"Top strategies by {metric} saved")
 
         return sorted_df
 
-    def save_results_to_csv(self, metric, limit, df_to_save):
-        """Save results to a human-readable CSV file with formatted column names."""
+    def save_results_to_csv(self, metric, limit, df_to_save, aggregate=False):
+        """ Save results to a human-readable CSV file with formatted column names. """
         if df_to_save is None:
             if self.results_df is None or self.results_df.empty:
                 logger.error('No results available to save. Load results first.')
@@ -91,8 +124,9 @@ class StrategyAnalyzer:
             # Create a timestamp in the format YYYY-MM-DD HH:MM
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-            # Create a filename based on the metric
-            filename = f"{timestamp} top_strategies_by_{metric}.csv"
+            # Create a filename based on the metric and whether it's aggregated
+            agg_suffix = "_aggregated" if aggregate else ""
+            filename = f"{timestamp} top_strategies_by_{metric}{agg_suffix}.csv"
 
             # Create the csv_results directory if it doesn't exist
             csv_dir = os.path.join(BACKTESTING_DATA_DIR, 'csv_results')
