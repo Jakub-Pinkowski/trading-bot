@@ -64,9 +64,9 @@ class StrategyAnalyzer:
 
         # Calculate aggregated metrics
         aggregated_df = pd.DataFrame({
-            'total_trades': grouped['total_trades'].sum(),
             'symbol_count': grouped['symbol'].nunique(),
             'interval_count': grouped['interval'].nunique(),
+            'total_trades': grouped['total_trades'].sum(),
             'win_rate': grouped['win_rate'].mean(),
             'profit_factor': grouped['profit_factor'].mean(),
             'total_return_percentage_of_margin': grouped['total_return_percentage_of_margin'].sum(),
