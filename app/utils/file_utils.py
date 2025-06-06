@@ -9,6 +9,41 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+def save_to_parquet(data, file_path):
+    """
+    Save data to a parquet file with deduplication.
+
+    Args:
+        data: DataFrame to save
+        file_path: Path to the parquet file
+    """
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Load existing data if file exists
+    if os.path.exists(file_path):
+        try:
+            existing = pd.read_parquet(file_path)
+        except Exception as e:
+            logger.error(f'Could not read existing parquet file for deduplication: {e}')
+            existing = None
+    else:
+        existing = None
+
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError('Data must be a Pandas DataFrame for parquet format.')
+
+    # Concatenate and deduplicate if file exists; else just save data
+    if existing is not None:
+        concat = pd.concat([existing, data], ignore_index=True)
+        deduped = concat.drop_duplicates()
+    else:
+        deduped = data
+
+    # Save (overwrite) deduped data
+    deduped.to_parquet(file_path, index=False)
+
+
 def load_file(file_path):
     if not os.path.exists(file_path):
         return {}

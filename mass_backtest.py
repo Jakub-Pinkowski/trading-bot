@@ -5,8 +5,8 @@ def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=['ZC', 'ZW', 'ZS', 'ZL'],
-        intervals=['1h', '30m']
+        symbols=['ZC', 'ZW', ],
+        intervals=['1h', '4h']
     )
 
     # Add RSI strategy tests with various parameter combinations
@@ -29,7 +29,7 @@ def main():
     # Run all tests in parallel
     print('Running backtests for all parameter combinations in parallel...')
     # max_workers=None will use the number of processors on the machine
-    results = tester.run_tests(verbose=True, save_results=True, max_workers=None)
+    results = tester.run_tests(verbose=False, save_results=True, max_workers=None)
 
     print(f'\nResults have been saved')
 

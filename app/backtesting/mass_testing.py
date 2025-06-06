@@ -1,7 +1,6 @@
 import concurrent.futures
 import itertools
 import json
-import os
 from datetime import datetime
 
 import pandas as pd
@@ -13,6 +12,7 @@ from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
+from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR
 
@@ -330,11 +330,11 @@ class MassTester:
         )
 
     def _save_results(self):
-        """Save results to JSON and CSV files."""
+        """Save results to JSON, CSV, and one big parquet file."""
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d_%H:%M')
 
-            # Save individual test results to JSON (keeping this for backward compatibility)
+            # Save individual test results to JSON
             json_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.json'
             with open(json_filename, 'w') as result_file:
                 json.dump(self.results, result_file, indent=2)
@@ -346,58 +346,13 @@ class MassTester:
                 results_df_readable = results_df.rename(columns={col: _format_column_name(col) for col in
                                                                  results_df.columns})
 
-                # Define the path for the single CSV file that will contain all results
-                all_results_csv = f'{BACKTESTING_DATA_DIR}/all_mass_test_results.csv'
-
-                # Check if the file exists and load it if it does
-                existing_df = None
-                if os.path.exists(all_results_csv):
-                    try:
-                        existing_df = pd.read_csv(all_results_csv)
-                    except Exception as e:
-                        logger.error(f'Failed to read existing results file: {e}')
-
-                # If we have existing results, merge with new results and remove duplicates
-                if existing_df is not None and not existing_df.empty:
-                    # Define what makes a configuration unique
-                    unique_columns = ['strategy', 'symbol', 'interval']
-
-                    # Convert column names to match the existing file format
-                    existing_columns = existing_df.columns
-                    results_df_readable_columns = results_df_readable.columns
-
-                    # Ensure column names match between the two dataframes
-                    for col in unique_columns:
-                        formatted_col = _format_column_name(col)
-                        if formatted_col in existing_columns and formatted_col in results_df_readable_columns:
-                            # Both dataframes have this column, so we can use it for duplicate checking
-                            pass
-                        else:
-                            logger.warning(f'Column {formatted_col} not found in both dataframes, cannot use for duplicate checking')
-
-                    # Convert unique columns to their formatted versions for comparison
-                    unique_columns_formatted = [_format_column_name(col) for col in unique_columns]
-
-                    # Identify new unique configurations
-                    merged_df = pd.concat([existing_df, results_df_readable])
-
-                    # Drop duplicates based on the unique columns
-                    merged_df = merged_df.drop_duplicates(subset=unique_columns_formatted, keep='first')
-
-                    # Save the merged dataframe to the single CSV file
-                    merged_df.to_csv(all_results_csv, index=False)
-
-                    # Count how many new configurations were added
-                    new_configs_count = len(merged_df) - len(existing_df)
-                    print(f'Added {new_configs_count} new unique configurations to {all_results_csv}')
-                else:
-                    # If no existing file, or it's empty, just save the current results
-                    results_df_readable.to_csv(all_results_csv, index=False)
-                    print(f'Created new results file with {len(results_df_readable)} configurations: {all_results_csv}')
-
-                # Save individual test results to CSV (keeping this for backward compatibility)
+                # Save individual test results to CSV
                 csv_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_{timestamp}.csv'
                 results_df_readable.to_csv(csv_filename, index=False)
+
+                # Save all results to one big parquet file with unique entries
+                parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+                save_to_parquet(results_df, parquet_filename)
 
                 # Save summary grouped by strategy with percentage-based metrics for normalized comparison
                 strategy_group_aggregation = {
@@ -442,7 +397,7 @@ class MassTester:
                 summary_filename = f'{BACKTESTING_DATA_DIR}/mass_test_summary_{timestamp}.csv'
                 summary_df_readable.to_csv(summary_filename, index=False)
 
-                print(f'Results saved to {json_filename}, {csv_filename}, and summary to {summary_filename}')
+                print(f'Results saved to {json_filename}, {csv_filename}, {parquet_filename}, and summary to {summary_filename}')
             else:
                 print(f'Results saved to {json_filename}')
         except Exception as error:
