@@ -15,7 +15,7 @@ def main():
 
     # Add RSI strategy tests with various parameter combinations
     tester.add_rsi_tests(
-        rsi_periods=[53],
+        rsi_periods=[56],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
