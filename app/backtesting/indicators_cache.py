@@ -4,6 +4,9 @@ import pickle
 from app.utils.logger import get_logger
 from config import BACKTESTING_DATA_DIR
 
+# TODO [MEDIUM]: Consolidate logic with dataframe_cache.py
+# TODO [MEDIUM]: Create a separate folder for caching
+
 # Get logger
 logger = get_logger()
 

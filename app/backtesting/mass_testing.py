@@ -8,6 +8,8 @@ from datetime import datetime
 import pandas as pd
 import yaml
 
+from app.backtesting.dataframe_cache import save_cache as save_dataframe_cache, get_preprocessed_dataframe
+from app.backtesting.indicators_cache import save_cache as save_indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
@@ -224,7 +226,7 @@ class MassTester:
 
         filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
         try:
-            df = pd.read_parquet(filepath)
+            df = get_preprocessed_dataframe(filepath)
         except Exception as error:
             logger.error(f'Failed to read file: {filepath}\nReason: {error}')
             return None
@@ -234,10 +236,10 @@ class MassTester:
 
         trades_list = strategy_instance.run(df, switch_dates)
 
-        # Save the indicator cache after each test
+        # Save the indicator and dataframe caches after each test
         # This is important when running tests in parallel, as each process has its own cache
-        from app.backtesting.indicators_cache import save_cache
-        save_cache()
+        save_indicator_cache()
+        save_dataframe_cache()
 
         trades_with_metrics_list = []
         for trade in trades_list:

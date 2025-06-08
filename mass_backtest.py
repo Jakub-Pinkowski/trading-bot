@@ -1,6 +1,5 @@
 import time
 
-from app.backtesting.indicators_cache import save_cache
 from app.backtesting.mass_testing import MassTester
 
 
@@ -11,13 +10,13 @@ def main():
     tester = MassTester(
         tested_months=['1!'],
         symbols=['ZC', 'ZW', 'ZS', 'ZL'],
-        intervals=['5m', '15m', '30m', '1h', '2h', '4h']
+        intervals=['5m', '15m', '30m', '1h', '2h', '4h', '1d']
     )
 
     # Add RSI strategy tests with various parameter combinations
     tester.add_rsi_tests(
-        rsi_periods=[7, 8, 14],
-        lower_thresholds=[21, 25, 30, 35],
+        rsi_periods=[25],
+        lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
         trailing_stops=[None, 2]
@@ -33,9 +32,6 @@ def main():
 
     # Run all tests
     tester.run_tests(verbose=False, max_workers=None)
-
-    # Save the indicator cache to disk at the end of execution
-    save_cache()
 
     end_time = time.time()
     total_time = end_time - start_time
