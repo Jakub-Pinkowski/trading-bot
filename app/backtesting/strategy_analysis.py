@@ -143,6 +143,10 @@ class StrategyAnalyzer:
             if limit and limit > 0:
                 formatted_df = formatted_df.head(limit)
 
+            # Format all numeric columns to 2 decimal places
+            numeric_cols = formatted_df.select_dtypes(include='number').columns
+            formatted_df[numeric_cols] = formatted_df[numeric_cols].round(2)
+
             # Rename columns for better readability
             formatted_df.columns = [_format_column_name(col) for col in formatted_df.columns]
 
