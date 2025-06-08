@@ -1,6 +1,54 @@
-"""
-This module provides caching functionality for indicator calculations.
-"""
+import os
+import pickle
 
-# Cache for indicator calculations
+from app.utils.logger import get_logger
+from config import BACKTESTING_DATA_DIR
+
+# Get logger
+logger = get_logger()
+
+# Cache version - increment this when indicator algorithms change
+CACHE_VERSION = 1
+
+# Cache file path
+CACHE_DIR = os.path.join(BACKTESTING_DATA_DIR, "cache")
+CACHE_FILE = os.path.join(CACHE_DIR, f"indicator_cache_v{CACHE_VERSION}.pkl")
+
+# Ensure the cache directory exists
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# Load cache at startup
 indicator_cache = {}
+if os.path.exists(CACHE_FILE):
+    try:
+        with open(CACHE_FILE, 'rb') as cache_file:
+            loaded_cache = pickle.load(cache_file)
+            # Only use the cache if it's a dictionary
+            if isinstance(loaded_cache, dict):
+                indicator_cache = loaded_cache
+            else:
+                logger.error(f"Cache file {CACHE_FILE} contains invalid data. Using empty cache.")
+    except Exception as err:
+        logger.error(f"Failed to load cache from {CACHE_FILE}: {err}. Using empty cache.")
+
+
+def save_cache():
+    """Save the indicator cache to disk."""
+    try:
+        with open(CACHE_FILE, 'wb') as cache_file:
+            pickle.dump(indicator_cache, cache_file)
+        logger.debug(f"Indicator cache saved to {CACHE_FILE}")
+    except Exception as err:
+        logger.error(f"Failed to save cache to {CACHE_FILE}: {err}")
+
+
+def clear_cache():
+    """Clear the indicator cache."""
+    global indicator_cache
+    indicator_cache = {}
+    if os.path.exists(CACHE_FILE):
+        try:
+            os.remove(CACHE_FILE)
+            logger.info(f"Cache file {CACHE_FILE} removed")
+        except Exception as err:
+            logger.error(f"Failed to remove cache file {CACHE_FILE}: {err}")

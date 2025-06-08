@@ -234,6 +234,11 @@ class MassTester:
 
         trades_list = strategy_instance.run(df, switch_dates)
 
+        # Save the indicator cache after each test
+        # This is important when running tests in parallel, as each process has its own cache
+        from app.backtesting.indicators_cache import save_cache
+        save_cache()
+
         trades_with_metrics_list = []
         for trade in trades_list:
             trade_with_metrics = calculate_trade_metrics(trade, symbol)
