@@ -19,8 +19,8 @@ def calculate_rsi(prices, period=14):
 
     # Check if we have this calculation cached in the global cache
     cache_key = (prices_hash, period)
-    if cache_key in indicator_cache:
-        return indicator_cache[cache_key]
+    if indicator_cache.contains(cache_key):
+        return indicator_cache.get(cache_key)
 
     # Calculate RSI
     delta = prices.diff()
@@ -44,7 +44,7 @@ def calculate_rsi(prices, period=14):
     rsi[:period] = np.nan  # First period points are undefined
 
     # Cache the result
-    indicator_cache[cache_key] = rsi
+    indicator_cache.set(cache_key, rsi)
 
     return rsi
 
@@ -56,15 +56,15 @@ def calculate_ema(prices, period=9):
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('ema', prices_hash, period)
-    if cache_key in indicator_cache:
-        return indicator_cache[cache_key]
+    if indicator_cache.contains(cache_key):
+        return indicator_cache.get(cache_key)
 
     # Calculate EMA
     ema = prices.ewm(span=period, adjust=False).mean()
     ema[:period - 1] = np.nan  # First period points are undefined
 
     # Cache the result
-    indicator_cache[cache_key] = ema
+    indicator_cache.set(cache_key, ema)
 
     return ema
 
@@ -76,8 +76,8 @@ def calculate_atr(df, period=14):
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('atr', df_hash, period)
-    if cache_key in indicator_cache:
-        return indicator_cache[cache_key]
+    if indicator_cache.contains(cache_key):
+        return indicator_cache.get(cache_key)
 
     # Calculate ATR
     high = df['high']
@@ -96,7 +96,7 @@ def calculate_atr(df, period=14):
     atr[:period - 1] = np.nan  # First period points are undefined
 
     # Cache the result
-    indicator_cache[cache_key] = atr
+    indicator_cache.set(cache_key, atr)
 
     return atr
 
@@ -108,8 +108,8 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('macd', prices_hash, fast_period, slow_period, signal_period)
-    if cache_key in indicator_cache:
-        return indicator_cache[cache_key]
+    if indicator_cache.contains(cache_key):
+        return indicator_cache.get(cache_key)
 
     # Calculate MACD
     # Calculate fast and slow EMAs
@@ -136,7 +136,7 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
     result.iloc[:slow_period - 1] = np.nan
 
     # Cache the result
-    indicator_cache[cache_key] = result
+    indicator_cache.set(cache_key, result)
 
     return result
 
@@ -148,8 +148,8 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('bb', prices_hash, period, num_std)
-    if cache_key in indicator_cache:
-        return indicator_cache[cache_key]
+    if indicator_cache.contains(cache_key):
+        return indicator_cache.get(cache_key)
 
     # Calculate Bollinger Bands
     # Calculate a middle band (SMA)
@@ -173,6 +173,6 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
     result.iloc[:period - 1] = np.nan
 
     # Cache the result
-    indicator_cache[cache_key] = result
+    indicator_cache.set(cache_key, result)
 
     return result

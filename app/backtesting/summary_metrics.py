@@ -20,7 +20,7 @@ def calculate_max_drawdown(trades):
         cumulative_pnl_dollars.append(cum_sum_dollars)
         cumulative_pnl_pct.append(cum_sum_pct)
 
-    # Calculate max drawdown in dollars (for backward compatibility)
+    # Calculate max drawdown in dollars
     peak_dollars = cumulative_pnl_dollars[0] if cumulative_pnl_dollars else 0
     max_drawdown = 0
     for val in cumulative_pnl_dollars:

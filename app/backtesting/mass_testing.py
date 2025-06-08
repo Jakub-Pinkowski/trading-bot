@@ -8,8 +8,8 @@ from datetime import datetime
 import pandas as pd
 import yaml
 
-from app.backtesting.dataframe_cache import save_cache as save_dataframe_cache, get_preprocessed_dataframe
-from app.backtesting.indicators_cache import save_cache as save_indicator_cache
+from app.backtesting.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
+from app.backtesting.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
@@ -238,8 +238,8 @@ class MassTester:
 
         # Save the indicator and dataframe caches after each test
         # This is important when running tests in parallel, as each process has its own cache
-        save_indicator_cache()
-        save_dataframe_cache()
+        indicator_cache.save_cache()
+        dataframe_cache.save_cache()
 
         trades_with_metrics_list = []
         for trade in trades_list:
