@@ -96,7 +96,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
-# TODO [HIGH]: Split backtesting into raw strategy testing and separate file for analysis and processing
 # TODO [HIGH]: Test very thoroughly all the strategies
 # RSI is good
 # EMA is good
