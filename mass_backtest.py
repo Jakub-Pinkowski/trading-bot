@@ -15,7 +15,7 @@ def main():
 
     # Add RSI strategy tests with various parameter combinations
     tester.add_rsi_tests(
-        rsi_periods=[18],
+        rsi_periods=[53],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
@@ -31,12 +31,15 @@ def main():
     )
 
     # Run all tests
-    # max_workers=None will use the number of processors on the machine
     tester.run_tests(verbose=False, max_workers=None)
 
     end_time = time.time()
     total_time = end_time - start_time
-    print(f'Total execution time: {total_time:.2f} seconds')
+
+    # Format total_time as MM:SS
+    minutes = int(total_time // 60)
+    seconds = int(total_time % 60)
+    print(f'Total execution time: {minutes:02}:{seconds:02} (MM:SS) | {total_time:.2f} seconds')
 
 
 if __name__ == '__main__':
