@@ -50,6 +50,7 @@ TRADES_DATASET_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_dat
 SWITCH_DATES_FILE_PATH = os.path.join(HISTORICAL_DATA_DIR, "contract_switch_dates.yaml")
 
 # Strategy
+# TODO [LOW]: Aggressive trading is obsolete, needs to be removed
 MIN_DAYS_UNTIL_EXPIRY = 60
 QUANTITY_TO_TRADE = 1
 AGGRESSIVE_TRADING = True
