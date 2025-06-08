@@ -9,6 +9,11 @@ trading-bot/
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
+│   │   ├── cache/                                # Caching system for backtesting
+│   │   │   ├── cache_base.py                     # Base cache class
+│   │   │   ├── dataframe_cache.py                # Dataframe caching
+│   │   │   ├── indicators_cache.py               # Indicator caching
+│   │   │   └── README.md                         # Cache documentation
 │   │   ├── strategies/                           # Trading strategies to backtest
 │   │   │   ├── __init__.py
 │   │   │   ├── base_strategy.py                  # Base strategy class
@@ -19,6 +24,7 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
 │   │   ├── indicators.py                         # Technical indicators
+│   │   ├── mass_testing.py                       # Mass testing framework
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── summary_metrics.py                    # Summary metrics
 │   ├── routes/
@@ -56,6 +62,7 @@ trading-bot/
 │   │   └── logger.py                             # Logger setup           
 │   └── __init__.py
 ├── backtesting_data/                             # Backtesting results data
+│   ├── cache/                                    # Cache storage for backtesting
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
 │   ├── analysis/
