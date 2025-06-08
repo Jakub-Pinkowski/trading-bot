@@ -127,7 +127,7 @@ class StrategyAnalyzer:
 
         return sorted_df
 
-    def save_results_to_csv(self, metric, limit, df_to_save, aggregate=False, interval=None, symbol=None):
+    def save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval, symbol):
         """ Save results to a human-readable CSV file with formatted column names. """
         if df_to_save is None:
             if self.results_df is None or self.results_df.empty:
