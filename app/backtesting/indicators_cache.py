@@ -40,15 +40,3 @@ def save_cache():
         logger.debug(f"Indicator cache saved to {CACHE_FILE}")
     except Exception as save_err:
         logger.error(f"Failed to save cache to {CACHE_FILE}: {save_err}")
-
-
-def clear_cache():
-    """Clear the indicator cache."""
-    global indicator_cache
-    indicator_cache = {}
-    if os.path.exists(CACHE_FILE):
-        try:
-            os.remove(CACHE_FILE)
-            logger.info(f"Cache file {CACHE_FILE} removed")
-        except Exception as remove_err:
-            logger.error(f"Failed to remove cache file {CACHE_FILE}: {remove_err}")
