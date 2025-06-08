@@ -10,22 +10,16 @@ logger = get_logger()
 
 
 def save_to_parquet(data, file_path):
-    """
-    Save data to a parquet file with deduplication.
-
-    Args:
-        data: DataFrame to save
-        file_path: Path to the parquet file
-    """
-    # Create directory if it doesn't exist
+    """ Save data to a parquet file with deduplication. """
+    # Create a directory if it doesn't exist
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     # Load existing data if file exists
     if os.path.exists(file_path):
         try:
             existing = pd.read_parquet(file_path)
-        except Exception as e:
-            logger.error(f'Could not read existing parquet file for deduplication: {e}')
+        except Exception as err:
+            logger.error(f'Could not read existing parquet file for deduplication: {err}')
             existing = None
     else:
         existing = None
@@ -33,7 +27,7 @@ def save_to_parquet(data, file_path):
     if not isinstance(data, pd.DataFrame):
         raise ValueError('Data must be a Pandas DataFrame for parquet format.')
 
-    # Concatenate and deduplicate if file exists; else just save data
+    # Concatenate and deduplicate if a file exists; else save data
     if existing is not None:
         concat = pd.concat([existing, data], ignore_index=True)
         deduped = concat.drop_duplicates()
@@ -93,8 +87,8 @@ def save_to_csv(data, file_path, dictionary_columns=None):
     if os.path.exists(file_path):
         try:
             existing = pd.read_csv(file_path)
-        except Exception as e:
-            logger.error(f'Could not read existing CSV for deduplication: {e}')
+        except Exception as err:
+            logger.error(f'Could not read existing CSV for deduplication: {err}')
             existing = None
     else:
         existing = None
