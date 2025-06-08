@@ -21,6 +21,32 @@ from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA
 logger = get_logger()
 
 
+def _load_existing_results():
+    """Load existing results from the parquet file."""
+    parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+    if os.path.exists(parquet_filename):
+        try:
+            return pd.read_parquet(parquet_filename)
+        except Exception as error:
+            logger.error(f'Failed to load existing results: {error}')
+    return pd.DataFrame()
+
+
+def _test_already_exists(existing_results, month, symbol, interval, strategy):
+    """Check if a test with the given parameters already exists in the results."""
+    if existing_results.empty:
+        return False
+
+    # Filter the existing results to find a match
+    mask = (
+            (existing_results['month'] == month) &
+            (existing_results['symbol'] == symbol) &
+            (existing_results['interval'] == interval) &
+            (existing_results['strategy'] == strategy)
+    )
+    return mask.any()
+
+
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
@@ -121,7 +147,7 @@ class MassTester:
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
 
         # Load existing results to check for already run tests
-        existing_results = self._load_existing_results()
+        existing_results = _load_existing_results()
 
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
         print(f'Found {total_combinations} potential test combinations...')
@@ -140,7 +166,7 @@ class MassTester:
 
                     for strategy_name, strategy_instance in self.strategies:
                         # Check if this test has already been run
-                        if self._test_already_exists(existing_results, tested_month, symbol, interval, strategy_name):
+                        if _test_already_exists(existing_results, tested_month, symbol, interval, strategy_name):
                             if verbose:
                                 print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
                             skipped_combinations += 1
@@ -264,47 +290,23 @@ class MassTester:
                     'interval': result['interval'],
                     'strategy': result['strategy'],
                     # Trade counts
-                    'total_trades': result['metrics']['total_trades'],
-                    'win_rate': result['metrics']['win_rate'],
+                    'total_trades': result['metrics'].get('total_trades', 0),
+                    'win_rate': result['metrics'].get('win_rate', 0),
                     # Percentage-based metrics (for normalized comparison)
-                    'profit_factor': result['metrics']['profit_factor'],
+                    'profit_factor': result['metrics'].get('profit_factor', 0),
                     'total_return_percentage_of_margin': result['metrics'].get('total_return_percentage_of_margin', 0),
-                    'average_trade_return_percentage_of_margin': result['metrics'][
-                        'average_trade_return_percentage_of_margin'],
+                    'average_trade_return_percentage_of_margin': result['metrics'].get(
+                        'average_trade_return_percentage_of_margin', 0),
                     'average_win_percentage_of_margin': result['metrics'].get('average_win_percentage_of_margin', 0),
                     'average_loss_percentage_of_margin': result['metrics'].get('average_loss_percentage_of_margin', 0),
-                    'maximum_drawdown_percentage': result['metrics']['maximum_drawdown_percentage'],
+                    'maximum_drawdown_percentage': result['metrics'].get('maximum_drawdown_percentage', 0),
                     # Dollar-based metrics (for reference)
-                    'total_net_pnl': result['metrics']['total_net_pnl'],
-                    'avg_trade_net_pnl': result['metrics']['avg_trade_net_pnl']
+                    'total_net_pnl': result['metrics'].get('total_net_pnl', 0),
+                    'avg_trade_net_pnl': result['metrics'].get('avg_trade_net_pnl', 0)
                 }
                 for result in self.results
             ]
         )
-
-    def _load_existing_results(self):
-        """Load existing results from the parquet file."""
-        parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
-        if os.path.exists(parquet_filename):
-            try:
-                return pd.read_parquet(parquet_filename)
-            except Exception as error:
-                logger.error(f'Failed to load existing results: {error}')
-        return pd.DataFrame()
-
-    def _test_already_exists(self, existing_results, month, symbol, interval, strategy):
-        """Check if a test with the given parameters already exists in the results."""
-        if existing_results.empty:
-            return False
-
-        # Filter the existing results to find a match
-        mask = (
-                (existing_results['month'] == month) &
-                (existing_results['symbol'] == symbol) &
-                (existing_results['interval'] == interval) &
-                (existing_results['strategy'] == strategy)
-        )
-        return mask.any()
 
     def _save_results(self):
         """Save results to one big parquet file."""
