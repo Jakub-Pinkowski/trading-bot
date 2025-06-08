@@ -2,9 +2,11 @@ import os
 import pickle
 
 from app.utils.logger import get_logger
-from config import BACKTESTING_DATA_DIR
+from config import CACHE_DIR
 
-# Get logger
+# Ensure the cache directory exists
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 logger = get_logger()
 
 
@@ -15,21 +17,11 @@ class Cache:
     """
 
     def __init__(self, cache_name, cache_version=1):
-        """ Initialize a cache instance. """
+        """Initialize a cache instance."""
         self.cache_name = cache_name
         self.cache_version = cache_version
-
-        # Cache directory
-        self.cache_dir = os.path.join(BACKTESTING_DATA_DIR, "cache")
-        self.cache_file = os.path.join(self.cache_dir, f"{cache_name}_cache_v{cache_version}.pkl")
-
-        # Ensure the cache directory exists
-        os.makedirs(self.cache_dir, exist_ok=True)
-
-        # Initialize the cache dictionary
+        self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.pkl")
         self.cache_data = {}
-
-        # Load cache at initialization
         self._load_cache()
 
     def _load_cache(self):
@@ -57,15 +49,15 @@ class Cache:
             logger.error(f"Failed to save {self.cache_name} cache to {self.cache_file}: {save_err}")
 
     def get(self, key, default=None):
-        """ Get a value from the cache. """
+        """Get a value from the cache."""
         return self.cache_data.get(key, default)
 
     def set(self, key, value):
-        """ Set a value in the cache.  """
+        """Set a value in the cache."""
         self.cache_data[key] = value
 
     def contains(self, key):
-        """ Check if a key exists in the cache. """
+        """Check if a key exists in the cache."""
         return key in self.cache_data
 
     def clear(self):
@@ -73,5 +65,5 @@ class Cache:
         self.cache_data.clear()
 
     def size(self):
-        """ Get the number of items in the cache. """
+        """Get the number of items in the cache."""
         return len(self.cache_data)

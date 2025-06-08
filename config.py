@@ -30,6 +30,8 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 HISTORICAL_DATA_DIR = os.path.join(BASE_DIR, "historical_data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
+CACHE_DIR = os.path.join(DATA_DIR, "cache")
+
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
