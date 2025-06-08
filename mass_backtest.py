@@ -29,7 +29,7 @@ def main():
     # Run all tests in parallel
     print('Running backtests for all parameter combinations in parallel...')
     # max_workers=None will use the number of processors on the machine
-    results = tester.run_tests(verbose=False, save_results=True, max_workers=None)
+    results = tester.run_tests(verbose=True, max_workers=None)
 
     print(f'\nResults have been saved')
 

@@ -23,12 +23,12 @@ logger = get_logger()
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
-    def __init__(self, tested_months=None, symbols=None, intervals=None):
+    def __init__(self, tested_months, symbols, intervals):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = []
-        self.tested_months = tested_months or ['1!']
-        self.symbols = symbols or ['ZW']
-        self.intervals = intervals or ['4h']
+        self.tested_months = tested_months
+        self.symbols = symbols
+        self.intervals = intervals
 
         # Load switch dates
         with open(SWITCH_DATES_FILE_PATH) as switch_dates_file:
@@ -37,10 +37,10 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    def add_strategy_tests(self, strategy_class, param_grid: dict, name_template: str):
+    def add_strategy_tests(self, strategy_class, param_grid, name_template):
         """ Generic method for adding strategy tests with all combinations of given parameters. """
 
-        # Ensure every parameter has at least one value (use [None] if empty)
+        # Ensure every parameter has at least one value. Use [None] if empty
         for param_name, values_list in param_grid.items():
             if not values_list:
                 param_grid[param_name] = [None]
@@ -60,14 +60,7 @@ class MassTester:
             self.strategies.append((strategy_name, strategy_instance))
 
     # NOTE: Tested and approved
-    def add_rsi_tests(
-        self,
-        rsi_periods=None,
-        lower_thresholds=None,
-        upper_thresholds=None,
-        rollovers=None,
-        trailing_stops=None
-    ):
+    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops):
         self.add_strategy_tests(
             strategy_class=RSIStrategy,
             param_grid={
@@ -81,13 +74,7 @@ class MassTester:
         )
 
     # NOTE: Tested and approved
-    def add_ema_crossover_tests(
-        self,
-        ema_shorts=None,
-        ema_longs=None,
-        rollovers=None,
-        trailing_stops=None
-    ):
+    def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops):
         self.add_strategy_tests(
             strategy_class=EMACrossoverStrategy,
             param_grid={
@@ -100,14 +87,7 @@ class MassTester:
         )
 
     # TODO [MEDIUM]: Still to be tested
-    def add_macd_tests(
-        self,
-        fast_periods=None,
-        slow_periods=None,
-        signal_periods=None,
-        rollovers=None,
-        trailing_stops=None
-    ):
+    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops):
         self.add_strategy_tests(
             strategy_class=MACDStrategy,
             param_grid={
@@ -121,13 +101,7 @@ class MassTester:
         )
 
     # TODO [MEDIUM]: Still to be tested
-    def add_bollinger_bands_tests(
-        self,
-        periods=None,
-        num_stds=None,
-        rollovers=None,
-        trailing_stops=None
-    ):
+    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops):
         self.add_strategy_tests(
             strategy_class=BollingerBandsStrategy,
             param_grid={
@@ -139,7 +113,7 @@ class MassTester:
             name_template='BB(period={period},std={num_std},rollover={rollover},trailing={trailing})'
         )
 
-    def run_tests(self, verbose=True, save_results=True, max_workers=None):
+    def run_tests(self, verbose=True, max_workers=None):
         """  Run all tests with the configured parameters in parallel."""
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
@@ -189,7 +163,7 @@ class MassTester:
                     else:
                         self.results.append(result)
 
-        if save_results and self.results:
+        if self.results:
             self._save_results()
 
         return self.results
