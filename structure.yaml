@@ -12,8 +12,7 @@ trading-bot/
 │   │   ├── cache/                                # Caching system for backtesting
 │   │   │   ├── cache_base.py                     # Base cache class
 │   │   │   ├── dataframe_cache.py                # Dataframe caching
-│   │   │   ├── indicators_cache.py               # Indicator caching
-│   │   │   └── README.md                         # Cache documentation
+│   │   │   └── indicators_cache.py               # Indicator caching
 │   │   ├── strategies/                           # Trading strategies to backtest
 │   │   │   ├── __init__.py
 │   │   │   ├── base_strategy.py                  # Base strategy class
