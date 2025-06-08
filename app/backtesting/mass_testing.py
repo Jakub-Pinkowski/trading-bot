@@ -1,6 +1,7 @@
 import concurrent.futures
 import io
 import itertools
+import os
 import sys
 from datetime import datetime
 
@@ -119,14 +120,18 @@ class MassTester:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
 
+        # Load existing results to check for already run tests
+        existing_results = self._load_existing_results()
+
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
-        print(f'Running {total_combinations} test combinations ...')
+        print(f'Found {total_combinations} potential test combinations...')
 
         # Clear previous results
         self.results = []
 
         # Prepare all test combinations
         test_combinations = []
+        skipped_combinations = 0
         for tested_month in self.tested_months:
             for symbol in self.symbols:
                 for interval in self.intervals:
@@ -134,6 +139,13 @@ class MassTester:
                         print(f'Preparing: Month={tested_month}, Symbol={symbol}, Interval={interval}')
 
                     for strategy_name, strategy_instance in self.strategies:
+                        # Check if this test has already been run
+                        if self._test_already_exists(existing_results, tested_month, symbol, interval, strategy_name):
+                            if verbose:
+                                print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
+                            skipped_combinations += 1
+                            continue
+
                         test_combinations.append((
                             tested_month,
                             symbol,
@@ -142,6 +154,13 @@ class MassTester:
                             strategy_instance,
                             verbose
                         ))
+
+        print(f'Skipped {skipped_combinations} already run test combinations.')
+        print(f'Running {len(test_combinations)} new test combinations...')
+
+        if not test_combinations:
+            print('All tests have already been run. No new tests to execute.')
+            return self.results
 
         # Run tests in parallel
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -262,6 +281,30 @@ class MassTester:
                 for result in self.results
             ]
         )
+
+    def _load_existing_results(self):
+        """Load existing results from the parquet file."""
+        parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+        if os.path.exists(parquet_filename):
+            try:
+                return pd.read_parquet(parquet_filename)
+            except Exception as error:
+                logger.error(f'Failed to load existing results: {error}')
+        return pd.DataFrame()
+
+    def _test_already_exists(self, existing_results, month, symbol, interval, strategy):
+        """Check if a test with the given parameters already exists in the results."""
+        if existing_results.empty:
+            return False
+
+        # Filter the existing results to find a match
+        mask = (
+                (existing_results['month'] == month) &
+                (existing_results['symbol'] == symbol) &
+                (existing_results['interval'] == interval) &
+                (existing_results['strategy'] == strategy)
+        )
+        return mask.any()
 
     def _save_results(self):
         """Save results to one big parquet file."""
