@@ -1,9 +1,8 @@
 import pandas as pd
 
-from app.backtesting.cache_base import Cache
+from app.backtesting.cache.cache_base import Cache
 from app.utils.logger import get_logger
 
-# Get logger
 logger = get_logger()
 
 # Cache version - increment this when preprocessing algorithms change

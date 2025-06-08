@@ -3,7 +3,7 @@ import hashlib
 import numpy as np
 import pandas as pd
 
-from app.backtesting.indicators_cache import indicator_cache
+from app.backtesting.cache.indicators_cache import indicator_cache
 
 
 # Helper function to create a hashable key for pandas Series

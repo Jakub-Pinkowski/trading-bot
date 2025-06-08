@@ -8,8 +8,8 @@ from datetime import datetime
 import pandas as pd
 import yaml
 
-from app.backtesting.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
-from app.backtesting.indicators_cache import indicator_cache
+from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
+from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
