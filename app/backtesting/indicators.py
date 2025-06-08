@@ -1,9 +1,29 @@
+import hashlib
+
 import numpy as np
 import pandas as pd
 
+# Import the indicator cache
+from app.backtesting.cache import indicator_cache
 
-# RSI
+
+# Helper function to create a hashable key for pandas Series
+def _hash_series(series):
+    # Convert to string and hash
+    series_str = str(series.values.tobytes())
+    return hashlib.md5(series_str.encode()).hexdigest()
+
+
 def calculate_rsi(prices, period=14):
+    # Create a hashable key for the cache
+    prices_hash = _hash_series(prices)
+
+    # Check if we have this calculation cached in the global cache
+    cache_key = (prices_hash, period)
+    if cache_key in indicator_cache:
+        return indicator_cache[cache_key]
+
+    # Calculate RSI
     delta = prices.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
@@ -23,18 +43,44 @@ def calculate_rsi(prices, period=14):
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
     rsi[:period] = np.nan  # First period points are undefined
+
+    # Cache the result
+    indicator_cache[cache_key] = rsi
+
     return rsi
 
 
 # EMA
 def calculate_ema(prices, period=9):
+    # Create a hashable key for the cache
+    prices_hash = _hash_series(prices)
+
+    # Check if we have this calculation cached in the global cache
+    cache_key = ('ema', prices_hash, period)
+    if cache_key in indicator_cache:
+        return indicator_cache[cache_key]
+
+    # Calculate EMA
     ema = prices.ewm(span=period, adjust=False).mean()
     ema[:period - 1] = np.nan  # First period points are undefined
+
+    # Cache the result
+    indicator_cache[cache_key] = ema
+
     return ema
 
 
 # ATR
 def calculate_atr(df, period=14):
+    # Create a hashable key for the cache
+    df_hash = _hash_series(df['high']) + _hash_series(df['low']) + _hash_series(df['close'])
+
+    # Check if we have this calculation cached in the global cache
+    cache_key = ('atr', df_hash, period)
+    if cache_key in indicator_cache:
+        return indicator_cache[cache_key]
+
+    # Calculate ATR
     high = df['high']
     low = df['low']
     close = df['close']
@@ -50,11 +96,23 @@ def calculate_atr(df, period=14):
     atr = true_range.ewm(span=period, adjust=False).mean()
     atr[:period - 1] = np.nan  # First period points are undefined
 
+    # Cache the result
+    indicator_cache[cache_key] = atr
+
     return atr
 
 
 # MACD
 def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
+    # Create a hashable key for the cache
+    prices_hash = _hash_series(prices)
+
+    # Check if we have this calculation cached in the global cache
+    cache_key = ('macd', prices_hash, fast_period, slow_period, signal_period)
+    if cache_key in indicator_cache:
+        return indicator_cache[cache_key]
+
+    # Calculate MACD
     # Calculate fast and slow EMAs
     fast_ema = prices.ewm(span=fast_period, adjust=False).mean()
     slow_ema = prices.ewm(span=slow_period, adjust=False).mean()
@@ -78,11 +136,23 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
     # The first points are undefined
     result.iloc[:slow_period - 1] = np.nan
 
+    # Cache the result
+    indicator_cache[cache_key] = result
+
     return result
 
 
 # Bollinger Bands
 def calculate_bollinger_bands(prices, period=20, num_std=2):
+    # Create a hashable key for the cache
+    prices_hash = _hash_series(prices)
+
+    # Check if we have this calculation cached in the global cache
+    cache_key = ('bb', prices_hash, period, num_std)
+    if cache_key in indicator_cache:
+        return indicator_cache[cache_key]
+
+    # Calculate Bollinger Bands
     # Calculate a middle band (SMA)
     middle_band = prices.rolling(window=period).mean()
 
@@ -102,5 +172,8 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
 
     # The first points are undefined
     result.iloc[:period - 1] = np.nan
+
+    # Cache the result
+    indicator_cache[cache_key] = result
 
     return result
