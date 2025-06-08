@@ -11,7 +11,7 @@ def main():
 
     # Add RSI strategy tests with various parameter combinations
     tester.add_rsi_tests(
-        rsi_periods=[7, 10, 14, 20, 22],
+        rsi_periods=[13],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
@@ -26,8 +26,7 @@ def main():
         trailing_stops=[None, 2]
     )
 
-    # Run all tests in parallel
-    print('Running backtests for all parameter combinations in parallel...')
+    # Run all tests
     # max_workers=None will use the number of processors on the machine
     tester.run_tests(verbose=False, max_workers=None)
 
