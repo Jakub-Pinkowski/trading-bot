@@ -243,6 +243,56 @@ class TestCalculateSummaryMetrics:
         # Return to drawdown ratio should be calculated correctly
         assert summary['return_to_drawdown_ratio'] == round(2.5 / summary['maximum_drawdown_percentage'], 2)
 
+    def test_performance_ratios(self):
+        """Test calculation of performance ratios."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=150.0, return_percentage=1.5)
+        ]
+        summary = calculate_summary_metrics(trades)
+
+        # Sharpe ratio should be calculated correctly
+        assert 'sharpe_ratio' in summary
+        assert isinstance(summary['sharpe_ratio'], float)
+
+        # Sortino ratio should be calculated correctly
+        assert 'sortino_ratio' in summary
+        assert isinstance(summary['sortino_ratio'], float)
+
+        # Calmar ratio should be calculated correctly
+        assert 'calmar_ratio' in summary
+        assert isinstance(summary['calmar_ratio'], float)
+
+    def test_consecutive_wins_losses(self):
+        """Test calculation of maximum consecutive wins and losses."""
+        # Test consecutive wins
+        win_trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=150.0, return_percentage=1.5),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=120.0, return_percentage=1.2),
+            create_sample_trade(net_pnl=180.0, return_percentage=1.8)
+        ]
+        summary = calculate_summary_metrics(win_trades)
+        assert summary['max_consecutive_wins'] == 3
+        assert summary['max_consecutive_losses'] == 1
+
+        # Test consecutive losses
+        loss_trades = [
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-70.0, return_percentage=-0.7),
+            create_sample_trade(net_pnl=-90.0, return_percentage=-0.9),
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=-60.0, return_percentage=-0.6),
+            create_sample_trade(net_pnl=-80.0, return_percentage=-0.8)
+        ]
+        summary = calculate_summary_metrics(loss_trades)
+        assert summary['max_consecutive_wins'] == 1
+        assert summary['max_consecutive_losses'] == 3
+
     def test_zero_drawdown(self):
         """Test calculation of summary metrics with zero drawdown."""
         trades = [
@@ -311,6 +361,17 @@ class TestCalculateSummaryMetrics:
         assert summary['max_drawdown'] > 0
         assert summary['maximum_drawdown_percentage'] > 0
         assert summary['return_to_drawdown_ratio'] > 0
+
+        # Performance ratios
+        assert 'sharpe_ratio' in summary
+        assert 'sortino_ratio' in summary
+        assert 'calmar_ratio' in summary
+
+        # Consecutive wins/losses
+        assert 'max_consecutive_wins' in summary
+        assert 'max_consecutive_losses' in summary
+        assert summary['max_consecutive_wins'] >= 1
+        assert summary['max_consecutive_losses'] >= 1
 
     def test_long_drawdown_with_recovery(self):
         """Test calculation of summary metrics with a long drawdown period followed by recovery.
@@ -564,6 +625,8 @@ class TestPrintSummaryMetrics:
             'losing_trades': 3,
             'win_rate': 70.0,
             'avg_trade_duration_hours': 24.0,
+            'max_consecutive_wins': 4,
+            'max_consecutive_losses': 2,
             'total_margin_used': 100000.0,
             'avg_margin_requirement': 10000.0,
             'total_net_pnl': 5000.0,
@@ -579,7 +642,10 @@ class TestPrintSummaryMetrics:
             'profit_factor': 3.5,
             'max_drawdown': 1000.0,
             'maximum_drawdown_percentage': 1.0,
-            'return_to_drawdown_ratio': 5.0
+            'return_to_drawdown_ratio': 5.0,
+            'sharpe_ratio': 1.5,
+            'sortino_ratio': 2.0,
+            'calmar_ratio': 5.0
         }
 
         # Capture stdout
@@ -600,11 +666,16 @@ class TestPrintSummaryMetrics:
         assert "Total Trades: 10" in output
         assert "Winning Trades: 7 (70.0%)" in output
         assert "Losing Trades: 3" in output
+        assert "Max Consecutive Wins: 4" in output
+        assert "Max Consecutive Losses: 2" in output
         assert "Total Net PnL: $5,000.00" in output
         assert "Profit Factor: 3.5" in output
         assert "Max Drawdown: $1,000.00" in output
         assert "Maximum Drawdown Percentage: 1.0%" in output
         assert "Return to Drawdown Ratio: 5.0" in output
+        assert "Sharpe Ratio: 1.5" in output
+        assert "Sortino Ratio: 2.0" in output
+        assert "Calmar Ratio: 5.0" in output
 
     def test_print_negative_summary(self):
         """Test printing of a negative summary."""
@@ -614,6 +685,8 @@ class TestPrintSummaryMetrics:
             'losing_trades': 7,
             'win_rate': 30.0,
             'avg_trade_duration_hours': 24.0,
+            'max_consecutive_wins': 2,
+            'max_consecutive_losses': 5,
             'total_margin_used': 100000.0,
             'avg_margin_requirement': 10000.0,
             'total_net_pnl': -5000.0,
@@ -629,7 +702,10 @@ class TestPrintSummaryMetrics:
             'profit_factor': 0.3,
             'max_drawdown': 5000.0,
             'maximum_drawdown_percentage': 5.0,
-            'return_to_drawdown_ratio': -1.0
+            'return_to_drawdown_ratio': -1.0,
+            'sharpe_ratio': -0.8,
+            'sortino_ratio': -1.2,
+            'calmar_ratio': -1.0
         }
 
         # Capture stdout
@@ -650,8 +726,13 @@ class TestPrintSummaryMetrics:
         assert "Total Trades: 10" in output
         assert "Winning Trades: 3 (30.0%)" in output
         assert "Losing Trades: 7" in output
+        assert "Max Consecutive Wins: 2" in output
+        assert "Max Consecutive Losses: 5" in output
         assert "Total Net PnL: $-5,000.00" in output
         assert "Profit Factor: 0.3" in output
         assert "Max Drawdown: $5,000.00" in output
         assert "Maximum Drawdown Percentage: 5.0%" in output
         assert "Return to Drawdown Ratio: -1.0" in output
+        assert "Sharpe Ratio: -0.8" in output
+        assert "Sortino Ratio: -1.2" in output
+        assert "Calmar Ratio: -1.0" in output

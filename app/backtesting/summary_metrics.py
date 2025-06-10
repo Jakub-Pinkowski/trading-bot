@@ -43,6 +43,94 @@ def calculate_max_drawdown(trades):
     return round(max_drawdown, 2), round(maximum_drawdown_percentage, 2)
 
 
+def calculate_max_consecutive(trades, win=True):
+    """Calculate maximum consecutive wins or losses."""
+    if not trades:
+        return 0
+
+    # Sort trades by date if available
+    if 'date' in trades[0]:
+        sorted_trades = sorted(trades, key=lambda x: x['date'])
+    else:
+        sorted_trades = trades
+
+    # Track consecutive wins/losses
+    current_streak = 0
+    max_streak = 0
+
+    for trade in sorted_trades:
+        is_win = trade['return_percentage_of_margin'] > 0
+
+        if (win and is_win) or (not win and not is_win):
+            current_streak += 1
+            max_streak = max(max_streak, current_streak)
+        else:
+            current_streak = 0
+
+    return max_streak
+
+
+def calculate_sharpe_ratio(trades, risk_free_rate=0.0):
+    """Calculate Sharpe ratio: (Average Return - Risk Free Rate) / Standard Deviation of Returns."""
+    if not trades or len(trades) < 2:  # Need at least 2 trades for standard deviation
+        return 0
+
+    returns = [trade['return_percentage_of_margin'] for trade in trades]
+    avg_return = sum(returns) / len(returns)
+
+    # Calculate standard deviation
+    variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
+    std_dev = variance ** 0.5
+
+    if std_dev == 0:
+        return 0  # Avoid division by zero
+
+    sharpe_ratio = (avg_return - risk_free_rate) / std_dev
+    return sharpe_ratio
+
+
+def calculate_sortino_ratio(trades, risk_free_rate=0.0):
+    """Calculate Sortino ratio: (Average Return - Risk Free Rate) / Standard Deviation of Negative Returns."""
+    if not trades:
+        return 0
+
+    returns = [trade['return_percentage_of_margin'] for trade in trades]
+    avg_return = sum(returns) / len(returns)
+
+    # Calculate downside deviation (only negative returns)
+    negative_returns = [r - avg_return for r in returns if r < avg_return]
+
+    if not negative_returns:
+        return float('inf')  # No negative returns
+
+    downside_variance = sum(r ** 2 for r in negative_returns) / len(negative_returns)
+    downside_deviation = downside_variance ** 0.5
+
+    if downside_deviation == 0:
+        return 0  # Avoid division by zero
+
+    sortino_ratio = (avg_return - risk_free_rate) / downside_deviation
+    return sortino_ratio
+
+
+def calculate_calmar_ratio(trades):
+    """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
+    if not trades:
+        return 0
+
+    # Calculate annualized return (assuming percentage returns)
+    total_return = sum(trade['return_percentage_of_margin'] for trade in trades)
+
+    # Get maximum drawdown percentage
+    _, max_drawdown_pct = calculate_max_drawdown(trades)
+
+    if max_drawdown_pct == 0:
+        return float('inf')  # No drawdown
+
+    calmar_ratio = total_return / max_drawdown_pct
+    return calmar_ratio
+
+
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades """
 
@@ -111,6 +199,15 @@ def calculate_summary_metrics(trades):
         'inf'
     )
 
+    # Calculate maximum consecutive wins and losses
+    max_consecutive_wins = calculate_max_consecutive(trades, win=True)
+    max_consecutive_losses = calculate_max_consecutive(trades, win=False)
+
+    # Calculate performance ratios
+    sharpe_ratio = calculate_sharpe_ratio(trades)
+    sortino_ratio = calculate_sortino_ratio(trades)
+    calmar_ratio = calculate_calmar_ratio(trades)
+
     return {
         # Basic trade statistics
         'total_trades': total_trades,
@@ -118,6 +215,8 @@ def calculate_summary_metrics(trades):
         'losing_trades': loss_count,
         'win_rate': round(win_rate, 2),
         'avg_trade_duration_hours': round(avg_duration_hours, 2),
+        'max_consecutive_wins': max_consecutive_wins,
+        'max_consecutive_losses': max_consecutive_losses,
 
         # Dollar-based metrics
         'total_margin_used': round(total_margin_used, 2),
@@ -142,6 +241,9 @@ def calculate_summary_metrics(trades):
         'max_drawdown': max_drawdown,
         'maximum_drawdown_percentage': maximum_drawdown_percentage,
         'return_to_drawdown_ratio': round(return_to_drawdown_ratio, 2),
+        'sharpe_ratio': round(sharpe_ratio, 2),
+        'sortino_ratio': round(sortino_ratio, 2),
+        'calmar_ratio': round(calmar_ratio, 2),
     }
 
 
@@ -167,6 +269,8 @@ def print_summary_metrics(summary):
     print(f'Winning Trades: {summary["winning_trades"]} ({summary["win_rate"]}%)')
     print(f'Losing Trades: {summary["losing_trades"]}')
     print(f'Avg Trade Duration: {summary["avg_trade_duration_hours"]} hours')
+    print(f'Max Consecutive Wins: {summary.get("max_consecutive_wins", 0)}')
+    print(f'Max Consecutive Losses: {summary.get("max_consecutive_losses", 0)}')
 
     # ===== DOLLAR-BASED METRICS =====
     print('\n--- DOLLAR-BASED METRICS ---')
@@ -195,5 +299,11 @@ def print_summary_metrics(summary):
     print(f'Max Drawdown: ${summary.get("max_drawdown", 0):,.2f}')
     print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
     print(f'Return to Drawdown Ratio: {summary.get("return_to_drawdown_ratio", 0)}')
+
+    # ===== PERFORMANCE RATIOS =====
+    print('\n--- PERFORMANCE RATIOS ---')
+    print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
+    print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
+    print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
 
     print('=============================\n')

@@ -446,7 +446,12 @@ class TestMassTester:
                     'average_loss_percentage_of_margin': -0.5,
                     'maximum_drawdown_percentage': 2.0,
                     'total_net_pnl': 1000.0,
-                    'avg_trade_net_pnl': 100.0
+                    'avg_trade_net_pnl': 100.0,
+                    'max_consecutive_wins': 3,
+                    'max_consecutive_losses': 1,
+                    'sharpe_ratio': 1.2,
+                    'sortino_ratio': 1.5,
+                    'calmar_ratio': 2.5
                 },
                 'timestamp': '2023-01-01T00:00:00'
             },
@@ -465,7 +470,12 @@ class TestMassTester:
                     'average_loss_percentage_of_margin': -1.0,
                     'maximum_drawdown_percentage': 3.0,
                     'total_net_pnl': -500.0,
-                    'avg_trade_net_pnl': -100.0
+                    'avg_trade_net_pnl': -100.0,
+                    'max_consecutive_wins': 1,
+                    'max_consecutive_losses': 2,
+                    'sharpe_ratio': -0.8,
+                    'sortino_ratio': -1.0,
+                    'calmar_ratio': -0.7
                 },
                 'timestamp': '2023-01-01T00:00:00'
             }
@@ -481,7 +491,8 @@ class TestMassTester:
             'month', 'symbol', 'interval', 'strategy', 'total_trades', 'win_rate',
             'profit_factor', 'total_return_percentage_of_margin', 'average_trade_return_percentage_of_margin',
             'average_win_percentage_of_margin', 'average_loss_percentage_of_margin',
-            'maximum_drawdown_percentage', 'total_net_pnl', 'avg_trade_net_pnl'
+            'maximum_drawdown_percentage', 'total_net_pnl', 'avg_trade_net_pnl',
+            'max_consecutive_wins', 'max_consecutive_losses', 'sharpe_ratio', 'sortino_ratio', 'calmar_ratio'
         ]
 
         # Verify the values
@@ -489,11 +500,21 @@ class TestMassTester:
         assert df.iloc[0]['total_trades'] == 10
         assert df.iloc[0]['win_rate'] == 60.0
         assert df.iloc[0]['profit_factor'] == 1.5
+        assert df.iloc[0]['max_consecutive_wins'] == 3
+        assert df.iloc[0]['max_consecutive_losses'] == 1
+        assert df.iloc[0]['sharpe_ratio'] == 1.2
+        assert df.iloc[0]['sortino_ratio'] == 1.5
+        assert df.iloc[0]['calmar_ratio'] == 2.5
 
         assert df.iloc[1]['strategy'] == 'Strategy 2'
         assert df.iloc[1]['total_trades'] == 5
         assert df.iloc[1]['win_rate'] == 40.0
         assert df.iloc[1]['profit_factor'] == 0.8
+        assert df.iloc[1]['max_consecutive_wins'] == 1
+        assert df.iloc[1]['max_consecutive_losses'] == 2
+        assert df.iloc[1]['sharpe_ratio'] == -0.8
+        assert df.iloc[1]['sortino_ratio'] == -1.0
+        assert df.iloc[1]['calmar_ratio'] == -0.7
 
     def test_results_to_dataframe_empty(self):
         """Test the _results_to_dataframe method with empty results."""

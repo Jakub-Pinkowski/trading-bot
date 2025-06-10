@@ -19,7 +19,12 @@ def _format_column_name(column_name):
         'total_return_percentage_of_margin': 'total_return_%',
         'average_loss_percentage_of_margin': 'avg_loss_%',
         'maximum_drawdown_percentage': 'max_drawdown_%',
-        'win_rate': 'win_rate_%'
+        'win_rate': 'win_rate_%',
+        'max_consecutive_wins': 'max_cons_wins',
+        'max_consecutive_losses': 'max_cons_losses',
+        'sharpe_ratio': 'sharpe',
+        'sortino_ratio': 'sortino',
+        'calmar_ratio': 'calmar'
     }
 
     # Check if this column has a special shorter name
@@ -71,7 +76,7 @@ class StrategyAnalyzer:
         grouped = filtered_df.groupby('strategy')
 
         # Calculate aggregated metrics
-        aggregated_df = pd.DataFrame({
+        metrics_dict = {
             'symbol_count': grouped['symbol'].nunique(),
             'interval_count': grouped['interval'].nunique(),
             'total_trades': grouped['total_trades'].sum(),
@@ -83,8 +88,15 @@ class StrategyAnalyzer:
             'average_loss_percentage_of_margin': grouped['average_loss_percentage_of_margin'].mean(),
             'maximum_drawdown_percentage': grouped['maximum_drawdown_percentage'].mean(),
             'total_net_pnl': grouped['total_net_pnl'].sum(),
-            'avg_trade_net_pnl': grouped['avg_trade_net_pnl'].mean()
-        }).reset_index()
+            'avg_trade_net_pnl': grouped['avg_trade_net_pnl'].mean(),
+            'max_consecutive_wins': grouped['max_consecutive_wins'].mean(),
+            'max_consecutive_losses': grouped['max_consecutive_losses'].mean(),
+            'sharpe_ratio': grouped['sharpe_ratio'].mean(),
+            'sortino_ratio': grouped['sortino_ratio'].mean(),
+            'calmar_ratio': grouped['calmar_ratio'].mean()
+        }
+
+        aggregated_df = pd.DataFrame(metrics_dict).reset_index()
 
         return aggregated_df
 

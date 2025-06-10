@@ -309,7 +309,13 @@ class MassTester:
                     'maximum_drawdown_percentage': result['metrics'].get('maximum_drawdown_percentage', 0),
                     # Dollar-based metrics (for reference)
                     'total_net_pnl': result['metrics'].get('total_net_pnl', 0),
-                    'avg_trade_net_pnl': result['metrics'].get('avg_trade_net_pnl', 0)
+                    'avg_trade_net_pnl': result['metrics'].get('avg_trade_net_pnl', 0),
+                    # New performance metrics
+                    'max_consecutive_wins': result['metrics'].get('max_consecutive_wins', 0),
+                    'max_consecutive_losses': result['metrics'].get('max_consecutive_losses', 0),
+                    'sharpe_ratio': result['metrics'].get('sharpe_ratio', 0),
+                    'sortino_ratio': result['metrics'].get('sortino_ratio', 0),
+                    'calmar_ratio': result['metrics'].get('calmar_ratio', 0)
                 }
                 for result in self.results
             ]
