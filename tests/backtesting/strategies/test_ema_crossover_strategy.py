@@ -230,3 +230,103 @@ class TestEMACrossoverStrategy:
             if switch_trades:
                 for trade in switch_trades:
                     assert trade['switch'] is True
+
+    def test_close_ema_values(self):
+        """Test EMA Crossover strategy when EMA values are very close to each other."""
+
+        # Create a strategy with custom parameters
+        strategy = EMACrossoverStrategy(ema_short=5, ema_long=10)
+
+        # Create a dataframe with dates
+        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        df = pd.DataFrame(index=dates)
+
+        # Add required price columns with a price series that will result in close EMA values
+        # Start with a flat price
+        close_prices = [100] * 15
+
+        # Then add a very gentle slope up (should cause EMAs to be close but short > long)
+        for i in range(15):
+            close_prices.append(100 + (i * 0.1))
+
+        # Then add a very gentle slope down (should cause EMAs to be close but short < long)
+        for i in range(15):
+            close_prices.append(101.5 - (i * 0.1))
+
+        # Fill the rest with flat prices
+        while len(close_prices) < 50:
+            close_prices.append(100)
+
+        # Create OHLC data
+        df['open'] = close_prices
+        df['high'] = [p + 0.05 for p in close_prices]
+        df['low'] = [p - 0.05 for p in close_prices]
+        df['close'] = close_prices
+
+        # Add indicators
+        df = strategy.add_indicators(df)
+
+        # Verify EMAs are calculated
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
+
+        # Find where EMAs are very close (difference < 0.1)
+        close_emas = df[(df['ema_short'] - df['ema_long']).abs() < 0.1]
+
+        # There should be some periods where EMAs are close
+        assert len(close_emas) > 0, "Test data should have periods with close EMA values"
+
+        # Generate signals
+        df = strategy.generate_signals(df)
+
+        # Find crossover points
+        crossovers = df[df['signal'] != 0]
+
+        # Verify crossovers occur at the expected points
+        # When close prices change from uptrend to downtrend and vice versa
+        assert len(crossovers) >= 2, "Should have at least 2 crossovers with the test data"
+
+        # Run end-to-end and verify trades
+        trades = strategy.run(df, [])
+
+        # Verify trades are generated
+        assert len(trades) > 0, "No trades generated with close EMA values"
+
+        # Verify trade sides alternate (long, short, long, etc.)
+        if len(trades) >= 2:
+            for i in range(1, len(trades)):
+                assert trades[i]['side'] != trades[i - 1]['side'], "Trade sides should alternate"
+
+    def test_multiple_contract_switches(self):
+        """Test EMA Crossover strategy with multiple contract switches."""
+        strategy = EMACrossoverStrategy(rollover=True)
+        df = create_test_df(length=100)  # Longer dataframe for multiple switches
+
+        # Create multiple switch dates
+        switch_dates = [df.index[25], df.index[50], df.index[75]]
+
+        # Run the strategy
+        trades = strategy.run(df, switch_dates)
+
+        # Verify the strategy ran without errors
+        assert isinstance(trades, list)
+
+        # If trades were generated, verify their structure
+        if trades:
+            for trade in trades:
+                assert 'entry_time' in trade
+                assert 'entry_price' in trade
+                assert 'exit_time' in trade
+                assert 'exit_price' in trade
+                assert 'side' in trade
+
+            # Find trades with the switch flag
+            switch_trades = [trade for trade in trades if trade.get('switch')]
+
+            # There should be at least one switch trade for each switch date
+            # if there was an open position at the switch date
+            assert len(switch_trades) > 0, "No switch trades generated with multiple contract switches"
+
+            # Verify switch trades have the correct flag
+            for trade in switch_trades:
+                assert trade['switch'] is True
