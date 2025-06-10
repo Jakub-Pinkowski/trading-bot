@@ -378,6 +378,214 @@ class TestCalculateTradeMetrics:
         assert large_profit_metrics['pnl_points'] == 200.0
         assert large_profit_metrics['gross_pnl'] == 10000.0  # 200 points * 50 multiplier
 
+    @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50, 'NQ': 20, 'CL': 1000, 'GC': 100})
+    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS',
+           {'ES': 16889.88, 'NQ': 24458.12, 'CL': 16250, 'GC': 25338.86})
+    def test_real_life_trading_scenarios(self):
+        """Test calculation of metrics for real-life trading scenarios."""
+
+        # Scenario 1: Risk-Reward Ratio Trade (2:1)
+        # A common trading strategy is to aim for a risk-reward ratio of at least 2:1
+        # Here we simulate a trade where the potential profit is twice the potential loss
+        risk_points = 10.0  # Willing to risk 10 points
+        reward_points = 20.0  # Aiming for 20 points profit
+
+        # Long trade with 2:1 risk-reward that hits profit target
+        long_rr_trade_win = create_sample_trade(
+            side='long',
+            entry_price=4200.0,
+            exit_price=4200.0 + reward_points  # Hit profit target
+        )
+        long_rr_metrics_win = calculate_trade_metrics(long_rr_trade_win, 'ES')
+
+        assert long_rr_metrics_win['pnl_points'] == reward_points
+        assert long_rr_metrics_win['gross_pnl'] == reward_points * 50  # 20 points * 50 multiplier = $1000
+
+        # Long trade with 2:1 risk-reward that hits stop loss
+        long_rr_trade_loss = create_sample_trade(
+            side='long',
+            entry_price=4200.0,
+            exit_price=4200.0 - risk_points  # Hit stop loss
+        )
+        long_rr_metrics_loss = calculate_trade_metrics(long_rr_trade_loss, 'ES')
+
+        assert long_rr_metrics_loss['pnl_points'] == -risk_points
+        assert long_rr_metrics_loss['gross_pnl'] == -risk_points * 50  # -10 points * 50 multiplier = -$500
+
+        # Scenario 2: Volatility Breakout Trade
+        # In volatile markets, prices can move quickly in one direction after breaking a key level
+        # Here we simulate a volatility breakout trade with a large price movement
+
+        # Breakout trade with high volatility (large price movement in short time)
+        breakout_trade = create_sample_trade(
+            side='long',
+            entry_price=4200.0,
+            exit_price=4260.0,  # 60 point move
+            hours_duration=2  # Short duration (2 hours)
+        )
+        breakout_metrics = calculate_trade_metrics(breakout_trade, 'ES')
+
+        assert breakout_metrics['pnl_points'] == 60.0
+        assert breakout_metrics['gross_pnl'] == 3000.0  # 60 points * 50 multiplier
+        assert breakout_metrics['duration_hours'] == 2
+
+        # Scenario 3: Trend Following Trade
+        # Trend following involves entering in the direction of an established trend
+        # Here we simulate a trend following trade with multiple entries
+
+        # First entry in the trend
+        trend_entry1 = create_sample_trade(
+            side='short',
+            entry_price=4300.0,
+            exit_price=4250.0,  # 50 point move
+            hours_duration=24
+        )
+        trend_metrics1 = calculate_trade_metrics(trend_entry1, 'ES')
+
+        # Second entry in the same trend (price continued lower)
+        trend_entry2 = create_sample_trade(
+            side='short',
+            entry_price=4250.0,
+            exit_price=4200.0,  # 50 point move
+            hours_duration=24
+        )
+        trend_metrics2 = calculate_trade_metrics(trend_entry2, 'ES')
+
+        # Combined results of the trend following strategy
+        total_trend_pnl = trend_metrics1['gross_pnl'] + trend_metrics2['gross_pnl']
+        total_trend_commission = trend_metrics1['commission'] + trend_metrics2['commission']
+        total_trend_net_pnl = trend_metrics1['net_pnl'] + trend_metrics2['net_pnl']
+
+        assert trend_metrics1['pnl_points'] == 50.0
+        assert trend_metrics2['pnl_points'] == 50.0
+        assert total_trend_pnl == 5000.0  # (50 + 50) points * 50 multiplier
+        assert total_trend_commission == COMMISSION_PER_TRADE * 2
+        assert total_trend_net_pnl == total_trend_pnl - total_trend_commission
+
+        # Scenario 4: Mean Reversion Trade
+        # Mean reversion involves betting that prices will return to their average after moving away
+        # Here we simulate a mean reversion trade after a price spike
+
+        # Price spikes up and then reverts back to the mean
+        mean_reversion_trade = create_sample_trade(
+            side='short',
+            entry_price=4250.0,  # Enter short after price spike
+            exit_price=4200.0,  # Exit when price returns to average
+            hours_duration=12
+        )
+        mean_reversion_metrics = calculate_trade_metrics(mean_reversion_trade, 'ES')
+
+        assert mean_reversion_metrics['pnl_points'] == 50.0
+        assert mean_reversion_metrics['gross_pnl'] == 2500.0  # 50 points * 50 multiplier
+
+        # Scenario 5: Multi-Day Position with Weekend Gap
+        # Holding positions over weekends can result in price gaps
+        # Here we simulate a trade held over a weekend with a gap up
+
+        # Friday entry, Monday exit with gap up
+        weekend_gap_trade = create_sample_trade(
+            side='long',
+            entry_price=4200.0,
+            exit_price=4240.0,  # Gap up on Monday
+            hours_duration=72  # 3 days (Friday to Monday)
+        )
+        weekend_gap_metrics = calculate_trade_metrics(weekend_gap_trade, 'ES')
+
+        assert weekend_gap_metrics['pnl_points'] == 40.0
+        assert weekend_gap_metrics['gross_pnl'] == 2000.0  # 40 points * 50 multiplier
+        assert weekend_gap_metrics['duration_hours'] == 72
+
+        # Scenario 6: Trading Different Markets
+        # Traders often trade multiple markets with different characteristics
+        # Here we compare trades in different markets (ES, NQ, CL, GC)
+
+        # ES trade (S&P 500 futures)
+        es_trade = create_sample_trade(side='long', entry_price=4200.0, exit_price=4210.0)
+        es_metrics = calculate_trade_metrics(es_trade, 'ES')
+
+        # NQ trade (Nasdaq futures)
+        nq_trade = create_sample_trade(side='long', entry_price=14500.0, exit_price=14550.0)
+        nq_metrics = calculate_trade_metrics(nq_trade, 'NQ')
+
+        # CL trade (Crude Oil futures)
+        cl_trade = create_sample_trade(side='short', entry_price=80.0, exit_price=79.0)
+        cl_metrics = calculate_trade_metrics(cl_trade, 'CL')
+
+        # GC trade (Gold futures)
+        gc_trade = create_sample_trade(side='long', entry_price=1900.0, exit_price=1910.0)
+        gc_metrics = calculate_trade_metrics(gc_trade, 'GC')
+
+        # Compare return percentages across different markets
+        es_return = es_metrics['return_percentage_of_margin']
+        nq_return = nq_metrics['return_percentage_of_margin']
+        cl_return = cl_metrics['return_percentage_of_margin']
+        gc_return = gc_metrics['return_percentage_of_margin']
+
+        # Verify each market's metrics
+        assert es_metrics['gross_pnl'] == 500.0  # 10 points * 50 multiplier
+        assert nq_metrics['gross_pnl'] == 1000.0  # 50 points * 20 multiplier
+        assert cl_metrics['gross_pnl'] == 1000.0  # 1 point * 1000 multiplier
+        assert gc_metrics['gross_pnl'] == 1000.0  # 10 points * 100 multiplier
+
+        # Scenario 7: Scaling In and Out of Positions
+        # Traders often scale into and out of positions to manage risk and maximize profits
+        # Here we simulate a trader scaling into a position and then scaling out
+
+        # Initial position entry
+        scale_entry1 = create_sample_trade(
+            side='long',
+            entry_price=4200.0,
+            exit_price=4220.0,  # Partial exit at first target
+            hours_duration=12
+        )
+        scale_metrics1 = calculate_trade_metrics(scale_entry1, 'ES')
+
+        # Adding to the position (scaling in)
+        scale_entry2 = create_sample_trade(
+            side='long',
+            entry_price=4210.0,  # Better average price
+            exit_price=4240.0,  # Exit at second target
+            hours_duration=24
+        )
+        scale_metrics2 = calculate_trade_metrics(scale_entry2, 'ES')
+
+        # Calculate combined metrics for the scaling strategy
+        # In real trading, position sizes might vary, but for simplicity we use equal sizes here
+        avg_entry_price = (4200.0 + 4210.0) / 2
+        avg_exit_price = (4220.0 + 4240.0) / 2
+        total_scale_pnl = scale_metrics1['gross_pnl'] + scale_metrics2['gross_pnl']
+        total_scale_commission = scale_metrics1['commission'] + scale_metrics2['commission']
+        total_scale_net_pnl = scale_metrics1['net_pnl'] + scale_metrics2['net_pnl']
+
+        # Verify the individual trades
+        assert scale_metrics1['pnl_points'] == 20.0
+        assert scale_metrics1['gross_pnl'] == 1000.0  # 20 points * 50 multiplier
+        assert scale_metrics2['pnl_points'] == 30.0
+        assert scale_metrics2['gross_pnl'] == 1500.0  # 30 points * 50 multiplier
+
+        # Verify the combined results
+        assert total_scale_pnl == 2500.0  # 1000 + 1500
+        assert total_scale_commission == COMMISSION_PER_TRADE * 2
+        assert total_scale_net_pnl == total_scale_pnl - total_scale_commission
+
+        # Calculate what the result would be if it was a single trade with average prices
+        avg_trade = create_sample_trade(
+            side='long',
+            entry_price=avg_entry_price,
+            exit_price=avg_exit_price,
+            hours_duration=24  # Using the longer duration
+        )
+        avg_metrics = calculate_trade_metrics(avg_trade, 'ES')
+
+        # Verify the average trade metrics
+        assert avg_metrics['pnl_points'] == 25.0  # (4230 - 4205)
+        assert avg_metrics['gross_pnl'] == 1250.0  # 25 points * 50 multiplier
+
+        # Compare scaling strategy vs single entry strategy
+        # The scaling strategy should have higher gross PnL but also higher commission
+        assert total_scale_pnl > avg_metrics['gross_pnl']  # 2500 > 1250
+        assert total_scale_commission > avg_metrics['commission']  # 8 > 4
+
 
 class TestPrintTradeMetrics:
     """Tests for the print_trade_metrics function."""
