@@ -18,18 +18,18 @@ plot(ema21, title="EMA 21", color=color.yellow)
 
 fill(plot(ema9, title="EMA 9 (cloud)", color=na), plot(ema21, title="EMA 21 (cloud)", color=na), color=bullishTrend ? color.new(color.green, 85) : bearishTrend ? color.new(color.red, 85) : na, title="EMA Cloud")
 
-// === SIGNALS ON BAR CLOSE ===
-buySignal  = ta.crossover(ema9, ema21)
-sellSignal = ta.crossunder(ema9, ema21)
+// === CROSSOVER/UNDER ON BAR CLOSE ===
+emaCrossover  = ta.crossover(ema9, ema21)
+emaCrossunder = ta.crossunder(ema9, ema21)
 
 // === SIGNALS ON BAR N+1 ===
-buySignalN1  = buySignal[1]
-sellSignalN1 = sellSignal[1]
+buy  = emaCrossover[1]
+sell = emaCrossunder[1]
 
 // === PLOTS ===
-plotshape(buySignalN1, title="Buy", text='Buy', style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, size=size.tiny)
-plotshape(sellSignalN1, title="Sell", text='Sell', style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.tiny)
+plotshape(buy, title="Buy", text='Buy', style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, size=size.tiny)
+plotshape(sell, title="Sell", text='Sell', style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.tiny)
 
 // === ALERTS (triggered at open of N+1) ===
-alertcondition(buySignalN1, title="Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
-alertcondition(sellSignalN1, title="Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
+alertcondition(buy, title="Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
+alertcondition(sell, title="Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
