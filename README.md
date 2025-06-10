@@ -72,29 +72,21 @@ This will:
 - Calculate metrics
 - Save the results to CSV files
 
-### Running Backtests
+### Backtesting
 
-To run backtests on historical data using various trading strategies:
+To run backtests on historical data using various trading strategies with multiple parameter combinations:
 
 ```bash
-python backtest.py
+python mass_backtest.py
 ```
 
 This will:
 
 - Load historical data for specified symbols and time intervals
-- Run multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover)
+- Run multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover) with various parameter combinations
 - Calculate per-trade metrics for each strategy
 - Generate summary performance metrics
-- Display results for strategy comparison
-
-### Mass Backtesting
-
-To run mass backtesting with multiple parameter combinations:
-
-```bash
-python mass_backtest.py
-```
+- Save results for strategy comparison
 
 The mass_backtest.py script provides a powerful way to test many combinations of:
 

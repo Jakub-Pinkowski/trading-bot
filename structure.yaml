@@ -21,7 +21,6 @@ trading-bot/
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
 │   │   ├── __init__.py
-│   │   ├── backtesting_runner.py                 # Backtesting logic coordinator
 │   │   ├── indicators.py                         # Technical indicators
 │   │   ├── mass_testing.py                       # Mass testing framework
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
@@ -88,7 +87,6 @@ trading-bot/
 ├── .env                                          # Configuration secrets
 ├── .gitignore                                    # Files to ignore
 ├── analyze.py                                    # Run analysis
-├── backtest.py                                   # Run a single backtest
 ├── config.py                                     # App configuration
 ├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview

@@ -71,7 +71,7 @@ def calculate_max_consecutive(trades, win=True):
 
 
 def calculate_sharpe_ratio(trades, risk_free_rate=0.0):
-    """Calculate Sharpe ratio: (Average Return - Risk Free Rate) / Standard Deviation of Returns."""
+    """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
     if not trades or len(trades) < 2:  # Need at least 2 trades for standard deviation
         return 0
 
@@ -90,7 +90,7 @@ def calculate_sharpe_ratio(trades, risk_free_rate=0.0):
 
 
 def calculate_sortino_ratio(trades, risk_free_rate=0.0):
-    """Calculate Sortino ratio: (Average Return - Risk Free Rate) / Standard Deviation of Negative Returns."""
+    """Calculate Sortino ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Negative Returns."""
     if not trades:
         return 0
 
@@ -153,21 +153,11 @@ def calculate_summary_metrics(trades):
     avg_duration_hours = sum(trade['duration_hours'] for trade in trades) / total_trades if total_trades > 0 else 0
 
     # ===== DOLLAR-BASED METRICS =====
-    # Net PnL calculations
-    total_net_pnl = sum(trade['net_pnl'] for trade in trades)
     total_net_profit = sum(trade['net_pnl'] for trade in winning_trades)
     total_net_loss = sum(trade['net_pnl'] for trade in losing_trades)
 
-    # Averages based on net values
-    avg_trade_pnl = total_net_pnl / total_trades if total_trades > 0 else 0
-    avg_win = total_net_profit / win_count if win_count > 0 else 0
-    avg_loss = total_net_loss / loss_count if loss_count > 0 else 0
-
     # Total margin used (sum of individual trade margin requirements)
     total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
-
-    # Average margin requirement per trade
-    avg_margin_requirement = total_margin_used / total_trades if total_trades > 0 else 0
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
     # Return percentages
