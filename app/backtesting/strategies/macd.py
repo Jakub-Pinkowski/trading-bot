@@ -7,6 +7,7 @@ SLOW_PERIOD = 26
 SIGNAL_PERIOD = 9
 
 
+# TODO [MEDIUM]: To be tested
 class MACDStrategy(BaseStrategy):
     def __init__(
         self,

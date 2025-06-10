@@ -6,6 +6,7 @@ PERIOD = 20
 NUM_STD = 2
 
 
+# TODO [MEDIUM]: To be tested
 class BollingerBandsStrategy(BaseStrategy):
     def __init__(self, period=PERIOD, num_std=NUM_STD, rollover=False, trailing=None):
         super().__init__(rollover=rollover, trailing=trailing)
