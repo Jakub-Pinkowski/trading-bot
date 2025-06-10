@@ -46,7 +46,6 @@ def test_dataframe_cache_operations():
     # Get the value and verify it matches the original
     cached_df = dataframe_cache.get(test_key)
     pd.testing.assert_frame_equal(cached_df, test_value)
-    # Note: The base Cache.get() method doesn't make a copy, unlike get_preprocessed_dataframe
 
     # Test cache size
     assert dataframe_cache.size() == 1

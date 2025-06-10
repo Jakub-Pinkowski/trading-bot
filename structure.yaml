@@ -125,6 +125,7 @@ trading-bot/
 
 # Developer
 # TODO [LOW]: Rewrite IBKR logic using classes
+# TODO [LOW]: Rewrite analysis logic using classes
 # TODO [LOW]: Add docstrings EVERYWHERE
 # TODO [LOW]: Add e2e tests
 # TODO [LOW]: Set up a database
