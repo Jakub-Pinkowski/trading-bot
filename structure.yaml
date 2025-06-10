@@ -110,7 +110,6 @@ trading-bot/
 # TODO [HIGH]: Test very thoroughly all summaries
 # RSI is good
 # EMA is good
-# TODO [HIGH]: Create comprehensive tests for the whole backtesting module
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
@@ -125,6 +124,7 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Developer
+# TODO [LOW]: Rewrite IBKR logic using classes
 # TODO [LOW]: Add docstrings EVERYWHERE
 # TODO [LOW]: Add e2e tests
 # TODO [LOW]: Set up a database
