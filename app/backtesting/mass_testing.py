@@ -11,10 +11,7 @@ import yaml
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
-from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.macd import MACDStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
+from app.backtesting.strategy_factory import StrategyFactory
 from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
@@ -66,7 +63,7 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    def add_strategy_tests(self, strategy_class, param_grid, name_template):
+    def add_strategy_tests(self, strategy_type, param_grid):
         """ Generic method for adding strategy tests with all combinations of given parameters. """
 
         # Ensure every parameter has at least one value. Use [None] if empty
@@ -83,63 +80,59 @@ class MassTester:
         # Loop over parameter values to create strategy instances and store them in self.strategies.
         for param_values in param_value_combinations:
             strategy_params = dict(zip(param_names, param_values))
-            strategy_name = name_template.format(**strategy_params)
-            strategy_instance = strategy_class(**strategy_params)
+            strategy_name = StrategyFactory.get_strategy_name(strategy_type, **strategy_params)
+            strategy_instance = StrategyFactory.create_strategy(strategy_type, **strategy_params)
 
             self.strategies.append((strategy_name, strategy_instance))
 
     # NOTE: Tested and approved
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops):
         self.add_strategy_tests(
-            strategy_class=RSIStrategy,
+            strategy_type='rsi',
             param_grid={
                 'rsi_period': rsi_periods,
                 'lower': lower_thresholds,
                 'upper': upper_thresholds,
                 'rollover': rollovers,
                 'trailing': trailing_stops
-            },
-            name_template='RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
+            }
         )
 
     # NOTE: Tested and approved
     def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops):
         self.add_strategy_tests(
-            strategy_class=EMACrossoverStrategy,
+            strategy_type='ema',
             param_grid={
                 'ema_short': ema_shorts,
                 'ema_long': ema_longs,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-            },
-            name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
+            }
         )
 
     # TODO [MEDIUM]: Still to be tested
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops):
         self.add_strategy_tests(
-            strategy_class=MACDStrategy,
+            strategy_type='macd',
             param_grid={
                 'fast_period': fast_periods,
                 'slow_period': slow_periods,
                 'signal_period': signal_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-            },
-            name_template='MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
+            }
         )
 
     # TODO [MEDIUM]: Still to be tested
     def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops):
         self.add_strategy_tests(
-            strategy_class=BollingerBandsStrategy,
+            strategy_type='bollinger',
             param_grid={
                 'period': periods,
                 'num_std': num_stds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-            },
-            name_template='BB(period={period},std={num_std},rollover={rollover},trailing={trailing})'
+            }
         )
 
     def run_tests(self, verbose=True, max_workers=None):

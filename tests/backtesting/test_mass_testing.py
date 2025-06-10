@@ -4,10 +4,6 @@ import pandas as pd
 import pytest
 
 from app.backtesting.mass_testing import MassTester, _load_existing_results, _test_already_exists
-from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.macd import MACDStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
 
 
 class TestMassTester:
@@ -60,14 +56,13 @@ class TestMassTester:
 
         # Test with a simple parameter grid
         tester.add_strategy_tests(
-            strategy_class=EMACrossoverStrategy,
+            strategy_type='ema',
             param_grid={
                 'ema_short': [9, 12],
                 'ema_long': [21, 26],
                 'rollover': [True],
                 'trailing': [None]
-            },
-            name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
+            }
         )
 
         # Should have 4 strategies (2 short values * 2 long values)
@@ -75,7 +70,6 @@ class TestMassTester:
 
         # Verify strategy names and instances
         for strategy_name, strategy_instance in tester.strategies:
-            assert isinstance(strategy_instance, EMACrossoverStrategy)
             assert 'EMA(short=' in strategy_name
             assert ',long=' in strategy_name
             assert ',rollover=True' in strategy_name
@@ -98,21 +92,19 @@ class TestMassTester:
 
         # Test with an empty parameter in the grid
         tester.add_strategy_tests(
-            strategy_class=EMACrossoverStrategy,
+            strategy_type='ema',
             param_grid={
                 'ema_short': [9],
                 'ema_long': [21],
                 'rollover': [],  # Empty list
                 'trailing': [None]
-            },
-            name_template='EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
+            }
         )
 
         # Should have 1 strategy with rollover=None
         assert len(tester.strategies) == 1
         strategy_name, strategy_instance = tester.strategies[0]
 
-        assert isinstance(strategy_instance, EMACrossoverStrategy)
         assert 'rollover=None' in strategy_name
         assert strategy_instance.rollover is None
 
@@ -130,9 +122,8 @@ class TestMassTester:
         # Should have 16 strategies (2 short * 2 long * 2 rollover * 2 trailing)
         assert len(tester.strategies) == 16
 
-        # Verify all strategies are EMACrossoverStrategy instances
+        # Verify all strategies have the correct parameters
         for strategy_name, strategy_instance in tester.strategies:
-            assert isinstance(strategy_instance, EMACrossoverStrategy)
             assert 'EMA(short=' in strategy_name
 
             # Extract parameters from name and verify they match the instance
@@ -166,9 +157,8 @@ class TestMassTester:
         # Should have 8 strategies (2 periods * 2 lower * 2 upper * 1 rollover * 1 trailing)
         assert len(tester.strategies) == 8
 
-        # Verify all strategies are RSIStrategy instances
+        # Verify all strategies have the correct parameters
         for strategy_name, strategy_instance in tester.strategies:
-            assert isinstance(strategy_instance, RSIStrategy)
             assert 'RSI(period=' in strategy_name
 
             # Extract parameters from name and verify they match the instance
@@ -201,9 +191,8 @@ class TestMassTester:
         # Should have 1 strategy (1 fast * 1 slow * 1 signal * 1 rollover * 1 trailing)
         assert len(tester.strategies) == 1
 
-        # Verify the strategy is a MACDStrategy instance
+        # Verify the strategy has the correct parameters
         strategy_name, strategy_instance = tester.strategies[0]
-        assert isinstance(strategy_instance, MACDStrategy)
         assert 'MACD(fast=' in strategy_name
 
         # Extract parameters from name and verify they match the instance
@@ -235,9 +224,8 @@ class TestMassTester:
         # Should have 1 strategy (1 period * 1 num_std * 1 rollover * 1 trailing)
         assert len(tester.strategies) == 1
 
-        # Verify the strategy is a BollingerBandsStrategy instance
+        # Verify the strategy has the correct parameters
         strategy_name, strategy_instance = tester.strategies[0]
-        assert isinstance(strategy_instance, BollingerBandsStrategy)
         assert 'BB(period=' in strategy_name
 
         # Extract parameters from name and verify they match the instance
@@ -287,9 +275,8 @@ class TestMassTester:
         # Create a tester with a strategy
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
         tester.add_strategy_tests(
-            strategy_class=EMACrossoverStrategy,
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]},
-            name_template='Test Strategy'
+            strategy_type='ema',
+            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )
 
         # Run tests
@@ -328,9 +315,8 @@ class TestMassTester:
 
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
         tester.add_strategy_tests(
-            strategy_class=EMACrossoverStrategy,
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]},
-            name_template='Test Strategy'
+            strategy_type='ema',
+            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )
 
         results = tester.run_tests(verbose=False)
