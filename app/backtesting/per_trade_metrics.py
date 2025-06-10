@@ -114,7 +114,6 @@ def print_trade_metrics(trade):
     print('\n--- NORMALIZED METRICS (PERCENTAGES) ---')
     print(f'Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}')
     print(f'Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}')
-    print(f'Commission % of Return: {trade['commission_percentage']}%')
 
     # Dollar-based metrics (for reference)
     print('\n--- DOLLAR-BASED METRICS (FOR REFERENCE) ---')
