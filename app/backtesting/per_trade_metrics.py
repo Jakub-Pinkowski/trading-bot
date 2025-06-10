@@ -62,13 +62,16 @@ def calculate_trade_metrics(trade, symbol):
         'entry_price': trade['entry_price'],
         'exit_price': trade['exit_price'],
         'side': trade['side'],
+
         # Trade details
         'duration': trade_duration,
         'duration_hours': trade_duration_hours,
+
         # Normalized metrics (percentages)
         'return_percentage_of_margin': return_percentage_of_margin,
         'return_percentage_of_contract': return_percentage_of_contract,
-        # We net_pnl for internal calculations in summary_metrics
+
+        # We need net_pnl for internal calculations in summary_metrics
         'net_pnl': net_pnl
     }
 
