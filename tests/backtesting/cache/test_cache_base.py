@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 from unittest.mock import patch, mock_open
 
 import pytest
@@ -216,3 +217,216 @@ def test_cache_with_complex_data():
     }
     cache.set("complex", complex_data)
     assert cache.get("complex") == complex_data
+
+
+def test_cache_versioning(mock_cache_dir):
+    """Test that cache versioning works correctly."""
+    # Create a cache file with version 1
+    cache_v1 = Cache("test_version", 1)
+    cache_v1.set("key1", "value1")
+    cache_v1.save_cache()
+
+    # Verify the file was created
+    cache_file_v1 = os.path.join(mock_cache_dir, "test_version_cache_v1.pkl")
+    assert os.path.exists(cache_file_v1)
+
+    # Create a new cache with version 2
+    cache_v2 = Cache("test_version", 2)
+
+    # Verify that the v2 cache is empty (doesn't load data from v1)
+    assert cache_v2.size() == 0
+    assert not cache_v2.contains("key1")
+
+    # Add data to v2 cache
+    cache_v2.set("key2", "value2")
+    cache_v2.save_cache()
+
+    # Verify the v2 file was created
+    cache_file_v2 = os.path.join(mock_cache_dir, "test_version_cache_v2.pkl")
+    assert os.path.exists(cache_file_v2)
+
+    # Load v1 cache again and verify it still has its data
+    cache_v1_reload = Cache("test_version", 1)
+    assert cache_v1_reload.size() == 1
+    assert cache_v1_reload.get("key1") == "value1"
+
+    # Load v2 cache again and verify it has its own data
+    cache_v2_reload = Cache("test_version", 2)
+    assert cache_v2_reload.size() == 1
+    assert cache_v2_reload.get("key2") == "value2"
+
+
+def test_cache_performance_with_large_dataset():
+    """Test cache performance with a large number of items."""
+    cache = Cache("test_performance", 1)
+
+    # Add a large number of items to the cache
+    num_items = 10000
+    start_time = time.time()
+
+    for i in range(num_items):
+        cache.set(f"key_{i}", f"value_{i}")
+
+    set_time = time.time() - start_time
+
+    # Verify all items were added
+    assert cache.size() == num_items
+
+    # Test retrieval performance
+    start_time = time.time()
+
+    for i in range(num_items):
+        value = cache.get(f"key_{i}")
+        assert value == f"value_{i}"
+
+    get_time = time.time() - start_time
+
+    # Test contains performance
+    start_time = time.time()
+
+    for i in range(num_items):
+        assert cache.contains(f"key_{i}")
+
+    contains_time = time.time() - start_time
+
+    # Log performance metrics (these are not strict assertions, just informational)
+    print(f"\nCache performance with {num_items} items:")
+    print(f"  Set time: {set_time:.4f} seconds ({num_items / set_time:.0f} ops/sec)")
+    print(f"  Get time: {get_time:.4f} seconds ({num_items / get_time:.0f} ops/sec)")
+    print(f"  Contains time: {contains_time:.4f} seconds ({num_items / contains_time:.0f} ops/sec)")
+
+    # Ensure operations complete in a reasonable time
+    # These thresholds are very generous and should pass on any modern system
+    # They're mainly to catch catastrophic performance issues
+    assert set_time < 2.0, "Setting items took too long"
+    assert get_time < 2.0, "Getting items took too long"
+    assert contains_time < 2.0, "Checking contains took too long"
+
+
+def test_cache_file_corruption(mock_cache_dir):
+    """Test handling of corrupted cache files."""
+    # Create a cache file path
+    cache_file = os.path.join(mock_cache_dir, "corrupted_cache_v1.pkl")
+
+    # Write corrupted data to the file
+    with open(cache_file, 'wb') as f:
+        f.write(b'This is not a valid pickle file')
+
+    # Initialize cache, which should handle the corrupted file
+    cache = Cache("corrupted", 1)
+
+    # Verify the cache is empty
+    assert cache.cache_data == {}
+    assert cache.size() == 0
+
+    # Test with a partially corrupted pickle file (truncated)
+    with open(cache_file, 'wb') as f:
+        # Start with a valid pickle header but then truncate it
+        pickle.dump({"key1": "value1"}, f)
+        f.truncate(10)  # Truncate to first 10 bytes
+
+    # Initialize cache again, which should handle the corrupted file
+    cache = Cache("corrupted", 1)
+
+    # Verify the cache is empty
+    assert cache.cache_data == {}
+    assert cache.size() == 0
+
+
+def test_cache_with_different_key_types():
+    """Test the cache with different types of keys."""
+    cache = Cache("test_keys", 1)
+
+    # Test with string keys
+    cache.set("string_key", "string_value")
+    assert cache.get("string_key") == "string_value"
+
+    # Test with integer keys
+    cache.set(42, "integer_value")
+    assert cache.get(42) == "integer_value"
+
+    # Test with float keys
+    cache.set(3.14, "float_value")
+    assert cache.get(3.14) == "float_value"
+
+    # Test with tuple keys (hashable)
+    cache.set((1, 2, 3), "tuple_value")
+    assert cache.get((1, 2, 3)) == "tuple_value"
+
+    # Test with complex tuple keys
+    complex_key = ("macd", "ZW", (12, 26, 9), ("2023-01-01", "2023-12-31"))
+    cache.set(complex_key, "complex_tuple_value")
+    assert cache.get(complex_key) == "complex_tuple_value"
+
+    # Test with boolean keys
+    cache.set(True, "true_value")
+    cache.set(False, "false_value")
+    assert cache.get(True) == "true_value"
+    assert cache.get(False) == "false_value"
+
+    # Test with None as a key
+    cache.set(None, "none_value")
+    assert cache.get(None) == "none_value"
+
+    # Verify all keys are in the cache
+    assert cache.size() == 8
+    assert cache.contains("string_key")
+    assert cache.contains(42)
+    assert cache.contains(3.14)
+    assert cache.contains((1, 2, 3))
+    assert cache.contains(complex_key)
+    assert cache.contains(True)
+    assert cache.contains(False)
+    assert cache.contains(None)
+
+
+def test_cache_update_operations():
+    """Test updating existing values in the cache."""
+    cache = Cache("test_updates", 1)
+
+    # Add initial values
+    cache.set("key1", "value1")
+    cache.set("key2", [1, 2, 3])
+    cache.set("key3", {"a": 1, "b": 2})
+
+    # Verify initial values
+    assert cache.get("key1") == "value1"
+    assert cache.get("key2") == [1, 2, 3]
+    assert cache.get("key3") == {"a": 1, "b": 2}
+    assert cache.size() == 3
+
+    # Update values
+    cache.set("key1", "updated_value1")
+    cache.set("key2", [4, 5, 6])
+    cache.set("key3", {"c": 3, "d": 4})
+
+    # Verify updated values
+    assert cache.get("key1") == "updated_value1"
+    assert cache.get("key2") == [4, 5, 6]
+    assert cache.get("key3") == {"c": 3, "d": 4}
+    assert cache.size() == 3  # Size should remain the same
+
+    # Test updating mutable objects
+    list_value = [1, 2, 3]
+    dict_value = {"a": 1, "b": 2}
+
+    cache.set("mutable_list", list_value)
+    cache.set("mutable_dict", dict_value)
+
+    # Modify the original objects
+    list_value.append(4)
+    dict_value["c"] = 3
+
+    # Verify that the cached values reflect the changes (since they're the same objects)
+    assert cache.get("mutable_list") == [1, 2, 3, 4]
+    assert cache.get("mutable_dict") == {"a": 1, "b": 2, "c": 3}
+
+    # Test replacing with a different type
+    cache.set("type_change", "string_value")
+    assert cache.get("type_change") == "string_value"
+
+    cache.set("type_change", 42)
+    assert cache.get("type_change") == 42
+
+    cache.set("type_change", [1, 2, 3])
+    assert cache.get("type_change") == [1, 2, 3]
