@@ -77,20 +77,23 @@ class StrategyAnalyzer:
 
         # Calculate aggregated metrics
         metrics_dict = {
+            # Basic info
             'symbol_count': grouped['symbol'].nunique(),
             'interval_count': grouped['interval'].nunique(),
             'total_trades': grouped['total_trades'].sum(),
             'win_rate': grouped['win_rate'].mean(),
-            'profit_factor': grouped['profit_factor'].mean(),
+
+            # Percentage-based metrics
             'total_return_percentage_of_margin': grouped['total_return_percentage_of_margin'].sum(),
             'average_trade_return_percentage_of_margin': grouped['average_trade_return_percentage_of_margin'].mean(),
             'average_win_percentage_of_margin': grouped['average_win_percentage_of_margin'].mean(),
             'average_loss_percentage_of_margin': grouped['average_loss_percentage_of_margin'].mean(),
+            'commission_percentage_of_margin': grouped['commission_percentage_of_margin'].mean(),
+
+            # Risk metrics
+            'profit_factor': grouped['profit_factor'].mean(),
             'maximum_drawdown_percentage': grouped['maximum_drawdown_percentage'].mean(),
-            'total_net_pnl': grouped['total_net_pnl'].sum(),
-            'avg_trade_net_pnl': grouped['avg_trade_net_pnl'].mean(),
-            'max_consecutive_wins': grouped['max_consecutive_wins'].mean(),
-            'max_consecutive_losses': grouped['max_consecutive_losses'].mean(),
+            'return_to_drawdown_ratio': grouped['return_to_drawdown_ratio'].mean(),
             'sharpe_ratio': grouped['sharpe_ratio'].mean(),
             'sortino_ratio': grouped['sortino_ratio'].mean(),
             'calmar_ratio': grouped['calmar_ratio'].mean()

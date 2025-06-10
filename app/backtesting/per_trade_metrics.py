@@ -55,13 +55,6 @@ def calculate_trade_metrics(trade, symbol):
     # Calculate return percentage as a percentage of the contract value (entry price)
     return_percentage_of_contract = round((net_pnl / (trade['entry_price'] * contract_multiplier)) * 100, 2)
 
-    # ===== DOLLAR-BASED METRICS (FOR REFERENCE) =====
-    margin_requirement = round(margin_requirement, 2)
-    total_commission = round(total_commission, 2)
-    pnl_points = round(pnl_points, 2)
-    gross_pnl = round(gross_pnl, 2)
-    net_pnl = round(net_pnl, 2)
-
     return {
         # Original trade data
         'entry_time': trade['entry_time'],
@@ -75,11 +68,7 @@ def calculate_trade_metrics(trade, symbol):
         # Normalized metrics (percentages)
         'return_percentage_of_margin': return_percentage_of_margin,
         'return_percentage_of_contract': return_percentage_of_contract,
-        # Dollar-based metrics
-        'margin_requirement': margin_requirement,
-        'commission': total_commission,
-        'pnl_points': pnl_points,
-        'gross_pnl': gross_pnl,
+        # We net_pnl for internal calculations in summary_metrics
         'net_pnl': net_pnl
     }
 
@@ -110,17 +99,9 @@ def print_trade_metrics(trade):
     print(f'Entry Price: {trade['entry_price']}')
     print(f'Exit Price: {trade['exit_price']}')
 
-    # Normalized metrics (percentages)
-    print('\n--- NORMALIZED METRICS (PERCENTAGES) ---')
+    # Percentage-based metrics
+    print('\n--- PERCENTAGE-BASED METRICS ---')
     print(f'Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}')
     print(f'Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}')
-
-    # Dollar-based metrics (for reference)
-    print('\n--- DOLLAR-BASED METRICS (FOR REFERENCE) ---')
-    print(f'Margin Requirement: ${trade['margin_requirement']}')
-    print(f'Commission (dollars): ${trade['commission']}')
-    print(f'PnL (points): {color}{trade['pnl_points']}{RESET}')
-    print(f'Gross PnL (dollars): {color}${trade['gross_pnl']}{RESET}')
-    print(f'Net PnL (dollars): {color}${trade['net_pnl']}{RESET}')
 
     print('=============================\n')

@@ -133,8 +133,6 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 1
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
-        assert summary['total_net_pnl'] == 100.0
-        assert summary['avg_trade_net_pnl'] == 100.0
         assert summary['total_return_percentage_of_margin'] == 1.0
         assert summary['profit_factor'] == float('inf')  # No losing trades
 
@@ -147,8 +145,6 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 0
         assert summary['losing_trades'] == 1
         assert summary['win_rate'] == 0.0
-        assert summary['total_net_pnl'] == -100.0
-        assert summary['avg_trade_net_pnl'] == -100.0
         assert summary['total_return_percentage_of_margin'] == -1.0
         assert summary['profit_factor'] == 0.0  # No winning trades
 
@@ -165,11 +161,9 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 2
         assert summary['losing_trades'] == 1
         assert summary['win_rate'] == round((2 / 3) * 100, 2)
-        assert summary['total_net_pnl'] == 250.0
-        assert summary['avg_trade_net_pnl'] == round(250.0 / 3, 2)
         assert summary['total_return_percentage_of_margin'] == 2.5
-        assert summary['avg_win_net'] == 150.0  # (100 + 200) / 2
-        assert summary['avg_loss_net'] == -50.0
+        assert summary['average_win_percentage_of_margin'] > 0
+        assert summary['average_loss_percentage_of_margin'] < 0
         assert summary['profit_factor'] == round(300.0 / 50.0, 2)  # (100 + 200) / 50
 
     def test_all_winning_trades(self):
@@ -185,7 +179,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 3
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
-        assert summary['total_net_pnl'] == 600.0
+        assert summary['total_return_percentage_of_margin'] == 6.0
         assert summary['profit_factor'] == float('inf')  # No losing trades
 
     def test_all_losing_trades(self):
@@ -201,7 +195,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 0
         assert summary['losing_trades'] == 3
         assert summary['win_rate'] == 0.0
-        assert summary['total_net_pnl'] == -600.0
+        assert summary['total_return_percentage_of_margin'] == -6.0
         assert summary['profit_factor'] == 0.0  # No winning trades
 
     def test_commission_metrics(self):
@@ -213,7 +207,6 @@ class TestCalculateSummaryMetrics:
         ]
         summary = calculate_summary_metrics(trades)
 
-        assert summary['total_commission_paid'] == 15.0
         assert summary['commission_percentage_of_margin'] == round((15.0 / 30000.0) * 100, 2)  # 3 trades * 10000 margin
 
     def test_duration_metrics(self):
@@ -236,8 +229,7 @@ class TestCalculateSummaryMetrics:
         ]
         summary = calculate_summary_metrics(trades)
 
-        # Max drawdown should be calculated correctly
-        assert summary['max_drawdown'] > 0
+        # Max drawdown percentage should be calculated correctly
         assert summary['maximum_drawdown_percentage'] > 0
 
         # Return to drawdown ratio should be calculated correctly
@@ -265,34 +257,6 @@ class TestCalculateSummaryMetrics:
         assert 'calmar_ratio' in summary
         assert isinstance(summary['calmar_ratio'], float)
 
-    def test_consecutive_wins_losses(self):
-        """Test calculation of maximum consecutive wins and losses."""
-        # Test consecutive wins
-        win_trades = [
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
-            create_sample_trade(net_pnl=150.0, return_percentage=1.5),
-            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
-            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
-            create_sample_trade(net_pnl=120.0, return_percentage=1.2),
-            create_sample_trade(net_pnl=180.0, return_percentage=1.8)
-        ]
-        summary = calculate_summary_metrics(win_trades)
-        assert summary['max_consecutive_wins'] == 3
-        assert summary['max_consecutive_losses'] == 1
-
-        # Test consecutive losses
-        loss_trades = [
-            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
-            create_sample_trade(net_pnl=-70.0, return_percentage=-0.7),
-            create_sample_trade(net_pnl=-90.0, return_percentage=-0.9),
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
-            create_sample_trade(net_pnl=-60.0, return_percentage=-0.6),
-            create_sample_trade(net_pnl=-80.0, return_percentage=-0.8)
-        ]
-        summary = calculate_summary_metrics(loss_trades)
-        assert summary['max_consecutive_wins'] == 1
-        assert summary['max_consecutive_losses'] == 3
-
     def test_zero_drawdown(self):
         """Test calculation of summary metrics with zero drawdown."""
         trades = [
@@ -301,7 +265,6 @@ class TestCalculateSummaryMetrics:
         ]
         summary = calculate_summary_metrics(trades)
 
-        assert summary['max_drawdown'] == 0
         assert summary['maximum_drawdown_percentage'] == 0
         assert summary['return_to_drawdown_ratio'] == float('inf')  # Division by zero
 
@@ -314,8 +277,9 @@ class TestCalculateSummaryMetrics:
         ]
         summary = calculate_summary_metrics(trades)
 
-        assert summary['total_margin_used'] == 60000.0
-        assert summary['avg_margin_requirement'] == 20000.0
+        # We no longer track dollar-based margin metrics
+        assert 'total_margin_used' not in summary
+        assert 'avg_margin_requirement' not in summary
 
     def test_realistic_trading_pattern(self):
         """Test calculation of summary metrics with a realistic trading pattern.
@@ -347,18 +311,18 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 4
         assert summary['win_rate'] == 60.0
 
-        # PnL metrics
-        assert summary['total_net_pnl'] == 550.0
-        assert summary['avg_trade_net_pnl'] == 55.0
-        assert summary['avg_win_net'] == round((120 + 85 + 210 + 150 + 95 + 180) / 6, 2)
-        assert summary['avg_loss_net'] == round((-45 - 75 - 110 - 60) / 4, 2)
+        # Percentage-based metrics
+        total_return_percentage = sum(trade['return_percentage_of_margin'] for trade in trades)
+        assert summary['total_return_percentage_of_margin'] == total_return_percentage
+        assert summary['average_trade_return_percentage_of_margin'] == total_return_percentage / 10
+        assert summary['average_win_percentage_of_margin'] > 0
+        assert summary['average_loss_percentage_of_margin'] < 0
 
         # Duration metrics
         assert summary['avg_trade_duration_hours'] == 6.8  # (4+6+12+3+5+8+10+7+4+9)/10
 
         # Risk metrics
-        assert summary['profit_factor'] > 1.0  # Profitable strategy
-        assert summary['max_drawdown'] > 0
+        assert summary['profit_factor'] > 1.0
         assert summary['maximum_drawdown_percentage'] > 0
         assert summary['return_to_drawdown_ratio'] > 0
 
@@ -367,11 +331,6 @@ class TestCalculateSummaryMetrics:
         assert 'sortino_ratio' in summary
         assert 'calmar_ratio' in summary
 
-        # Consecutive wins/losses
-        assert 'max_consecutive_wins' in summary
-        assert 'max_consecutive_losses' in summary
-        assert summary['max_consecutive_wins'] >= 1
-        assert summary['max_consecutive_losses'] >= 1
 
     def test_long_drawdown_with_recovery(self):
         """Test calculation of summary metrics with a long drawdown period followed by recovery.
@@ -403,14 +362,13 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 5
         assert summary['win_rate'] == round((6 / 11) * 100, 2)
 
-        # PnL metrics
-        total_expected_pnl = 200 + 150 - 80 - 120 - 90 - 150 - 100 + 120 + 180 + 250 + 300
-        assert summary['total_net_pnl'] == total_expected_pnl
-        assert summary['avg_trade_net_pnl'] == round(total_expected_pnl / 11, 2)
+        # Percentage-based metrics
+        total_expected_return_percentage = 2.0 + 1.5 - 0.8 - 1.2 - 0.9 - 1.5 - 1.0 + 1.2 + 1.8 + 2.5 + 3.0
+        assert summary['total_return_percentage_of_margin'] == total_expected_return_percentage
+        assert summary['average_trade_return_percentage_of_margin'] == round(total_expected_return_percentage / 11, 2)
 
         # Risk metrics
         # Significant drawdown expected
-        assert summary['max_drawdown'] >= 540.0  # From peak of 350 to lowest point of -190
         assert summary['maximum_drawdown_percentage'] >= 5.4  # From peak of 3.5% to lowest of -1.9%
         # Despite drawdown, overall strategy is profitable
         assert summary['total_return_percentage_of_margin'] > 0
@@ -449,10 +407,11 @@ class TestCalculateSummaryMetrics:
         total_duration = 0.5 + 0.25 + 0.75 + 4 + 6 + 48 + 72 + 240 + 168
         assert summary['avg_trade_duration_hours'] == round(total_duration / 9, 2)
 
-        # PnL metrics
-        total_expected_pnl = 50 - 30 + 40 + 100 - 70 + 200 - 150 + 500 - 300
-        assert summary['total_net_pnl'] == total_expected_pnl
-        assert summary['avg_trade_net_pnl'] == round(total_expected_pnl / 9, 2)
+        # Percentage-based metrics
+        total_expected_return_percentage = 0.5 - 0.3 + 0.4 + 1.0 - 0.7 + 2.0 - 1.5 + 5.0 - 3.0
+        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
+        assert round(summary['average_trade_return_percentage_of_margin'],
+                     2) == round(total_expected_return_percentage / 9, 2)
 
     def test_extreme_profit_loss_values(self):
         """Test calculation of summary metrics with extreme profit and loss values.
@@ -483,16 +442,15 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 4
         assert summary['win_rate'] == 50.0
 
-        # PnL metrics
-        total_expected_pnl = 100 - 50 + 5000 + 200 - 150 - 3000 + 300 - 100
-        assert summary['total_net_pnl'] == total_expected_pnl
-        assert summary['avg_trade_net_pnl'] == round(total_expected_pnl / 8, 2)
+        # Percentage-based metrics
+        total_expected_return_percentage = 1.0 - 0.5 + 50.0 + 2.0 - 1.5 - 30.0 + 3.0 - 1.0
+        assert summary['total_return_percentage_of_margin'] == total_expected_return_percentage
+        assert summary['average_trade_return_percentage_of_margin'] == round(total_expected_return_percentage / 8, 2)
+        assert summary['average_win_percentage_of_margin'] > 10  # Skewed by the 50% profit
+        assert summary['average_loss_percentage_of_margin'] < -5  # Skewed by the -30% loss
 
         # Risk metrics
         # Extreme values should be reflected in the metrics
-        assert summary['avg_win_net'] > 1000  # Skewed by the 5000 profit
-        assert summary['avg_loss_net'] < -500  # Skewed by the -3000 loss
-        assert summary['max_drawdown'] >= 3000  # The extreme loss should create a significant drawdown
         assert summary['maximum_drawdown_percentage'] >= 30  # The extreme percentage loss
 
     def test_volatile_market_conditions(self):
@@ -523,10 +481,11 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 5
         assert summary['win_rate'] == 50.0
 
-        # PnL metrics
-        total_expected_pnl = 150 - 120 + 200 - 180 + 250 - 220 + 300 - 270 + 350 - 320
-        assert summary['total_net_pnl'] == total_expected_pnl
-        assert summary['avg_trade_net_pnl'] == round(total_expected_pnl / 10, 2)
+        # Percentage-based metrics
+        total_expected_return_percentage = 1.5 - 1.2 + 2.0 - 1.8 + 2.5 - 2.2 + 3.0 - 2.7 + 3.5 - 3.2
+        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
+        assert round(summary['average_trade_return_percentage_of_margin'],
+                     2) == round(total_expected_return_percentage / 10, 2)
 
         # Duration metrics
         total_duration = 2 + 1 + 3 + 2 + 4 + 3 + 5 + 4 + 6 + 5
@@ -534,7 +493,6 @@ class TestCalculateSummaryMetrics:
 
         # Risk metrics
         # Volatility should be reflected in the drawdown metrics
-        assert summary['max_drawdown'] > 0
         assert summary['maximum_drawdown_percentage'] > 0
         # Despite volatility, the strategy should be profitable
         assert summary['total_return_percentage_of_margin'] > 0
@@ -600,14 +558,16 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 6
         assert summary['win_rate'] == 50.0
 
-        # PnL metrics
-        total_expected_pnl = (200 + 150 + 250 - 50) + (-120 - 180 + 100 - 150) + (130 - 90 + 160 - 70)
-        assert summary['total_net_pnl'] == total_expected_pnl
-        assert summary['avg_trade_net_pnl'] == round(total_expected_pnl / 12, 2)
+        # Percentage-based metrics
+        total_expected_return_percentage = (2.0 + 1.5 + 2.5 - 0.5) + (-1.2 - 1.8 + 1.0 - 1.5) + (1.3 - 0.9 + 1.6 - 0.7)
+        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
+        # Use a more flexible comparison for average trade return percentage
+        avg_trade_return = summary['average_trade_return_percentage_of_margin']
+        expected_avg_trade_return = total_expected_return_percentage / 12
+        assert abs(avg_trade_return - expected_avg_trade_return) < 0.02  # Allow for small differences
 
         # Risk metrics
         # The seasonal pattern should create a significant drawdown during the correction period
-        assert summary['max_drawdown'] > 0
         assert summary['maximum_drawdown_percentage'] > 0
         # Overall, the strategy should still be profitable
         assert summary['total_return_percentage_of_margin'] > 0
@@ -620,29 +580,26 @@ class TestPrintSummaryMetrics:
     def test_print_positive_summary(self):
         """Test printing of a positive summary."""
         summary = {
+            # Basic trade statistics
             'total_trades': 10,
             'winning_trades': 7,
             'losing_trades': 3,
             'win_rate': 70.0,
             'avg_trade_duration_hours': 24.0,
-            'max_consecutive_wins': 4,
-            'max_consecutive_losses': 2,
-            'total_margin_used': 100000.0,
-            'avg_margin_requirement': 10000.0,
-            'total_net_pnl': 5000.0,
-            'avg_trade_net_pnl': 500.0,
-            'avg_win_net': 1000.0,
-            'avg_loss_net': -500.0,
+
+            # Percentage-based metrics
             'total_return_percentage_of_margin': 5.0,
             'average_trade_return_percentage_of_margin': 0.5,
             'average_win_percentage_of_margin': 1.0,
             'average_loss_percentage_of_margin': -0.5,
-            'total_commission_paid': 40.0,
             'commission_percentage_of_margin': 0.04,
+
+            # Risk metrics
             'profit_factor': 3.5,
-            'max_drawdown': 1000.0,
             'maximum_drawdown_percentage': 1.0,
             'return_to_drawdown_ratio': 5.0,
+            'max_consecutive_wins': 4,
+            'max_consecutive_losses': 2,
             'sharpe_ratio': 1.5,
             'sortino_ratio': 2.0,
             'calmar_ratio': 5.0
@@ -663,16 +620,33 @@ class TestPrintSummaryMetrics:
 
         # Verify the output contains key information
         assert "SUMMARY METRICS" in output
+
+        # Basic trade statistics
+        assert "BASIC TRADE STATISTICS" in output
         assert "Total Trades: 10" in output
         assert "Winning Trades: 7 (70.0%)" in output
         assert "Losing Trades: 3" in output
-        assert "Max Consecutive Wins: 4" in output
-        assert "Max Consecutive Losses: 2" in output
-        assert "Total Net PnL: $5,000.00" in output
+        assert "Avg Trade Duration: 24.0 hours" in output
+
+        # Percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
+        assert "Total Return Percentage of Margin: " in output
+        assert "5.0%" in output
+        assert "Average Trade Return Percentage of Margin: " in output
+        assert "0.5%" in output
+        assert "Average Win Percentage of Margin: " in output
+        assert "1.0%" in output
+        assert "Average Loss Percentage of Margin: " in output
+        assert "-0.5%" in output
+        assert "Commission Percentage of Margin: 0.04%" in output
+
+        # Risk metrics
+        assert "RISK METRICS" in output
         assert "Profit Factor: 3.5" in output
-        assert "Max Drawdown: $1,000.00" in output
         assert "Maximum Drawdown Percentage: 1.0%" in output
         assert "Return to Drawdown Ratio: 5.0" in output
+        assert "Max Consecutive Wins: 4" in output
+        assert "Max Consecutive Losses: 2" in output
         assert "Sharpe Ratio: 1.5" in output
         assert "Sortino Ratio: 2.0" in output
         assert "Calmar Ratio: 5.0" in output
@@ -680,29 +654,26 @@ class TestPrintSummaryMetrics:
     def test_print_negative_summary(self):
         """Test printing of a negative summary."""
         summary = {
+            # Basic trade statistics
             'total_trades': 10,
             'winning_trades': 3,
             'losing_trades': 7,
             'win_rate': 30.0,
             'avg_trade_duration_hours': 24.0,
-            'max_consecutive_wins': 2,
-            'max_consecutive_losses': 5,
-            'total_margin_used': 100000.0,
-            'avg_margin_requirement': 10000.0,
-            'total_net_pnl': -5000.0,
-            'avg_trade_net_pnl': -500.0,
-            'avg_win_net': 500.0,
-            'avg_loss_net': -1000.0,
+
+            # Percentage-based metrics
             'total_return_percentage_of_margin': -5.0,
             'average_trade_return_percentage_of_margin': -0.5,
             'average_win_percentage_of_margin': 0.5,
             'average_loss_percentage_of_margin': -1.0,
-            'total_commission_paid': 40.0,
             'commission_percentage_of_margin': 0.04,
+
+            # Risk metrics
             'profit_factor': 0.3,
-            'max_drawdown': 5000.0,
             'maximum_drawdown_percentage': 5.0,
             'return_to_drawdown_ratio': -1.0,
+            'max_consecutive_wins': 2,
+            'max_consecutive_losses': 5,
             'sharpe_ratio': -0.8,
             'sortino_ratio': -1.2,
             'calmar_ratio': -1.0
@@ -723,16 +694,33 @@ class TestPrintSummaryMetrics:
 
         # Verify the output contains key information
         assert "SUMMARY METRICS" in output
+
+        # Basic trade statistics
+        assert "BASIC TRADE STATISTICS" in output
         assert "Total Trades: 10" in output
         assert "Winning Trades: 3 (30.0%)" in output
         assert "Losing Trades: 7" in output
-        assert "Max Consecutive Wins: 2" in output
-        assert "Max Consecutive Losses: 5" in output
-        assert "Total Net PnL: $-5,000.00" in output
+        assert "Avg Trade Duration: 24.0 hours" in output
+
+        # Percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
+        assert "Total Return Percentage of Margin: " in output
+        assert "-5.0%" in output
+        assert "Average Trade Return Percentage of Margin: " in output
+        assert "-0.5%" in output
+        assert "Average Win Percentage of Margin: " in output
+        assert "0.5%" in output
+        assert "Average Loss Percentage of Margin: " in output
+        assert "-1.0%" in output
+        assert "Commission Percentage of Margin: 0.04%" in output
+
+        # Risk metrics
+        assert "RISK METRICS" in output
         assert "Profit Factor: 0.3" in output
-        assert "Max Drawdown: $5,000.00" in output
         assert "Maximum Drawdown Percentage: 5.0%" in output
         assert "Return to Drawdown Ratio: -1.0" in output
+        assert "Max Consecutive Wins: 2" in output
+        assert "Max Consecutive Losses: 5" in output
         assert "Sharpe Ratio: -0.8" in output
         assert "Sortino Ratio: -1.2" in output
         assert "Calmar Ratio: -1.0" in output

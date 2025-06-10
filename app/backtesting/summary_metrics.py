@@ -199,46 +199,28 @@ def calculate_summary_metrics(trades):
         'inf'
     )
 
-    # Calculate maximum consecutive wins and losses
-    max_consecutive_wins = calculate_max_consecutive(trades, win=True)
-    max_consecutive_losses = calculate_max_consecutive(trades, win=False)
-
     # Calculate performance ratios
     sharpe_ratio = calculate_sharpe_ratio(trades)
     sortino_ratio = calculate_sortino_ratio(trades)
     calmar_ratio = calculate_calmar_ratio(trades)
 
     return {
-        # Basic trade statistics
+        # Basic info
         'total_trades': total_trades,
         'winning_trades': win_count,
         'losing_trades': loss_count,
         'win_rate': round(win_rate, 2),
         'avg_trade_duration_hours': round(avg_duration_hours, 2),
-        'max_consecutive_wins': max_consecutive_wins,
-        'max_consecutive_losses': max_consecutive_losses,
 
-        # Dollar-based metrics
-        'total_margin_used': round(total_margin_used, 2),
-        'avg_margin_requirement': round(avg_margin_requirement, 2),
-        'total_net_pnl': round(total_net_pnl, 2),
-        'avg_trade_net_pnl': round(avg_trade_pnl, 2),
-        'avg_win_net': round(avg_win, 2),
-        'avg_loss_net': round(avg_loss, 2),
-
-        # Normalized metrics (percentages)
+        # Percentage-based metrics
         'total_return_percentage_of_margin': round(total_return_percentage_of_margin, 2),
         'average_trade_return_percentage_of_margin': round(average_trade_return_percentage_of_margin, 2),
         'average_win_percentage_of_margin': round(average_win_percentage_of_margin, 2),
         'average_loss_percentage_of_margin': round(average_loss_percentage_of_margin, 2),
-
-        # Commission metrics
-        'total_commission_paid': round(total_commission_paid, 2),
         'commission_percentage_of_margin': round(commission_percentage_of_margin, 2),
 
         # Risk metrics
         'profit_factor': round(profit_factor, 2),
-        'max_drawdown': max_drawdown,
         'maximum_drawdown_percentage': maximum_drawdown_percentage,
         'return_to_drawdown_ratio': round(return_to_drawdown_ratio, 2),
         'sharpe_ratio': round(sharpe_ratio, 2),
@@ -269,39 +251,22 @@ def print_summary_metrics(summary):
     print(f'Winning Trades: {summary["winning_trades"]} ({summary["win_rate"]}%)')
     print(f'Losing Trades: {summary["losing_trades"]}')
     print(f'Avg Trade Duration: {summary["avg_trade_duration_hours"]} hours')
-    print(f'Max Consecutive Wins: {summary.get("max_consecutive_wins", 0)}')
-    print(f'Max Consecutive Losses: {summary.get("max_consecutive_losses", 0)}')
 
-    # ===== DOLLAR-BASED METRICS =====
-    print('\n--- DOLLAR-BASED METRICS ---')
-    print(f'Total Money Invested (Margin): ${summary.get("total_margin_used", 0):,.2f}')
-    print(f'Avg Margin Requirement per Trade: ${summary.get("avg_margin_requirement", 0):,.2f}')
-    print(f'Total Net PnL: ${summary["total_net_pnl"]:,.2f}')
-    print(f'Avg Trade PnL: ${summary["avg_trade_net_pnl"]:,.2f}')
-    print(f'Avg Win: ${summary["avg_win_net"]:,.2f}')
-    print(f'Avg Loss: ${summary["avg_loss_net"]:,.2f}')
-
-    # ===== NORMALIZED METRICS (PERCENTAGES) =====
-    print('\n--- NORMALIZED METRICS (PERCENTAGES) ---')
+    # ===== PERCENTAGE-BASED METRICS =====
+    print('\n--- PERCENTAGE-BASED METRICS ---')
     print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{RESET}')
     print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}')
     print(f'Average Win Percentage of Margin: {GREEN}{summary["average_win_percentage_of_margin"]}%{RESET}')
     print(f'Average Loss Percentage of Margin: {RED}{summary["average_loss_percentage_of_margin"]}%{RESET}')
-
-    # ===== COMMISSION METRICS =====
-    print('\n--- COMMISSION METRICS ---')
-    print(f'Total Commission Paid: ${summary["total_commission_paid"]:,.2f}')
     print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')
 
     # ===== RISK METRICS =====
     print('\n--- RISK METRICS ---')
     print(f'Profit Factor: {summary["profit_factor"]}')
-    print(f'Max Drawdown: ${summary.get("max_drawdown", 0):,.2f}')
     print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
     print(f'Return to Drawdown Ratio: {summary.get("return_to_drawdown_ratio", 0)}')
-
-    # ===== PERFORMANCE RATIOS =====
-    print('\n--- PERFORMANCE RATIOS ---')
+    print(f'Max Consecutive Wins: {summary.get("max_consecutive_wins", 0)}')
+    print(f'Max Consecutive Losses: {summary.get("max_consecutive_losses", 0)}')
     print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
     print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
     print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')

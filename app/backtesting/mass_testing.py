@@ -292,27 +292,26 @@ class MassTester:
         return pd.DataFrame(
             [
                 {
+                    # Basic info
                     'month': result['month'],
                     'symbol': result['symbol'],
                     'interval': result['interval'],
                     'strategy': result['strategy'],
-                    # Trade counts
                     'total_trades': result['metrics'].get('total_trades', 0),
                     'win_rate': result['metrics'].get('win_rate', 0),
-                    # Percentage-based metrics (for normalized comparison)
-                    'profit_factor': result['metrics'].get('profit_factor', 0),
+
+                    # Percentage-based metrics
                     'total_return_percentage_of_margin': result['metrics'].get('total_return_percentage_of_margin', 0),
                     'average_trade_return_percentage_of_margin': result['metrics'].get(
                         'average_trade_return_percentage_of_margin', 0),
                     'average_win_percentage_of_margin': result['metrics'].get('average_win_percentage_of_margin', 0),
                     'average_loss_percentage_of_margin': result['metrics'].get('average_loss_percentage_of_margin', 0),
+                    'commission_percentage_of_margin': result['metrics'].get('commission_percentage_of_margin', 0),
+
+                    # Risk metrics
+                    'profit_factor': result['metrics'].get('profit_factor', 0),
                     'maximum_drawdown_percentage': result['metrics'].get('maximum_drawdown_percentage', 0),
-                    # Dollar-based metrics (for reference)
-                    'total_net_pnl': result['metrics'].get('total_net_pnl', 0),
-                    'avg_trade_net_pnl': result['metrics'].get('avg_trade_net_pnl', 0),
-                    # New performance metrics
-                    'max_consecutive_wins': result['metrics'].get('max_consecutive_wins', 0),
-                    'max_consecutive_losses': result['metrics'].get('max_consecutive_losses', 0),
+                    'return_to_drawdown_ratio': result['metrics'].get('return_to_drawdown_ratio', 0),
                     'sharpe_ratio': result['metrics'].get('sharpe_ratio', 0),
                     'sortino_ratio': result['metrics'].get('sortino_ratio', 0),
                     'calmar_ratio': result['metrics'].get('calmar_ratio', 0)

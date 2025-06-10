@@ -603,11 +603,7 @@ class TestPrintTradeMetrics:
             'exit_price': 4210.0,
             'return_percentage_of_margin': 2.5,
             'return_percentage_of_contract': 0.5,
-            'margin_requirement': 16889.88,
-            'commission': 4.0,
-            'pnl_points': 10.0,
-            'gross_pnl': 500.0,
-            'net_pnl': 496.0
+            'net_pnl': 496.0  # Still needed for internal calculations
         }
 
         # Capture stdout
@@ -631,19 +627,19 @@ class TestPrintTradeMetrics:
         assert "Entry Price: 4200.0" in output
         assert "Exit Price: 4210.0" in output
 
-        # Check for text without exact color codes
+        # Check for percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
         assert "Net Return % of Margin:" in output
         assert "2.5%" in output
         assert "Return % of Contract:" in output
         assert "0.5%" in output
-        assert "Margin Requirement: $16889.88" in output
-        assert "Commission (dollars): $4.0" in output
-        assert "PnL (points):" in output
-        assert "10.0" in output
-        assert "Gross PnL (dollars):" in output
-        assert "$500.0" in output
-        assert "Net PnL (dollars):" in output
-        assert "$496.0" in output
+
+        # Verify dollar-based metrics are not present
+        assert "Margin Requirement:" not in output
+        assert "Commission (dollars):" not in output
+        assert "PnL (points):" not in output
+        assert "Gross PnL (dollars):" not in output
+        assert "Net PnL (dollars):" not in output
 
     def test_print_losing_trade(self):
         """Test printing of a losing trade."""
@@ -658,11 +654,7 @@ class TestPrintTradeMetrics:
             'exit_price': 4190.0,
             'return_percentage_of_margin': -0.5,
             'return_percentage_of_contract': -0.1,
-            'margin_requirement': 16889.88,
-            'commission': 4.0,
-            'pnl_points': -10.0,
-            'gross_pnl': -500.0,
-            'net_pnl': -504.0
+            'net_pnl': -504.0  # Still needed for internal calculations
         }
 
         # Capture stdout
@@ -681,12 +673,16 @@ class TestPrintTradeMetrics:
         # Verify the output contains key information
         assert "TRADE METRICS" in output
 
-        # Check for text without exact color codes
+        # Check for percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
         assert "Net Return % of Margin:" in output
         assert "-0.5%" in output
-        assert "PnL (points):" in output
-        assert "-10.0" in output
-        assert "Gross PnL (dollars):" in output
-        assert "$-500.0" in output
-        assert "Net PnL (dollars):" in output
-        assert "$-504.0" in output
+        assert "Return % of Contract:" in output
+        assert "-0.1%" in output
+
+        # Verify dollar-based metrics are not present
+        assert "Margin Requirement:" not in output
+        assert "Commission (dollars):" not in output
+        assert "PnL (points):" not in output
+        assert "Gross PnL (dollars):" not in output
+        assert "Net PnL (dollars):" not in output

@@ -488,30 +488,63 @@ class TestMassTester:
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 2
         assert list(df.columns) == [
-            'month', 'symbol', 'interval', 'strategy', 'total_trades', 'win_rate',
-            'profit_factor', 'total_return_percentage_of_margin', 'average_trade_return_percentage_of_margin',
-            'average_win_percentage_of_margin', 'average_loss_percentage_of_margin',
-            'maximum_drawdown_percentage', 'total_net_pnl', 'avg_trade_net_pnl',
-            'max_consecutive_wins', 'max_consecutive_losses', 'sharpe_ratio', 'sortino_ratio', 'calmar_ratio'
+            # Basic info
+            'month',
+            'symbol',
+            'interval',
+            'strategy',
+            'total_trades',
+            'win_rate',
+
+            # Percentage-based metrics
+            'total_return_percentage_of_margin',
+            'average_trade_return_percentage_of_margin',
+            'average_win_percentage_of_margin',
+            'average_loss_percentage_of_margin',
+            'commission_percentage_of_margin',
+
+            # Risk metrics
+            'profit_factor',
+            'maximum_drawdown_percentage',
+            'return_to_drawdown_ratio',
+            'sharpe_ratio',
+            'sortino_ratio',
+            'calmar_ratio'
         ]
 
         # Verify the values
+        # Basic info
         assert df.iloc[0]['strategy'] == 'Strategy 1'
+        # Trade counts
         assert df.iloc[0]['total_trades'] == 10
         assert df.iloc[0]['win_rate'] == 60.0
+        # Percentage-based metrics
+        assert df.iloc[0]['total_return_percentage_of_margin'] == 5.0
+        assert df.iloc[0]['average_trade_return_percentage_of_margin'] == 0.5
+        assert df.iloc[0]['average_win_percentage_of_margin'] == 1.0
+        assert df.iloc[0]['average_loss_percentage_of_margin'] == -0.5
+        # Risk metrics
         assert df.iloc[0]['profit_factor'] == 1.5
-        assert df.iloc[0]['max_consecutive_wins'] == 3
-        assert df.iloc[0]['max_consecutive_losses'] == 1
+        assert df.iloc[0]['maximum_drawdown_percentage'] == 2.0
+        assert df.iloc[0]['return_to_drawdown_ratio'] >= 0
         assert df.iloc[0]['sharpe_ratio'] == 1.2
         assert df.iloc[0]['sortino_ratio'] == 1.5
         assert df.iloc[0]['calmar_ratio'] == 2.5
 
+        # Basic info
         assert df.iloc[1]['strategy'] == 'Strategy 2'
+        # Trade counts
         assert df.iloc[1]['total_trades'] == 5
         assert df.iloc[1]['win_rate'] == 40.0
+        # Percentage-based metrics
+        assert df.iloc[1]['total_return_percentage_of_margin'] == -2.0
+        assert df.iloc[1]['average_trade_return_percentage_of_margin'] == -0.4
+        assert df.iloc[1]['average_win_percentage_of_margin'] == 0.8
+        assert df.iloc[1]['average_loss_percentage_of_margin'] == -1.0
+        # Risk metrics
         assert df.iloc[1]['profit_factor'] == 0.8
-        assert df.iloc[1]['max_consecutive_wins'] == 1
-        assert df.iloc[1]['max_consecutive_losses'] == 2
+        assert df.iloc[1]['maximum_drawdown_percentage'] == 3.0
+        assert df.iloc[1]['return_to_drawdown_ratio'] <= 0
         assert df.iloc[1]['sharpe_ratio'] == -0.8
         assert df.iloc[1]['sortino_ratio'] == -1.0
         assert df.iloc[1]['calmar_ratio'] == -0.7
