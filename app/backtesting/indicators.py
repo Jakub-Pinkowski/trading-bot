@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
+from app.utils.logger import get_logger
+
+# Initialize logger
+logger = get_logger('indicators')
 
 
 # Helper function to create a hashable key for pandas Series
@@ -15,6 +19,11 @@ def _hash_series(series):
 
 # RSI
 def calculate_rsi(prices, period=14):
+    # Validate period
+    if period <= 0:
+        logger.error(f"Invalid period value for RSI: {period}. Period must be a positive integer.")
+        raise ValueError("Period must be a positive integer")
+
     # Create a hashable key for the cache
     prices_hash = _hash_series(prices)
 
@@ -52,6 +61,11 @@ def calculate_rsi(prices, period=14):
 
 # EMA
 def calculate_ema(prices, period=9):
+    # Validate period
+    if period <= 0:
+        logger.error(f"Invalid period value for EMA: {period}. Period must be a positive integer.")
+        raise ValueError("Period must be a positive integer")
+
     # Create a hashable key for the cache
     prices_hash = _hash_series(prices)
 

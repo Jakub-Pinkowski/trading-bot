@@ -4,7 +4,6 @@ indicator(title="ATR (Average True Range)", overlay=true)
 // === INPUTS ===
 atrPeriod = input.int(14, title="ATR Period", minval=1)
 atrMultiplier = input.float(2.0, title="ATR Multiplier for Stops", step=0.1, minval=0.1)
-useTrailingStop = input.bool(true, title="Use Trailing Stop")
 useVolatilityBreakout = input.bool(false, title="Use Volatility Breakout Signals")
 
 // === ATR CALCULATION ===
@@ -55,13 +54,13 @@ plot(trend < 0 ? shortStop : na, title="Short Stop", color=color.yellow, linewid
 plot(atrValue, title="ATR Value", color=color.blue, linewidth=1, display=display.none)
 
 // Signal plots
-plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar, 
+plotshape(buy, title="Buy", text="Buy", style=shape.labeldown, location=location.abovebar,
           color=color.green, textcolor=color.white, size=size.tiny)
-plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar, 
+plotshape(sell, title="Sell", text="Sell", style=shape.labelup, location=location.belowbar,
           color=color.red, textcolor=color.white, size=size.tiny)
 
 // === ALERTS ===
-alertcondition(buy, title="ATR Buy", 
+alertcondition(buy, title="ATR Buy",
                message="ATR Buy signal on {{ticker}} at {{close}}")
-alertcondition(sell, title="ATR Sell", 
+alertcondition(sell, title="ATR Sell",
                message="ATR Sell signal on {{ticker}} at {{close}}")
