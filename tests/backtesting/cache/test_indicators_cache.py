@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from app.backtesting.cache.indicators_cache import indicator_cache, CACHE_VERSION
 from app.backtesting.indicators import (
@@ -362,3 +363,189 @@ def test_integration_with_real_calculations():
     pd.testing.assert_series_equal(ema, ema_again)
     pd.testing.assert_frame_equal(macd, macd_again)
     pd.testing.assert_frame_equal(bb, bb_again)
+
+
+def test_indicator_cache_version_change():
+    """Test that cache is invalidated when the version changes."""
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Create sample price data
+    prices = pd.Series([100, 101, 102, 103, 104, 105])
+
+    # Calculate an indicator to add to the cache
+    rsi = calculate_rsi(prices)
+
+    # Get the cache key
+    prices_hash = _hash_series(prices)
+    cache_key = (prices_hash, 14)  # Default period is 14
+
+    # Verify the result is in the cache
+    assert indicator_cache.contains(cache_key)
+
+    # Simulate a version change by creating a new cache instance with a different version
+    with patch('app.backtesting.cache.indicators_cache.CACHE_VERSION', 999):
+        # Create a new cache instance with the new version
+        from app.backtesting.cache.cache_base import Cache
+        new_cache = Cache("indicator", 999)
+
+        # Verify the new cache is empty (doesn't contain the old data)
+        assert not new_cache.contains(cache_key)
+        assert new_cache.size() == 0
+
+
+def test_indicator_cache_corrupted_file():
+    """Test handling of corrupted cache files."""
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Create sample price data
+    prices = pd.Series([100, 101, 102, 103, 104, 105])
+
+    # Calculate an indicator to add to the cache
+    rsi = calculate_rsi(prices)
+
+    # Get the cache key
+    prices_hash = _hash_series(prices)
+    cache_key = (prices_hash, 14)  # Default period is 14
+
+    # Verify the result is in the cache
+    assert indicator_cache.contains(cache_key)
+
+    # Save the cache
+    indicator_cache.save_cache()
+
+    # Simulate a corrupted cache file by mocking pickle.load to raise an exception
+    with patch('pickle.load', side_effect=Exception("Corrupted file")):
+        # Create a new cache instance, which will try to load the corrupted file
+        from app.backtesting.cache.cache_base import Cache
+        new_cache = Cache("indicator", CACHE_VERSION)
+
+        # Verify the new cache is empty (couldn't load the corrupted data)
+        assert not new_cache.contains(cache_key)
+        assert new_cache.size() == 0
+
+
+def test_indicator_cache_interrupted_save():
+    """Test handling of interrupted save operations."""
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Create sample price data
+    prices = pd.Series([100, 101, 102, 103, 104, 105])
+
+    # Calculate an indicator to add to the cache
+    rsi = calculate_rsi(prices)
+
+    # Get the cache key
+    prices_hash = _hash_series(prices)
+    cache_key = (prices_hash, 14)  # Default period is 14
+
+    # Verify the result is in the cache
+    assert indicator_cache.contains(cache_key)
+    cached_rsi = indicator_cache.get(cache_key)
+
+    # Simulate an interrupted save by mocking open to raise an exception
+    with patch('builtins.open', side_effect=Exception("Interrupted save")):
+        # Try to save the cache, which should handle the exception gracefully
+        indicator_cache.save_cache()
+
+    # Verify the cache still contains the data in memory
+    assert indicator_cache.contains(cache_key)
+    pd.testing.assert_series_equal(indicator_cache.get(cache_key), cached_rsi)
+
+
+def test_indicator_cache_large_objects():
+    """Test handling of large objects in the cache to check for memory leaks."""
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Create a large price series (100,000 points)
+    large_prices = pd.Series(range(100_000))
+
+    # Calculate RSI on the large series
+    large_rsi = calculate_rsi(large_prices)
+
+    # Get the cache key
+    prices_hash = _hash_series(large_prices)
+    cache_key = (prices_hash, 14)  # Default period is 14
+
+    # Verify the result is in the cache
+    assert indicator_cache.contains(cache_key)
+    cached_rsi = indicator_cache.get(cache_key)
+    pd.testing.assert_series_equal(cached_rsi, large_rsi)
+
+    # Clear the reference to the original series to allow garbage collection
+    del large_prices
+    del large_rsi
+
+    # Clear the cache to free memory
+    indicator_cache.clear()
+    assert not indicator_cache.contains(cache_key)
+    assert indicator_cache.size() == 0
+
+
+def test_indicator_cache_invalid_keys():
+    """Test handling of invalid keys in the cache."""
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Try to set a non-hashable key (dictionary is not hashable)
+    with pytest.raises(TypeError):
+        indicator_cache.set({'non_hashable': 'key'}, 'value')
+
+    # Try to set a None key
+    indicator_cache.set(None, 'value')
+    assert indicator_cache.contains(None)
+    assert indicator_cache.get(None) == 'value'
+
+    # Try to set an empty string key
+    indicator_cache.set('', 'value')
+    assert indicator_cache.contains('')
+    assert indicator_cache.get('') == 'value'
+
+    # Verify the cache size
+    assert indicator_cache.size() == 2  # None and empty string keys
+
+    # Clear the cache
+    indicator_cache.clear()
+    assert indicator_cache.size() == 0
+
+
+def test_indicator_cache_concurrent_access():
+    """Test handling of concurrent access to the cache."""
+    import threading
+
+    # Clear the cache to start with a clean state
+    indicator_cache.clear()
+
+    # Create a function that adds items to the cache
+    def add_to_cache(start_idx, end_idx):
+        for i in range(start_idx, end_idx):
+            prices = pd.Series(range(i, i + 10))
+            indicator_cache.set(f'key_{i}', calculate_rsi(prices))
+
+    # Create threads to add items to the cache concurrently
+    threads = []
+    for i in range(5):
+        t = threading.Thread(target=add_to_cache, args=(i * 10, (i + 1) * 10))
+        threads.append(t)
+
+    # Start all threads
+    for t in threads:
+        t.start()
+
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
+    # Verify that all items were added to the cache
+    assert indicator_cache.size() >= 50  # At least 50 items (might be more due to RSI calculations)
+
+    # Verify that we can retrieve some items
+    for i in range(0, 50, 10):
+        assert indicator_cache.contains(f'key_{i}')
+
+    # Clear the cache
+    indicator_cache.clear()
+    assert indicator_cache.size() == 0

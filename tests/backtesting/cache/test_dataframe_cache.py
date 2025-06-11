@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from app.backtesting.cache.cache_base import Cache
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe, CACHE_VERSION
 
 
@@ -444,4 +445,177 @@ def test_dataframe_cache_with_non_existent_files():
 
     # Verify that the invalid file was not added to the cache
     assert not dataframe_cache.contains("invalid_parquet_file.parquet")
+    assert dataframe_cache.size() == 0
+
+
+def test_dataframe_cache_version_change():
+    """Test that cache is invalidated when the version changes."""
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Add a dataframe to the cache
+    test_key = "test_file.parquet"
+    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+    dataframe_cache.set(test_key, test_value)
+
+    # Verify the dataframe is in the cache
+    assert dataframe_cache.contains(test_key)
+
+    # Simulate a version change by creating a new cache instance with a different version
+    with patch('app.backtesting.cache.dataframe_cache.CACHE_VERSION', 999):
+        # Create a new cache instance with the new version
+        new_cache = Cache("dataframe", 999)
+
+        # Verify the new cache is empty (doesn't contain the old data)
+        assert not new_cache.contains(test_key)
+        assert new_cache.size() == 0
+
+
+def test_dataframe_cache_corrupted_file():
+    """Test handling of corrupted cache files."""
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Add some data to the cache
+    test_key = "test_file.parquet"
+    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+    dataframe_cache.set(test_key, test_value)
+
+    # Save the cache
+    dataframe_cache.save_cache()
+
+    # Simulate a corrupted cache file by mocking pickle.load to raise an exception
+    with patch('pickle.load', side_effect=Exception("Corrupted file")):
+        # Create a new cache instance, which will try to load the corrupted file
+        new_cache = Cache("dataframe", CACHE_VERSION)
+
+        # Verify the new cache is empty (couldn't load the corrupted data)
+        assert not new_cache.contains(test_key)
+        assert new_cache.size() == 0
+
+
+def test_dataframe_cache_interrupted_save():
+    """Test handling of interrupted save operations."""
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Add some data to the cache
+    test_key = "test_file.parquet"
+    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+    dataframe_cache.set(test_key, test_value)
+
+    # Simulate an interrupted save by mocking open to raise an exception
+    with patch('builtins.open', side_effect=Exception("Interrupted save")):
+        # Try to save the cache, which should handle the exception gracefully
+        dataframe_cache.save_cache()
+
+    # Verify the cache still contains the data in memory
+    assert dataframe_cache.contains(test_key)
+    pd.testing.assert_frame_equal(dataframe_cache.get(test_key), test_value)
+
+
+def test_dataframe_cache_large_objects():
+    """Test handling of large objects in the cache to check for memory leaks."""
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Create a large dataframe (100,000 rows x 10 columns)
+    large_df = pd.DataFrame({
+        f'col_{i}': np.random.rand(100_000) for i in range(10)
+    })
+
+    # Add the large dataframe to the cache
+    test_key = "large_file.parquet"
+    dataframe_cache.set(test_key, large_df)
+
+    # Verify the dataframe is in the cache
+    assert dataframe_cache.contains(test_key)
+
+    # Get the dataframe from the cache and verify it matches the original
+    cached_df = dataframe_cache.get(test_key)
+    pd.testing.assert_frame_equal(cached_df, large_df)
+
+    # Clear the reference to the original dataframe to allow garbage collection
+    del large_df
+
+    # Clear the cache to free memory
+    dataframe_cache.clear()
+    assert not dataframe_cache.contains(test_key)
+    assert dataframe_cache.size() == 0
+
+
+def test_dataframe_cache_concurrent_access():
+    """Test handling of concurrent access to the cache."""
+    import threading
+
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Create a function that adds dataframes to the cache
+    def add_to_cache(start_idx, end_idx):
+        for i in range(start_idx, end_idx):
+            df = pd.DataFrame({
+                'A': range(i, i + 10),
+                'B': range(i + 10, i + 20)
+            })
+            dataframe_cache.set(f'file_{i}.parquet', df)
+
+    # Create threads to add dataframes to the cache concurrently
+    threads = []
+    for i in range(5):
+        t = threading.Thread(target=add_to_cache, args=(i * 10, (i + 1) * 10))
+        threads.append(t)
+
+    # Start all threads
+    for t in threads:
+        t.start()
+
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
+    # Verify that all dataframes were added to the cache
+    assert dataframe_cache.size() == 50  # 5 threads * 10 dataframes each
+
+    # Verify that we can retrieve some of the dataframes
+    for i in range(0, 50, 10):
+        key = f'file_{i}.parquet'
+        assert dataframe_cache.contains(key)
+        df = dataframe_cache.get(key)
+        assert isinstance(df, pd.DataFrame)
+        assert df.shape == (10, 2)
+        assert list(df.columns) == ['A', 'B']
+        assert df['A'].iloc[0] == i
+        assert df['B'].iloc[0] == i + 10
+
+    # Clear the cache
+    dataframe_cache.clear()
+    assert dataframe_cache.size() == 0
+
+
+def test_dataframe_cache_invalid_keys():
+    """Test handling of invalid keys in the cache."""
+    # Clear the cache to start with a clean state
+    dataframe_cache.clear()
+
+    # Try to set a non-hashable key (dictionary is not hashable)
+    with pytest.raises(TypeError):
+        dataframe_cache.set({'non_hashable': 'key'}, pd.DataFrame())
+
+    # Try to set a None key
+    test_df = pd.DataFrame({'A': [1, 2, 3]})
+    dataframe_cache.set(None, test_df)
+    assert dataframe_cache.contains(None)
+    pd.testing.assert_frame_equal(dataframe_cache.get(None), test_df)
+
+    # Try to set an empty string key
+    dataframe_cache.set('', test_df)
+    assert dataframe_cache.contains('')
+    pd.testing.assert_frame_equal(dataframe_cache.get(''), test_df)
+
+    # Verify the cache size
+    assert dataframe_cache.size() == 2  # None and empty string keys
+
+    # Clear the cache
+    dataframe_cache.clear()
     assert dataframe_cache.size() == 0
