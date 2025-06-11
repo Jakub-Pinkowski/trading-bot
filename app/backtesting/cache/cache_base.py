@@ -33,7 +33,6 @@ class Cache:
                     # Only use the cache if it's a dictionary
                     if isinstance(loaded_cache, dict):
                         self.cache_data = loaded_cache
-                        logger.debug(f"Loaded {len(self.cache_data)} items from {self.cache_name} cache")
                     else:
                         logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
             except Exception as load_err:
@@ -44,7 +43,6 @@ class Cache:
         try:
             with open(self.cache_file, 'wb') as f:
                 pickle.dump(self.cache_data, f)
-            logger.debug(f"{self.cache_name.capitalize()} cache saved to {self.cache_file} with {len(self.cache_data)} entries")
         except Exception as save_err:
             logger.error(f"Failed to save {self.cache_name} cache to {self.cache_file}: {save_err}")
 
