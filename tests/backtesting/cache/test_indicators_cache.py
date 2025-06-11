@@ -6,8 +6,9 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache, CACHE_VERSION
 from app.backtesting.indicators import (
     calculate_rsi, calculate_ema, calculate_atr,
-    calculate_macd, calculate_bollinger_bands, _hash_series
+    calculate_macd, calculate_bollinger_bands,
 )
+from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def test_indicator_cache_instance():
@@ -115,7 +116,7 @@ def test_rsi_caching():
     rsi1 = calculate_rsi(prices)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = (prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
@@ -145,7 +146,7 @@ def test_ema_caching():
     ema1 = calculate_ema(prices, period=5)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = ('ema', prices_hash, 5)
 
     # Verify the result is in the cache
@@ -180,7 +181,7 @@ def test_atr_caching():
     atr1 = calculate_atr(df, period=7)
 
     # Get the cache key
-    df_hash = _hash_series(df['high']) + _hash_series(df['low']) + _hash_series(df['close'])
+    df_hash = hash_series(df['high']) + hash_series(df['low']) + hash_series(df['close'])
     cache_key = ('atr', df_hash, 7)
 
     # Verify the result is in the cache
@@ -214,7 +215,7 @@ def test_macd_caching():
     macd1 = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = ('macd', prices_hash, 12, 26, 9)
 
     # Verify the result is in the cache
@@ -248,7 +249,7 @@ def test_bollinger_bands_caching():
     bb1 = calculate_bollinger_bands(prices, period=20, num_std=2)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = ('bb', prices_hash, 20, 2)
 
     # Verify the result is in the cache
@@ -286,7 +287,7 @@ def test_cache_persistence_across_calculations():
     ema_21 = calculate_ema(prices, period=21)
 
     # Verify all calculations are in the cache
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
 
     assert indicator_cache.contains((prices_hash, 14))  # RSI 14
     assert indicator_cache.contains((prices_hash, 7))  # RSI 7
@@ -334,7 +335,7 @@ def test_integration_with_real_calculations():
     bb = calculate_bollinger_bands(prices)
 
     # Verify all calculations are in the cache
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
 
     assert indicator_cache.contains((prices_hash, 14))  # RSI
     assert indicator_cache.contains(('ema', prices_hash, 9))  # EMA
@@ -377,7 +378,7 @@ def test_indicator_cache_version_change():
     rsi = calculate_rsi(prices)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = (prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
@@ -406,7 +407,7 @@ def test_indicator_cache_corrupted_file():
     rsi = calculate_rsi(prices)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = (prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
@@ -438,7 +439,7 @@ def test_indicator_cache_interrupted_save():
     rsi = calculate_rsi(prices)
 
     # Get the cache key
-    prices_hash = _hash_series(prices)
+    prices_hash = hash_series(prices)
     cache_key = (prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
@@ -467,7 +468,7 @@ def test_indicator_cache_large_objects():
     large_rsi = calculate_rsi(large_prices)
 
     # Get the cache key
-    prices_hash = _hash_series(large_prices)
+    prices_hash = hash_series(large_prices)
     cache_key = (prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache

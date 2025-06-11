@@ -21,7 +21,6 @@ trading-bot/
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
 │   │   ├── __init__.py
-│   │   ├── indicators.py                         # Technical indicators
 │   │   ├── mass_testing.py                       # Mass testing framework
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── summary_metrics.py                    # Summary metrics
@@ -44,7 +43,6 @@ trading-bot/
 │   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── backtesting_utils/
 │   │   │   ├── __init__.py
-│   │   │   └── backtesting_utils.py               # Backtesting utilities
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection_utils.py               # Connection utilities
