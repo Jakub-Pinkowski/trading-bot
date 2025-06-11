@@ -1,5 +1,3 @@
-import numpy as np
-
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series, logger
 
@@ -38,7 +36,6 @@ def calculate_rsi(prices, period=14):
 
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
-    rsi[:period] = np.nan  # First period points are undefined
 
     # Cache the result
     indicator_cache.set(cache_key, rsi)
