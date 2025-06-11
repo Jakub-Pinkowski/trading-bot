@@ -452,12 +452,9 @@ class TestRSIStrategy:
         # Add indicators
         df = strategy.add_indicators(df)
 
-        # Debug: Print RSI values for planting and harvest seasons
+        # Debug: Get RSI values for planting and harvest seasons
         planting_season_df = df[(df.index.month == 4) | (df.index.month == 5)]
         harvest_season_df = df[(df.index.month == 9) | (df.index.month == 10)]
-        print(f"RSI values in planting season (min, max): {planting_season_df['rsi'].min()}, {planting_season_df['rsi'].max()}")
-        print(f"RSI values in harvest season (min, max): {harvest_season_df['rsi'].min()}, {harvest_season_df['rsi'].max()}")
-        print(f"RSI threshold values - lower: {strategy.lower}, upper: {strategy.upper}")
 
         # Directly manipulate RSI values in the harvest season to ensure crossovers
         # Find days in harvest season
@@ -500,10 +497,6 @@ class TestRSIStrategy:
                                   (prev_rsi < strategy.upper) &
                                   (df['rsi'] >= strategy.upper)]
 
-        print(f"Buy signals in planting season: {len(buy_signals_planting)}")
-        print(f"Sell signals in planting season: {len(sell_signals_planting)}")
-        print(f"Buy signals in harvest season: {len(buy_signals_harvest)}")
-        print(f"Sell signals in harvest season: {len(sell_signals_harvest)}")
 
         # Generate signals
         df = strategy.generate_signals(df)
@@ -538,10 +531,7 @@ class TestRSIStrategy:
             else:
                 normal_season_trades.append(trade)
 
-        # Print trade statistics by season for analysis
-        print(f"Planting season trades: {len(planting_season_trades)}")
-        print(f"Harvest season trades: {len(harvest_season_trades)}")
-        print(f"Normal season trades: {len(normal_season_trades)}")
+        # Trade statistics by season for analysis
 
         # Assert that the strategy generates trades in high-volatility seasons
         assert len(planting_season_trades) > 0, "Strategy should generate trades in planting season"
@@ -671,8 +661,6 @@ class TestRSIStrategy:
         # This test intentionally doesn't assert specific outcomes
         # as the strategy might have different responses to limit moves
         # The goal is to document behavior during extreme market conditions
-        print(f"Trades after limit up: {len(limit_up_trades)}")
-        print(f"Trades after limit down: {len(limit_down_trades)}")
 
         # Assert that the RSI strategy can handle limit moves without errors
         assert True, "RSI strategy can handle limit moves without errors"
@@ -754,21 +742,15 @@ class TestRSIStrategy:
             20], "Price should make a higher high at the second peak"
         assert df['rsi'].iloc[second_peak_idx] < df['rsi'].iloc[20], "RSI should make a lower high at the second peak"
 
-        # Debug: Print RSI values around the second peak
-        print(f"RSI at first peak (day 20): {df['rsi'].iloc[20]}")
-        print(f"RSI at second peak (day {second_peak_idx}): {df['rsi'].iloc[second_peak_idx]}")
-        print(f"RSI threshold values - lower: {strategy.lower}, upper: {strategy.upper}")
+        # Debug: Check RSI values around the second peak
 
         # Check if the RSI at the second peak is above the upper threshold
         is_above_upper = df['rsi'].iloc[second_peak_idx] >= strategy.upper
-        print(f"Is RSI at second peak above upper threshold? {is_above_upper}")
 
         # Check if there's a crossover at the second peak
         prev_rsi = df['rsi'].shift(1)
         is_crossover = (prev_rsi.iloc[second_peak_idx] < strategy.upper) and (
                     df['rsi'].iloc[second_peak_idx] >= strategy.upper)
-        print(f"Is there a crossover at second peak? {is_crossover}")
-        print(f"Previous RSI: {prev_rsi.iloc[second_peak_idx]}, Current RSI: {df['rsi'].iloc[second_peak_idx]}")
 
         # Generate signals
         df = strategy.generate_signals(df)
@@ -779,7 +761,6 @@ class TestRSIStrategy:
         # Check if there's a sell signal around the second peak
         second_peak_signals = df.iloc[33:38]['signal']
         has_sell_signal = -1 in second_peak_signals.values
-        print(f"Signals around second peak: {second_peak_signals.values}")
 
         # Extract trades
         trades = strategy.extract_trades(df, [])
@@ -803,11 +784,8 @@ class TestRSIStrategy:
                     vulnerable_trades.append((trade, pnl))
 
         # Document vulnerability to divergence patterns
-        print(f"Sell signal detected at bearish divergence: {has_sell_signal}")
-        print(f"Vulnerable trades due to divergence: {len(vulnerable_trades)}")
         if vulnerable_trades:
             worst_trade = min(vulnerable_trades, key=lambda x: x[1])
-            print(f"Worst trade loss: {worst_trade[1]:.2%}")
 
         # Test the strategy's behavior during divergence
         # We're testing a known vulnerability, so we're asserting what the current behavior is,

@@ -564,7 +564,6 @@ class TestEMACrossoverStrategy:
         # This test intentionally doesn't assert that high volatility produces more trades
         # as it depends on the specific random seed and strategy parameters
         # Instead, we're documenting the behavior for analysis
-        print(f"High volatility trades: {trade_count}, Low volatility trades: {low_vol_trade_count}")
 
         # Calculate average trade duration for high volatility
         if result:
@@ -580,7 +579,6 @@ class TestEMACrossoverStrategy:
 
                     # High volatility often leads to shorter trade durations due to more crossovers
                     # This is a vulnerability as it can lead to overtrading
-                    print(f"Avg duration high vol: {avg_duration_high_vol}, Avg duration low vol: {avg_duration_low_vol}")
             else:
                 # If trades don't have entry_idx and exit_idx keys, use entry_time and exit_time instead
                 # Calculate duration in days
@@ -594,7 +592,6 @@ class TestEMACrossoverStrategy:
 
                     # High volatility often leads to shorter trade durations due to more crossovers
                     # This is a vulnerability as it can lead to overtrading
-                    print(f"Avg duration high vol: {avg_duration_high_vol} days, Avg duration low vol: {avg_duration_low_vol} days")
 
         # This test exposes the vulnerability of EMA crossover strategies to high volatility
         # which can lead to frequent whipsaws and overtrading
