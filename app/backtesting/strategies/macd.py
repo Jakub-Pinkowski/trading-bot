@@ -1,19 +1,14 @@
 from app.backtesting.indicators import calculate_macd
 from app.backtesting.strategies.base_strategy import BaseStrategy
 
-# Define parameters
-FAST_PERIOD = 12
-SLOW_PERIOD = 26
-SIGNAL_PERIOD = 9
-
 
 # TODO [MEDIUM]: To be tested
 class MACDStrategy(BaseStrategy):
     def __init__(
         self,
-        fast_period=FAST_PERIOD,
-        slow_period=SLOW_PERIOD,
-        signal_period=SIGNAL_PERIOD,
+        fast_period=12,
+        slow_period=26,
+        signal_period=9,
         rollover=False,
         trailing=None
     ):

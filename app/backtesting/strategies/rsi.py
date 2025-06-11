@@ -1,14 +1,9 @@
 from app.backtesting.indicators import calculate_rsi
 from app.backtesting.strategies.base_strategy import BaseStrategy
 
-# Define parameters
-RSI_PERIOD = 14
-LOWER = 30
-UPPER = 70
-
 
 class RSIStrategy(BaseStrategy):
-    def __init__(self, rsi_period=RSI_PERIOD, lower=LOWER, upper=UPPER, rollover=False, trailing=None):
+    def __init__(self, rsi_period=14, lower=30, upper=70, rollover=False, trailing=None):
         super().__init__(rollover=rollover, trailing=trailing)
         self.rsi_period = rsi_period
         self.lower = lower
