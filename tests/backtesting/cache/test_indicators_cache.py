@@ -117,7 +117,7 @@ def test_rsi_caching():
 
     # Get the cache key
     prices_hash = hash_series(prices)
-    cache_key = (prices_hash, 14)  # Default period is 14
+    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)
@@ -289,8 +289,8 @@ def test_cache_persistence_across_calculations():
     # Verify all calculations are in the cache
     prices_hash = hash_series(prices)
 
-    assert indicator_cache.contains((prices_hash, 14))  # RSI 14
-    assert indicator_cache.contains((prices_hash, 7))  # RSI 7
+    assert indicator_cache.contains(('rsi', prices_hash, 14))  # RSI 14
+    assert indicator_cache.contains(('rsi', prices_hash, 7))  # RSI 7
     assert indicator_cache.contains(('ema', prices_hash, 9))  # EMA 9
     assert indicator_cache.contains(('ema', prices_hash, 21))  # EMA 21
 
@@ -337,7 +337,7 @@ def test_integration_with_real_calculations():
     # Verify all calculations are in the cache
     prices_hash = hash_series(prices)
 
-    assert indicator_cache.contains((prices_hash, 14))  # RSI
+    assert indicator_cache.contains(('rsi', prices_hash, 14))  # RSI
     assert indicator_cache.contains(('ema', prices_hash, 9))  # EMA
     assert indicator_cache.contains(('macd', prices_hash, 12, 26, 9))  # MACD
     assert indicator_cache.contains(('bb', prices_hash, 20, 2))  # Bollinger Bands
@@ -379,7 +379,7 @@ def test_indicator_cache_version_change():
 
     # Get the cache key
     prices_hash = hash_series(prices)
-    cache_key = (prices_hash, 14)  # Default period is 14
+    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)
@@ -408,7 +408,7 @@ def test_indicator_cache_corrupted_file():
 
     # Get the cache key
     prices_hash = hash_series(prices)
-    cache_key = (prices_hash, 14)  # Default period is 14
+    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)
@@ -440,7 +440,7 @@ def test_indicator_cache_interrupted_save():
 
     # Get the cache key
     prices_hash = hash_series(prices)
-    cache_key = (prices_hash, 14)  # Default period is 14
+    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)
@@ -469,7 +469,7 @@ def test_indicator_cache_large_objects():
 
     # Get the cache key
     prices_hash = hash_series(large_prices)
-    cache_key = (prices_hash, 14)  # Default period is 14
+    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)

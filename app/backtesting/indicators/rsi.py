@@ -13,7 +13,7 @@ def calculate_rsi(prices, period=14):
     prices_hash = hash_series(prices)
 
     # Check if we have this calculation cached in the global cache
-    cache_key = (prices_hash, period)
+    cache_key = ('rsi', prices_hash, period)
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
