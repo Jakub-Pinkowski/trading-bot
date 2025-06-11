@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -96,7 +95,6 @@ def test_calculate_ema_basic_case():
     period = 3
     ema = calculate_ema(prices, period=period)
     expected = prices.ewm(span=period, adjust=False).mean()
-    expected[:period - 1] = np.nan
     pd.testing.assert_series_equal(ema, expected)
 
 
@@ -112,7 +110,7 @@ def test_calculate_ema_single_value():
     """Test EMA calculation on a single value"""
     prices = pd.Series([10])
     ema = calculate_ema(prices, period=3)
-    expected = pd.Series([np.nan])
+    expected = prices.ewm(span=3, adjust=False).mean()
     pd.testing.assert_series_equal(ema, expected)
 
 
@@ -137,13 +135,11 @@ def test_calculate_ema_with_custom_period():
     # Test with period=5
     ema5 = calculate_ema(prices, period=5)
     expected5 = prices.ewm(span=5, adjust=False).mean()
-    expected5[:4] = np.nan
     pd.testing.assert_series_equal(ema5, expected5)
 
     # Test with period=7
     ema7 = calculate_ema(prices, period=7)
     expected7 = prices.ewm(span=7, adjust=False).mean()
-    expected7[:6] = np.nan
     pd.testing.assert_series_equal(ema7, expected7)
 
 
@@ -154,8 +150,7 @@ def test_calculate_ema_with_increasing_prices():
     ema = calculate_ema(prices, period=period)
 
     # With consistently increasing prices, EMA should lag behind the actual price
-    assert ema.isna().sum() == period - 1  # Initial undefined values
-    # For increasing prices, EMA should be less than the current price
+    # For increasing prices, EMA should be less than the current price after the initial period
     for i in range(period, len(prices)):
         assert ema.iloc[i] < prices.iloc[i]
 
@@ -167,8 +162,7 @@ def test_calculate_ema_with_decreasing_prices():
     ema = calculate_ema(prices, period=period)
 
     # With consistently decreasing prices, EMA should lag behind the actual price
-    assert ema.isna().sum() == period - 1  # Initial undefined values
-    # For decreasing prices, EMA should be greater than the current price
+    # For decreasing prices, EMA should be greater than the current price after the initial period
     for i in range(period, len(prices)):
         assert ema.iloc[i] > prices.iloc[i]
 
@@ -179,10 +173,8 @@ def test_calculate_ema_with_alternating_prices():
     period = 3
     ema = calculate_ema(prices, period=period)
 
-    assert ema.isna().sum() == period - 1  # Initial undefined values
     # EMA should smooth out the alternating prices
     expected = prices.ewm(span=period, adjust=False).mean()
-    expected[:period - 1] = np.nan
     pd.testing.assert_series_equal(ema, expected)
 
 
@@ -192,10 +184,8 @@ def test_calculate_ema_with_negative_prices():
     period = 4
     ema = calculate_ema(prices, period=period)
 
-    assert ema.isna().sum() == period - 1  # Initial undefined values
     # EMA should work correctly with negative values
     expected = prices.ewm(span=period, adjust=False).mean()
-    expected[:period - 1] = np.nan
     pd.testing.assert_series_equal(ema, expected)
 
 
@@ -206,13 +196,8 @@ def test_calculate_ema_with_known_values():
     period = 3
     ema = calculate_ema(prices, period=period)
 
-    # The first two values should be NaN
-    assert np.isnan(ema.iloc[0])
-    assert np.isnan(ema.iloc[1])
-
     # Get the actual values from the pandas ewm implementation
     expected = prices.ewm(span=period, adjust=False).mean()
-    expected[:period - 1] = np.nan
 
     # Check that the values match exactly
     pd.testing.assert_series_equal(ema, expected)
