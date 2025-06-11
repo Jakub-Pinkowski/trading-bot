@@ -6,6 +6,8 @@ import pandas as pd
 from app.backtesting.strategies.rsi import RSIStrategy
 
 
+# TODO [MEDIUM]: Remove all the printing
+
 # Helper function to create a test dataframe with price patterns suitable for RSI testing
 def create_test_df(length=50):
     dates = [datetime.now() + timedelta(days=i) for i in range(length)]
