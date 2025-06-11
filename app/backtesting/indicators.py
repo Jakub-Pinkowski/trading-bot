@@ -76,7 +76,6 @@ def calculate_ema(prices, period=9):
 
     # Calculate EMA
     ema = prices.ewm(span=period, adjust=False).mean()
-    ema[:period - 1] = np.nan  # First period points are undefined
 
     # Cache the result
     indicator_cache.set(cache_key, ema)
