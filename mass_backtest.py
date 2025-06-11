@@ -13,20 +13,28 @@ def main():
         intervals=['5m', '15m', '30m', '1h', '2h', '4h', '1d']
     )
 
-    # Add RSI strategy tests with various parameter combinations
+    # Add RSI strategy
     tester.add_rsi_tests(
-        rsi_periods=[21],
+        rsi_periods=[14],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
         trailing_stops=[None, 2]
     )
 
-    # Add EMA Crossover strategy tests
+    # Add EMA Crossover strategy
     tester.add_ema_crossover_tests(
         ema_shorts=[9],
         ema_longs=[21],
         rollovers=[False, True],
+        trailing_stops=[None, 2]
+    )
+
+    # Add Bollinger Bands strategy
+    tester.add_bollinger_bands_tests(
+        periods=[22],
+        num_stds=[2],
+        rollovers=[False],
         trailing_stops=[None, 2]
     )
 

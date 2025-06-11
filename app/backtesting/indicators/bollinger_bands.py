@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -32,9 +31,6 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
         'upper_band': upper_band,
         'lower_band': lower_band
     })
-
-    # The first points are undefined
-    result.iloc[:period - 1] = np.nan
 
     # Cache the result
     indicator_cache.set(cache_key, result)
