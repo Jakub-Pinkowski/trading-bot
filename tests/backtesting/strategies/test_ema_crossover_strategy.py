@@ -512,6 +512,7 @@ class TestEMACrossoverStrategy:
             # This test exposes a vulnerability: the strategy doesn't account for price jumps at rollover
             # which can lead to misleading signals if not handled properly
 
+    # TODO [LOW]: Upgrade this test
     def test_high_volatility_futures(self):
         """Test EMA Crossover strategy with high volatility futures like energy or metals."""
 
