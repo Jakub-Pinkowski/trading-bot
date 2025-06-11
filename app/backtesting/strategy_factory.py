@@ -9,35 +9,11 @@ logger = get_logger('backtesting/strategy_factory')
 
 # TODO [MEDIUM]: All strategy types should be here at the top instead of line 41
 class StrategyFactory:
-    """
-    A factory class for creating strategy instances.
-
-    This class implements the Factory pattern to create different strategy instances
-    based on strategy type and parameters. It provides a centralized place for
-    strategy creation and parameter validation.
-
-    Benefits:
-    - Centralized strategy creation
-    - Parameter validation
-    - Easy addition of new strategy types
-    - Consistent naming conventions
-    """
+    """ A factory class for creating strategy instances. """
 
     @staticmethod
     def create_strategy(strategy_type, **params):
-        """
-        Create a strategy instance based on strategy type and parameters.
-
-        Args:
-            strategy_type (str): The type of strategy to create
-            **params: Strategy-specific parameters
-
-        Returns:
-            BaseStrategy: A strategy instance
-
-        Raises:
-            ValueError: If the strategy type is unknown or parameters are invalid
-        """
+        """ Create a strategy instance based on strategy type and parameters. """
         # Validate strategy type
         if strategy_type.lower() not in ['rsi', 'ema', 'macd', 'bollinger']:
             logger.error(f"Unknown strategy type: {strategy_type}")
@@ -56,18 +32,7 @@ class StrategyFactory:
 
     @staticmethod
     def _create_rsi_strategy(**params):
-        """
-        Create an RSI strategy instance.
-
-        Args:
-            **params: RSI strategy parameters
-
-        Returns:
-            RSIStrategy: An RSI strategy instance
-
-        Raises:
-            ValueError: If required parameters are missing or invalid
-        """
+        """  Create an RSI strategy instance. """
         # Extract parameters with defaults
         rsi_period = params.get('rsi_period', 14)
         lower = params.get('lower', 30)
@@ -103,18 +68,7 @@ class StrategyFactory:
 
     @staticmethod
     def _create_ema_strategy(**params):
-        """
-        Create an EMA Crossover strategy instance.
-
-        Args:
-            **params: EMA strategy parameters
-
-        Returns:
-            EMACrossoverStrategy: An EMA Crossover strategy instance
-
-        Raises:
-            ValueError: If required parameters are missing or invalid
-        """
+        """ Create an EMA Crossover strategy instance. """
         # Extract parameters with defaults
         ema_short = params.get('ema_short', 9)
         ema_long = params.get('ema_long', 21)
@@ -144,18 +98,7 @@ class StrategyFactory:
 
     @staticmethod
     def _create_macd_strategy(**params):
-        """
-        Create a MACD strategy instance.
-
-        Args:
-            **params: MACD strategy parameters
-
-        Returns:
-            MACDStrategy: A MACD strategy instance
-
-        Raises:
-            ValueError: If required parameters are missing or invalid
-        """
+        """ Create a MACD strategy instance. """
         # Extract parameters with defaults
         fast_period = params.get('fast_period', 12)
         slow_period = params.get('slow_period', 26)
@@ -191,18 +134,7 @@ class StrategyFactory:
 
     @staticmethod
     def _create_bollinger_strategy(**params):
-        """
-        Create a Bollinger Bands strategy instance.
-
-        Args:
-            **params: Bollinger Bands strategy parameters
-
-        Returns:
-            BollingerBandsStrategy: A Bollinger Bands strategy instance
-
-        Raises:
-            ValueError: If required parameters are missing or invalid
-        """
+        """  Create a Bollinger Bands strategy instance. """
         # Extract parameters with defaults
         period = params.get('period', 20)
         num_std = params.get('num_std', 2)
@@ -228,16 +160,7 @@ class StrategyFactory:
 
     @staticmethod
     def get_strategy_name(strategy_type, **params):
-        """
-        Get a standardized name for a strategy with the given parameters.
-
-        Args:
-            strategy_type (str): The type of strategy
-            **params: Strategy-specific parameters
-
-        Returns:
-            str: A standardized strategy name
-        """
+        """ Get a standardized name for a strategy with the given parameters. """
         if strategy_type.lower() == 'rsi':
             rsi_period = params.get('rsi_period', 14)
             lower = params.get('lower', 30)
