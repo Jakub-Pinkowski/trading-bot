@@ -2,7 +2,7 @@ import pandas as pd
 
 from app.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger('analysis/per_trade_metrics')
 
 
 def calculate_pnl(entry_side, exit_side, entry_net_amount, exit_net_amount, size, total_commission):

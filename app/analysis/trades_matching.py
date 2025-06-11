@@ -3,7 +3,7 @@ import pandas as pd
 from app.utils.logger import get_logger
 from config import CONTRACT_MULTIPLIERS
 
-logger = get_logger()
+logger = get_logger('analysis/trades_matching')
 
 
 def process_trade(symbol_, side_, size_, price_, commission_, trade_time_, multiplier_, open_trades, processed_trades):

@@ -4,18 +4,18 @@ from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger('backtesting/strategy_factory')
 
 
 # TODO [MEDIUM]: All strategy types should be here at the top instead of line 41
 class StrategyFactory:
     """
     A factory class for creating strategy instances.
-    
+
     This class implements the Factory pattern to create different strategy instances
     based on strategy type and parameters. It provides a centralized place for
     strategy creation and parameter validation.
-    
+
     Benefits:
     - Centralized strategy creation
     - Parameter validation
@@ -27,14 +27,14 @@ class StrategyFactory:
     def create_strategy(strategy_type, **params):
         """
         Create a strategy instance based on strategy type and parameters.
-        
+
         Args:
             strategy_type (str): The type of strategy to create
             **params: Strategy-specific parameters
-            
+
         Returns:
             BaseStrategy: A strategy instance
-            
+
         Raises:
             ValueError: If the strategy type is unknown or parameters are invalid
         """
@@ -58,13 +58,13 @@ class StrategyFactory:
     def _create_rsi_strategy(**params):
         """
         Create an RSI strategy instance.
-        
+
         Args:
             **params: RSI strategy parameters
-            
+
         Returns:
             RSIStrategy: An RSI strategy instance
-            
+
         Raises:
             ValueError: If required parameters are missing or invalid
         """
@@ -105,13 +105,13 @@ class StrategyFactory:
     def _create_ema_strategy(**params):
         """
         Create an EMA Crossover strategy instance.
-        
+
         Args:
             **params: EMA strategy parameters
-            
+
         Returns:
             EMACrossoverStrategy: An EMA Crossover strategy instance
-            
+
         Raises:
             ValueError: If required parameters are missing or invalid
         """
@@ -146,13 +146,13 @@ class StrategyFactory:
     def _create_macd_strategy(**params):
         """
         Create a MACD strategy instance.
-        
+
         Args:
             **params: MACD strategy parameters
-            
+
         Returns:
             MACDStrategy: A MACD strategy instance
-            
+
         Raises:
             ValueError: If required parameters are missing or invalid
         """
@@ -193,13 +193,13 @@ class StrategyFactory:
     def _create_bollinger_strategy(**params):
         """
         Create a Bollinger Bands strategy instance.
-        
+
         Args:
             **params: Bollinger Bands strategy parameters
-            
+
         Returns:
             BollingerBandsStrategy: A Bollinger Bands strategy instance
-            
+
         Raises:
             ValueError: If required parameters are missing or invalid
         """
@@ -230,11 +230,11 @@ class StrategyFactory:
     def get_strategy_name(strategy_type, **params):
         """
         Get a standardized name for a strategy with the given parameters.
-        
+
         Args:
             strategy_type (str): The type of strategy
             **params: Strategy-specific parameters
-            
+
         Returns:
             str: A standardized strategy name
         """

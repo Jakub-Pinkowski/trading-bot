@@ -3,7 +3,7 @@ from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, g
 from app.utils.logger import get_logger
 from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
 
-logger = get_logger()
+logger = get_logger('services/ibkr/contracts')
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):

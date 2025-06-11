@@ -7,7 +7,7 @@ from config import CACHE_DIR
 # Ensure the cache directory exists
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-logger = get_logger()
+logger = get_logger('backtesting/cache/base')
 
 
 class Cache:

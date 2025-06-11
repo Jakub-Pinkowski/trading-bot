@@ -17,7 +17,7 @@ from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR
 
-logger = get_logger()
+logger = get_logger('backtesting/mass_testing')
 
 
 def _load_existing_results():

@@ -10,7 +10,7 @@ from app.utils.file_utils import load_data_from_json_files
 from app.utils.logger import get_logger
 from config import ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
 
-logger = get_logger()
+logger = get_logger('analysis/data_fetching')
 
 
 def get_alerts_data():

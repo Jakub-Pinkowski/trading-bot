@@ -1,7 +1,7 @@
 from app.utils.logger import get_logger
 from config import CONTRACT_MULTIPLIERS, MARGIN_REQUIREMENTS
 
-logger = get_logger()
+logger = get_logger('backtesting/per_trade_metrics')
 
 # Fixed commission per trade in dollars
 COMMISSION_PER_TRADE = 4

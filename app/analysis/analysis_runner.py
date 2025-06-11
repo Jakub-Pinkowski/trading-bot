@@ -11,7 +11,7 @@ from config import (TW_ALERTS_PER_TRADE_METRICS_FILE_PATH,
                     TRADES_PER_TRADE_METRICS_FILE_PATH,
                     TRADES_DATASET_METRICS_FILE_PATH)
 
-logger = get_logger()
+logger = get_logger('analysis/runner')
 
 
 def run_analysis():

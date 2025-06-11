@@ -1,6 +1,6 @@
 from app.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger('backtesting/summary_metrics')
 
 
 def calculate_max_drawdown(trades):

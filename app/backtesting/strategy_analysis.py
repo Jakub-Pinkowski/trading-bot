@@ -6,7 +6,7 @@ import pandas as pd
 from app.utils.logger import get_logger
 from config import BACKTESTING_DATA_DIR
 
-logger = get_logger()
+logger = get_logger('backtesting/strategy_analysis')
 
 
 def _format_column_name(column_name):

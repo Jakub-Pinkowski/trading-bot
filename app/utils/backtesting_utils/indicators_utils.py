@@ -3,7 +3,7 @@ import hashlib
 from app.utils.logger import get_logger
 
 # Initialize logger
-logger = get_logger('indicators')
+logger = get_logger('backtesting/indicators')
 
 
 # Helper function to create a hashable key for pandas Series

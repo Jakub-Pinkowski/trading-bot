@@ -5,7 +5,7 @@ from app.utils.api_utils import api_post
 from app.utils.logger import get_logger
 
 scheduler = BackgroundScheduler()
-logger = get_logger()
+logger = get_logger('services/ibkr/connection')
 
 
 def tickle_ibkr_api():

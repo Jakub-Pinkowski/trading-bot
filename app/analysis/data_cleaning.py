@@ -4,7 +4,7 @@ from app.utils.analysis_utils.data_cleaning_utils import fractional_to_decimal, 
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger('analysis/data_cleaning')
 
 
 def pre_clean_tw_alerts_data(df):
