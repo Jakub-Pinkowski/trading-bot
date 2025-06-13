@@ -21,3 +21,4 @@ tw_fetching.py
 
 # Logs
 logs/
+.coverage
