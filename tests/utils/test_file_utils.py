@@ -6,7 +6,8 @@ import pandas as pd
 import pytest
 
 from app.utils.file_utils import (
-    load_file, save_file, json_to_dataframe, save_to_csv, load_data_from_json_files
+    load_file, save_file, json_to_dataframe, save_to_csv, load_data_from_json_files,
+    save_to_parquet
 )
 
 
@@ -267,3 +268,68 @@ def test_load_data_from_json_files_no_files(mock_glob):
     # Verify the function returns an empty DataFrame when no files are found
     assert isinstance(result, pd.DataFrame)
     assert result.empty
+
+
+def test_save_to_parquet_new_file(sample_dataframe):
+    """Test that save_to_parquet correctly saves a DataFrame to a new parquet file"""
+
+    # Mock file existence check to return False (file doesn't exist) and patch DataFrame.to_parquet
+    with patch("os.path.exists", return_value=False), \
+            patch("os.makedirs") as mock_makedirs, \
+            patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet:
+        # Call save_to_parquet with sample dataframe and a test filename
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        # Verify directory was created and to_parquet was called with the correct parameters
+        mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
+        mock_to_parquet.assert_called_once_with("test_dir/test_file.parquet", index=False)
+
+
+def test_save_to_parquet_existing_file(sample_dataframe):
+    """Test that save_to_parquet appends data to an existing parquet file"""
+
+    # Create an existing dataframe and mock file existence, read_parquet, to_parquet, and concat operations
+    existing_df = pd.DataFrame({
+        "name": ["Item 3"],
+        "value": [300]
+    })
+    with patch("os.path.exists", return_value=True), \
+            patch("os.makedirs") as mock_makedirs, \
+            patch("pandas.read_parquet", return_value=existing_df), \
+            patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet, \
+            patch("pandas.concat", return_value=pd.DataFrame()) as mock_concat:
+        # Call save_to_parquet with sample dataframe and a test filename that "already exists"
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        # Verify directory was created, concat was called to merge existing and new data, 
+        # and to_parquet was called to save the result
+        mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
+        mock_concat.assert_called_once()
+        mock_to_parquet.assert_called_once()
+
+
+def test_save_to_parquet_existing_file_read_error(sample_dataframe):
+    """Test that save_to_parquet handles exceptions when reading an existing parquet file"""
+
+    # Mock file existence to return True, but read_parquet to raise an exception
+    with patch("os.path.exists", return_value=True), \
+            patch("os.makedirs") as mock_makedirs, \
+            patch("pandas.read_parquet", side_effect=Exception("Parquet read error")), \
+            patch("app.utils.file_utils.logger.error") as mock_logger_error, \
+            patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet:
+        # Call save_to_parquet with sample dataframe and a test filename that "exists but can't be read"
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        # Verify directory was created, error was logged, and to_parquet was still called to save the new data
+        mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
+        mock_logger_error.assert_called_once()
+        mock_to_parquet.assert_called_once()
+
+
+def test_save_to_parquet_invalid_data_type():
+    """Test that save_to_parquet raises ValueError when given an invalid data type"""
+
+    # Call save_to_parquet with a dictionary (invalid data type) and verify it raises the expected ValueError
+    with patch("os.makedirs"), \
+            pytest.raises(ValueError, match="Data must be a Pandas DataFrame for parquet format."):
+        save_to_parquet({"key": "value"}, "test_dir/test_file.parquet")
