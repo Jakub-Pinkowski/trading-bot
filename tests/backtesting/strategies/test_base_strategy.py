@@ -7,7 +7,7 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 # Create a concrete implementation of BaseStrategy for testing
-class TestStrategy(BaseStrategy):
+class StrategyForTesting(BaseStrategy):
     def __init__(self, rollover=False, trailing=None, slippage=0):
         super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
 
@@ -46,7 +46,7 @@ def create_test_df(length=10):
 class TestBaseStrategy:
     def test_initialization(self):
         """Test that the strategy initializes correctly."""
-        strategy = TestStrategy()
+        strategy = StrategyForTesting()
         assert strategy.position is None
         assert strategy.entry_time is None
         assert strategy.entry_price is None
@@ -55,13 +55,13 @@ class TestBaseStrategy:
         assert strategy.trailing is None
 
         # Test with parameters
-        strategy = TestStrategy(rollover=True, trailing=2.0)
+        strategy = StrategyForTesting(rollover=True, trailing=2.0)
         assert strategy.rollover is True
         assert strategy.trailing == 2.0
 
     def test_run_method(self):
         """Test the run method executes the full workflow."""
-        strategy = TestStrategy()
+        strategy = StrategyForTesting()
         df = create_test_df()
         switch_dates = []
 
@@ -97,7 +97,7 @@ class TestBaseStrategy:
 
     def test_extract_trades_basic(self):
         """Test that trades are extracted correctly from signals."""
-        strategy = TestStrategy()
+        strategy = StrategyForTesting()
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 
@@ -117,14 +117,14 @@ class TestBaseStrategy:
 
     def test_trailing_stop_long(self):
         """Test trailing stop functionality for long positions."""
-        strategy = TestStrategy(trailing=2.0)
+        strategy = StrategyForTesting(trailing=2.0)
         df = create_test_df()
 
         # Modify prices to test trailing stop
-        df.iloc[2]['open'] = 100.0  # Entry price
-        df.iloc[3]['high'] = 110.0  # Price moves up, trailing stop should adjust
-        df.iloc[4]['low'] = 95.0  # Price drops but not enough to trigger stop
-        df.iloc[5]['low'] = 90.0  # Price drops below trailing stop
+        df.loc[df.index[2], 'open'] = 100.0  # Entry price
+        df.loc[df.index[3], 'high'] = 110.0  # Price moves up, trailing stop should adjust
+        df.loc[df.index[4], 'low'] = 95.0  # Price drops but not enough to trigger stop
+        df.loc[df.index[5], 'low'] = 90.0  # Price drops below trailing stop
 
         df = strategy.generate_signals(df)
         trades = strategy.extract_trades(df, [])
@@ -145,7 +145,7 @@ class TestBaseStrategy:
 
     def test_trailing_stop_short(self):
         """Test trailing stop functionality for short positions."""
-        strategy = TestStrategy(trailing=2.0)
+        strategy = StrategyForTesting(trailing=2.0)
         df = create_test_df()
 
         # Modify signals to create a short position
@@ -153,10 +153,10 @@ class TestBaseStrategy:
         df.iloc[2, df.columns.get_loc('signal')] = -1  # Short signal
 
         # Modify prices to test trailing stop
-        df.iloc[2]['open'] = 100.0  # Entry price
-        df.iloc[3]['low'] = 90.0  # Price moves down, trailing stop should adjust
-        df.iloc[4]['high'] = 95.0  # Price rises but not enough to trigger stop
-        df.iloc[5]['high'] = 105.0  # Price rises above trailing stop
+        df.loc[df.index[2], 'open'] = 100.0  # Entry price
+        df.loc[df.index[3], 'low'] = 90.0  # Price moves down, trailing stop should adjust
+        df.loc[df.index[4], 'high'] = 95.0  # Price rises but not enough to trigger stop
+        df.loc[df.index[5], 'high'] = 105.0  # Price rises above trailing stop
 
         trades = strategy.extract_trades(df, [])
 
@@ -218,7 +218,7 @@ class TestBaseStrategy:
 
     def test_no_signals(self):
         """Test behavior when there are no signals."""
-        strategy = TestStrategy()
+        strategy = StrategyForTesting()
         df = create_test_df()
 
         # Override generate_signals to return no signals
@@ -236,7 +236,7 @@ class TestBaseStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices."""
         # Create a strategy with 2% slippage
-        strategy = TestStrategy(slippage=2.0)
+        strategy = StrategyForTesting(slippage=2.0)
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 

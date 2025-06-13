@@ -9,7 +9,7 @@ from app.backtesting.strategies.rsi import RSIStrategy
 
 
 # Create a concrete implementation of BaseStrategy for testing
-class TestStrategy(BaseStrategy):
+class StrategyForTesting(BaseStrategy):
     def __init__(self, rollover=False, trailing=None, slippage=0):
         super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
 
@@ -53,7 +53,7 @@ class TestSlippageScenarios:
 
         for slippage in slippage_values:
             # Create a strategy with the current slippage value
-            strategy = TestStrategy(slippage=slippage)
+            strategy = StrategyForTesting(slippage=slippage)
             df = create_test_df()
             df = strategy.generate_signals(df)  # Add signals
 
@@ -111,7 +111,7 @@ class TestSlippageScenarios:
         # Create a strategy with both slippage and trailing stop
         slippage = 2.0
         trailing = 3.0
-        strategy = TestStrategy(slippage=slippage, trailing=trailing)
+        strategy = StrategyForTesting(slippage=slippage, trailing=trailing)
 
         # Create a dataframe with a price pattern that will trigger a trailing stop
         df = create_test_df(length=20)
@@ -186,7 +186,7 @@ class TestSlippageScenarios:
         """Test that slippage is applied correctly during contract rollovers."""
         # Create a strategy with rollover and slippage
         slippage = 2.0
-        strategy = TestStrategy(rollover=True, slippage=slippage)
+        strategy = StrategyForTesting(rollover=True, slippage=slippage)
 
         # Create a dataframe
         df = create_test_df(length=20)

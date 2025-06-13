@@ -7,7 +7,7 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 # Create a concrete implementation of BaseStrategy for testing
-class TestStrategy(BaseStrategy):
+class StrategyForTesting(BaseStrategy):
     def __init__(self, rollover=False, trailing=None, slippage=0):
         super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
 
@@ -51,7 +51,7 @@ class TestTrailingScenarios:
 
         for trailing in trailing_values:
             # Create a strategy with the current trailing value
-            strategy = TestStrategy(trailing=trailing)
+            strategy = StrategyForTesting(trailing=trailing)
             df = create_test_df(length=20)
 
             # Modify prices to create a scenario where trailing stop will be triggered
@@ -103,7 +103,7 @@ class TestTrailingScenarios:
         """Test trailing stop behavior in an uptrend market."""
         # Create a strategy with trailing stop
         trailing = 3.0
-        strategy = TestStrategy(trailing=trailing)
+        strategy = StrategyForTesting(trailing=trailing)
 
         # Create a dataframe with an uptrend
         dates = [datetime.now() + timedelta(days=i) for i in range(20)]
@@ -238,7 +238,7 @@ class TestTrailingScenarios:
         """Test trailing stop behavior in a sideways market."""
         # Create a strategy with trailing stop
         trailing = 2.0
-        strategy = TestStrategy(trailing=trailing)
+        strategy = StrategyForTesting(trailing=trailing)
 
         # Create a dataframe with a sideways market
         dates = [datetime.now() + timedelta(days=i) for i in range(20)]

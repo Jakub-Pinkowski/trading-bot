@@ -469,7 +469,7 @@ class TestRSIStrategy:
                 idx = df.index.get_loc(early_sept[0])
                 df.loc[early_sept[0], 'rsi'] = strategy.lower - 5  # Below lower threshold
                 if idx > 0:
-                    df.iloc[idx - 1]['rsi'] = strategy.lower + 5  # Previous day above lower threshold
+                    df.loc[df.index[idx - 1], 'rsi'] = strategy.lower + 5  # Previous day above lower threshold
 
             # Create a sell signal (RSI crossing above upper threshold)
             # Find a day in early October
@@ -479,7 +479,7 @@ class TestRSIStrategy:
                 idx = df.index.get_loc(early_oct[0])
                 df.loc[early_oct[0], 'rsi'] = strategy.upper + 5  # Above upper threshold
                 if idx > 0:
-                    df.iloc[idx - 1]['rsi'] = strategy.upper - 5  # Previous day below upper threshold
+                    df.loc[df.index[idx - 1], 'rsi'] = strategy.upper - 5  # Previous day below upper threshold
 
         # Check if there are any RSI crossovers in the planting and harvest seasons
         prev_rsi = df['rsi'].shift(1)
