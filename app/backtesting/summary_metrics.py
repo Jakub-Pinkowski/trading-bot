@@ -244,8 +244,14 @@ def print_summary_metrics(summary):
 
     # ===== PERCENTAGE-BASED METRICS =====
     print('\n--- PERCENTAGE-BASED METRICS ---')
-    print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{RESET}')
-    print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}')
+    if summary["total_return_percentage_of_margin"] == 0:
+        print(f'Total Return Percentage of Margin: 0.0%')
+    else:
+        print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{RESET}')
+    if average_trade_return_percentage == 0:
+        print(f'Average Trade Return Percentage of Margin: 0.0%')
+    else:
+        print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}')
     print(f'Average Win Percentage of Margin: {GREEN}{summary["average_win_percentage_of_margin"]}%{RESET}')
     print(f'Average Loss Percentage of Margin: {RED}{summary["average_loss_percentage_of_margin"]}%{RESET}')
     print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')

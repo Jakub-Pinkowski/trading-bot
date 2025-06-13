@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from app.backtesting.strategies.base_strategy import BaseStrategy
 
@@ -44,6 +45,19 @@ def create_test_df(length=10):
 
 
 class TestBaseStrategy:
+    def test_abstract_methods(self):
+        """Test that abstract methods raise NotImplementedError when not implemented."""
+        strategy = BaseStrategy()
+
+        # Test add_indicators abstract method
+        df = create_test_df()
+        with pytest.raises(NotImplementedError, match="Subclasses must implement add_indicators method"):
+            strategy.add_indicators(df)
+
+        # Test generate_signals abstract method
+        with pytest.raises(NotImplementedError, match="Subclasses must implement generate_signals method"):
+            strategy.generate_signals(df)
+
     def test_initialization(self):
         """Test that the strategy initializes correctly."""
         strategy = StrategyForTesting()
@@ -215,6 +229,42 @@ class TestBaseStrategy:
         # Verify the switch trade properties
         for trade in switch_trades:
             assert trade['switch'] is True
+
+    def test_contract_switch_edge_case(self):
+        """Test contract switch edge case where we reach the end of switch_dates."""
+
+        # Create a test strategy that will handle multiple contract switches
+        class MultiSwitchStrategy(BaseStrategy):
+            def add_indicators(self, df):
+                return df
+
+            def generate_signals(self, df):
+                df['signal'] = 0
+                # Add a buy signal at the beginning
+                if len(df) > 0:
+                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                return df
+
+            # We'll use the default extract_trades implementation
+
+        # Create a dataframe with 10 bars
+        df = create_test_df(length=10)
+
+        # Create switch dates for each bar
+        switch_dates = [df.index[i] for i in range(1, 10)]
+
+        # Create the strategy
+        strategy = MultiSwitchStrategy(rollover=True)
+
+        # Run the strategy - this should process all switch dates
+        trades = strategy.run(df, switch_dates)
+
+        # Verify we have trades
+        assert len(trades) > 0
+
+        # Verify that at least some trades have the switch flag
+        switch_trades = [trade for trade in trades if trade.get('switch', False)]
+        assert len(switch_trades) > 0
 
     def test_no_signals(self):
         """Test behavior when there are no signals."""

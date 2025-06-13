@@ -128,8 +128,14 @@ class TestCalculateSummaryMetrics:
 
     def test_empty_trades_list(self):
         """Test calculation of summary metrics with an empty trades list."""
-        summary = calculate_summary_metrics([])
-        assert summary == {}
+        from unittest.mock import patch
+
+        # Mock the logger to verify it's called
+        with patch('app.backtesting.summary_metrics.logger.error') as mock_logger:
+            summary = calculate_summary_metrics([])
+            assert summary == {}
+            # Verify logger.error was called with the expected message
+            mock_logger.assert_called_once_with('No trades provided to calculate_summary_metrics')
 
     def test_single_winning_trade(self):
         """Test calculation of summary metrics with a single winning trade."""
@@ -820,6 +826,52 @@ class TestCalculateCalmarRatio:
 
 class TestPrintSummaryMetrics:
     """Tests for the print_summary_metrics function."""
+
+    def test_print_zero_return_summary(self):
+        """Test printing of a summary with zero average trade return."""
+        summary = {
+            # Basic trade statistics
+            'total_trades': 10,
+            'winning_trades': 5,
+            'losing_trades': 5,
+            'win_rate': 50.0,
+            'avg_trade_duration_hours': 24.0,
+
+            # Percentage-based metrics
+            'total_return_percentage_of_margin': 0.0,
+            'average_trade_return_percentage_of_margin': 0.0,  # Exactly zero
+            'average_win_percentage_of_margin': 1.0,
+            'average_loss_percentage_of_margin': -1.0,
+            'commission_percentage_of_margin': 0.04,
+
+            # Risk metrics
+            'profit_factor': 1.0,
+            'maximum_drawdown_percentage': 1.0,
+            'return_to_drawdown_ratio': 0.0,
+            'max_consecutive_wins': 2,
+            'max_consecutive_losses': 2,
+            'sharpe_ratio': 0.0,
+            'sortino_ratio': 0.0,
+            'calmar_ratio': 0.0
+        }
+
+        # Capture stdout
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        # Print the summary metrics
+        print_summary_metrics(summary)
+
+        # Reset stdout
+        sys.stdout = sys.__stdout__
+
+        # Get the output
+        output = captured_output.getvalue()
+
+        # Verify the output contains key information
+        assert "SUMMARY METRICS" in output
+        assert "Total Return Percentage of Margin: 0.0%" in output
+        assert "Average Trade Return Percentage of Margin: 0.0%" in output
 
     def test_print_positive_summary(self):
         """Test printing of a positive summary."""
