@@ -266,6 +266,93 @@ class TestBaseStrategy:
         switch_trades = [trade for trade in trades if trade.get('switch', False)]
         assert len(switch_trades) > 0
 
+    def test_contract_switch_without_rollover(self):
+        """Test contract switch functionality when rollover is False."""
+
+        # Create a test strategy that will handle contract switches without rollover
+        class NoRolloverSwitchStrategy(BaseStrategy):
+            def add_indicators(self, df):
+                return df
+
+            def generate_signals(self, df):
+                df['signal'] = 0
+                # Add a buy signal at the beginning
+                if len(df) > 0:
+                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                return df
+
+            # We'll use the default extract_trades implementation
+
+        # Create a dataframe with 5 bars
+        df = create_test_df(length=5)
+
+        # Create a switch date
+        switch_dates = [df.index[2]]  # Switch at the third bar
+
+        # Create the strategy with rollover=False
+        strategy = NoRolloverSwitchStrategy(rollover=False)
+
+        # Run the strategy
+        trades = strategy.run(df, switch_dates)
+
+        # Verify we have trades
+        assert len(trades) > 0
+
+        # Verify that at least one trade has the switch flag
+        switch_trades = [trade for trade in trades if trade.get('switch', False)]
+        assert len(switch_trades) > 0
+
+        # Verify that must_reopen is set to None when rollover is False
+        # This is testing the line in _close_position_at_switch where rollover is False
+        assert strategy.must_reopen is None
+
+    def test_reopen_position_after_switch(self):
+        """Test reopening a position after a contract switch with rollover enabled."""
+
+        # Create a test strategy that will handle contract switches with rollover
+        class RolloverSwitchStrategy(BaseStrategy):
+            def add_indicators(self, df):
+                return df
+
+            def generate_signals(self, df):
+                df['signal'] = 0
+                # Add a buy signal at the beginning
+                if len(df) > 0:
+                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                return df
+
+            # We'll use the default extract_trades implementation
+
+        # Create a dataframe with 5 bars
+        df = create_test_df(length=5)
+
+        # Create a switch date
+        switch_dates = [df.index[2]]  # Switch at the third bar
+
+        # Create the strategy with rollover=True
+        strategy = RolloverSwitchStrategy(rollover=True)
+
+        # Manually set up the state to test the specific code path
+        # This simulates the state after a position has been closed due to a switch
+        # and we're about to reopen it in the next contract
+        strategy._reset()
+        strategy.must_reopen = 1  # Indicate we want to reopen a long position
+        strategy.position = None  # No current position
+
+        # Now call _handle_contract_switch directly to test the reopening logic
+        # This tests the code path where must_reopen is not None and position is None
+        current_time = df.index[3]  # After the switch
+        idx = df.index[3]
+        price_open = df.iloc[3]['open']
+
+        strategy._handle_contract_switch(current_time, idx, price_open)
+
+        # Verify that the position was reopened
+        assert strategy.position == 1  # Long position
+        assert strategy.entry_time == idx
+        assert strategy.entry_price is not None
+        assert strategy.must_reopen is None  # must_reopen should be reset
+
     def test_no_signals(self):
         """Test behavior when there are no signals."""
         strategy = StrategyForTesting()
