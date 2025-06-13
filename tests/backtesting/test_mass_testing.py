@@ -9,6 +9,83 @@ from app.backtesting.mass_testing import MassTester, _load_existing_results, _te
 class TestMassTester:
     """Tests for the MassTester class."""
 
+    def test_add_macd_tests(self):
+        """Test that add_macd_tests correctly adds MACD strategies with all parameter combinations."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Add MACD tests with various parameters
+        fast_periods = [8, 12]
+        slow_periods = [26, 52]
+        signal_periods = [9]
+        rollovers = [True, False]
+        trailing_stops = [None, 2.0]
+        slippages = [0.0, 1.0]
+
+        tester.add_macd_tests(fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages)
+
+        # Calculate expected number of strategies
+        expected_count = (
+                len(fast_periods) *
+                len(slow_periods) *
+                len(signal_periods) *
+                len(rollovers) *
+                len(trailing_stops) *
+                len(slippages)
+        )
+
+        # Verify the correct number of strategies were added
+        assert len(tester.strategies) == expected_count
+
+        # Verify strategy names and parameters
+        for strategy_name, strategy_instance in tester.strategies:
+            # Check that strategy name contains MACD
+            assert 'MACD' in strategy_name
+
+            # Check that strategy parameters are within the expected ranges
+            assert strategy_instance.fast_period in fast_periods
+            assert strategy_instance.slow_period in slow_periods
+            assert strategy_instance.signal_period in signal_periods
+            assert strategy_instance.rollover in rollovers
+            assert strategy_instance.trailing in trailing_stops
+            assert strategy_instance.slippage in slippages
+
+    def test_add_bollinger_bands_tests(self):
+        """Test that add_bollinger_bands_tests correctly adds Bollinger Bands strategies with all parameter combinations."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Add Bollinger Bands tests with various parameters
+        periods = [20, 50]
+        num_stds = [2.0, 3.0]
+        rollovers = [True, False]
+        trailing_stops = [None, 2.0]
+        slippages = [0.0, 1.0]
+
+        tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
+
+        # Calculate expected number of strategies
+        expected_count = (
+                len(periods) *
+                len(num_stds) *
+                len(rollovers) *
+                len(trailing_stops) *
+                len(slippages)
+        )
+
+        # Verify the correct number of strategies were added
+        assert len(tester.strategies) == expected_count
+
+        # Verify strategy names and parameters
+        for strategy_name, strategy_instance in tester.strategies:
+            # Check that strategy name contains BB (Bollinger Bands)
+            assert 'BB' in strategy_name
+
+            # Check that strategy parameters are within the expected ranges
+            assert strategy_instance.period in periods
+            assert strategy_instance.num_std in num_stds
+            assert strategy_instance.rollover in rollovers
+            assert strategy_instance.trailing in trailing_stops
+            assert strategy_instance.slippage in slippages
+
     def test_initialization(self):
         """Test that the MassTester initializes correctly with the provided parameters."""
         # Test with minimal parameters
@@ -393,6 +470,32 @@ class TestMassTester:
 
         # Verify save_to_parquet was not called
         mock_save_to_parquet.assert_not_called()
+
+    @patch('app.backtesting.mass_testing.save_to_parquet')
+    @patch('app.backtesting.mass_testing.logger')
+    def test_save_results_error_handling(self, mock_logger, mock_save_to_parquet):
+        """Test error handling in the _save_results method."""
+        # Setup mock to raise an exception
+        mock_save_to_parquet.side_effect = Exception("Test error")
+
+        # Create a tester with some results
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'Strategy 1',
+                'metrics': {'total_trades': 10, 'win_rate': 60.0},
+                'timestamp': '2023-01-01T00:00:00'
+            }
+        ]
+
+        # Call _save_results, which should catch the exception
+        tester._save_results()
+
+        # Verify that the logger was called with an error message
+        mock_logger.error.assert_called_once()
 
 
 class TestHelperFunctions:

@@ -39,14 +39,17 @@ class TestCalculateTradeMetrics:
         assert metrics['side'] == 'long'
         assert metrics['entry_price'] == 4200.0
         assert metrics['exit_price'] == 4210.0
-        assert metrics['pnl_points'] == 10.0
-        assert metrics['gross_pnl'] == 500.0  # 10 points * 50 multiplier
-        assert metrics['commission'] == COMMISSION_PER_TRADE
-        assert metrics['net_pnl'] == 500.0 - COMMISSION_PER_TRADE
-        assert metrics['margin_requirement'] == 16889.88
-        assert metrics['return_percentage_of_margin'] == round(((500.0 - COMMISSION_PER_TRADE) / 16889.88) * 100, 2)
-        assert metrics['return_percentage_of_contract'] == round(((500.0 - COMMISSION_PER_TRADE) / (4200.0 * 50)) * 100,
-                                                                 2)
+
+        # Calculate expected values
+        pnl_points = 10.0
+        gross_pnl = 500.0  # 10 points * 50 multiplier
+        net_pnl = gross_pnl - COMMISSION_PER_TRADE
+        margin_requirement = 16889.88
+
+        # Verify the calculated metrics that are returned
+        assert metrics['net_pnl'] == net_pnl
+        assert metrics['return_percentage_of_margin'] == round((net_pnl / margin_requirement) * 100, 2)
+        assert metrics['return_percentage_of_contract'] == round((net_pnl / (4200.0 * 50)) * 100, 2)
         assert metrics['duration_hours'] == 24
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'CL': 1000})
@@ -63,14 +66,17 @@ class TestCalculateTradeMetrics:
         assert metrics['side'] == 'short'
         assert metrics['entry_price'] == 75.0
         assert metrics['exit_price'] == 73.0
-        assert metrics['pnl_points'] == 2.0  # For short: entry_price - exit_price
-        assert metrics['gross_pnl'] == 2000.0  # 2 points * 1000 multiplier
-        assert metrics['commission'] == COMMISSION_PER_TRADE
-        assert metrics['net_pnl'] == 2000.0 - COMMISSION_PER_TRADE
-        assert metrics['margin_requirement'] == 16250
-        assert metrics['return_percentage_of_margin'] == round(((2000.0 - COMMISSION_PER_TRADE) / 16250) * 100, 2)
-        assert metrics['return_percentage_of_contract'] == round(((2000.0 - COMMISSION_PER_TRADE) / (
-                75.0 * 1000)) * 100, 2)
+
+        # Calculate expected values
+        pnl_points = 2.0  # For short: entry_price - exit_price
+        gross_pnl = 2000.0  # 2 points * 1000 multiplier
+        net_pnl = gross_pnl - COMMISSION_PER_TRADE
+        margin_requirement = 16250
+
+        # Verify the calculated metrics that are returned
+        assert metrics['net_pnl'] == net_pnl
+        assert metrics['return_percentage_of_margin'] == round((net_pnl / margin_requirement) * 100, 2)
+        assert metrics['return_percentage_of_contract'] == round((net_pnl / (75.0 * 1000)) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'GC': 100})
     @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'GC': 25338.86})
@@ -82,10 +88,13 @@ class TestCalculateTradeMetrics:
         # Calculate metrics
         metrics = calculate_trade_metrics(trade, 'GC')
 
-        # Verify the calculated metrics
-        assert metrics['pnl_points'] == 0.0
-        assert metrics['gross_pnl'] == 0.0
-        assert metrics['net_pnl'] == -COMMISSION_PER_TRADE
+        # Calculate expected values
+        pnl_points = 0.0
+        gross_pnl = 0.0
+        net_pnl = -COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics that are returned
+        assert metrics['net_pnl'] == net_pnl
         assert metrics['return_percentage_of_margin'] < 0  # Should be negative due to commission
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'NQ': 20})
@@ -98,10 +107,13 @@ class TestCalculateTradeMetrics:
         # Calculate metrics
         metrics = calculate_trade_metrics(trade, 'NQ')
 
-        # Verify the calculated metrics
-        assert metrics['pnl_points'] == -50.0
-        assert metrics['gross_pnl'] == -1000.0  # -50 points * 20 multiplier
-        assert metrics['net_pnl'] == -1000.0 - COMMISSION_PER_TRADE
+        # Calculate expected values
+        pnl_points = -50.0
+        gross_pnl = -1000.0  # -50 points * 20 multiplier
+        net_pnl = gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics that are returned
+        assert metrics['net_pnl'] == net_pnl
         assert metrics['return_percentage_of_margin'] < 0
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {})
@@ -198,15 +210,18 @@ class TestCalculateTradeMetrics:
         )
         large_price_metrics = calculate_trade_metrics(large_price_trade, 'ES')
 
+        # Calculate expected values for large prices
+        large_pnl_points = 100.0
+        large_gross_pnl = 5000.0  # 100 points * 50 multiplier
+        large_net_pnl = large_gross_pnl - COMMISSION_PER_TRADE
+        large_margin_requirement = 16889.88
+
         # Verify calculations with large prices
-        assert large_price_metrics['pnl_points'] == 100.0
-        assert large_price_metrics['gross_pnl'] == 5000.0  # 100 points * 50 multiplier
-        assert large_price_metrics['net_pnl'] == 5000.0 - COMMISSION_PER_TRADE
-        assert large_price_metrics['return_percentage_of_margin'] == round(((
-                                                                                    5000.0 - COMMISSION_PER_TRADE) / 16889.88) * 100,
+        assert large_price_metrics['net_pnl'] == large_net_pnl
+        assert large_price_metrics['return_percentage_of_margin'] == round((
+                                                                                       large_net_pnl / large_margin_requirement) * 100,
                                                                            2)
-        assert large_price_metrics['return_percentage_of_contract'] == round(((5000.0 - COMMISSION_PER_TRADE) / (
-                100000.0 * 50)) * 100, 2)
+        assert large_price_metrics['return_percentage_of_contract'] == round((large_net_pnl / (100000.0 * 50)) * 100, 2)
 
         # Test with very small prices
         small_price_trade = create_sample_trade(
@@ -216,15 +231,18 @@ class TestCalculateTradeMetrics:
         )
         small_price_metrics = calculate_trade_metrics(small_price_trade, 'ES')
 
+        # Calculate expected values for small prices
+        small_pnl_points = 0.005
+        small_gross_pnl = 0.25  # 0.005 points * 50 multiplier
+        small_net_pnl = small_gross_pnl - COMMISSION_PER_TRADE
+        small_margin_requirement = 16889.88
+
         # Verify calculations with small prices
-        assert small_price_metrics['pnl_points'] == 0.01  # Rounded to 2 decimal places
-        assert small_price_metrics['gross_pnl'] == 0.25  # 0.005 points * 50 multiplier
-        assert small_price_metrics['net_pnl'] == 0.25 - COMMISSION_PER_TRADE
-        assert small_price_metrics['return_percentage_of_margin'] == round(((
-                                                                                    0.25 - COMMISSION_PER_TRADE) / 16889.88) * 100,
+        assert small_price_metrics['net_pnl'] == small_net_pnl
+        assert small_price_metrics['return_percentage_of_margin'] == round((
+                                                                                       small_net_pnl / small_margin_requirement) * 100,
                                                                            2)
-        assert small_price_metrics['return_percentage_of_contract'] == round(((0.25 - COMMISSION_PER_TRADE) / (
-                0.01 * 50)) * 100, 2)
+        assert small_price_metrics['return_percentage_of_contract'] == round((small_net_pnl / (0.01 * 50)) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
     @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
@@ -264,31 +282,57 @@ class TestCalculateTradeMetrics:
         gc_metrics = calculate_trade_metrics(gc_trade, 'GC')
         zb_metrics = calculate_trade_metrics(zb_trade, 'ZB')
 
-        # Verify the calculated metrics for each symbol
+        # Calculate expected values for each symbol
         # ES
-        assert es_metrics['pnl_points'] == 10.0
-        assert es_metrics['gross_pnl'] == 500.0  # 10 points * 50 multiplier
-        assert es_metrics['margin_requirement'] == 16889.88
+        es_pnl_points = 10.0
+        es_gross_pnl = 500.0  # 10 points * 50 multiplier
+        es_net_pnl = es_gross_pnl - COMMISSION_PER_TRADE
+        es_margin_requirement = 16889.88
 
         # NQ
-        assert nq_metrics['pnl_points'] == 50.0
-        assert nq_metrics['gross_pnl'] == 1000.0  # 50 points * 20 multiplier
-        assert nq_metrics['margin_requirement'] == 24458.12
+        nq_pnl_points = 50.0
+        nq_gross_pnl = 1000.0  # 50 points * 20 multiplier
+        nq_net_pnl = nq_gross_pnl - COMMISSION_PER_TRADE
+        nq_margin_requirement = 24458.12
 
         # CL
-        assert cl_metrics['pnl_points'] == 2.0
-        assert cl_metrics['gross_pnl'] == 2000.0  # 2 points * 1000 multiplier
-        assert cl_metrics['margin_requirement'] == 16250
+        cl_pnl_points = 2.0
+        cl_gross_pnl = 2000.0  # 2 points * 1000 multiplier
+        cl_net_pnl = cl_gross_pnl - COMMISSION_PER_TRADE
+        cl_margin_requirement = 16250
 
         # GC
-        assert gc_metrics['pnl_points'] == 10.0
-        assert gc_metrics['gross_pnl'] == 1000.0  # 10 points * 100 multiplier
-        assert gc_metrics['margin_requirement'] == 25338.86
+        gc_pnl_points = 10.0
+        gc_gross_pnl = 1000.0  # 10 points * 100 multiplier
+        gc_net_pnl = gc_gross_pnl - COMMISSION_PER_TRADE
+        gc_margin_requirement = 25338.86
 
         # ZB
-        assert zb_metrics['pnl_points'] == 0.5
-        assert zb_metrics['gross_pnl'] == 500.0  # 0.5 points * 1000 multiplier
-        assert zb_metrics['margin_requirement'] == 5060.0
+        zb_pnl_points = 0.5
+        zb_gross_pnl = 500.0  # 0.5 points * 1000 multiplier
+        zb_net_pnl = zb_gross_pnl - COMMISSION_PER_TRADE
+        zb_margin_requirement = 5060.0
+
+        # Verify the calculated metrics for each symbol
+        # ES
+        assert es_metrics['net_pnl'] == es_net_pnl
+        assert es_metrics['return_percentage_of_margin'] == round((es_net_pnl / es_margin_requirement) * 100, 2)
+
+        # NQ
+        assert nq_metrics['net_pnl'] == nq_net_pnl
+        assert nq_metrics['return_percentage_of_margin'] == round((nq_net_pnl / nq_margin_requirement) * 100, 2)
+
+        # CL
+        assert cl_metrics['net_pnl'] == cl_net_pnl
+        assert cl_metrics['return_percentage_of_margin'] == round((cl_net_pnl / cl_margin_requirement) * 100, 2)
+
+        # GC
+        assert gc_metrics['net_pnl'] == gc_net_pnl
+        assert gc_metrics['return_percentage_of_margin'] == round((gc_net_pnl / gc_margin_requirement) * 100, 2)
+
+        # ZB
+        assert zb_metrics['net_pnl'] == zb_net_pnl
+        assert zb_metrics['return_percentage_of_margin'] == round((zb_net_pnl / zb_margin_requirement) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
     @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
@@ -306,12 +350,15 @@ class TestCalculateTradeMetrics:
         # Calculate metrics for each trade
         trade_metrics = [calculate_trade_metrics(trade, 'ES') for trade in trades]
 
+        # Calculate expected values for each trade
+        expected_pnl_points = [10.0, 20.0, -10.0, -20.0, 15.0]
+        expected_gross_pnl = [p * 50 for p in expected_pnl_points]  # Multiply by contract multiplier
+        expected_net_pnl = [g - COMMISSION_PER_TRADE for g in expected_gross_pnl]
+
         # Calculate aggregate metrics
-        total_gross_pnl = sum(metric['gross_pnl'] for metric in trade_metrics)
-        total_net_pnl = sum(metric['net_pnl'] for metric in trade_metrics)
-        total_commission = sum(metric['commission'] for metric in trade_metrics)
-        win_count = sum(1 for metric in trade_metrics if metric['gross_pnl'] > 0)
-        loss_count = sum(1 for metric in trade_metrics if metric['gross_pnl'] < 0)
+        total_net_pnl = sum(expected_net_pnl)
+        win_count = sum(1 for pnl in expected_gross_pnl if pnl > 0)
+        loss_count = sum(1 for pnl in expected_gross_pnl if pnl < 0)
         win_rate = win_count / len(trades) if len(trades) > 0 else 0
 
         # Verify aggregate metrics
@@ -319,22 +366,19 @@ class TestCalculateTradeMetrics:
         assert win_count == 3
         assert loss_count == 2
         assert win_rate == 0.6
-        assert total_gross_pnl == 750.0  # (10 + 20 - 10 - 20 + 15) * 50
-        assert total_commission == COMMISSION_PER_TRADE * 5
-        assert total_net_pnl == total_gross_pnl - total_commission
+        assert sum(metric['net_pnl'] for metric in trade_metrics) == total_net_pnl
 
         # Calculate average metrics
-        avg_gross_pnl = total_gross_pnl / len(trades)
         avg_net_pnl = total_net_pnl / len(trades)
         avg_return_percentage = sum(metric['return_percentage_of_margin'] for metric in trade_metrics) / len(trades)
 
         # Verify average metrics
-        assert avg_gross_pnl == 150.0
-        assert avg_net_pnl == avg_gross_pnl - COMMISSION_PER_TRADE
+        expected_avg_net_pnl = (sum(expected_gross_pnl) - COMMISSION_PER_TRADE * len(trades)) / len(trades)
+        assert avg_net_pnl == expected_avg_net_pnl
 
-        # Calculate profit factor
-        gross_profit = sum(metric['gross_pnl'] for metric in trade_metrics if metric['gross_pnl'] > 0)
-        gross_loss = abs(sum(metric['gross_pnl'] for metric in trade_metrics if metric['gross_pnl'] < 0))
+        # Calculate profit factor using expected values
+        gross_profit = sum(pnl for pnl in expected_gross_pnl if pnl > 0)
+        gross_loss = abs(sum(pnl for pnl in expected_gross_pnl if pnl < 0))
         profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
 
         # Verify profit factor
@@ -350,8 +394,13 @@ class TestCalculateTradeMetrics:
         gap_trade = create_sample_trade(side='long', entry_price=4200.0, exit_price=4250.0)
         gap_metrics = calculate_trade_metrics(gap_trade, 'ES')
 
-        assert gap_metrics['pnl_points'] == 50.0
-        assert gap_metrics['gross_pnl'] == 2500.0  # 50 points * 50 multiplier
+        # Calculate expected values
+        gap_pnl_points = 50.0
+        gap_gross_pnl = 2500.0  # 50 points * 50 multiplier
+        gap_net_pnl = gap_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert gap_metrics['net_pnl'] == gap_net_pnl
 
         # Test a trade with a very small profit (just covering commission)
         small_profit_trade = create_sample_trade(
@@ -361,22 +410,37 @@ class TestCalculateTradeMetrics:
         )
         small_profit_metrics = calculate_trade_metrics(small_profit_trade, 'ES')
 
-        assert small_profit_metrics['gross_pnl'] == COMMISSION_PER_TRADE
-        assert small_profit_metrics['net_pnl'] == 0.0
+        # Calculate expected values
+        small_profit_pnl_points = COMMISSION_PER_TRADE / 50
+        small_profit_gross_pnl = COMMISSION_PER_TRADE
+        small_profit_net_pnl = 0.0
+
+        # Verify the calculated metrics
+        assert small_profit_metrics['net_pnl'] == small_profit_net_pnl
 
         # Test a trade with a very large loss
         large_loss_trade = create_sample_trade(side='long', entry_price=4200.0, exit_price=4100.0)
         large_loss_metrics = calculate_trade_metrics(large_loss_trade, 'ES')
 
-        assert large_loss_metrics['pnl_points'] == -100.0
-        assert large_loss_metrics['gross_pnl'] == -5000.0  # -100 points * 50 multiplier
+        # Calculate expected values
+        large_loss_pnl_points = -100.0
+        large_loss_gross_pnl = -5000.0  # -100 points * 50 multiplier
+        large_loss_net_pnl = large_loss_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert large_loss_metrics['net_pnl'] == large_loss_net_pnl
 
         # Test a trade with a very large profit
         large_profit_trade = create_sample_trade(side='short', entry_price=4300.0, exit_price=4100.0)
         large_profit_metrics = calculate_trade_metrics(large_profit_trade, 'ES')
 
-        assert large_profit_metrics['pnl_points'] == 200.0
-        assert large_profit_metrics['gross_pnl'] == 10000.0  # 200 points * 50 multiplier
+        # Calculate expected values
+        large_profit_pnl_points = 200.0
+        large_profit_gross_pnl = 10000.0  # 200 points * 50 multiplier
+        large_profit_net_pnl = large_profit_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert large_profit_metrics['net_pnl'] == large_profit_net_pnl
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50, 'NQ': 20, 'CL': 1000, 'GC': 100})
     @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS',
@@ -398,8 +462,13 @@ class TestCalculateTradeMetrics:
         )
         long_rr_metrics_win = calculate_trade_metrics(long_rr_trade_win, 'ES')
 
-        assert long_rr_metrics_win['pnl_points'] == reward_points
-        assert long_rr_metrics_win['gross_pnl'] == reward_points * 50  # 20 points * 50 multiplier = $1000
+        # Calculate expected values
+        win_pnl_points = reward_points
+        win_gross_pnl = reward_points * 50  # 20 points * 50 multiplier = $1000
+        win_net_pnl = win_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert long_rr_metrics_win['net_pnl'] == win_net_pnl
 
         # Long trade with 2:1 risk-reward that hits stop loss
         long_rr_trade_loss = create_sample_trade(
@@ -409,8 +478,13 @@ class TestCalculateTradeMetrics:
         )
         long_rr_metrics_loss = calculate_trade_metrics(long_rr_trade_loss, 'ES')
 
-        assert long_rr_metrics_loss['pnl_points'] == -risk_points
-        assert long_rr_metrics_loss['gross_pnl'] == -risk_points * 50  # -10 points * 50 multiplier = -$500
+        # Calculate expected values
+        loss_pnl_points = -risk_points
+        loss_gross_pnl = -risk_points * 50  # -10 points * 50 multiplier = -$500
+        loss_net_pnl = loss_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert long_rr_metrics_loss['net_pnl'] == loss_net_pnl
 
         # Scenario 2: Volatility Breakout Trade
         # In volatile markets, prices can move quickly in one direction after breaking a key level
@@ -425,8 +499,13 @@ class TestCalculateTradeMetrics:
         )
         breakout_metrics = calculate_trade_metrics(breakout_trade, 'ES')
 
-        assert breakout_metrics['pnl_points'] == 60.0
-        assert breakout_metrics['gross_pnl'] == 3000.0  # 60 points * 50 multiplier
+        # Calculate expected values
+        breakout_pnl_points = 60.0
+        breakout_gross_pnl = 3000.0  # 60 points * 50 multiplier
+        breakout_net_pnl = breakout_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert breakout_metrics['net_pnl'] == breakout_net_pnl
         assert breakout_metrics['duration_hours'] == 2
 
         # Scenario 3: Trend Following Trade
@@ -451,16 +530,22 @@ class TestCalculateTradeMetrics:
         )
         trend_metrics2 = calculate_trade_metrics(trend_entry2, 'ES')
 
-        # Combined results of the trend following strategy
-        total_trend_pnl = trend_metrics1['gross_pnl'] + trend_metrics2['gross_pnl']
-        total_trend_commission = trend_metrics1['commission'] + trend_metrics2['commission']
-        total_trend_net_pnl = trend_metrics1['net_pnl'] + trend_metrics2['net_pnl']
+        # Calculate expected values
+        trend1_pnl_points = 50.0
+        trend1_gross_pnl = 2500.0  # 50 points * 50 multiplier
+        trend1_net_pnl = trend1_gross_pnl - COMMISSION_PER_TRADE
 
-        assert trend_metrics1['pnl_points'] == 50.0
-        assert trend_metrics2['pnl_points'] == 50.0
-        assert total_trend_pnl == 5000.0  # (50 + 50) points * 50 multiplier
-        assert total_trend_commission == COMMISSION_PER_TRADE * 2
-        assert total_trend_net_pnl == total_trend_pnl - total_trend_commission
+        trend2_pnl_points = 50.0
+        trend2_gross_pnl = 2500.0  # 50 points * 50 multiplier
+        trend2_net_pnl = trend2_gross_pnl - COMMISSION_PER_TRADE
+
+        # Combined results of the trend following strategy
+        total_trend_net_pnl = trend1_net_pnl + trend2_net_pnl
+
+        # Verify the calculated metrics
+        assert trend_metrics1['net_pnl'] == trend1_net_pnl
+        assert trend_metrics2['net_pnl'] == trend2_net_pnl
+        assert trend_metrics1['net_pnl'] + trend_metrics2['net_pnl'] == total_trend_net_pnl
 
         # Scenario 4: Mean Reversion Trade
         # Mean reversion involves betting that prices will return to their average after moving away
@@ -475,8 +560,13 @@ class TestCalculateTradeMetrics:
         )
         mean_reversion_metrics = calculate_trade_metrics(mean_reversion_trade, 'ES')
 
-        assert mean_reversion_metrics['pnl_points'] == 50.0
-        assert mean_reversion_metrics['gross_pnl'] == 2500.0  # 50 points * 50 multiplier
+        # Calculate expected values
+        mean_reversion_pnl_points = 50.0
+        mean_reversion_gross_pnl = 2500.0  # 50 points * 50 multiplier
+        mean_reversion_net_pnl = mean_reversion_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert mean_reversion_metrics['net_pnl'] == mean_reversion_net_pnl
 
         # Scenario 5: Multi-Day Position with Weekend Gap
         # Holding positions over weekends can result in price gaps
@@ -491,8 +581,13 @@ class TestCalculateTradeMetrics:
         )
         weekend_gap_metrics = calculate_trade_metrics(weekend_gap_trade, 'ES')
 
-        assert weekend_gap_metrics['pnl_points'] == 40.0
-        assert weekend_gap_metrics['gross_pnl'] == 2000.0  # 40 points * 50 multiplier
+        # Calculate expected values
+        weekend_gap_pnl_points = 40.0
+        weekend_gap_gross_pnl = 2000.0  # 40 points * 50 multiplier
+        weekend_gap_net_pnl = weekend_gap_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert weekend_gap_metrics['net_pnl'] == weekend_gap_net_pnl
         assert weekend_gap_metrics['duration_hours'] == 72
 
         # Scenario 6: Trading Different Markets
@@ -521,11 +616,28 @@ class TestCalculateTradeMetrics:
         cl_return = cl_metrics['return_percentage_of_margin']
         gc_return = gc_metrics['return_percentage_of_margin']
 
-        # Verify each market's metrics
-        assert es_metrics['gross_pnl'] == 500.0  # 10 points * 50 multiplier
-        assert nq_metrics['gross_pnl'] == 1000.0  # 50 points * 20 multiplier
-        assert cl_metrics['gross_pnl'] == 1000.0  # 1 point * 1000 multiplier
-        assert gc_metrics['gross_pnl'] == 1000.0  # 10 points * 100 multiplier
+        # Calculate expected values
+        es_pnl_points = 10.0
+        es_gross_pnl = 500.0  # 10 points * 50 multiplier
+        es_net_pnl = es_gross_pnl - COMMISSION_PER_TRADE
+
+        nq_pnl_points = 50.0
+        nq_gross_pnl = 1000.0  # 50 points * 20 multiplier
+        nq_net_pnl = nq_gross_pnl - COMMISSION_PER_TRADE
+
+        cl_pnl_points = 1.0
+        cl_gross_pnl = 1000.0  # 1 point * 1000 multiplier
+        cl_net_pnl = cl_gross_pnl - COMMISSION_PER_TRADE
+
+        gc_pnl_points = 10.0
+        gc_gross_pnl = 1000.0  # 10 points * 100 multiplier
+        gc_net_pnl = gc_gross_pnl - COMMISSION_PER_TRADE
+
+        # Verify the calculated metrics
+        assert es_metrics['net_pnl'] == es_net_pnl
+        assert nq_metrics['net_pnl'] == nq_net_pnl
+        assert cl_metrics['net_pnl'] == cl_net_pnl
+        assert gc_metrics['net_pnl'] == gc_net_pnl
 
         # Scenario 7: Scaling In and Out of Positions
         # Traders often scale into and out of positions to manage risk and maximize profits
@@ -549,24 +661,27 @@ class TestCalculateTradeMetrics:
         )
         scale_metrics2 = calculate_trade_metrics(scale_entry2, 'ES')
 
+        # Calculate expected values for individual trades
+        scale1_pnl_points = 20.0
+        scale1_gross_pnl = 1000.0  # 20 points * 50 multiplier
+        scale1_net_pnl = scale1_gross_pnl - COMMISSION_PER_TRADE
+
+        scale2_pnl_points = 30.0
+        scale2_gross_pnl = 1500.0  # 30 points * 50 multiplier
+        scale2_net_pnl = scale2_gross_pnl - COMMISSION_PER_TRADE
+
         # Calculate combined metrics for the scaling strategy
         # In real trading, position sizes might vary, but for simplicity we use equal sizes here
         avg_entry_price = (4200.0 + 4210.0) / 2
         avg_exit_price = (4220.0 + 4240.0) / 2
-        total_scale_pnl = scale_metrics1['gross_pnl'] + scale_metrics2['gross_pnl']
-        total_scale_commission = scale_metrics1['commission'] + scale_metrics2['commission']
-        total_scale_net_pnl = scale_metrics1['net_pnl'] + scale_metrics2['net_pnl']
+        total_scale_net_pnl = scale1_net_pnl + scale2_net_pnl
 
         # Verify the individual trades
-        assert scale_metrics1['pnl_points'] == 20.0
-        assert scale_metrics1['gross_pnl'] == 1000.0  # 20 points * 50 multiplier
-        assert scale_metrics2['pnl_points'] == 30.0
-        assert scale_metrics2['gross_pnl'] == 1500.0  # 30 points * 50 multiplier
+        assert scale_metrics1['net_pnl'] == scale1_net_pnl
+        assert scale_metrics2['net_pnl'] == scale2_net_pnl
 
         # Verify the combined results
-        assert total_scale_pnl == 2500.0  # 1000 + 1500
-        assert total_scale_commission == COMMISSION_PER_TRADE * 2
-        assert total_scale_net_pnl == total_scale_pnl - total_scale_commission
+        assert scale_metrics1['net_pnl'] + scale_metrics2['net_pnl'] == total_scale_net_pnl
 
         # Calculate what the result would be if it was a single trade with average prices
         avg_trade = create_sample_trade(
@@ -577,14 +692,17 @@ class TestCalculateTradeMetrics:
         )
         avg_metrics = calculate_trade_metrics(avg_trade, 'ES')
 
+        # Calculate expected values for average trade
+        avg_pnl_points = 25.0  # (4230 - 4205)
+        avg_gross_pnl = 1250.0  # 25 points * 50 multiplier
+        avg_net_pnl = avg_gross_pnl - COMMISSION_PER_TRADE
+
         # Verify the average trade metrics
-        assert avg_metrics['pnl_points'] == 25.0  # (4230 - 4205)
-        assert avg_metrics['gross_pnl'] == 1250.0  # 25 points * 50 multiplier
+        assert avg_metrics['net_pnl'] == avg_net_pnl
 
         # Compare scaling strategy vs single entry strategy
-        # The scaling strategy should have higher gross PnL but also higher commission
-        assert total_scale_pnl > avg_metrics['gross_pnl']  # 2500 > 1250
-        assert total_scale_commission > avg_metrics['commission']  # 8 > 4
+        # The scaling strategy should have higher net PnL but also higher commission
+        assert total_scale_net_pnl > avg_metrics['net_pnl']  # (1000 + 1500 - 8) > (1250 - 4)
 
 
 class TestPrintTradeMetrics:

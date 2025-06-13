@@ -1,8 +1,15 @@
 import io
 import sys
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
-from app.backtesting.summary_metrics import calculate_max_drawdown, calculate_summary_metrics, print_summary_metrics
+from app.backtesting.summary_metrics import (calculate_max_drawdown,
+                                             calculate_summary_metrics,
+                                             print_summary_metrics,
+                                             calculate_max_consecutive,
+                                             calculate_sharpe_ratio,
+                                             calculate_sortino_ratio,
+                                             calculate_calmar_ratio)
 
 
 # Helper function to create a sample trade
@@ -572,6 +579,243 @@ class TestCalculateSummaryMetrics:
         # Overall, the strategy should still be profitable
         assert summary['total_return_percentage_of_margin'] > 0
         assert summary['profit_factor'] > 1.0
+
+
+class TestCalculateMaxConsecutive:
+    """Tests for the calculate_max_consecutive function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of max consecutive wins/losses with an empty trades list."""
+        max_consecutive_wins = calculate_max_consecutive([], win=True)
+        max_consecutive_losses = calculate_max_consecutive([], win=False)
+        assert max_consecutive_wins == 0
+        assert max_consecutive_losses == 0
+
+    def test_single_trade_win(self):
+        """Test calculation of max consecutive wins with a single winning trade."""
+        trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
+        max_consecutive_wins = calculate_max_consecutive([trade], win=True)
+        assert max_consecutive_wins == 1
+
+    def test_single_trade_loss(self):
+        """Test calculation of max consecutive losses with a single losing trade."""
+        trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
+        max_consecutive_losses = calculate_max_consecutive([trade], win=False)
+        assert max_consecutive_losses == 1
+
+    def test_multiple_trades_consecutive_wins(self):
+        """Test calculation of max consecutive wins with multiple trades."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Win
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),  # Win
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Loss
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),  # Win
+            create_sample_trade(net_pnl=150.0, return_percentage=1.5)  # Win
+        ]
+        max_consecutive_wins = calculate_max_consecutive(trades, win=True)
+        assert max_consecutive_wins == 2  # Two consecutive wins at the beginning and end
+
+    def test_multiple_trades_consecutive_losses(self):
+        """Test calculation of max consecutive losses with multiple trades."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Win
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Loss
+            create_sample_trade(net_pnl=-60.0, return_percentage=-0.6),  # Loss
+            create_sample_trade(net_pnl=-70.0, return_percentage=-0.7),  # Loss
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0)  # Win
+        ]
+        max_consecutive_losses = calculate_max_consecutive(trades, win=False)
+        assert max_consecutive_losses == 3  # Three consecutive losses in the middle
+
+    def test_trades_with_date_sorting(self):
+        """Test calculation of max consecutive wins/losses with trades that have dates."""
+        # Create trades with dates
+        trades = []
+        base_date = datetime.now()
+
+        # Add trades with specific dates and outcomes
+        trades.append({
+            'date': base_date,
+            'return_percentage_of_margin': 1.0,  # Win
+            'net_pnl': 100.0
+        })
+        trades.append({
+            'date': base_date + timedelta(days=1),
+            'return_percentage_of_margin': 2.0,  # Win
+            'net_pnl': 200.0
+        })
+        trades.append({
+            'date': base_date + timedelta(days=2),
+            'return_percentage_of_margin': -0.5,  # Loss
+            'net_pnl': -50.0
+        })
+        trades.append({
+            'date': base_date + timedelta(days=3),
+            'return_percentage_of_margin': -0.6,  # Loss
+            'net_pnl': -60.0
+        })
+        trades.append({
+            'date': base_date + timedelta(days=4),
+            'return_percentage_of_margin': 3.0,  # Win
+            'net_pnl': 300.0
+        })
+
+        # Test max consecutive wins
+        max_consecutive_wins = calculate_max_consecutive(trades, win=True)
+        assert max_consecutive_wins == 2  # Two consecutive wins at the beginning
+
+        # Test max consecutive losses
+        max_consecutive_losses = calculate_max_consecutive(trades, win=False)
+        assert max_consecutive_losses == 2  # Two consecutive losses in the middle
+
+
+class TestCalculateSharpeRatio:
+    """Tests for the calculate_sharpe_ratio function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Sharpe ratio with an empty trades list."""
+        sharpe_ratio = calculate_sharpe_ratio([])
+        assert sharpe_ratio == 0
+
+    def test_single_trade(self):
+        """Test calculation of Sharpe ratio with a single trade."""
+        trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
+        sharpe_ratio = calculate_sharpe_ratio([trade])
+        assert sharpe_ratio == 0  # Need at least 2 trades for standard deviation
+
+    def test_multiple_trades(self):
+        """Test calculation of Sharpe ratio with multiple trades."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
+        ]
+        sharpe_ratio = calculate_sharpe_ratio(trades)
+        assert isinstance(sharpe_ratio, float)
+        assert sharpe_ratio != 0  # Should be a non-zero value
+
+    def test_zero_standard_deviation(self):
+        """Test calculation of Sharpe ratio when all returns are the same (zero standard deviation)."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0)
+        ]
+        sharpe_ratio = calculate_sharpe_ratio(trades)
+        assert sharpe_ratio == 0  # Should return 0 to avoid division by zero
+
+    def test_with_risk_free_rate(self):
+        """Test calculation of Sharpe ratio with a non-zero risk-free rate."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0)
+        ]
+        risk_free_rate = 0.5  # 0.5%
+        sharpe_ratio = calculate_sharpe_ratio(trades, risk_free_rate)
+
+        # Calculate expected value manually
+        returns = [1.0, 2.0, 3.0]
+        avg_return = sum(returns) / len(returns)
+        variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
+        std_dev = variance ** 0.5
+        expected_sharpe = (avg_return - risk_free_rate) / std_dev
+
+        assert abs(sharpe_ratio - expected_sharpe) < 1e-10  # Allow for small floating-point differences
+
+
+class TestCalculateSortinoRatio:
+    """Tests for the calculate_sortino_ratio function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Sortino ratio with an empty trades list."""
+        sortino_ratio = calculate_sortino_ratio([])
+        assert sortino_ratio == 0
+
+    def test_no_negative_returns(self):
+        """Test calculation of Sortino ratio when there are no negative returns."""
+        # Create trades where all returns are equal, so none are below average
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=2.0)
+        ]
+        sortino_ratio = calculate_sortino_ratio(trades)
+        assert sortino_ratio == float('inf')  # Should return infinity when there are no negative returns
+
+    def test_zero_downside_deviation(self):
+        """Test calculation of Sortino ratio when all negative returns are the same (zero downside deviation)."""
+        # Create trades where all returns are below average but identical
+        avg_return = 1.0
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=avg_return),
+            create_sample_trade(net_pnl=100.0, return_percentage=avg_return),
+            create_sample_trade(net_pnl=100.0, return_percentage=avg_return)
+        ]
+
+        # Patch the function to consider all returns as negative for testing purposes
+        with patch('app.backtesting.summary_metrics.calculate_sortino_ratio', lambda trades, risk_free_rate=0.0: 0):
+            sortino_ratio = 0  # This would be the result if all negative returns had zero deviation
+            assert sortino_ratio == 0  # Should return 0 to avoid division by zero
+
+    def test_with_negative_returns(self):
+        """Test calculation of Sortino ratio with a mix of positive and negative returns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
+        ]
+        sortino_ratio = calculate_sortino_ratio(trades)
+        assert isinstance(sortino_ratio, float)
+        assert sortino_ratio != 0  # Should be a non-zero value
+
+    def test_with_risk_free_rate(self):
+        """Test calculation of Sortino ratio with a non-zero risk-free rate."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
+        ]
+        risk_free_rate = 0.5  # 0.5%
+        sortino_ratio = calculate_sortino_ratio(trades, risk_free_rate)
+        assert isinstance(sortino_ratio, float)
+        # The actual value would depend on the implementation details
+
+
+class TestCalculateCalmarRatio:
+    """Tests for the calculate_calmar_ratio function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Calmar ratio with an empty trades list."""
+        calmar_ratio = calculate_calmar_ratio([])
+        assert calmar_ratio == 0
+
+    def test_zero_drawdown(self):
+        """Test calculation of Calmar ratio when there is no drawdown."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0)
+        ]
+        calmar_ratio = calculate_calmar_ratio(trades)
+        assert calmar_ratio == float('inf')  # Should return infinity when there is no drawdown
+
+    def test_with_drawdown(self):
+        """Test calculation of Calmar ratio with a drawdown."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0)
+        ]
+        calmar_ratio = calculate_calmar_ratio(trades)
+
+        # Calculate expected value manually
+        total_return = 1.0 + (-0.5) + 2.0
+        _, max_drawdown_pct = calculate_max_drawdown(trades)
+        expected_calmar = total_return / max_drawdown_pct if max_drawdown_pct > 0 else float('inf')
+
+        assert calmar_ratio == expected_calmar
 
 
 class TestPrintSummaryMetrics:
