@@ -2,10 +2,11 @@ import pandas as pd
 
 
 class BaseStrategy:
-    def __init__(self, rollover=False, trailing=None):
+    def __init__(self, rollover=False, trailing=None, slippage=0):
         self.switch_dates = None
         self.rollover = rollover
         self.trailing = trailing
+        self.slippage = slippage
 
         # Initialize attributes that are reset in _reset()
         self.position = None
@@ -116,9 +117,19 @@ class BaseStrategy:
         # Reopen on the following contract if rollover is enabled
         if self.must_reopen is not None and self.position is None:
             if self.rollover:
-                self.position = self.must_reopen
+                direction = self.must_reopen
+                self.position = direction
                 self.entry_time = idx
-                self.entry_price = price_open
+
+                # Apply slippage to entry price
+                if direction == 1:  # Long position
+                    # For long positions, pay more on entry (higher price)
+                    adjusted_price = price_open * (1 + self.slippage / 100)
+                else:  # Short position
+                    # For short positions, receive less on entry (lower price)
+                    adjusted_price = price_open * (1 - self.slippage / 100)
+
+                self.entry_price = round(adjusted_price, 2)
             self.must_reopen = None
 
     def _close_position_at_switch(self, current_time):
@@ -175,11 +186,21 @@ class BaseStrategy:
             self.queued_signal = None
 
     def _close_position(self, exit_time, exit_price, switch=False):
+        # Apply slippage to exit price
+        if self.position == 1:  # Long position
+            # For long positions, receive less on exit (lower price)
+            adjusted_exit_price = exit_price * (1 - self.slippage / 100)
+        else:  # Short position
+            # For short positions, pay more on exit (higher price)
+            adjusted_exit_price = exit_price * (1 + self.slippage / 100)
+
+        adjusted_exit_price = round(adjusted_exit_price, 2)
+
         trade = {
             'entry_time': self.entry_time,
             'entry_price': self.entry_price,
             'exit_time': exit_time,
-            'exit_price': exit_price,
+            'exit_price': adjusted_exit_price,
             'side': 'long' if self.position == 1 else 'short',
         }
         if switch:
@@ -190,7 +211,16 @@ class BaseStrategy:
     def _open_new_position(self, direction, idx, price_open):
         self.position = direction
         self.entry_time = idx
-        self.entry_price = price_open
+
+        # Apply slippage to entry price
+        if direction == 1:  # Long position
+            # For long positions, pay more on entry (higher price)
+            adjusted_price = price_open * (1 + self.slippage / 100)
+        else:  # Short position
+            # For short positions, receive less on entry (lower price)
+            adjusted_price = price_open * (1 - self.slippage / 100)
+
+        self.entry_price = round(adjusted_price, 2)
 
         # Set initial trailing stop if trailing is enabled
         if self.trailing is not None:

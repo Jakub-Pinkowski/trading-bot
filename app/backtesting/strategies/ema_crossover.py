@@ -3,8 +3,8 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 class EMACrossoverStrategy(BaseStrategy):
-    def __init__(self, ema_short=9, ema_long=21, rollover=False, trailing=None):
-        super().__init__(rollover=rollover, trailing=trailing)
+    def __init__(self, ema_short=9, ema_long=21, rollover=False, trailing=None, slippage=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
         self.ema_short = ema_short
         self.ema_long = ema_long
 

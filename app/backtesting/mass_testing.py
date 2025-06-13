@@ -86,7 +86,7 @@ class MassTester:
             self.strategies.append((strategy_name, strategy_instance))
 
     # NOTE: Tested and approved
-    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops):
+    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
         self.add_strategy_tests(
             strategy_type='rsi',
             param_grid={
@@ -94,12 +94,13 @@ class MassTester:
                 'lower': lower_thresholds,
                 'upper': upper_thresholds,
                 'rollover': rollovers,
-                'trailing': trailing_stops
+                'trailing': trailing_stops,
+                'slippage': slippages
             }
         )
 
     # NOTE: Tested and approved
-    def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops):
+    def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops, slippages=None):
         self.add_strategy_tests(
             strategy_type='ema',
             param_grid={
@@ -107,11 +108,12 @@ class MassTester:
                 'ema_long': ema_longs,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
+                'slippage': slippages
             }
         )
 
     # TODO [MEDIUM]: Still to be tested
-    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops):
+    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
         self.add_strategy_tests(
             strategy_type='macd',
             param_grid={
@@ -120,11 +122,12 @@ class MassTester:
                 'signal_period': signal_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
+                'slippage': slippages
             }
         )
 
     # TODO [MEDIUM]: Still to be tested
-    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops):
+    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
         self.add_strategy_tests(
             strategy_type='bollinger',
             param_grid={
@@ -132,6 +135,7 @@ class MassTester:
                 'num_std': num_stds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
+                'slippage': slippages
             }
         )
 

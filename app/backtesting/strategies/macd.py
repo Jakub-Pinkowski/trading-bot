@@ -10,9 +10,10 @@ class MACDStrategy(BaseStrategy):
         slow_period=26,
         signal_period=9,
         rollover=False,
-        trailing=None
+        trailing=None,
+        slippage=None
     ):
-        super().__init__(rollover=rollover, trailing=trailing)
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period

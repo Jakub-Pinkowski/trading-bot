@@ -39,6 +39,7 @@ class StrategyFactory:
         upper = params.get('upper', 70)
         rollover = params.get('rollover', False)
         trailing = params.get('trailing', None)
+        slippage = params.get('slippage', None)
 
         # Validate parameters
         if not isinstance(rsi_period, int) or rsi_period <= 0:
@@ -63,7 +64,8 @@ class StrategyFactory:
             lower=lower,
             upper=upper,
             rollover=rollover,
-            trailing=trailing
+            trailing=trailing,
+            slippage=slippage
         )
 
     @staticmethod
@@ -74,6 +76,7 @@ class StrategyFactory:
         ema_long = params.get('ema_long', 21)
         rollover = params.get('rollover', False)
         trailing = params.get('trailing', None)
+        slippage = params.get('slippage', None)
 
         # Validate parameters
         if not isinstance(ema_short, int) or ema_short <= 0:
@@ -93,7 +96,8 @@ class StrategyFactory:
             ema_short=ema_short,
             ema_long=ema_long,
             rollover=rollover,
-            trailing=trailing
+            trailing=trailing,
+            slippage=slippage
         )
 
     @staticmethod
@@ -105,6 +109,7 @@ class StrategyFactory:
         signal_period = params.get('signal_period', 9)
         rollover = params.get('rollover', False)
         trailing = params.get('trailing', None)
+        slippage = params.get('slippage', None)
 
         # Validate parameters
         if not isinstance(fast_period, int) or fast_period <= 0:
@@ -129,7 +134,8 @@ class StrategyFactory:
             slow_period=slow_period,
             signal_period=signal_period,
             rollover=rollover,
-            trailing=trailing
+            trailing=trailing,
+            slippage=slippage
         )
 
     @staticmethod
@@ -140,6 +146,7 @@ class StrategyFactory:
         num_std = params.get('num_std', 2)
         rollover = params.get('rollover', False)
         trailing = params.get('trailing', None)
+        slippage = params.get('slippage', None)
 
         # Validate parameters
         if not isinstance(period, int) or period <= 0:
@@ -155,7 +162,8 @@ class StrategyFactory:
             period=period,
             num_std=num_std,
             rollover=rollover,
-            trailing=trailing
+            trailing=trailing,
+            slippage=slippage
         )
 
     @staticmethod
@@ -167,14 +175,16 @@ class StrategyFactory:
             upper = params.get('upper', 70)
             rollover = params.get('rollover', False)
             trailing = params.get('trailing', None)
-            return f'RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing})'
+            slippage = params.get('slippage', None)
+            return f'RSI(period={rsi_period},lower={lower},upper={upper},rollover={rollover},trailing={trailing},slippage={slippage})'
 
         elif strategy_type.lower() == 'ema':
             ema_short = params.get('ema_short', 9)
             ema_long = params.get('ema_long', 21)
             rollover = params.get('rollover', False)
             trailing = params.get('trailing', None)
-            return f'EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing})'
+            slippage = params.get('slippage', None)
+            return f'EMA(short={ema_short},long={ema_long},rollover={rollover},trailing={trailing},slippage={slippage})'
 
         elif strategy_type.lower() == 'macd':
             fast_period = params.get('fast_period', 12)
@@ -182,14 +192,16 @@ class StrategyFactory:
             signal_period = params.get('signal_period', 9)
             rollover = params.get('rollover', False)
             trailing = params.get('trailing', None)
-            return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing})'
+            slippage = params.get('slippage', None)
+            return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage={slippage})'
 
         elif strategy_type.lower() == 'bollinger':
             period = params.get('period', 20)
             num_std = params.get('num_std', 2)
             rollover = params.get('rollover', False)
             trailing = params.get('trailing', None)
-            return f'BB(period={period},std={num_std},rollover={rollover},trailing={trailing})'
+            slippage = params.get('slippage', None)
+            return f'BB(period={period},std={num_std},rollover={rollover},trailing={trailing},slippage={slippage})'
 
         else:
             return f'Unknown({strategy_type})'

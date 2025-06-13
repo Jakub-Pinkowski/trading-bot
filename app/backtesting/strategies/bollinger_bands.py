@@ -4,8 +4,8 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 # TODO [MEDIUM]: To be tested
 class BollingerBandsStrategy(BaseStrategy):
-    def __init__(self, period=20, num_std=2, rollover=False, trailing=None):
-        super().__init__(rollover=rollover, trailing=trailing)
+    def __init__(self, period=20, num_std=2, rollover=False, trailing=None, slippage=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
         self.period = period
         self.num_std = num_std
 

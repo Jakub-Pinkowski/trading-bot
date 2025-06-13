@@ -19,7 +19,8 @@ def main():
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
-        trailing_stops=[None, 2]
+        trailing_stops=[None, 2],
+        slippages=[0, 0.05, 0.1]
     )
 
     # Add EMA Crossover strategy
@@ -27,7 +28,8 @@ def main():
         ema_shorts=[9],
         ema_longs=[21],
         rollovers=[False, True],
-        trailing_stops=[None, 2]
+        trailing_stops=[None, 2],
+        slippages=[0, 0.05, 0.1]
     )
 
     # Add Bollinger Bands strategy
@@ -35,7 +37,8 @@ def main():
         periods=[22],
         num_stds=[2],
         rollovers=[False],
-        trailing_stops=[None, 2]
+        trailing_stops=[None, 2],
+        slippages=[0, 0.05, 0.1]
     )
 
     # Run all tests

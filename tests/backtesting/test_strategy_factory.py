@@ -23,7 +23,7 @@ class TestStrategyFactory(unittest.TestCase):
         self.assertEqual(strategy.upper, 70)
         self.assertEqual(strategy.rollover, False)
         self.assertIsNone(strategy.trailing)
-        
+
         # Test with custom parameters
         strategy = StrategyFactory.create_strategy(
             'rsi',
@@ -195,12 +195,18 @@ class TestStrategyFactory(unittest.TestCase):
                                                  lower=30,
                                                  upper=70,
                                                  rollover=False,
-                                                 trailing=None)
-        self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None)')
+                                                 trailing=None,
+                                                 slippage=None)
+        self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=None)')
 
         # EMA strategy
-        name = StrategyFactory.get_strategy_name('ema', ema_short=9, ema_long=21, rollover=True, trailing=2.0)
-        self.assertEqual(name, 'EMA(short=9,long=21,rollover=True,trailing=2.0)')
+        name = StrategyFactory.get_strategy_name('ema',
+                                                 ema_short=9,
+                                                 ema_long=21,
+                                                 rollover=True,
+                                                 trailing=2.0,
+                                                 slippage=None)
+        self.assertEqual(name, 'EMA(short=9,long=21,rollover=True,trailing=2.0,slippage=None)')
 
         # MACD strategy
         name = StrategyFactory.get_strategy_name('macd',
@@ -208,12 +214,18 @@ class TestStrategyFactory(unittest.TestCase):
                                                  slow_period=26,
                                                  signal_period=9,
                                                  rollover=False,
-                                                 trailing=None)
-        self.assertEqual(name, 'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None)')
+                                                 trailing=None,
+                                                 slippage=None)
+        self.assertEqual(name, 'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=None)')
 
         # Bollinger Bands strategy
-        name = StrategyFactory.get_strategy_name('bollinger', period=20, num_std=2, rollover=True, trailing=None)
-        self.assertEqual(name, 'BB(period=20,std=2,rollover=True,trailing=None)')
+        name = StrategyFactory.get_strategy_name('bollinger',
+                                                 period=20,
+                                                 num_std=2,
+                                                 rollover=True,
+                                                 trailing=None,
+                                                 slippage=None)
+        self.assertEqual(name, 'BB(period=20,std=2,rollover=True,trailing=None,slippage=None)')
 
         # Unknown strategy type
         name = StrategyFactory.get_strategy_name('unknown')
