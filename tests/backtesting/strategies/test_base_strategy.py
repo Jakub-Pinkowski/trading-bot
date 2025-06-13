@@ -353,6 +353,44 @@ class TestBaseStrategy:
         assert strategy.entry_price is not None
         assert strategy.must_reopen is None  # must_reopen should be reset
 
+    def test_close_position_at_switch(self):
+        """Test closing a position at a contract switch date."""
+
+        # Create a test strategy
+        class SwitchTestStrategy(BaseStrategy):
+            def add_indicators(self, df):
+                return df
+
+            def generate_signals(self, df):
+                df['signal'] = 0
+                return df
+
+        # Create a dataframe with 5 bars
+        df = create_test_df(length=5)
+
+        # Create the strategy
+        strategy = SwitchTestStrategy()
+
+        # Set up the state to simulate an open position
+        strategy._reset()
+        strategy.position = 1  # Long position
+        strategy.entry_time = df.index[0]
+        strategy.entry_price = 100.0
+        strategy.prev_row = {'open': 110.0}  # Exit price for the switch
+
+        # Call _close_position_at_switch directly
+        strategy._close_position_at_switch(df.index[2])
+
+        # Verify the position was closed
+        assert strategy.position is None
+        assert strategy.entry_time is None
+        assert strategy.entry_price is None
+
+        # Verify a trade was recorded with the switch flag
+        assert len(strategy.trades) == 1
+        assert strategy.trades[0]['switch'] is True
+        assert strategy.trades[0]['exit_price'] == 110.0
+
     def test_no_signals(self):
         """Test behavior when there are no signals."""
         strategy = StrategyForTesting()
