@@ -219,7 +219,7 @@ class TestCalculateTradeMetrics:
         # Verify calculations with large prices
         assert large_price_metrics['net_pnl'] == large_net_pnl
         assert large_price_metrics['return_percentage_of_margin'] == round((
-                                                                                       large_net_pnl / large_margin_requirement) * 100,
+                                                                                   large_net_pnl / large_margin_requirement) * 100,
                                                                            2)
         assert large_price_metrics['return_percentage_of_contract'] == round((large_net_pnl / (100000.0 * 50)) * 100, 2)
 
@@ -240,7 +240,7 @@ class TestCalculateTradeMetrics:
         # Verify calculations with small prices
         assert small_price_metrics['net_pnl'] == small_net_pnl
         assert small_price_metrics['return_percentage_of_margin'] == round((
-                                                                                       small_net_pnl / small_margin_requirement) * 100,
+                                                                                   small_net_pnl / small_margin_requirement) * 100,
                                                                            2)
         assert small_price_metrics['return_percentage_of_contract'] == round((small_net_pnl / (0.01 * 50)) * 100, 2)
 
