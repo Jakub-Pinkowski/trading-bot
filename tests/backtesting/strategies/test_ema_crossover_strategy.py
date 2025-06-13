@@ -596,3 +596,98 @@ class TestEMACrossoverStrategy:
 
         # This test exposes the vulnerability of EMA crossover strategies to high volatility
         # which can lead to frequent whipsaws and overtrading
+
+    def test_slippage(self):
+        """Test that slippage is correctly applied to entry and exit prices in the EMA Crossover strategy."""
+        # Create a strategy with 2% slippage
+        strategy = EMACrossoverStrategy(ema_short=5, ema_long=15, slippage=2.0)
+
+        # Create a dataframe with dates
+        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        df = pd.DataFrame(index=dates)
+
+        # Create a price series that will definitely result in EMA crossovers
+        # Start with an uptrend
+        close_prices = []
+        for i in range(15):
+            close_prices.append(100 + i * 2)
+
+        # Then a downtrend
+        for i in range(15):
+            close_prices.append(130 - i * 2)
+
+        # Then another uptrend
+        for i in range(15):
+            close_prices.append(100 + i * 2)
+
+        # Fill the rest with flat prices
+        while len(close_prices) < 50:
+            close_prices.append(close_prices[-1])
+
+        # Create OHLC data
+        df['open'] = close_prices
+        df['high'] = [p + 1 for p in close_prices]
+        df['low'] = [p - 1 for p in close_prices]
+        df['close'] = close_prices
+
+        # Run the strategy
+        trades = strategy.run(df, [])
+
+        # Should have at least one trade
+        assert len(trades) > 0
+
+        # Find long and short trades
+        long_trades = [t for t in trades if t['side'] == 'long']
+        short_trades = [t for t in trades if t['side'] == 'short']
+
+        # Verify slippage is applied correctly for long trades
+        for trade in long_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For long positions:
+            # - Entry price should be higher than the original price (pay more on entry)
+            # - Exit price should be lower than the original price (receive less on exit)
+            expected_entry_price = round(original_entry_price * (1 + strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Long exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+        # Verify slippage is applied correctly for short trades
+        for trade in short_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For short positions:
+            # - Entry price should be lower than the original price (receive less on entry)
+            # - Exit price should be higher than the original price (pay more on exit)
+            expected_entry_price = round(original_entry_price * (1 - strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+        # Run the same strategy without slippage for comparison
+        strategy_no_slippage = EMACrossoverStrategy(slippage=0)
+        trades_no_slippage = strategy_no_slippage.run(df, [])
+
+        # Verify that trades with slippage have different prices than trades without slippage
+        if trades and trades_no_slippage:
+            for i in range(min(len(trades), len(trades_no_slippage))):
+                assert trades[i]['entry_price'] != trades_no_slippage[i][
+                    'entry_price'], "Entry prices should differ with slippage"
+                assert trades[i]['exit_price'] != trades_no_slippage[i][
+                    'exit_price'], "Exit prices should differ with slippage"

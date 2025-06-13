@@ -8,8 +8,8 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 # Create a concrete implementation of BaseStrategy for testing
 class TestStrategy(BaseStrategy):
-    def __init__(self, rollover=False, trailing=None):
-        super().__init__(rollover=rollover, trailing=trailing)
+    def __init__(self, rollover=False, trailing=None, slippage=0):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
 
     def add_indicators(self, df):
         # Simple implementation for testing
@@ -232,3 +232,59 @@ class TestBaseStrategy:
 
         # Should have no trades
         assert len(trades) == 0
+
+    def test_slippage(self):
+        """Test that slippage is correctly applied to entry and exit prices."""
+        # Create a strategy with 2% slippage
+        strategy = TestStrategy(slippage=2.0)
+        df = create_test_df()
+        df = strategy.generate_signals(df)  # Add signals
+
+        trades = strategy.extract_trades(df, [])
+
+        # Should have at least one trade
+        assert len(trades) > 0
+
+        # Find long and short trades
+        long_trades = [t for t in trades if t['side'] == 'long']
+        short_trades = [t for t in trades if t['side'] == 'short']
+
+        # Verify slippage is applied correctly for long trades
+        for trade in long_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For long positions:
+            # - Entry price should be higher than the original price (pay more on entry)
+            # - Exit price should be lower than the original price (receive less on exit)
+            expected_entry_price = round(original_entry_price * (1 + strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Long exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+        # Verify slippage is applied correctly for short trades
+        for trade in short_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For short positions:
+            # - Entry price should be lower than the original price (receive less on entry)
+            # - Exit price should be higher than the original price (pay more on exit)
+            expected_entry_price = round(original_entry_price * (1 - strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"

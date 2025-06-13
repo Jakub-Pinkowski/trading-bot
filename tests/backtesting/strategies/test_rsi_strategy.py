@@ -814,3 +814,116 @@ class TestRSIStrategy:
                 assert 'side' in trade, "Trade should have side"
                 assert trade['side'] == 'long', "Vulnerable trade should be long"
                 assert pnl < 0, "Vulnerable trade should have negative PnL"
+
+    def test_slippage(self):
+        """Test that slippage is correctly applied to entry and exit prices in the RSI strategy."""
+        # Create a strategy with 2% slippage
+        strategy = RSIStrategy(slippage=2.0)
+
+        # Create a dataframe with dates
+        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        df = pd.DataFrame(index=dates)
+
+        # Add required price columns with constant values
+        df['open'] = 100
+        df['high'] = 101
+        df['low'] = 99
+        df['close'] = 100
+
+        # Manually create an RSI column with extreme values and clear crossings
+        # Start with NaN for the first 14 periods (RSI period)
+        rsi_values = [np.nan] * 14
+
+        # Add values that will create extreme conditions and threshold crossings
+
+        # First, create a pattern that will generate a buy signal:
+        # RSI above a lower threshold
+        rsi_values.append(40.0)  # Previous value
+        # RSI crosses below a lower threshold (buy signal)
+        rsi_values.append(25.0)  # Current value - well below a threshold
+        # RSI stays low
+        rsi_values.append(20.0)
+        rsi_values.append(15.0)  # Very extreme low value
+
+        # Then, create a pattern that will generate a sell signal:
+        # RSI rises
+        rsi_values.append(40.0)
+        # RSI below an upper threshold
+        rsi_values.append(60.0)  # Previous value
+        # RSI crosses above an upper threshold (sell signal)
+        rsi_values.append(80.0)  # Current value - well above a threshold
+        # RSI stays high
+        rsi_values.append(85.0)
+        rsi_values.append(90.0)  # Very extreme high value
+
+        # Fill the rest with neutral values
+        while len(rsi_values) < 50:
+            rsi_values.append(50.0)
+
+        # Add RSI column to dataframe
+        df['rsi'] = rsi_values
+
+        # Generate signals
+        df = strategy.generate_signals(df)
+
+        # Extract trades
+        trades = strategy.extract_trades(df, [])
+
+        # Should have at least one trade
+        assert len(trades) > 0
+
+        # Find long and short trades
+        long_trades = [t for t in trades if t['side'] == 'long']
+        short_trades = [t for t in trades if t['side'] == 'short']
+
+        # Verify slippage is applied correctly for long trades
+        for trade in long_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For long positions:
+            # - Entry price should be higher than the original price (pay more on entry)
+            # - Exit price should be lower than the original price (receive less on exit)
+            expected_entry_price = round(original_entry_price * (1 + strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Long exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+        # Verify slippage is applied correctly for short trades
+        for trade in short_trades:
+            # Get the original entry and exit prices from the dataframe
+            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
+            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+
+            original_entry_price = df.iloc[entry_idx]['open']
+            original_exit_price = df.iloc[exit_idx]['open']
+
+            # For short positions:
+            # - Entry price should be lower than the original price (receive less on entry)
+            # - Exit price should be higher than the original price (pay more on exit)
+            expected_entry_price = round(original_entry_price * (1 - strategy.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.slippage / 100), 2)
+
+            assert trade[
+                       'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
+            assert trade[
+                       'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+        # Run the same strategy without slippage for comparison
+        strategy_no_slippage = RSIStrategy(slippage=0)
+        trades_no_slippage = strategy_no_slippage.run(df, [])
+
+        # Verify that trades with slippage have different prices than trades without slippage
+        if trades and trades_no_slippage:
+            for i in range(min(len(trades), len(trades_no_slippage))):
+                assert trades[i]['entry_price'] != trades_no_slippage[i][
+                    'entry_price'], "Entry prices should differ with slippage"
+                assert trades[i]['exit_price'] != trades_no_slippage[i][
+                    'exit_price'], "Exit prices should differ with slippage"
