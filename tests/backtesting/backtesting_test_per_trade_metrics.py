@@ -415,8 +415,8 @@ class TestCalculateTradeMetrics:
         small_profit_gross_pnl = COMMISSION_PER_TRADE
         small_profit_net_pnl = 0.0
 
-        # Verify the calculated metrics
-        assert small_profit_metrics['net_pnl'] == small_profit_net_pnl
+        # Verify the calculated metrics - using approx for floating point comparison
+        assert abs(small_profit_metrics['net_pnl']) < 1e-10  # Allow for floating point precision errors
 
         # Test a trade with a very large loss
         large_loss_trade = create_sample_trade(side='long', entry_price=4200.0, exit_price=4100.0)
