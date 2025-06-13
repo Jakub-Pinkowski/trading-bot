@@ -66,7 +66,7 @@ def test_place_order_existing_same_position(mock_get_contract_position):
 
 
 def test_place_order_reverse_position_aggressive(
-        monkeypatch, mock_get_contract_position, mock_api_post_orders
+    monkeypatch, mock_get_contract_position, mock_api_post_orders
 ):
     """Test that place_order reverses an existing position with double quantity in aggressive mode"""
 
@@ -88,7 +88,7 @@ def test_place_order_reverse_position_aggressive(
 
 
 def test_place_order_reverse_position_not_aggressive(
-        mock_get_contract_position, mock_api_post_orders
+    mock_get_contract_position, mock_api_post_orders
 ):
     """Test that place_order reverses an existing position with standard quantity in non-aggressive mode"""
 
@@ -109,7 +109,7 @@ def test_place_order_reverse_position_not_aggressive(
 
 
 def test_place_order_with_message_suppression(
-        mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
+    mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
 ):
     """Test that place_order handles message suppression before completing an order"""
 
@@ -133,7 +133,7 @@ def test_place_order_with_message_suppression(
 
 
 def test_place_order_insufficient_funds_error(
-        mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
     """Test that place_order handles and logs insufficient funds errors"""
 
@@ -153,7 +153,7 @@ def test_place_order_insufficient_funds_error(
 
 
 def test_place_order_derivative_rules_error(
-        mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
     """Test that place_order handles and logs derivative rules compliance errors"""
 
@@ -173,7 +173,7 @@ def test_place_order_derivative_rules_error(
 
 
 def test_place_order_unhandled_error(
-        mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
     """Test that place_order handles and logs unrecognized error types"""
 
@@ -193,7 +193,7 @@ def test_place_order_unhandled_error(
 
 
 def test_place_order_unexpected_exception(
-        mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
 ):
     """Test that place_order catches and logs unexpected exceptions"""
 

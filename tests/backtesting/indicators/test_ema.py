@@ -124,10 +124,10 @@ def test_calculate_ema_crossover_signal():
     # Create a price series that will generate a crossover
     # First downtrend, then uptrend to create a crossover
     prices = pd.Series([
-                           100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80,
-                           # Uptrend starts here to create crossover
-                           82, 84, 86, 88, 90, 92, 94, 96, 98, 100
-                       ])
+        100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80,
+        # Uptrend starts here to create crossover
+        82, 84, 86, 88, 90, 92, 94, 96, 98, 100
+    ])
 
     # Calculate fast and slow EMAs
     fast_ema = calculate_ema(prices, period=5)  # Short-term EMA
@@ -155,9 +155,9 @@ def test_calculate_ema_with_price_gaps():
     """Test EMA calculation with price gaps (missing data)"""
     # Create a series with NaN values to simulate missing data
     prices = pd.Series([
-                           50, 51, 52, np.nan, 54, 55, np.nan, np.nan, 58,
-                           59, 60, 61, 62, np.nan, 64, 65, 66, 67, 68
-                       ])
+        50, 51, 52, np.nan, 54, 55, np.nan, np.nan, 58,
+        59, 60, 61, 62, np.nan, 64, 65, 66, 67, 68
+    ])
 
     # First, let's handle the NaN values by forward filling
     filled_prices = prices.ffill()
@@ -189,10 +189,10 @@ def test_calculate_ema_with_market_crash():
     """Test EMA calculation during a market crash scenario"""
     # Simulate a stable market followed by a sharp decline (crash)
     prices = pd.Series([
-                           100, 101, 102, 103, 102, 101, 100, 99, 100, 101,
-                           # Sharp decline starts here
-                           95, 90, 85, 80, 75, 70, 65, 60, 55, 50
-                       ])
+        100, 101, 102, 103, 102, 101, 100, 99, 100, 101,
+        # Sharp decline starts here
+        95, 90, 85, 80, 75, 70, 65, 60, 55, 50
+    ])
 
     # Calculate EMAs with different periods
     short_ema = calculate_ema(prices, period=5)
@@ -214,9 +214,9 @@ def test_calculate_ema_with_multiple_periods():
     """Test multiple EMAs with different periods (common in trading strategies)"""
     # Create a realistic price series
     prices = pd.Series([
-                           100, 102, 104, 103, 105, 107, 106, 108, 110, 109,
-                           111, 113, 112, 114, 116, 115, 117, 119, 118, 120
-                       ])
+        100, 102, 104, 103, 105, 107, 106, 108, 110, 109,
+        111, 113, 112, 114, 116, 115, 117, 119, 118, 120
+    ])
 
     # Calculate EMAs with different periods commonly used in trading
     ema9 = calculate_ema(prices, period=9)
@@ -244,9 +244,9 @@ def test_calculate_ema_with_sideways_market():
     """Test EMA calculation in a sideways (range-bound) market"""
     # Simulate a sideways market with prices oscillating in a range
     prices = pd.Series([
-                           100, 102, 98, 103, 97, 104, 96, 105, 95, 104,
-                           96, 103, 97, 102, 98, 101, 99, 100, 100, 101
-                       ])
+        100, 102, 98, 103, 97, 104, 96, 105, 95, 104,
+        96, 103, 97, 102, 98, 101, 99, 100, 100, 101
+    ])
 
     # Calculate EMAs with different periods
     short_ema = calculate_ema(prices, period=5)

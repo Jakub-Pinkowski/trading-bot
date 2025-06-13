@@ -126,7 +126,15 @@ def test_process_trade_close_position():
     processed_trades = []
 
     # Process a sell trade to close the position
-    process_trade(symbol, sell_side, size, sell_price, sell_commission, sell_time, multiplier, open_trades, processed_trades)
+    process_trade(symbol,
+                  sell_side,
+                  size,
+                  sell_price,
+                  sell_commission,
+                  sell_time,
+                  multiplier,
+                  open_trades,
+                  processed_trades)
 
     # Verify the position was closed
     assert len(open_trades[symbol]) == 0
@@ -178,7 +186,15 @@ def test_process_trade_partial_close():
     processed_trades = []
 
     # Process a sell trade to partially close the position
-    process_trade(symbol, sell_side, sell_size, sell_price, sell_commission, sell_time, multiplier, open_trades, processed_trades)
+    process_trade(symbol,
+                  sell_side,
+                  sell_size,
+                  sell_price,
+                  sell_commission,
+                  sell_time,
+                  multiplier,
+                  open_trades,
+                  processed_trades)
 
     # Verify the position was partially closed (remaining size = 2)
     assert len(open_trades[symbol]) == 1

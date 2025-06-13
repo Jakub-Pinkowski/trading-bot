@@ -147,25 +147,25 @@ def sample_dataset_metrics():
 @patch('app.analysis.analysis_runner.save_to_csv')
 @patch('app.analysis.analysis_runner.is_nonempty')
 def test_run_analysis_with_all_data(
-        mock_is_nonempty,
-        mock_save_to_csv,
-        mock_calculate_dataset_metrics,
-        mock_add_per_trade_metrics,
-        mock_match_trades,
-        mock_clean_trades,
-        mock_clean_alerts,
-        mock_get_trades_data,
-        mock_get_tw_alerts_data,
-        mock_get_alerts_data,
-        sample_alerts_data,
-        sample_tw_alerts_data,
-        sample_trades_data,
-        sample_cleaned_alerts,
-        sample_cleaned_tw_alerts,
-        sample_cleaned_trades,
-        sample_matched_trades,
-        sample_trades_with_metrics,
-        sample_dataset_metrics
+    mock_is_nonempty,
+    mock_save_to_csv,
+    mock_calculate_dataset_metrics,
+    mock_add_per_trade_metrics,
+    mock_match_trades,
+    mock_clean_trades,
+    mock_clean_alerts,
+    mock_get_trades_data,
+    mock_get_tw_alerts_data,
+    mock_get_alerts_data,
+    sample_alerts_data,
+    sample_tw_alerts_data,
+    sample_trades_data,
+    sample_cleaned_alerts,
+    sample_cleaned_tw_alerts,
+    sample_cleaned_trades,
+    sample_matched_trades,
+    sample_trades_with_metrics,
+    sample_dataset_metrics
 ):
     """Test running analysis with all data available."""
 
@@ -226,16 +226,16 @@ def test_run_analysis_with_all_data(
 @patch('app.analysis.analysis_runner.save_to_csv')
 @patch('app.analysis.analysis_runner.is_nonempty')
 def test_run_analysis_with_no_data(
-        mock_is_nonempty,
-        mock_save_to_csv,
-        mock_calculate_dataset_metrics,
-        mock_add_per_trade_metrics,
-        mock_match_trades,
-        mock_clean_trades,
-        mock_clean_alerts,
-        mock_get_trades_data,
-        mock_get_tw_alerts_data,
-        mock_get_alerts_data
+    mock_is_nonempty,
+    mock_save_to_csv,
+    mock_calculate_dataset_metrics,
+    mock_add_per_trade_metrics,
+    mock_match_trades,
+    mock_clean_trades,
+    mock_clean_alerts,
+    mock_get_trades_data,
+    mock_get_tw_alerts_data,
+    mock_get_alerts_data
 ):
     """Test running analysis with no data available."""
 
@@ -275,21 +275,21 @@ def test_run_analysis_with_no_data(
 @patch('app.analysis.analysis_runner.save_to_csv')
 @patch('app.analysis.analysis_runner.is_nonempty')
 def test_run_analysis_with_only_tw_alerts(
-        mock_is_nonempty,
-        mock_save_to_csv,
-        mock_calculate_dataset_metrics,
-        mock_add_per_trade_metrics,
-        mock_match_trades,
-        mock_clean_trades,
-        mock_clean_alerts,
-        mock_get_trades_data,
-        mock_get_tw_alerts_data,
-        mock_get_alerts_data,
-        sample_tw_alerts_data,
-        sample_cleaned_tw_alerts,
-        sample_matched_trades,
-        sample_trades_with_metrics,
-        sample_dataset_metrics
+    mock_is_nonempty,
+    mock_save_to_csv,
+    mock_calculate_dataset_metrics,
+    mock_add_per_trade_metrics,
+    mock_match_trades,
+    mock_clean_trades,
+    mock_clean_alerts,
+    mock_get_trades_data,
+    mock_get_tw_alerts_data,
+    mock_get_alerts_data,
+    sample_tw_alerts_data,
+    sample_cleaned_tw_alerts,
+    sample_matched_trades,
+    sample_trades_with_metrics,
+    sample_dataset_metrics
 ):
     """Test running analysis with only TradingView alerts data available."""
 

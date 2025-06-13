@@ -497,7 +497,6 @@ class TestRSIStrategy:
                                   (prev_rsi < strategy.upper) &
                                   (df['rsi'] >= strategy.upper)]
 
-
         # Generate signals
         df = strategy.generate_signals(df)
 
@@ -750,7 +749,7 @@ class TestRSIStrategy:
         # Check if there's a crossover at the second peak
         prev_rsi = df['rsi'].shift(1)
         is_crossover = (prev_rsi.iloc[second_peak_idx] < strategy.upper) and (
-                    df['rsi'].iloc[second_peak_idx] >= strategy.upper)
+                df['rsi'].iloc[second_peak_idx] >= strategy.upper)
 
         # Generate signals
         df = strategy.generate_signals(df)
