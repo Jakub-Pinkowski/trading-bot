@@ -3,7 +3,7 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 class RSIStrategy(BaseStrategy):
-    def __init__(self, rsi_period=14, lower=30, upper=70, rollover=False, trailing=None, slippage=None):
+    def __init__(self, rsi_period=14, lower=30, upper=70, rollover=False, trailing=None, slippage=0):
         super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
         self.rsi_period = rsi_period
         self.lower = lower

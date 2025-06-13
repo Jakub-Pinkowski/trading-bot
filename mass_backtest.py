@@ -25,7 +25,7 @@ def main():
 
     # Add EMA Crossover strategy
     tester.add_ema_crossover_tests(
-        ema_shorts=[9],
+        ema_shorts=[9, 10],
         ema_longs=[21],
         rollovers=[False, True],
         trailing_stops=[None, 2],
