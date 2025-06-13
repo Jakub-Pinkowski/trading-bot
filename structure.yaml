@@ -130,6 +130,7 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Developer
+# TODO [LOW]: Remove helping comments and leave only those that actually bring value
 # TODO [LOW]: Rewrite IBKR logic using classes
 # TODO [LOW]: Rewrite analysis logic using classes
 # TODO [LOW]: Add docstrings EVERYWHERE
