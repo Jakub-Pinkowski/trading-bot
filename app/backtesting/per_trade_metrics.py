@@ -84,7 +84,7 @@ def print_trade_metrics(trade):
     RESET = '\033[0m'
 
     # Determine colors based on return percentage
-    return_percentage = trade['return_percentage_of_margin']
+    return_percentage = trade.get('return_percentage_of_margin', 0.0)
     if return_percentage > 0:
         color = GREEN
     elif return_percentage < 0:
@@ -95,16 +95,22 @@ def print_trade_metrics(trade):
     print('\n====== TRADE METRICS ======')
 
     # Trade details
-    print(f'Entry Time: {trade['entry_time']}')
-    print(f'Exit Time: {trade['exit_time']}')
-    print(f'Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)')
-    print(f'Side: {trade['side']}')
-    print(f'Entry Price: {trade['entry_price']}')
-    print(f'Exit Price: {trade['exit_price']}')
+    print(f'Entry Time: {trade.get('entry_time', 'N/A')}')
+    print(f'Exit Time: {trade.get('exit_time', 'N/A')}')
+
+    # Print duration if available
+    if 'duration' in trade and 'duration_hours' in trade:
+        print(f'Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)')
+    elif 'duration_hours' in trade:
+        print(f'Duration: {trade['duration_hours']:.2f} hours')
+
+    print(f'Side: {trade.get('side', 'N/A')}')
+    print(f'Entry Price: {trade.get('entry_price', 'N/A')}')
+    print(f'Exit Price: {trade.get('exit_price', 'N/A')}')
 
     # Percentage-based metrics
     print('\n--- PERCENTAGE-BASED METRICS ---')
-    print(f'Net Return % of Margin: {color}{trade['return_percentage_of_margin']}%{RESET}')
-    print(f'Return % of Contract: {color}{trade['return_percentage_of_contract']}%{RESET}')
+    print(f'Net Return % of Margin: {color}{return_percentage}%{RESET}')
+    print(f'Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{RESET}')
 
     print('=============================\n')

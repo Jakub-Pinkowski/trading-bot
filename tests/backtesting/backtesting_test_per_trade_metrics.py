@@ -804,3 +804,135 @@ class TestPrintTradeMetrics:
         assert "PnL (points):" not in output
         assert "Gross PnL (dollars):" not in output
         assert "Net PnL (dollars):" not in output
+
+    def test_print_breakeven_trade(self):
+        """Test printing of a breakeven trade (zero return percentage)."""
+        # Create a sample breakeven trade metrics
+        trade_metrics = {
+            'entry_time': datetime.now(),
+            'exit_time': datetime.now() + timedelta(hours=24),
+            'duration': timedelta(hours=24),
+            'duration_hours': 24,
+            'side': 'long',
+            'entry_price': 4200.0,
+            'exit_price': 4200.0,
+            'return_percentage_of_margin': 0.0,
+            'return_percentage_of_contract': 0.0,
+            'net_pnl': 0.0
+        }
+
+        # Capture stdout
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        # Print the trade metrics
+        print_trade_metrics(trade_metrics)
+
+        # Reset stdout
+        sys.stdout = sys.__stdout__
+
+        # Get the output
+        output = captured_output.getvalue()
+
+        # Verify the output contains key information
+        assert "TRADE METRICS" in output
+        assert "Entry Time:" in output
+        assert "Exit Time:" in output
+        assert "Side: long" in output
+        assert "Entry Price: 4200.0" in output
+        assert "Exit Price: 4200.0" in output
+
+        # Check for percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
+        assert "Net Return % of Margin:" in output
+        assert "0.0%" in output
+        assert "Return % of Contract:" in output
+        assert "0.0%" in output
+
+    def test_print_trade_with_missing_keys(self):
+        """Test printing of a trade with missing keys."""
+        # Create a trade metrics dictionary with missing keys
+        trade_metrics = {
+            'entry_time': datetime.now(),
+            'exit_time': datetime.now() + timedelta(hours=24),
+            # Missing 'duration' key
+            'duration_hours': 24,
+            'side': 'long',
+            'entry_price': 4200.0,
+            'exit_price': 4210.0,
+            # Missing 'return_percentage_of_margin' key
+            'return_percentage_of_contract': 0.5,
+            'net_pnl': 496.0
+        }
+
+        # Capture stdout and stderr
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        # Print the trade metrics - this should handle missing keys gracefully
+        try:
+            print_trade_metrics(trade_metrics)
+            exception_raised = False
+        except KeyError:
+            exception_raised = True
+        finally:
+            # Reset stdout
+            sys.stdout = sys.__stdout__
+
+        # Verify that no KeyError was raised
+        assert not exception_raised, "print_trade_metrics should handle missing keys gracefully"
+
+        # Get the output
+        output = captured_output.getvalue()
+
+        # Verify the output contains available information
+        assert "TRADE METRICS" in output
+        assert "Entry Time:" in output
+        assert "Exit Time:" in output
+        assert "Side: long" in output
+        assert "Entry Price: 4200.0" in output
+        assert "Exit Price: 4210.0" in output
+
+    def test_print_trade_with_extreme_values(self):
+        """Test printing of a trade with extreme values."""
+        # Create a trade metrics dictionary with extreme values
+        trade_metrics = {
+            'entry_time': datetime.now(),
+            'exit_time': datetime.now() + timedelta(days=365),  # Very long duration
+            'duration': timedelta(days=365),
+            'duration_hours': 24 * 365,  # 8760 hours (1 year)
+            'side': 'short',
+            'entry_price': 1000000.0,  # Very high price
+            'exit_price': 0.001,  # Very low price
+            'return_percentage_of_margin': 9999.99,  # Extremely high return
+            'return_percentage_of_contract': 9999.99,
+            'net_pnl': 1000000.0  # Very high PnL
+        }
+
+        # Capture stdout
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        # Print the trade metrics
+        print_trade_metrics(trade_metrics)
+
+        # Reset stdout
+        sys.stdout = sys.__stdout__
+
+        # Get the output
+        output = captured_output.getvalue()
+
+        # Verify the output contains key information
+        assert "TRADE METRICS" in output
+        assert "Entry Time:" in output
+        assert "Exit Time:" in output
+        assert "Side: short" in output
+        assert "Entry Price: 1000000.0" in output
+        assert "Exit Price: 0.001" in output
+
+        # Check for percentage-based metrics
+        assert "PERCENTAGE-BASED METRICS" in output
+        assert "Net Return % of Margin:" in output
+        assert "9999.99%" in output
+        assert "Return % of Contract:" in output
+        assert "9999.99%" in output
