@@ -5,8 +5,6 @@ logger = get_logger('backtesting/summary_metrics')
 
 def calculate_max_drawdown(trades):
     """Calculate the maximum drawdown given a list of trades. """
-    if not trades:
-        return 0, 0
 
     # Calculate drawdown using both dollar values and percentages
     cumulative_pnl_dollars = []
@@ -47,8 +45,6 @@ def calculate_max_drawdown(trades):
 
 def calculate_max_consecutive(trades, win=True):
     """Calculate maximum consecutive wins or losses."""
-    if not trades:
-        return 0
 
     # Sort trades by date if available
     if 'date' in trades[0]:
@@ -74,7 +70,7 @@ def calculate_max_consecutive(trades, win=True):
 
 def calculate_sharpe_ratio(trades, risk_free_rate=0.0):
     """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
-    if not trades or len(trades) < 2:  # Need at least 2 trades for standard deviation
+    if len(trades) < 2:  # Need at least 2 trades for standard deviation
         return 0
 
     returns = [trade['return_percentage_of_margin'] for trade in trades]
@@ -93,8 +89,6 @@ def calculate_sharpe_ratio(trades, risk_free_rate=0.0):
 
 def calculate_sortino_ratio(trades, risk_free_rate=0.0):
     """Calculate Sortino ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Negative Returns."""
-    if not trades:
-        return 0
 
     returns = [trade['return_percentage_of_margin'] for trade in trades]
     avg_return = sum(returns) / len(returns)
@@ -117,8 +111,6 @@ def calculate_sortino_ratio(trades, risk_free_rate=0.0):
 
 def calculate_calmar_ratio(trades):
     """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
-    if not trades:
-        return 0
 
     # Calculate annualized return (assuming percentage returns)
     total_return = sum(trade['return_percentage_of_margin'] for trade in trades)
@@ -135,8 +127,6 @@ def calculate_calmar_ratio(trades):
 
 def calculate_profit_factor(trades):
     """Calculate profit factor: Total Net Profit / Total Net Loss."""
-    if not trades:
-        return 0
 
     winning_trades = [trade for trade in trades if trade['return_percentage_of_margin'] > 0]
     losing_trades = [trade for trade in trades if trade['return_percentage_of_margin'] <= 0]
@@ -152,9 +142,7 @@ def calculate_profit_factor(trades):
 
 
 def calculate_return_to_drawdown_ratio(trades):
-    """Calculate return to drawdown ratio: Total Return Percentage / Maximum Drawdown Percentage."""
-    if not trades:
-        return 0
+    """Calculate return-to-drawdown ratio: Total Return Percentage / Maximum Drawdown Percentage."""
 
     total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
 
@@ -168,6 +156,88 @@ def calculate_return_to_drawdown_ratio(trades):
     return return_to_drawdown_ratio
 
 
+def calculate_win_rate(trades):
+    """Calculate win rate: (Number of Winning Trades / Total Trades) * 100."""
+
+    total_trades = len(trades)
+    winning_trades = [trade for trade in trades if trade['return_percentage_of_margin'] > 0]
+    losing_trades = [trade for trade in trades if trade['return_percentage_of_margin'] <= 0]
+    win_count = len(winning_trades)
+    loss_count = len(losing_trades)
+
+    win_rate = (win_count / total_trades) * 100 if total_trades > 0 else 0
+
+    return win_rate, win_count, loss_count, winning_trades, losing_trades
+
+
+def calculate_average_trade_duration(trades):
+    """Calculate average trade duration in hours."""
+
+    total_trades = len(trades)
+    avg_duration_hours = sum(trade['duration_hours'] for trade in trades) / total_trades if total_trades > 0 else 0
+
+    return avg_duration_hours
+
+
+def calculate_total_margin_used(trades):
+    """Calculate the total margin used across all trades."""
+
+    total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
+
+    return total_margin_used
+
+
+def calculate_total_return_percentage_of_margin(trades):
+    """Calculate total return percentage of margin."""
+
+    total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
+
+    return total_return_percentage_of_margin
+
+
+def calculate_average_trade_return_percentage_of_margin(trades):
+    """Calculate average trade return percentage of margin."""
+
+    total_trades = len(trades)
+    total_return_percentage_of_margin = calculate_total_return_percentage_of_margin(trades)
+    average_trade_return_percentage_of_margin = total_return_percentage_of_margin / total_trades if total_trades > 0 else 0
+
+    return average_trade_return_percentage_of_margin
+
+
+def calculate_average_win_percentage_of_margin(winning_trades):
+    """Calculate average win percentage of margin."""
+
+    win_count = len(winning_trades)
+    average_win_percentage_of_margin = sum(
+        trade['return_percentage_of_margin'] for trade in winning_trades
+    ) / win_count if win_count > 0 else 0
+
+    return average_win_percentage_of_margin
+
+
+def calculate_average_loss_percentage_of_margin(losing_trades):
+    """Calculate average loss percentage of margin."""
+
+    loss_count = len(losing_trades)
+    average_loss_percentage_of_margin = sum(
+        trade['return_percentage_of_margin'] for trade in losing_trades
+    ) / loss_count if loss_count > 0 else 0
+
+    return average_loss_percentage_of_margin
+
+
+def calculate_commission_percentage_of_margin(trades):
+    """Calculate commission as percentage of margin."""
+
+    total_commission_paid = sum(trade.get('commission', 0) for trade in trades)
+    total_margin_used = calculate_total_margin_used(trades)
+
+    commission_percentage_of_margin = (total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
+
+    return commission_percentage_of_margin
+
+
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades """
 
@@ -178,37 +248,24 @@ def calculate_summary_metrics(trades):
     # ===== BASIC TRADE STATISTICS =====
     total_trades = len(trades)
 
-    # Calculate win rate
-    winning_trades = [trade for trade in trades if trade['return_percentage_of_margin'] > 0]
-    losing_trades = [trade for trade in trades if trade['return_percentage_of_margin'] <= 0]
-    win_count = len(winning_trades)
-    loss_count = len(losing_trades)
-
-    win_rate = (win_count / total_trades) * 100 if total_trades > 0 else 0
+    # Calculate win rate and get winning/losing trades
+    win_rate, win_count, loss_count, winning_trades, losing_trades = calculate_win_rate(trades)
 
     # Calculate average trade duration
-    avg_duration_hours = sum(trade['duration_hours'] for trade in trades) / total_trades if total_trades > 0 else 0
+    avg_duration_hours = calculate_average_trade_duration(trades)
 
     # ===== DOLLAR-BASED METRICS =====
     # Total margin used (sum of individual trade margin requirements)
-    total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
+    total_margin_used = calculate_total_margin_used(trades)
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
-    total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
-    average_trade_return_percentage_of_margin = total_return_percentage_of_margin / total_trades if total_trades > 0 else 0
-    average_win_percentage_of_margin = sum(
-        trade['return_percentage_of_margin'] for trade in winning_trades
-    ) / win_count if win_count > 0 else 0
-    average_loss_percentage_of_margin = sum(
-        trade['return_percentage_of_margin'] for trade in losing_trades
-    ) / loss_count if loss_count > 0 else 0
+    total_return_percentage_of_margin = calculate_total_return_percentage_of_margin(trades)
+    average_trade_return_percentage_of_margin = calculate_average_trade_return_percentage_of_margin(trades)
+    average_win_percentage_of_margin = calculate_average_win_percentage_of_margin(winning_trades)
+    average_loss_percentage_of_margin = calculate_average_loss_percentage_of_margin(losing_trades)
 
     # ===== COMMISSION METRICS =====
-    # Total commission paid
-    total_commission_paid = sum(trade.get('commission', 0) for trade in trades)
-
-    # Commission as percentage of margin
-    commission_percentage_of_margin = (total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
+    commission_percentage_of_margin = calculate_commission_percentage_of_margin(trades)
 
     # ===== RISK METRICS =====
     # Profit factor
