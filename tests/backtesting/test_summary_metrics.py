@@ -55,8 +55,8 @@ class TestCalculateMaxDrawdown:
         """Test calculation of max drawdown with a single negative trade."""
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         max_drawdown, max_drawdown_pct = calculate_max_drawdown([trade])
-        # For a single negative trade, there's no peak to draw down from
-        # The function initializes peak to the first value, so drawdown is 0
+        # For a single negative trade, the peak is initialized to the first value (which is negative)
+        # Since there are no further values to compare against, the drawdown remains 0
         assert max_drawdown == 0
         assert max_drawdown_pct == 0
 

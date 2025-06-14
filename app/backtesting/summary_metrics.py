@@ -21,34 +21,26 @@ def calculate_max_drawdown(trades):
         cumulative_pnl_pct.append(cum_sum_pct)
 
     # Calculate max drawdown in dollars
-    # Special case: if there's only one trade and it's negative, set max drawdown to 0
-    if len(cumulative_pnl_dollars) == 1 and cumulative_pnl_dollars[0] < 0:
-        max_drawdown = 0
-    else:
-        # Initialize peak to 0 (starting point before any trades)
-        peak_dollars = 0
-        max_drawdown = 0
-        for val in cumulative_pnl_dollars:
-            if val > peak_dollars:
-                peak_dollars = val
-            drawdown = peak_dollars - val
-            if drawdown > max_drawdown:
-                max_drawdown = drawdown
+    # Initialize peak to the first value in the array
+    peak_dollars = cumulative_pnl_dollars[0]
+    max_drawdown = 0
+    for val in cumulative_pnl_dollars:
+        if val > peak_dollars:
+            peak_dollars = val
+        drawdown = peak_dollars - val
+        if drawdown > max_drawdown:
+            max_drawdown = drawdown
 
     # Calculate max drawdown in percentage (for normalized comparison)
-    # Special case: if there's only one trade and it's negative, set max drawdown percentage to 0
-    if len(cumulative_pnl_pct) == 1 and cumulative_pnl_pct[0] < 0:
-        maximum_drawdown_percentage = 0
-    else:
-        # Initialize peak to 0 (starting point before any trades)
-        peak_pct = 0
-        maximum_drawdown_percentage = 0
-        for val in cumulative_pnl_pct:
-            if val > peak_pct:
-                peak_pct = val
-            drawdown_percentage = peak_pct - val
-            if drawdown_percentage > maximum_drawdown_percentage:
-                maximum_drawdown_percentage = drawdown_percentage
+    # Initialize peak to the first value in the array
+    peak_pct = cumulative_pnl_pct[0]
+    maximum_drawdown_percentage = 0
+    for val in cumulative_pnl_pct:
+        if val > peak_pct:
+            peak_pct = val
+        drawdown_percentage = peak_pct - val
+        if drawdown_percentage > maximum_drawdown_percentage:
+            maximum_drawdown_percentage = drawdown_percentage
 
     return round(max_drawdown, 2), round(maximum_drawdown_percentage, 2)
 
