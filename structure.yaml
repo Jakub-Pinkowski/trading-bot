@@ -117,8 +117,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
-# TODO [HIGH]: Create very extensive and complex testing suite to find vulnerabilities
-# TODO [HIGH]: Add slippage, proper commission and all other fees
 # TODO [HIGH]: Test very thoroughly all the strategies
 # RSI is good
 # EMA is good
@@ -128,12 +126,11 @@ trading-bot/
 # TODO [MEDIUM]: Mass train AI to try a lot of different strategies to find some with the most potential
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
-# TODO [LOW]: Align my own backtesting to TW's alerts
 # TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
 
 # Strategies
+# TODO [LOW]: Align TW strategies to match my backtesting logic
 # TODO [LOW]: Update TW strategies to BUY/SELL on n+1 candle after backtesting
-# TODO [LOW]: Add new strategies after backtesting
 
 # Data analysis
 # TODO [LOW]: Add automatic Google Sheets integration
