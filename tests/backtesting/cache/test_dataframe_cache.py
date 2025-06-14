@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.cache.cache_base import Cache
-from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe, CACHE_VERSION
+from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe, CACHE_VERSION
 
 
 @pytest.fixture
@@ -85,8 +85,8 @@ def test_dataframe_cache_save(mock_save_cache):
 
 @patch('pandas.read_parquet')
 @patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache')
-def test_get_preprocessed_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sample_dataframe):
-    """Test get_preprocessed_dataframe when the dataframe is not in the cache."""
+def test_get_cached_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sample_dataframe):
+    """Test get_cached_dataframe when the dataframe is not in the cache."""
     # Clear the cache to start with a clean state
     dataframe_cache.clear()
 
@@ -95,7 +95,7 @@ def test_get_preprocessed_dataframe_cache_miss(mock_save_cache, mock_read_parque
 
     # Call the function with a filepath that's not in the cache
     filepath = "test_file.parquet"
-    result_df = get_preprocessed_dataframe(filepath)
+    result_df = get_cached_dataframe(filepath)
 
     # Verify that read_parquet was called with the correct filepath
     mock_read_parquet.assert_called_once_with(filepath)
@@ -113,8 +113,8 @@ def test_get_preprocessed_dataframe_cache_miss(mock_save_cache, mock_read_parque
     mock_save_cache.assert_called_once()
 
 
-def test_get_preprocessed_dataframe_cache_hit(sample_dataframe):
-    """Test get_preprocessed_dataframe when the dataframe is already in the cache."""
+def test_get_cached_dataframe_cache_hit(sample_dataframe):
+    """Test get_cached_dataframe when the dataframe is already in the cache."""
     # Clear the cache to start with a clean state
     dataframe_cache.clear()
 
@@ -124,7 +124,7 @@ def test_get_preprocessed_dataframe_cache_hit(sample_dataframe):
 
     # Call the function with the filepath that's in the cache
     with patch('pandas.read_parquet') as mock_read_parquet:
-        result_df = get_preprocessed_dataframe(filepath)
+        result_df = get_cached_dataframe(filepath)
 
         # Verify that read_parquet was NOT called
         mock_read_parquet.assert_not_called()
@@ -135,8 +135,8 @@ def test_get_preprocessed_dataframe_cache_hit(sample_dataframe):
 
 
 @patch('pandas.read_parquet')
-def test_get_preprocessed_dataframe_error_handling(mock_read_parquet):
-    """Test error handling in get_preprocessed_dataframe."""
+def test_get_cached_dataframe_error_handling(mock_read_parquet):
+    """Test error handling in get_cached_dataframe."""
     # Clear the cache to start with a clean state
     dataframe_cache.clear()
 
@@ -146,14 +146,14 @@ def test_get_preprocessed_dataframe_error_handling(mock_read_parquet):
     # Call the function and verify that the exception is propagated
     filepath = "test_file.parquet"
     with pytest.raises(Exception, match="Test exception"):
-        get_preprocessed_dataframe(filepath)
+        get_cached_dataframe(filepath)
 
     # Verify that the dataframe was NOT added to the cache
     assert not dataframe_cache.contains(filepath)
 
 
-def test_get_preprocessed_dataframe_with_real_file(tmp_path, sample_dataframe):
-    """Test get_preprocessed_dataframe with a real parquet file."""
+def test_get_cached_dataframe_with_real_file(tmp_path, sample_dataframe):
+    """Test get_cached_dataframe with a real parquet file."""
     # Create a temporary parquet file
     filepath = os.path.join(tmp_path, "test_file.parquet")
     sample_dataframe.to_parquet(filepath)
@@ -163,7 +163,7 @@ def test_get_preprocessed_dataframe_with_real_file(tmp_path, sample_dataframe):
 
     # Call the function with the filepath
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache') as mock_save_cache:
-        result_df = get_preprocessed_dataframe(filepath)
+        result_df = get_cached_dataframe(filepath)
 
         # Verify that save_cache was called
         mock_save_cache.assert_called_once()
@@ -176,7 +176,7 @@ def test_get_preprocessed_dataframe_with_real_file(tmp_path, sample_dataframe):
 
     # Call the function again and verify that it uses the cached value
     with patch('pandas.read_parquet') as mock_read_parquet:
-        result_df2 = get_preprocessed_dataframe(filepath)
+        result_df2 = get_cached_dataframe(filepath)
 
         # Verify that read_parquet was NOT called
         mock_read_parquet.assert_not_called()
@@ -233,10 +233,10 @@ def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
 
     # Load all dataframes into cache
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        small_result = get_preprocessed_dataframe(small_filepath)
-        medium_result = get_preprocessed_dataframe(medium_filepath)
-        large_result = get_preprocessed_dataframe(large_filepath)
-        different_structure_result = get_preprocessed_dataframe(different_structure_filepath)
+        small_result = get_cached_dataframe(small_filepath)
+        medium_result = get_cached_dataframe(medium_filepath)
+        large_result = get_cached_dataframe(large_filepath)
+        different_structure_result = get_cached_dataframe(different_structure_filepath)
 
     # Verify all dataframes were loaded correctly
     pd.testing.assert_frame_equal(small_result, small_df)
@@ -253,15 +253,15 @@ def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
 
     # Test retrieval performance for different sizes
     start_time = time.time()
-    small_cached = get_preprocessed_dataframe(small_filepath)
+    small_cached = get_cached_dataframe(small_filepath)
     small_time = time.time() - start_time
 
     start_time = time.time()
-    medium_cached = get_preprocessed_dataframe(medium_filepath)
+    medium_cached = get_cached_dataframe(medium_filepath)
     medium_time = time.time() - start_time
 
     start_time = time.time()
-    large_cached = get_preprocessed_dataframe(large_filepath)
+    large_cached = get_cached_dataframe(large_filepath)
     large_time = time.time() - start_time
 
     # Log performance metrics (these are not strict assertions, just informational)
@@ -309,7 +309,7 @@ def test_dataframe_cache_with_different_data_types(tmp_path):
 
     # Load the dataframe into cache
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        result_df = get_preprocessed_dataframe(filepath)
+        result_df = get_cached_dataframe(filepath)
 
     # Verify the dataframe was loaded correctly
     pd.testing.assert_frame_equal(result_df, df_for_parquet)
@@ -331,7 +331,7 @@ def test_dataframe_cache_with_different_data_types(tmp_path):
 
     # Load the dataframe into cache
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        special_result_df = get_preprocessed_dataframe(special_filepath)
+        special_result_df = get_cached_dataframe(special_filepath)
 
     # Verify the dataframe was loaded correctly
     pd.testing.assert_frame_equal(special_result_df, df_with_special_values)
@@ -376,7 +376,7 @@ def test_multiple_dataframes_in_cache(tmp_path):
     # Load all dataframes into cache
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
         for contract in contracts:
-            result_df = get_preprocessed_dataframe(filepaths[contract])
+            result_df = get_cached_dataframe(filepaths[contract])
             # Verify the dataframe was loaded correctly
             pd.testing.assert_frame_equal(result_df, dataframes[contract])
 
@@ -430,7 +430,7 @@ def test_dataframe_cache_with_non_existent_files():
 
         # Verify that the exception is propagated
         with pytest.raises(FileNotFoundError, match="File not found"):
-            get_preprocessed_dataframe(non_existent_filepath)
+            get_cached_dataframe(non_existent_filepath)
 
     # Verify that the non-existent file was not added to the cache
     assert not dataframe_cache.contains(non_existent_filepath)
@@ -443,7 +443,7 @@ def test_dataframe_cache_with_non_existent_files():
 
         # Verify that the exception is propagated
         with pytest.raises(Exception, match="Invalid parquet file"):
-            get_preprocessed_dataframe("invalid_parquet_file.parquet")
+            get_cached_dataframe("invalid_parquet_file.parquet")
 
     # Verify that the invalid file was not added to the cache
     assert not dataframe_cache.contains("invalid_parquet_file.parquet")

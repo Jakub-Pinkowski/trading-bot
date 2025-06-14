@@ -10,7 +10,7 @@ from datetime import datetime
 import pandas as pd
 import yaml
 
-from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
+from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategy_factory import create_strategy, get_strategy_name
@@ -225,7 +225,7 @@ class MassTester:
 
         filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
         try:
-            df = get_preprocessed_dataframe(filepath)
+            df = get_cached_dataframe(filepath)
         except Exception as error:
             logger.error(f'Failed to read file: {filepath}\nReason: {error}')
             return None
