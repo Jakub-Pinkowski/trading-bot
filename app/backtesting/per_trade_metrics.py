@@ -73,7 +73,8 @@ def calculate_trade_metrics(trade, symbol):
 
         # We need these for internal calculations in summary_metrics
         'net_pnl': net_pnl,
-        'margin_requirement': margin_requirement
+        'margin_requirement': margin_requirement,
+        'commission': total_commission
     }
 
 
