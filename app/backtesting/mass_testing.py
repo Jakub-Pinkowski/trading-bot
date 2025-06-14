@@ -2,13 +2,12 @@ import concurrent.futures
 import io
 import itertools
 import os
-import random
 import sys
-import time
 from datetime import datetime
 
 import pandas as pd
 import yaml
+from filelock import FileLock
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -17,7 +16,10 @@ from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR
+from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR, CACHE_DIR
+
+# Create a global lock file for coordinating cache saves
+CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "global_cache.lock")
 
 logger = get_logger('backtesting/mass_testing')
 
@@ -237,11 +239,14 @@ class MassTester:
 
         # Save the indicator and dataframe caches after each test
         # This is important when running tests in parallel, as each process has its own cache
-        # Add a random delay to reduce contention between processes
-        time.sleep(random.uniform(0.1, 0.5))  # Random delay between 0.1 and 0.5 seconds
-
-        indicator_cache.save_cache()
-        dataframe_cache.save_cache()
+        # Use a single lock for both cache operations to ensure atomicity
+        lock = FileLock(CACHE_LOCK_FILE, timeout=60)  # 60 seconds timeout
+        try:
+            with lock:
+                indicator_cache.save_cache()
+                dataframe_cache.save_cache()
+        except Exception as e:
+            logger.error(f"Failed to save caches: {e}")
 
         trades_with_metrics_list = []
         for trade in trades_list:
