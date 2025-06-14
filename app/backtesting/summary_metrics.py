@@ -194,40 +194,6 @@ class SummaryMetrics:
         profit_factor = abs(total_net_profit / total_net_loss)
         return profit_factor
 
-
-    def calculate_win_rate(self):
-        """Calculate win rate: (Number of Winning Trades / Total Trades) * 100."""
-        # This is already calculated in _initialize_calculations, return the values
-        return self.win_rate, self.win_count, self.loss_count, self.winning_trades, self.losing_trades
-
-    def calculate_average_trade_duration(self):
-        """Calculate average trade duration in hours."""
-        if not self._has_trades():
-            return 0
-
-        return _safe_average(self.durations, self.total_trades)
-
-    def calculate_total_margin_used(self):
-        """Calculate the total margin used across all trades."""
-        if not self._has_trades():
-            return 0
-
-        return self.total_margin_used
-
-    def calculate_total_return(self):
-        """Calculate total return percentage of margin."""
-        if not self._has_trades():
-            return 0
-
-        return self.total_return
-
-    def calculate_average_trade_return_percentage_of_margin(self):
-        """Calculate average trade return percentage of margin."""
-        if not self._has_trades():
-            return 0
-
-        return _safe_average([self.total_return], self.total_trades)
-
     def calculate_average_win_percentage_of_margin(self):
         """Calculate average win percentage of margin."""
         if not self._has_winning_trades():
@@ -248,7 +214,7 @@ class SummaryMetrics:
             return 0
 
         total_commission_paid = sum(trade.get('commission', 0) for trade in self.trades)
-        total_margin_used = self.calculate_total_margin_used()
+        total_margin_used = self.total_margin_used
 
         commission_percentage_of_margin = (
                                                   total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
@@ -261,21 +227,21 @@ class SummaryMetrics:
             return {}
 
         # ===== BASIC TRADE STATISTICS =====
-        win_rate, win_count, loss_count, _, _ = self.calculate_win_rate()
-        avg_duration_hours = self.calculate_average_trade_duration()
+        win_rate = self.win_rate
+        win_count = self.win_count
+        loss_count = self.loss_count
+        avg_duration_hours = _safe_average(self.durations, self.total_trades)
 
         # ===== NORMALIZED METRICS (PERCENTAGES) =====
-        total_return_percentage_of_margin = self.calculate_total_return()
-        average_trade_return_percentage_of_margin = self.calculate_average_trade_return_percentage_of_margin()
+        total_return_percentage_of_margin = self.total_return
+        average_trade_return_percentage_of_margin = _safe_average([self.total_return], self.total_trades)
         average_win_percentage_of_margin = self.calculate_average_win_percentage_of_margin()
         average_loss_percentage_of_margin = self.calculate_average_loss_percentage_of_margin()
-
-        # ===== COMMISSION METRICS =====
         commission_percentage_of_margin = self.calculate_commission_percentage_of_margin()
 
         # ===== RISK METRICS =====
         profit_factor = self.calculate_profit_factor()
-        max_drawdown, maximum_drawdown_percentage = self.calculate_max_drawdown()
+        max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
         sharpe_ratio = self.calculate_sharpe_ratio()
         sortino_ratio = self.calculate_sortino_ratio()
         calmar_ratio = self.calculate_calmar_ratio()
