@@ -255,8 +255,8 @@ class TestCalculateSummaryMetrics:
         # Max drawdown percentage should be calculated correctly
         assert summary['maximum_drawdown_percentage'] > 0
 
-        # Return to drawdown ratio should be calculated correctly
-        assert summary['return_to_drawdown_ratio'] == round(2.5 / summary['maximum_drawdown_percentage'], 2)
+        # Return-to-drawdown ratio should be calculated correctly
+        assert summary['calmar_ratio'] == round(2.5 / summary['maximum_drawdown_percentage'], 2)
 
     def test_performance_ratios(self):
         """Test calculation of performance ratios."""
@@ -291,7 +291,7 @@ class TestCalculateSummaryMetrics:
         summary = metrics.calculate_all_metrics()
 
         assert summary['maximum_drawdown_percentage'] == 0
-        assert summary['return_to_drawdown_ratio'] == float('inf')  # Division by zero
+        assert summary['calmar_ratio'] == float('inf')  # Division by zero
 
     def test_margin_metrics(self):
         """Test calculation of margin metrics."""
@@ -351,7 +351,7 @@ class TestCalculateSummaryMetrics:
         # Risk metrics
         assert summary['profit_factor'] > 1.0
         assert summary['maximum_drawdown_percentage'] > 0
-        assert summary['return_to_drawdown_ratio'] > 0
+        assert summary['calmar_ratio'] > 0
 
         # Performance ratios
         assert 'sharpe_ratio' in summary
@@ -400,7 +400,7 @@ class TestCalculateSummaryMetrics:
         assert summary['maximum_drawdown_percentage'] >= 5.4  # From peak of 3.5% to lowest of -1.9%
         # Despite drawdown, overall strategy is profitable
         assert summary['total_return_percentage_of_margin'] > 0
-        assert summary['return_to_drawdown_ratio'] > 0
+        assert summary['calmar_ratio'] > 0
 
     def test_varying_trade_durations(self):
         """Test calculation of summary metrics with trades of varying durations.
@@ -988,12 +988,11 @@ class TestPrintSummaryMetrics:
             # Risk metrics
             'profit_factor': 1.0,
             'maximum_drawdown_percentage': 1.0,
-            'return_to_drawdown_ratio': 0.0,
+            'calmar_ratio': 0.0,
             'max_consecutive_wins': 2,
             'max_consecutive_losses': 2,
             'sharpe_ratio': 0.0,
-            'sortino_ratio': 0.0,
-            'calmar_ratio': 0.0
+            'sortino_ratio': 0.0
         }
 
         # Capture stdout
@@ -1034,10 +1033,9 @@ class TestPrintSummaryMetrics:
             # Risk metrics
             'profit_factor': 3.5,
             'maximum_drawdown_percentage': 1.0,
-            'return_to_drawdown_ratio': 5.0,
+            'calmar_ratio': 5.0,
             'sharpe_ratio': 1.5,
-            'sortino_ratio': 2.0,
-            'calmar_ratio': 5.0
+            'sortino_ratio': 2.0
         }
 
         # Capture stdout
@@ -1079,10 +1077,9 @@ class TestPrintSummaryMetrics:
         assert "RISK METRICS" in output
         assert "Profit Factor: 3.5" in output
         assert "Maximum Drawdown Percentage: 1.0%" in output
-        assert "Return to Drawdown Ratio: 5.0" in output
+        assert "Calmar Ratio: 5.0" in output
         assert "Sharpe Ratio: 1.5" in output
         assert "Sortino Ratio: 2.0" in output
-        assert "Calmar Ratio: 5.0" in output
 
     def test_print_negative_summary(self):
         """Test printing of a negative summary."""
@@ -1104,10 +1101,9 @@ class TestPrintSummaryMetrics:
             # Risk metrics
             'profit_factor': 0.3,
             'maximum_drawdown_percentage': 5.0,
-            'return_to_drawdown_ratio': -1.0,
+            'calmar_ratio': -1.0,
             'sharpe_ratio': -0.8,
-            'sortino_ratio': -1.2,
-            'calmar_ratio': -1.0
+            'sortino_ratio': -1.2
         }
 
         # Capture stdout
@@ -1149,7 +1145,6 @@ class TestPrintSummaryMetrics:
         assert "RISK METRICS" in output
         assert "Profit Factor: 0.3" in output
         assert "Maximum Drawdown Percentage: 5.0%" in output
-        assert "Return to Drawdown Ratio: -1.0" in output
+        assert "Calmar Ratio: -1.0" in output
         assert "Sharpe Ratio: -0.8" in output
         assert "Sortino Ratio: -1.2" in output
-        assert "Calmar Ratio: -1.0" in output

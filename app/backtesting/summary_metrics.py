@@ -30,7 +30,7 @@ class SummaryMetrics:
 
     def _has_trades(self):
         """Check if there are any trades."""
-        return bool(self.trades) and len(self.trades) > 0
+        return bool(self.trades)
 
     def _has_winning_trades(self):
         """Check if there are any winning trades."""
@@ -169,7 +169,7 @@ class SummaryMetrics:
             return 0
 
         # Calculate total return (assuming percentage returns)
-        total_return = sum(trade['return_percentage_of_margin'] for trade in self.trades)
+        total_return = self.calculate_total_return()
 
         # Get maximum drawdown percentage
         _, max_drawdown_pct = self.calculate_max_drawdown()
@@ -194,21 +194,6 @@ class SummaryMetrics:
         profit_factor = abs(total_net_profit / total_net_loss)
         return profit_factor
 
-    def calculate_return_to_drawdown_ratio(self):
-        """Calculate return-to-drawdown ratio: Total Return Percentage / Maximum Drawdown Percentage."""
-        if not self._has_trades():
-            return 0
-
-        total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.trades)
-
-        # Get maximum drawdown percentage
-        _, maximum_drawdown_percentage = self.calculate_max_drawdown()
-
-        if maximum_drawdown_percentage == 0:
-            return float('inf')  # No drawdown
-
-        return_to_drawdown_ratio = total_return_percentage_of_margin / maximum_drawdown_percentage
-        return return_to_drawdown_ratio
 
     def calculate_win_rate(self):
         """Calculate win rate: (Number of Winning Trades / Total Trades) * 100."""
@@ -230,21 +215,25 @@ class SummaryMetrics:
         total_margin_used = sum(trade.get('margin_requirement', 0) for trade in self.trades)
         return total_margin_used
 
-    def calculate_total_return_percentage_of_margin(self):
+    def calculate_total_return(self):
         """Calculate total return percentage of margin."""
         if not self._has_trades():
             return 0
 
-        total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.trades)
-        return total_return_percentage_of_margin
+        total_return = sum(trade['return_percentage_of_margin'] for trade in self.trades)
+        return total_return
+
+    def calculate_total_return_percentage_of_margin(self):
+        """Calculate total return percentage of margin."""
+        return self.calculate_total_return()
 
     def calculate_average_trade_return_percentage_of_margin(self):
         """Calculate average trade return percentage of margin."""
         if not self._has_trades():
             return 0
 
-        total_return_percentage_of_margin = self.calculate_total_return_percentage_of_margin()
-        return _safe_average([total_return_percentage_of_margin], self.total_trades)
+        total_return = self.calculate_total_return()
+        return _safe_average([total_return], self.total_trades)
 
     def calculate_average_win_percentage_of_margin(self):
         """Calculate average win percentage of margin."""
@@ -294,7 +283,6 @@ class SummaryMetrics:
         # ===== RISK METRICS =====
         profit_factor = self.calculate_profit_factor()
         max_drawdown, maximum_drawdown_percentage = self.calculate_max_drawdown()
-        return_to_drawdown_ratio = self.calculate_return_to_drawdown_ratio()
         sharpe_ratio = self.calculate_sharpe_ratio()
         sortino_ratio = self.calculate_sortino_ratio()
         calmar_ratio = self.calculate_calmar_ratio()
@@ -317,7 +305,6 @@ class SummaryMetrics:
             # Risk metrics
             'profit_factor': round(profit_factor, 2),
             'maximum_drawdown_percentage': maximum_drawdown_percentage,
-            'return_to_drawdown_ratio': round(return_to_drawdown_ratio, 2),
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
@@ -374,9 +361,8 @@ class SummaryMetrics:
         print('\n--- RISK METRICS ---')
         print(f'Profit Factor: {summary["profit_factor"]}')
         print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
-        print(f'Return to Drawdown Ratio: {summary.get("return_to_drawdown_ratio", 0)}')
+        print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
         print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
         print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
-        print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
 
         print('=============================\n')
