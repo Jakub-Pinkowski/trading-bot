@@ -996,8 +996,6 @@ class TestPrintSummaryMetrics:
             'profit_factor': 3.5,
             'maximum_drawdown_percentage': 1.0,
             'return_to_drawdown_ratio': 5.0,
-            'max_consecutive_wins': 4,
-            'max_consecutive_losses': 2,
             'sharpe_ratio': 1.5,
             'sortino_ratio': 2.0,
             'calmar_ratio': 5.0
@@ -1043,8 +1041,6 @@ class TestPrintSummaryMetrics:
         assert "Profit Factor: 3.5" in output
         assert "Maximum Drawdown Percentage: 1.0%" in output
         assert "Return to Drawdown Ratio: 5.0" in output
-        assert "Max Consecutive Wins: 4" in output
-        assert "Max Consecutive Losses: 2" in output
         assert "Sharpe Ratio: 1.5" in output
         assert "Sortino Ratio: 2.0" in output
         assert "Calmar Ratio: 5.0" in output
@@ -1070,8 +1066,6 @@ class TestPrintSummaryMetrics:
             'profit_factor': 0.3,
             'maximum_drawdown_percentage': 5.0,
             'return_to_drawdown_ratio': -1.0,
-            'max_consecutive_wins': 2,
-            'max_consecutive_losses': 5,
             'sharpe_ratio': -0.8,
             'sortino_ratio': -1.2,
             'calmar_ratio': -1.0
@@ -1117,8 +1111,6 @@ class TestPrintSummaryMetrics:
         assert "Profit Factor: 0.3" in output
         assert "Maximum Drawdown Percentage: 5.0%" in output
         assert "Return to Drawdown Ratio: -1.0" in output
-        assert "Max Consecutive Wins: 2" in output
-        assert "Max Consecutive Losses: 5" in output
         assert "Sharpe Ratio: -0.8" in output
         assert "Sortino Ratio: -1.2" in output
         assert "Calmar Ratio: -1.0" in output

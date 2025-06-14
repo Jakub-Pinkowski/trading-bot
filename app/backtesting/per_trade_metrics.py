@@ -71,8 +71,9 @@ def calculate_trade_metrics(trade, symbol):
         'return_percentage_of_margin': return_percentage_of_margin,
         'return_percentage_of_contract': return_percentage_of_contract,
 
-        # We need net_pnl for internal calculations in summary_metrics
-        'net_pnl': net_pnl
+        # We need these for internal calculations in summary_metrics
+        'net_pnl': net_pnl,
+        'margin_requirement': margin_requirement
     }
 
 

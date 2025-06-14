@@ -261,8 +261,6 @@ def print_summary_metrics(summary):
     print(f'Profit Factor: {summary["profit_factor"]}')
     print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
     print(f'Return to Drawdown Ratio: {summary.get("return_to_drawdown_ratio", 0)}')
-    print(f'Max Consecutive Wins: {summary.get("max_consecutive_wins", 0)}')
-    print(f'Max Consecutive Losses: {summary.get("max_consecutive_losses", 0)}')
     print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
     print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
     print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
