@@ -1,7 +1,7 @@
 import os
 import pickle
 import time
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 
 import pytest
 
@@ -35,6 +35,7 @@ def test_cache_initialization():
     assert cache.cache_name == "test"
     assert cache.cache_version == 1
     assert cache.cache_file == os.path.join(CACHE_DIR, "test_cache_v1.pkl")
+    assert cache.lock_file == os.path.join(CACHE_DIR, "test_cache_v1.lock")
     assert isinstance(cache.cache_data, dict)
     assert len(cache.cache_data) == 0
     assert cache.max_size == 1000
@@ -112,8 +113,21 @@ def test_load_cache_file_exists(mock_cache_dir):
     with open(cache_file, 'wb') as f:
         pickle.dump(cache_data, f)
 
-    # Initialize cache, which should load the file
-    cache = Cache("test", 1)
+    # Mock the FileLock to verify it's used
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        # Set up the mock to return a context manager
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.return_value = mock_lock_instance
+        mock_lock_instance.__exit__.return_value = None
+
+        # Initialize cache, which should load the file
+        cache = Cache("test", 1)
+
+        # Verify FileLock was called with the correct lock file
+        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache_v1.lock"), timeout=60)
+        # Verify the lock's __enter__ method was called (context manager was used)
+        mock_lock_instance.__enter__.assert_called_once()
 
     # Verify the data was loaded
     # The cache now stores (timestamp, value) tuples, so we can't directly compare
@@ -150,15 +164,30 @@ def test_load_cache_invalid_data(mock_cache_dir):
 
 def test_load_cache_exception_handling():
     """Test handling exceptions when loading the cache."""
-    with patch("builtins.open", mock_open()) as mock_file:
-        mock_file.side_effect = Exception("Test exception")
+    # Mock os.path.exists to return True so that the code will try to acquire the lock
+    with patch('os.path.exists', return_value=True):
+        # Mock the FileLock to verify it's used even when there's an exception
+        with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+            # Set up the mock to return a context manager
+            mock_lock_instance = MagicMock()
+            mock_filelock.return_value = mock_lock_instance
+            mock_lock_instance.__enter__.return_value = mock_lock_instance
+            mock_lock_instance.__exit__.return_value = None
 
-        # Initialize cache, which should handle the exception
-        cache = Cache("test", 1)
+            with patch("builtins.open", mock_open()) as mock_file:
+                mock_file.side_effect = Exception("Test exception")
 
-        # Verify the cache is empty
-        assert cache.cache_data == {}
-        assert cache.size() == 0
+                # Initialize cache, which should handle the exception
+                cache = Cache("test", 1)
+
+                # Verify FileLock was called
+                mock_filelock.assert_called_once()
+                # Verify the lock's __enter__ method was called (context manager was used)
+                mock_lock_instance.__enter__.assert_called_once()
+
+            # Verify the cache is empty
+            assert cache.cache_data == {}
+            assert cache.size() == 0
 
 
 def test_save_cache(mock_cache_dir):
@@ -169,8 +198,21 @@ def test_save_cache(mock_cache_dir):
     cache.set("key1", "value1")
     cache.set("key2", "value2")
 
-    # Save the cache
-    cache.save_cache()
+    # Mock the FileLock to verify it's used
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        # Set up the mock to return a context manager
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.return_value = mock_lock_instance
+        mock_lock_instance.__exit__.return_value = None
+
+        # Save the cache
+        cache.save_cache()
+
+        # Verify FileLock was called with the correct lock file
+        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache_v1.lock"), timeout=60)
+        # Verify the lock's __enter__ method was called (context manager was used)
+        mock_lock_instance.__enter__.assert_called_once()
 
     # Verify the file was created
     cache_file = os.path.join(mock_cache_dir, "test_cache_v1.pkl")
@@ -195,11 +237,24 @@ def test_save_cache_exception_handling():
     cache = Cache("test", 1)
     cache.set("key1", "value1")
 
-    with patch("builtins.open", mock_open()) as mock_file:
-        mock_file.side_effect = Exception("Test exception")
+    # Mock the FileLock to verify it's used even when there's an exception
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        # Set up the mock to return a context manager
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.return_value = mock_lock_instance
+        mock_lock_instance.__exit__.return_value = None
 
-        # This should not raise an exception
-        cache.save_cache()
+        with patch("builtins.open", mock_open()) as mock_file:
+            mock_file.side_effect = Exception("Test exception")
+
+            # This should not raise an exception
+            cache.save_cache()
+
+            # Verify FileLock was called
+            mock_filelock.assert_called_once()
+            # Verify the lock's __enter__ method was called (context manager was used)
+            mock_lock_instance.__enter__.assert_called_once()
 
         # The cache data should still be intact
         assert cache.get("key1") == "value1"

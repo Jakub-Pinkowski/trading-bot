@@ -3,6 +3,8 @@ import pickle
 import time
 from collections import OrderedDict
 
+from filelock import FileLock
+
 from app.utils.logger import get_logger
 from config import CACHE_DIR
 
@@ -37,34 +39,43 @@ class Cache:
         self.cache_name = cache_name
         self.cache_version = cache_version
         self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.pkl")
+        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.lock")  # Add lock file path
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
         self._load_cache()
 
     def _load_cache(self):
-        """Load the cache from the disk."""
+        """Load the cache from the disk with file locking."""
         if os.path.exists(self.cache_file):
+            # Create a lock for the file
+            lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
             try:
-                with open(self.cache_file, 'rb') as f:
-                    loaded_cache = pickle.load(f)
-                    # Only use the cache if it's a dictionary
-                    if isinstance(loaded_cache, dict):
-                        # Convert the cache to the new format
-                        self.cache_data = _convert_cache_format(loaded_cache)
+                # Acquire the lock before reading
+                with lock:
+                    with open(self.cache_file, 'rb') as f:
+                        loaded_cache = pickle.load(f)
+                        # Only use the cache if it's a dictionary
+                        if isinstance(loaded_cache, dict):
+                            # Convert the cache to the new format
+                            self.cache_data = _convert_cache_format(loaded_cache)
 
-                        # Remove expired items
-                        self._remove_expired_items()
-                    else:
-                        logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
+                            # Remove expired items
+                            self._remove_expired_items()
+                        else:
+                            logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
             except Exception as load_err:
                 logger.error(f"Failed to load cache from {self.cache_file}: {load_err}. Using empty cache.")
 
     def save_cache(self):
-        """Save the cache to disk."""
+        """Save the cache to disk with file locking."""
+        # Create a lock for the file
+        lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
         try:
-            with open(self.cache_file, 'wb') as f:
-                pickle.dump(self.cache_data, f)
+            # Acquire the lock before writing
+            with lock:
+                with open(self.cache_file, 'wb') as f:
+                    pickle.dump(self.cache_data, f)
         except Exception as save_err:
             logger.error(f"Failed to save {self.cache_name} cache to {self.cache_file}: {save_err}")
 

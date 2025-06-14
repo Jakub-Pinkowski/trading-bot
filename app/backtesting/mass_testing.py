@@ -2,7 +2,9 @@ import concurrent.futures
 import io
 import itertools
 import os
+import random
 import sys
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -235,6 +237,9 @@ class MassTester:
 
         # Save the indicator and dataframe caches after each test
         # This is important when running tests in parallel, as each process has its own cache
+        # Add a random delay to reduce contention between processes
+        time.sleep(random.uniform(0.1, 0.5))  # Random delay between 0.1 and 0.5 seconds
+
         indicator_cache.save_cache()
         dataframe_cache.save_cache()
 
