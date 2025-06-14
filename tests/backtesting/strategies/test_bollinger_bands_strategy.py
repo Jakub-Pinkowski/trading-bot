@@ -77,6 +77,13 @@ class TestBollingerBandsStrategy:
         assert 'upper_band' in df_with_indicators.columns
         assert 'lower_band' in df_with_indicators.columns
 
+        # Clear the cache to ensure we're not using cached values
+        from app.backtesting.cache.indicators_cache import indicator_cache
+        indicator_cache.clear()
+
+        # Apply the strategy's add_indicators method again
+        df_with_indicators = strategy.add_indicators(df)
+
         # Skip the initial NaN values and verify that we have some valid Bollinger Bands values
         valid_middle_band = df_with_indicators['middle_band'].iloc[strategy.period:].dropna()
         assert len(valid_middle_band) > 0, "No valid middle band values calculated"
@@ -106,16 +113,16 @@ class TestBollingerBandsStrategy:
         # Verify signal column was added
         assert 'signal' in df_with_signals.columns
 
-        # Find where price crosses below lower band (buy signals)
+        # Find where price bounces back from the lower band (buy signals)
         buy_signals = df_with_signals[
-            (df_with_signals['close'].shift(1) >= df_with_signals['lower_band'].shift(1)) &
-            (df_with_signals['close'] < df_with_signals['lower_band'])
+            (df_with_signals['close'].shift(1) < df_with_signals['lower_band'].shift(1)) &
+            (df_with_signals['close'] >= df_with_signals['lower_band'])
             ]
 
-        # Find where price crosses above upper band (sell signals)
+        # Find where price falls back from the upper band (sell signals)
         sell_signals = df_with_signals[
-            (df_with_signals['close'].shift(1) <= df_with_signals['upper_band'].shift(1)) &
-            (df_with_signals['close'] > df_with_signals['upper_band'])
+            (df_with_signals['close'].shift(1) > df_with_signals['upper_band'].shift(1)) &
+            (df_with_signals['close'] <= df_with_signals['upper_band'])
             ]
 
         # Verify all buy signals have signal value of 1
@@ -141,16 +148,16 @@ class TestBollingerBandsStrategy:
         # Apply the strategy's generate_signals method
         df_with_signals = strategy.generate_signals(df)
 
-        # Find where price crosses below lower band (buy signals)
+        # Find where price bounces back from the lower band (buy signals)
         buy_signals = df_with_signals[
-            (df_with_signals['close'].shift(1) >= df_with_signals['lower_band'].shift(1)) &
-            (df_with_signals['close'] < df_with_signals['lower_band'])
+            (df_with_signals['close'].shift(1) < df_with_signals['lower_band'].shift(1)) &
+            (df_with_signals['close'] >= df_with_signals['lower_band'])
             ]
 
-        # Find where price crosses above upper band (sell signals)
+        # Find where price falls back from the upper band (sell signals)
         sell_signals = df_with_signals[
-            (df_with_signals['close'].shift(1) <= df_with_signals['upper_band'].shift(1)) &
-            (df_with_signals['close'] > df_with_signals['upper_band'])
+            (df_with_signals['close'].shift(1) > df_with_signals['upper_band'].shift(1)) &
+            (df_with_signals['close'] <= df_with_signals['upper_band'])
             ]
 
         # Verify all buy signals have signal value of 1

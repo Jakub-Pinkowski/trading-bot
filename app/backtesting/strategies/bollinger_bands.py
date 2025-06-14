@@ -21,8 +21,8 @@ class BollingerBandsStrategy(BaseStrategy):
     def generate_signals(self, df):
         """
         Signals:
-            1: Long entry (price crosses below a lower band)
-           -1: Short entry (price crosses above an upper band)
+            1: Long entry (price bounces back from the lower band - crosses back above after being below)
+           -1: Short entry (price falls back from the upper band - crosses back below after being above)
             0: No action
         """
         df['signal'] = 0
@@ -32,10 +32,10 @@ class BollingerBandsStrategy(BaseStrategy):
         prev_lower_band = df['lower_band'].shift(1)
         prev_upper_band = df['upper_band'].shift(1)
 
-        # Buy signal: Price crosses below a lower band
-        df.loc[(prev_close >= prev_lower_band) & (df['close'] < df['lower_band']), 'signal'] = 1
+        # Buy signal: Price bounces back from the lower band (crosses back above after being below)
+        df.loc[(prev_close < prev_lower_band) & (df['close'] >= df['lower_band']), 'signal'] = 1
 
-        # Sell signal: Price crosses above an upper band
-        df.loc[(prev_close <= prev_upper_band) & (df['close'] > df['upper_band']), 'signal'] = -1
+        # Sell signal: Price falls back from the upper band (crosses back below after being above)
+        df.loc[(prev_close > prev_upper_band) & (df['close'] <= df['upper_band']), 'signal'] = -1
 
         return df
