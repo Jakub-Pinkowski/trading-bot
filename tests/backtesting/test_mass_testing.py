@@ -617,7 +617,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
     def test_run_single_test_file_error(self, mock_get_df):
         """Test the _run_single_test method when there's an error reading the file."""
-        # Setup mock to raise an exception
+        # Set up mocks to raise an exception
         mock_get_df.side_effect = Exception("File not found")
 
         # Create a tester
@@ -628,6 +628,55 @@ class TestMassTester:
 
         # Verify the result
         assert result is None
+
+    @patch('app.backtesting.mass_testing.get_cached_dataframe')
+    @patch('app.backtesting.mass_testing.FileLock')
+    def test_run_single_test_cache_save_error(self, mock_file_lock, mock_get_df):
+        """Test the _run_single_test method when there's an error saving the cache."""
+        # Setup mock dataframe
+        mock_df = pd.DataFrame({
+            'open': [100, 101, 102],
+            'high': [105, 106, 107],
+            'low': [95, 96, 97],
+            'close': [102, 103, 104]
+        })
+        mock_get_df.return_value = mock_df
+
+        # Setup mock strategy
+        strategy = MagicMock()
+        strategy.run.return_value = [
+            {
+                'entry_time': pd.Timestamp('2023-01-01'),
+                'exit_time': pd.Timestamp('2023-01-02'),
+                'entry_price': 100,
+                'exit_price': 110,
+                'side': 'long'
+            }
+        ]
+
+        # Set up mocks file lock to raise an exception when used in a context manager
+        mock_lock_instance = MagicMock()
+        mock_file_lock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.side_effect = Exception("Lock error")
+
+        # Create a tester
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Run a single test
+        with patch('app.backtesting.mass_testing.logger') as mock_logger:
+            result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, False))
+
+            # Verify that the error was logged
+            mock_logger.error.assert_called_once()
+            assert "Failed to save caches" in mock_logger.error.call_args[0][0]
+
+        # Verify the result still contains valid data despite the cache error
+        assert result is not None
+        assert result['month'] == '2023-01'
+        assert result['symbol'] == 'ES'
+        assert result['interval'] == '1h'
+        assert result['strategy'] == 'Test Strategy'
+        assert 'metrics' in result
 
     def test_results_to_dataframe(self):
         """Test the _results_to_dataframe method."""

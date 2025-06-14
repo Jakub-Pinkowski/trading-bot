@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import pytest
 
@@ -126,6 +127,14 @@ class TestStrategyFactory(unittest.TestCase):
         """Test creating a strategy with an unknown type."""
         with pytest.raises(ValueError, match="Unknown strategy type"):
             create_strategy('unknown')
+
+    @patch('app.backtesting.strategy_factory.STRATEGY_TYPES', ['rsi', 'ema', 'macd', 'bollinger', 'custom'])
+    def test_create_strategy_fallback(self):
+        """Test the fallback return statement when a strategy type is in STRATEGY_TYPES but has no specific handler."""
+        # This test is specifically for line 79 in strategy_factory.py
+        # The 'custom' strategy type is added to STRATEGY_TYPES but has no specific handler
+        result = create_strategy('custom')
+        self.assertIsNone(result)
 
     def test_create_rsi_strategy_invalid_parameters(self):
         """Test creating an RSI strategy with invalid parameters."""
