@@ -3,6 +3,14 @@ from app.utils.logger import get_logger
 logger = get_logger('backtesting/summary_metrics')
 
 
+def _safe_average(values, count=None):
+    """Safely calculate average of values."""
+    if not values:
+        return 0
+    count = count or len(values)
+    return sum(values) / count if count > 0 else 0
+
+
 class SummaryMetrics:
     """Class for calculating summary metrics for a list of trades."""
 
@@ -17,8 +25,20 @@ class SummaryMetrics:
         self.total_trades = len(trades) if trades else 0
 
         # Initialize common calculations if trades exist
-        if trades and len(trades) > 0:
+        if self._has_trades():
             self._initialize_calculations()
+
+    def _has_trades(self):
+        """Check if there are any trades."""
+        return bool(self.trades) and len(self.trades) > 0
+
+    def _has_winning_trades(self):
+        """Check if there are any winning trades."""
+        return bool(self.winning_trades)
+
+    def _has_losing_trades(self):
+        """Check if there are any losing trades."""
+        return bool(self.losing_trades)
 
     def _initialize_calculations(self):
         """Perform initial calculations used by multiple metrics."""
@@ -51,7 +71,7 @@ class SummaryMetrics:
 
     def calculate_max_drawdown(self):
         """Calculate the maximum drawdown given a list of trades."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0, 0
 
         # Calculate max drawdown in dollars
@@ -78,7 +98,7 @@ class SummaryMetrics:
 
     def calculate_max_consecutive(self, win=True):
         """Calculate maximum consecutive wins or losses."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         # Sort trades by date if available
@@ -104,11 +124,11 @@ class SummaryMetrics:
 
     def calculate_sharpe_ratio(self, risk_free_rate=0.0):
         """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
-        if len(self.trades) < 2:  # Need at least 2 trades for standard deviation
+        if not self._has_trades() or len(self.trades) < 2:  # Need at least 2 trades for standard deviation
             return 0
 
         returns = [trade['return_percentage_of_margin'] for trade in self.trades]
-        avg_return = sum(returns) / len(returns)
+        avg_return = _safe_average(returns)
 
         # Calculate standard deviation
         variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
@@ -122,11 +142,11 @@ class SummaryMetrics:
 
     def calculate_sortino_ratio(self, risk_free_rate=0.0):
         """Calculate Sortino ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Negative Returns."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         returns = [trade['return_percentage_of_margin'] for trade in self.trades]
-        avg_return = sum(returns) / len(returns)
+        avg_return = _safe_average(returns)
 
         # Calculate downside deviation (returns below the risk-free rate)
         negative_returns = [r - risk_free_rate for r in returns if r < risk_free_rate]
@@ -145,7 +165,7 @@ class SummaryMetrics:
 
     def calculate_calmar_ratio(self):
         """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         # Calculate total return (assuming percentage returns)
@@ -162,7 +182,7 @@ class SummaryMetrics:
 
     def calculate_profit_factor(self):
         """Calculate profit factor: Total Net Profit / Total Net Loss."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_net_profit = sum(trade['net_pnl'] for trade in self.winning_trades)
@@ -176,7 +196,7 @@ class SummaryMetrics:
 
     def calculate_return_to_drawdown_ratio(self):
         """Calculate return-to-drawdown ratio: Total Return Percentage / Maximum Drawdown Percentage."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.trades)
@@ -197,15 +217,14 @@ class SummaryMetrics:
 
     def calculate_average_trade_duration(self):
         """Calculate average trade duration in hours."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
-        avg_duration_hours = sum(trade['duration_hours'] for trade in self.trades) / self.total_trades
-        return avg_duration_hours
+        return _safe_average([trade['duration_hours'] for trade in self.trades], self.total_trades)
 
     def calculate_total_margin_used(self):
         """Calculate the total margin used across all trades."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_margin_used = sum(trade.get('margin_requirement', 0) for trade in self.trades)
@@ -213,7 +232,7 @@ class SummaryMetrics:
 
     def calculate_total_return_percentage_of_margin(self):
         """Calculate total return percentage of margin."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.trades)
@@ -221,36 +240,29 @@ class SummaryMetrics:
 
     def calculate_average_trade_return_percentage_of_margin(self):
         """Calculate average trade return percentage of margin."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_return_percentage_of_margin = self.calculate_total_return_percentage_of_margin()
-        average_trade_return_percentage_of_margin = total_return_percentage_of_margin / self.total_trades
-        return average_trade_return_percentage_of_margin
+        return _safe_average([total_return_percentage_of_margin], self.total_trades)
 
     def calculate_average_win_percentage_of_margin(self):
         """Calculate average win percentage of margin."""
-        if not self.winning_trades:
+        if not self._has_winning_trades():
             return 0
 
-        average_win_percentage_of_margin = sum(
-            trade['return_percentage_of_margin'] for trade in self.winning_trades
-        ) / len(self.winning_trades)
-        return average_win_percentage_of_margin
+        return _safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
 
     def calculate_average_loss_percentage_of_margin(self):
         """Calculate average loss percentage of margin."""
-        if not self.losing_trades:
+        if not self._has_losing_trades():
             return 0
 
-        average_loss_percentage_of_margin = sum(
-            trade['return_percentage_of_margin'] for trade in self.losing_trades
-        ) / len(self.losing_trades)
-        return average_loss_percentage_of_margin
+        return _safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
 
     def calculate_commission_percentage_of_margin(self):
         """Calculate commission as percentage of margin."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             return 0
 
         total_commission_paid = sum(trade.get('commission', 0) for trade in self.trades)
@@ -262,7 +274,7 @@ class SummaryMetrics:
 
     def calculate_all_metrics(self):
         """Calculate all summary metrics and return as a dictionary."""
-        if not self.trades or len(self.trades) == 0:
+        if not self._has_trades():
             logger.error('No trades provided to calculate_all_metrics')
             return {}
 
