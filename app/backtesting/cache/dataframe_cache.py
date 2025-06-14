@@ -9,7 +9,9 @@ logger = get_logger('backtesting/cache/dataframe')
 CACHE_VERSION = 1
 
 # Create the dataframe cache instance
-dataframe_cache = Cache("dataframe", CACHE_VERSION)
+# Dataframes can be large, so use a smaller max_size
+# Set max_age to 7 days (7 * 24 * 60 * 60 = 604,800 seconds)
+dataframe_cache = Cache("dataframe", CACHE_VERSION, max_size=100, max_age=604800)
 
 
 def get_preprocessed_dataframe(filepath):

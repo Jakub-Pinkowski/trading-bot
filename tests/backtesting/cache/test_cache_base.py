@@ -35,7 +35,10 @@ def test_cache_initialization():
     assert cache.cache_name == "test"
     assert cache.cache_version == 1
     assert cache.cache_file == os.path.join(CACHE_DIR, "test_cache_v1.pkl")
-    assert cache.cache_data == {}
+    assert isinstance(cache.cache_data, dict)
+    assert len(cache.cache_data) == 0
+    assert cache.max_size == 1000
+    assert cache.max_age == 86400
 
 
 def test_cache_set_and_get():
@@ -113,7 +116,8 @@ def test_load_cache_file_exists(mock_cache_dir):
     cache = Cache("test", 1)
 
     # Verify the data was loaded
-    assert cache.cache_data == cache_data
+    # The cache now stores (timestamp, value) tuples, so we can't directly compare
+    assert len(cache.cache_data) == 2
     assert cache.get("key1") == "value1"
     assert cache.get("key2") == "value2"
 
@@ -176,7 +180,14 @@ def test_save_cache(mock_cache_dir):
     with open(cache_file, 'rb') as f:
         loaded_data = pickle.load(f)
 
-    assert loaded_data == {"key1": "value1", "key2": "value2"}
+    # The saved data now contains timestamps, so we need to extract the values
+    assert len(loaded_data) == 2
+    assert "key1" in loaded_data
+    assert "key2" in loaded_data
+    assert isinstance(loaded_data["key1"], tuple)
+    assert isinstance(loaded_data["key2"], tuple)
+    assert loaded_data["key1"][1] == "value1"
+    assert loaded_data["key2"][1] == "value2"
 
 
 def test_save_cache_exception_handling():
@@ -258,7 +269,7 @@ def test_cache_versioning(mock_cache_dir):
 
 def test_cache_performance_with_large_dataset():
     """Test cache performance with a large number of items."""
-    cache = Cache("test_performance", 1)
+    cache = Cache("test_performance", 1, max_size=20000)  # Use a larger max_size for this test
 
     # Add a large number of items to the cache
     num_items = 10000
@@ -378,6 +389,154 @@ def test_cache_with_different_key_types():
     assert cache.contains(True)
     assert cache.contains(False)
     assert cache.contains(None)
+
+
+def test_cache_no_size_limit():
+    """Test that the cache doesn't limit size when max_size is None."""
+    # Create a cache with no size limit
+    cache = Cache("test_no_size_limit", 1, max_size=None)
+
+    # Add a large number of items to the cache
+    num_items = 100
+    for i in range(num_items):
+        cache.set(f"key_{i}", f"value_{i}")
+
+    # Verify all items are in the cache
+    assert cache.size() == num_items
+    for i in range(num_items):
+        assert cache.contains(f"key_{i}")
+        assert cache.get(f"key_{i}") == f"value_{i}"
+
+    # Test that _enforce_size_limit doesn't remove anything
+    cache._enforce_size_limit()
+
+    # Verify all items are still in the cache
+    assert cache.size() == num_items
+    for i in range(num_items):
+        assert cache.contains(f"key_{i}")
+        assert cache.get(f"key_{i}") == f"value_{i}"
+
+
+def test_cache_no_expiration():
+    """Test that the cache doesn't expire items when max_age is None."""
+    # Create a cache with no expiration
+    cache = Cache("test_no_expiration", 1, max_age=None)
+
+    # Add items to the cache
+    cache.set("key1", "value1")
+    cache.set("key2", "value2")
+
+    # Verify items are in the cache
+    assert cache.size() == 2
+    assert cache.get("key1") == "value1"
+    assert cache.get("key2") == "value2"
+
+    # Wait for a short time
+    time.sleep(0.5)
+
+    # Verify items are still in the cache
+    assert cache.contains("key1")
+    assert cache.contains("key2")
+    assert cache.size() == 2
+
+    # Test that _remove_expired_items doesn't remove anything
+    cache._remove_expired_items()
+
+    # Verify items are still in the cache
+    assert cache.size() == 2
+    assert cache.get("key1") == "value1"
+    assert cache.get("key2") == "value2"
+
+
+def test_cache_max_age_and_expiration():
+    """Test that the cache enforces the max_age limit and expires old items."""
+    # Create a cache with a small max_age (1 second)
+    cache = Cache("test_max_age", 1, max_age=1)
+
+    # Add items to the cache
+    cache.set("key1", "value1")
+    cache.set("key2", "value2")
+
+    # Verify items are in the cache
+    assert cache.size() == 2
+    assert cache.get("key1") == "value1"
+    assert cache.get("key2") == "value2"
+
+    # Wait for items to expire
+    time.sleep(1.5)
+
+    # Verify items are expired when accessed
+    assert not cache.contains("key1")
+    assert not cache.contains("key2")
+    assert cache.size() == 0
+
+    # Add new items
+    cache.set("key3", "value3")
+
+    # Verify new items are in the cache
+    assert cache.size() == 1
+    assert cache.get("key3") == "value3"
+
+    # Test that _remove_expired_items works
+    cache.set("key4", "value4")
+    time.sleep(1.5)
+
+    # This should trigger _remove_expired_items
+    cache._remove_expired_items()
+
+    # Verify all items are expired
+    assert cache.size() == 0
+
+
+def test_cache_max_size_and_lru():
+    """Test that the cache enforces the max_size limit and uses LRU eviction."""
+    # Create a cache with a small max_size
+    cache = Cache("test_max_size", 1, max_size=3)
+
+    # Add items to the cache
+    cache.set("key1", "value1")
+    cache.set("key2", "value2")
+    cache.set("key3", "value3")
+
+    # Verify all items are in the cache
+    assert cache.size() == 3
+    assert cache.get("key1") == "value1"
+    assert cache.get("key2") == "value2"
+    assert cache.get("key3") == "value3"
+
+    # Access key1 to make it the most recently used
+    cache.get("key1")
+
+    # Add a new item, which should evict the least recently used item (key2)
+    cache.set("key4", "value4")
+
+    # Verify the cache size is still 3
+    assert cache.size() == 3
+
+    # Verify key2 was evicted
+    assert not cache.contains("key2")
+
+    # Verify the other keys are still in the cache
+    assert cache.get("key1") == "value1"
+    assert cache.get("key3") == "value3"
+    assert cache.get("key4") == "value4"
+
+    # Access key3 to make it the most recently used
+    cache.get("key3")
+
+    # Add another item, which should evict the least recently used item (key1)
+    cache.set("key5", "value5")
+
+    # Verify the cache size is still 3
+    assert cache.size() == 3
+
+    # Verify key1 was evicted
+    assert not cache.contains("key1")
+
+    # Verify the other keys are still in the cache
+    assert cache.get("key3") == "value3"
+    assert cache.get("key4") == "value4"
+    assert cache.get("key5") == "value5"
 
 
 def test_cache_update_operations():
