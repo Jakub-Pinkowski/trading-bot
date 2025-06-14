@@ -4,7 +4,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-# Bollinger Bands
 def calculate_bollinger_bands(prices, period=20, num_std=2):
     # Create a hashable key for the cache
     prices_hash = hash_series(prices)

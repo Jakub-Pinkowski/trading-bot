@@ -5,7 +5,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-# MACD
 def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
     # Create a hashable key for the cache
     prices_hash = hash_series(prices)

@@ -5,7 +5,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-# ATR
 def calculate_atr(df, period=14):
     # Create a hashable key for the cache
     df_hash = hash_series(df['high']) + hash_series(df['low']) + hash_series(df['close'])

@@ -2,7 +2,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series, logger
 
 
-# RSI
 def calculate_rsi(prices, period=14):
     # Validate period
     if period <= 0:

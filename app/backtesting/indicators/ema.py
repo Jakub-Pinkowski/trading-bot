@@ -2,7 +2,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series, logger
 
 
-# EMA
 def calculate_ema(prices, period=9):
     # Validate period
     if period <= 0:
