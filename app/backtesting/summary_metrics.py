@@ -133,6 +133,41 @@ def calculate_calmar_ratio(trades):
     return calmar_ratio
 
 
+def calculate_profit_factor(trades):
+    """Calculate profit factor: Total Net Profit / Total Net Loss."""
+    if not trades:
+        return 0
+
+    winning_trades = [trade for trade in trades if trade['return_percentage_of_margin'] > 0]
+    losing_trades = [trade for trade in trades if trade['return_percentage_of_margin'] <= 0]
+
+    total_net_profit = sum(trade['net_pnl'] for trade in winning_trades)
+    total_net_loss = sum(trade['net_pnl'] for trade in losing_trades)
+
+    if total_net_loss == 0:
+        return float('inf')  # No losses
+
+    profit_factor = abs(total_net_profit / total_net_loss)
+    return profit_factor
+
+
+def calculate_return_to_drawdown_ratio(trades):
+    """Calculate return to drawdown ratio: Total Return Percentage / Maximum Drawdown Percentage."""
+    if not trades:
+        return 0
+
+    total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
+
+    # Get maximum drawdown percentage
+    _, maximum_drawdown_percentage = calculate_max_drawdown(trades)
+
+    if maximum_drawdown_percentage == 0:
+        return float('inf')  # No drawdown
+
+    return_to_drawdown_ratio = total_return_percentage_of_margin / maximum_drawdown_percentage
+    return return_to_drawdown_ratio
+
+
 def calculate_summary_metrics(trades):
     """ Calculate summary metrics for a list of trades """
 
@@ -155,14 +190,10 @@ def calculate_summary_metrics(trades):
     avg_duration_hours = sum(trade['duration_hours'] for trade in trades) / total_trades if total_trades > 0 else 0
 
     # ===== DOLLAR-BASED METRICS =====
-    total_net_profit = sum(trade['net_pnl'] for trade in winning_trades)
-    total_net_loss = sum(trade['net_pnl'] for trade in losing_trades)
-
     # Total margin used (sum of individual trade margin requirements)
     total_margin_used = sum(trade.get('margin_requirement', 0) for trade in trades)
 
     # ===== NORMALIZED METRICS (PERCENTAGES) =====
-    # Return percentages
     total_return_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in trades)
     average_trade_return_percentage_of_margin = total_return_percentage_of_margin / total_trades if total_trades > 0 else 0
     average_win_percentage_of_margin = sum(
@@ -181,19 +212,19 @@ def calculate_summary_metrics(trades):
 
     # ===== RISK METRICS =====
     # Profit factor
-    profit_factor = abs(total_net_profit / total_net_loss) if total_net_loss != 0 else float('inf')
+    profit_factor = calculate_profit_factor(trades)
 
-    # Calculate drawdown
+    # Drawdown
     max_drawdown, maximum_drawdown_percentage = calculate_max_drawdown(trades)
+    return_to_drawdown_ratio = calculate_return_to_drawdown_ratio(trades)
 
-    # Calculate return to a drawdown ratio (reward to risk)
-    return_to_drawdown_ratio = total_return_percentage_of_margin / maximum_drawdown_percentage if maximum_drawdown_percentage > 0 else float(
-        'inf'
-    )
-
-    # Calculate performance ratios
+    # Sharpe Ratio
     sharpe_ratio = calculate_sharpe_ratio(trades)
+
+    # Sortino Ratio
     sortino_ratio = calculate_sortino_ratio(trades)
+
+    # Calmar Ratio
     calmar_ratio = calculate_calmar_ratio(trades)
 
     return {
