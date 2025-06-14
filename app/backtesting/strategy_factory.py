@@ -60,6 +60,7 @@ class StrategyFactory:
             return StrategyFactory._create_macd_strategy(**params)
         elif strategy_type.lower() == 'bollinger':
             return StrategyFactory._create_bollinger_strategy(**params)
+        return None
 
     @staticmethod
     def _create_rsi_strategy(**params):
