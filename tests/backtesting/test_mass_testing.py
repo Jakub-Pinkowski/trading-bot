@@ -20,9 +20,9 @@ class TestMassTester:
             'param3': [True, False]
         }
 
-        # Mock the StrategyFactory methods
-        with patch('app.backtesting.strategy_factory.StrategyFactory.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.strategy_factory.StrategyFactory.create_strategy') as mock_create:
+        # Mock the strategy_factory functions
+        with patch('app.backtesting.mass_testing.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.mass_testing.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -52,9 +52,9 @@ class TestMassTester:
             'param3': [True]
         }
 
-        # Mock the StrategyFactory methods
-        with patch('app.backtesting.strategy_factory.StrategyFactory.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.strategy_factory.StrategyFactory.create_strategy') as mock_create:
+        # Mock the strategy_factory functions
+        with patch('app.backtesting.mass_testing.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.mass_testing.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -415,7 +415,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing._load_existing_results')
     @patch('app.backtesting.mass_testing._test_already_exists')
     @patch('builtins.print')
-    @patch('app.backtesting.strategy_factory.StrategyFactory.get_strategy_name')
+    @patch('app.backtesting.mass_testing.get_strategy_name')
     def test_run_tests_skipped_verbose(self, mock_get_name, mock_print, mock_test_exists, mock_load_results):
         """Test that run_tests handles skipped tests with verbose=True."""
         mock_load_results.return_value = pd.DataFrame()

@@ -11,7 +11,7 @@ import yaml
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_preprocessed_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
-from app.backtesting.strategy_factory import StrategyFactory
+from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
@@ -80,8 +80,8 @@ class MassTester:
         # Loop over parameter values to create strategy instances and store them in self.strategies.
         for param_values in param_value_combinations:
             strategy_params = dict(zip(param_names, param_values))
-            strategy_name = StrategyFactory.get_strategy_name(strategy_type, **strategy_params)
-            strategy_instance = StrategyFactory.create_strategy(strategy_type, **strategy_params)
+            strategy_name = get_strategy_name(strategy_type, **strategy_params)
+            strategy_instance = create_strategy(strategy_type, **strategy_params)
 
             self.strategies.append((strategy_name, strategy_instance))
 
