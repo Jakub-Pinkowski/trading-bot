@@ -97,8 +97,8 @@ def calculate_sortino_ratio(trades, risk_free_rate=0.0):
     returns = [trade['return_percentage_of_margin'] for trade in trades]
     avg_return = sum(returns) / len(returns)
 
-    # Calculate downside deviation (only negative returns)
-    negative_returns = [r - avg_return for r in returns if r < avg_return]
+    # Calculate downside deviation (returns below the risk-free rate)
+    negative_returns = [r - risk_free_rate for r in returns if r < risk_free_rate]
 
     if not negative_returns:
         return float('inf')  # No negative returns
