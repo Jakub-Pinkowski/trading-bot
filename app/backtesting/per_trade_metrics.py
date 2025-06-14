@@ -53,7 +53,8 @@ def calculate_trade_metrics(trade, symbol):
     return_percentage_of_margin = round((net_pnl / margin_requirement) * 100, 2)
 
     # Calculate return percentage as a percentage of the contract value (entry price)
-    return_percentage_of_contract = round((net_pnl / (trade['entry_price'] * contract_multiplier)) * 100, 2)
+    contract_value = trade['entry_price'] * contract_multiplier
+    return_percentage_of_contract = round((net_pnl / contract_value) * 100, 2)
 
     return {
         # Original trade data
