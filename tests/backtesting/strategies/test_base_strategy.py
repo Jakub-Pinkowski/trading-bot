@@ -457,6 +457,53 @@ class TestBaseStrategy:
         # Should have no trades
         assert len(trades) == 0
 
+    def test_trailing_stop_same_bar_movement(self):
+        """Test trailing stop functionality when price moves favorably and then unfavorably within the same bar."""
+        # Create a strategy with 2% trailing stop
+        strategy = StrategyForTesting(trailing=2.0)
+
+        # Create a test dataframe with controlled price movements
+        dates = [datetime.now() + timedelta(days=i) for i in range(5)]
+        data = {
+            'open': [100.0, 100.0, 100.0, 100.0, 100.0],
+            'high': [105.0, 110.0, 115.0, 120.0, 105.0],
+            'low': [95.0, 90.0, 85.0, 80.0, 95.0],
+            'close': [102.0, 105.0, 110.0, 90.0, 100.0],
+        }
+        df = pd.DataFrame(data, index=dates)
+
+        # Add a buy signal at the first bar
+        df['signal'] = 0
+        df.iloc[0, df.columns.get_loc('signal')] = 1
+
+        # Run the strategy
+        trades = strategy.extract_trades(df, [])
+
+        # Should have at least one trade
+        assert len(trades) > 0
+
+        # Find the long trade
+        long_trades = [t for t in trades if t['side'] == 'long']
+        assert len(long_trades) > 0
+        trade = long_trades[0]
+
+        # Verify the trade details
+        assert trade['side'] == 'long'
+
+        # The key test: verify that the trailing stop was updated before it was triggered
+        # The trailing stop is updated based on the high price of the current bar,
+        # but the check is against the low price of the same bar using the trailing stop from the previous bar.
+        # In this case, the trailing stop from bar 2 (115.0 * 0.98 = 112.7) is used for the check in bar 3,
+        # and since the low of bar 3 (80.0) is below this stop, the position is closed at 112.7.
+        expected_stop_price = round(115.0 * 0.98, 2)  # 112.7
+        assert trade[
+                   'exit_price'] == expected_stop_price, f"Expected exit price to be {expected_stop_price}, got {trade['exit_price']}"
+
+        # This confirms that our fix to the _handle_trailing_stop method is working correctly:
+        # 1. The trailing stop is updated based on the high price of the current bar
+        # 2. Then it's checked against the low price of the same bar
+        # 3. If the low price is below the trailing stop, the position is closed at the trailing stop price
+
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices."""
         # Create a strategy with 2% slippage
