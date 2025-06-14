@@ -67,6 +67,7 @@ trading-bot/
 │   └── __init__.py
 ├── backtesting_data/                             # Backtesting results data
 │   ├── cache/                                    # Cache storage for backtesting
+│   └── csv_results/                              # CSV results from backtesting
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
 │   ├── analysis/
@@ -75,9 +76,9 @@ trading-bot/
 │   │   └── tw_alerts/                            # Performance analysis based on TW alerts
 │   ├── contracts/                                # Contracts ids
 │   └── raw_data/
-│   │   ├── alerts/                               # Raw alerts data
-│   │   ├── trades/                               # Raw trades data
-│   │   └── tw_alerts/                            # Raw TW alerts
+│       ├── alerts/                               # Raw alerts data
+│       ├── trades/                               # Raw trades data
+│       └── tw_alerts/                            # Raw TW alerts
 ├── historical_data/
 │   ├── 1!/                                       # Front month
 │   ├── 2!/                                       # Next month
@@ -87,18 +88,28 @@ trading-bot/
 │   └── info.logs                                 # Info logs 
 ├── strategies/
 │   ├── indicators/                               # Indicators
+│   ├── indicators_testing/                       # Testing indicators
 │   ├── strategies/                               # Strategies
-│   ├── tw_indicators/                            # TW indicators
+│   └── tw_indicators/                            # TW indicators
 ├── tests/                                        # Tests directory
+│   ├── analysis/                                 # Analysis tests
+│   ├── backtesting/                              # Backtesting tests
+│   ├── e2e/                                      # End-to-end tests
+│   ├── routes/                                   # Routes tests
+│   ├── services/                                 # Services tests
+│   └── utils/                                    # Utils tests
 ├── .env                                          # Configuration secrets
+├── .github/                                      # GitHub workflows
 ├── .gitignore                                    # Files to ignore
 ├── analyze.py                                    # Run analysis
+├── analyze_strategies.py                         # Analyze strategies
 ├── config.py                                     # App configuration
 ├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script
-└── structure.yaml                                # App's structure
+├── structure.yaml                                # App's structure
+└── tw_fetching.py                                # TradingView data fetching
 
 # Trading
 # TODO [LOW]: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
