@@ -187,6 +187,29 @@ class TestStrategyFactory(unittest.TestCase):
         with pytest.raises(ValueError, match="number of standard deviations must be positive"):
             create_strategy('bollinger', num_std=-1)
 
+    def test_create_strategy_invalid_common_parameters(self):
+        """Test creating a strategy with invalid common parameters."""
+        # Invalid rollover (not a boolean)
+        with pytest.raises(ValueError, match="rollover must be a boolean"):
+            create_strategy('rsi', rollover="True")  # String instead of boolean
+
+        # Invalid trailing (not a positive number)
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            create_strategy('rsi', trailing=0)  # Zero is not positive
+
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            create_strategy('rsi', trailing=-1)  # Negative number
+
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            create_strategy('rsi', trailing="2.0")  # String instead of number
+
+        # Invalid slippage (not a non-negative number)
+        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
+            create_strategy('rsi', slippage=-1)  # Negative number
+
+        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
+            create_strategy('rsi', slippage="0.5")  # String instead of number
+
     def test_get_strategy_name(self):
         """Test getting a standardized name for a strategy."""
         # RSI strategy

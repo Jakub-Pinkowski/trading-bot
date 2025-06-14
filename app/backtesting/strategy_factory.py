@@ -12,10 +12,30 @@ STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger']
 
 def _extract_common_params(**params):
     """Extract common parameters used by all strategies."""
+    # Extract parameters with defaults
+    rollover = params.get('rollover', False)
+    trailing = params.get('trailing', None)
+    slippage = params.get('slippage', None)
+
+    # Validate rollover (should be boolean)
+    if not isinstance(rollover, bool):
+        logger.error(f"Invalid rollover: {rollover}")
+        raise ValueError("rollover must be a boolean (True or False)")
+
+    # Validate trailing (should be None or positive number)
+    if trailing is not None and (not isinstance(trailing, (int, float)) or trailing <= 0):
+        logger.error(f"Invalid trailing: {trailing}")
+        raise ValueError("trailing must be None or a positive number")
+
+    # Validate slippage (should be None or non-negative number)
+    if slippage is not None and (not isinstance(slippage, (int, float)) or slippage < 0):
+        logger.error(f"Invalid slippage: {slippage}")
+        raise ValueError("slippage must be None or a non-negative number")
+
     return {
-        'rollover': params.get('rollover', False),
-        'trailing': params.get('trailing', None),
-        'slippage': params.get('slippage', None)
+        'rollover': rollover,
+        'trailing': trailing,
+        'slippage': slippage
     }
 
 
