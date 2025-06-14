@@ -14,7 +14,6 @@ def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
-    # Calculate MACD
     # Calculate fast and slow EMAs
     fast_ema = prices.ewm(span=fast_period, adjust=False).mean()
     slow_ema = prices.ewm(span=slow_period, adjust=False).mean()

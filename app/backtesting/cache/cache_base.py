@@ -39,7 +39,7 @@ class Cache:
         self.cache_name = cache_name
         self.cache_version = cache_version
         self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.pkl")
-        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.lock")  # Add lock file path
+        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.lock")  # Add a lockfile path
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
@@ -111,12 +111,7 @@ class Cache:
             self.cache_data.popitem(last=False)  # Remove the first item (least recently used)
 
     def get(self, key, default=None):
-        """
-        Get a value from the cache.
-
-        If the key exists and the item is not expired, it will be moved to the end of the
-        OrderedDict to mark it as recently used.
-        """
+        """ Get a value from the cache. """
         if not self.contains(key):
             return default
 
@@ -128,6 +123,7 @@ class Cache:
 
     def set(self, key, value):
         """ Set a value in the cache. """
+
         # Store the value with the current timestamp
         self.cache_data[key] = (time.time(), value)
 

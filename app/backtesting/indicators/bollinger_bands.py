@@ -13,7 +13,6 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
-    # Calculate Bollinger Bands
     # Calculate a middle band (SMA)
     middle_band = prices.rolling(window=period).mean()
 
