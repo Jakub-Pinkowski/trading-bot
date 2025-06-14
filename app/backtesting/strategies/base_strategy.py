@@ -86,13 +86,6 @@ class BaseStrategy:
     def _handle_trailing_stop(self, idx, price_high, price_low):
         """Manage trailing stop trigger and update logic."""
 
-        # Check if a trailing stop has been triggered
-        if self.position is not None and self.trailing_stop is not None:
-            if self.position == 1 and price_low <= self.trailing_stop:
-                self._close_position(idx, self.trailing_stop, switch=False)
-            elif self.position == -1 and price_high >= self.trailing_stop:
-                self._close_position(idx, self.trailing_stop, switch=False)
-
         # Update trailing stop if position still open and price moved favorably
         if self.position is not None and self.trailing_stop is not None:
             if self.position == 1:  # Long position
@@ -103,6 +96,13 @@ class BaseStrategy:
                 new_stop = round(price_low * (1 + self.trailing / 100), 2)
                 if new_stop < self.trailing_stop:
                     self.trailing_stop = new_stop
+
+        # Check if a trailing stop has been triggered
+        if self.position is not None and self.trailing_stop is not None:
+            if self.position == 1 and price_low <= self.trailing_stop:
+                self._close_position(idx, self.trailing_stop, switch=False)
+            elif self.position == -1 and price_high >= self.trailing_stop:
+                self._close_position(idx, self.trailing_stop, switch=False)
 
     def _handle_contract_switch(self, current_time, idx, price_open):
         while self.next_switch and current_time >= self.next_switch:
