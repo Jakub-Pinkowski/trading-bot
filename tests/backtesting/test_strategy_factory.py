@@ -130,15 +130,15 @@ class TestStrategyFactory(unittest.TestCase):
     def test_create_rsi_strategy_invalid_parameters(self):
         """Test creating an RSI strategy with invalid parameters."""
         # Invalid RSI period
-        with pytest.raises(ValueError, match="RSI period must be a positive integer"):
+        with pytest.raises(ValueError, match="rsi period must be a positive integer"):
             StrategyFactory.create_strategy('rsi', rsi_period=-1)
 
         # Invalid lower threshold
-        with pytest.raises(ValueError, match="Lower threshold must be between 0 and 100"):
+        with pytest.raises(ValueError, match="lower threshold must be between 0 and 100"):
             StrategyFactory.create_strategy('rsi', lower=-10)
 
         # Invalid upper threshold
-        with pytest.raises(ValueError, match="Upper threshold must be between 0 and 100"):
+        with pytest.raises(ValueError, match="upper threshold must be between 0 and 100"):
             StrategyFactory.create_strategy('rsi', upper=110)
 
         # Lower >= upper
@@ -148,11 +148,11 @@ class TestStrategyFactory(unittest.TestCase):
     def test_create_ema_strategy_invalid_parameters(self):
         """Test creating an EMA strategy with invalid parameters."""
         # Invalid short EMA period
-        with pytest.raises(ValueError, match="Short EMA period must be a positive integer"):
+        with pytest.raises(ValueError, match="short EMA period must be a positive integer"):
             StrategyFactory.create_strategy('ema', ema_short=-1)
 
         # Invalid long EMA period
-        with pytest.raises(ValueError, match="Long EMA period must be a positive integer"):
+        with pytest.raises(ValueError, match="long EMA period must be a positive integer"):
             StrategyFactory.create_strategy('ema', ema_long=-1)
 
         # Short >= long
@@ -162,15 +162,15 @@ class TestStrategyFactory(unittest.TestCase):
     def test_create_macd_strategy_invalid_parameters(self):
         """Test creating a MACD strategy with invalid parameters."""
         # Invalid fast period
-        with pytest.raises(ValueError, match="Fast period must be a positive integer"):
+        with pytest.raises(ValueError, match="fast period must be a positive integer"):
             StrategyFactory.create_strategy('macd', fast_period=-1)
 
         # Invalid slow period
-        with pytest.raises(ValueError, match="Slow period must be a positive integer"):
+        with pytest.raises(ValueError, match="slow period must be a positive integer"):
             StrategyFactory.create_strategy('macd', slow_period=-1)
 
         # Invalid signal period
-        with pytest.raises(ValueError, match="Signal period must be a positive integer"):
+        with pytest.raises(ValueError, match="signal period must be a positive integer"):
             StrategyFactory.create_strategy('macd', signal_period=-1)
 
         # Fast >= slow
@@ -180,11 +180,11 @@ class TestStrategyFactory(unittest.TestCase):
     def test_create_bollinger_strategy_invalid_parameters(self):
         """Test creating a Bollinger Bands strategy with invalid parameters."""
         # Invalid period
-        with pytest.raises(ValueError, match="Period must be a positive integer"):
+        with pytest.raises(ValueError, match="period must be a positive integer"):
             StrategyFactory.create_strategy('bollinger', period=-1)
 
         # Invalid number of standard deviations
-        with pytest.raises(ValueError, match="Number of standard deviations must be positive"):
+        with pytest.raises(ValueError, match="number of standard deviations must be positive"):
             StrategyFactory.create_strategy('bollinger', num_std=-1)
 
     def test_get_strategy_name(self):
