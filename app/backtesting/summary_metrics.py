@@ -105,6 +105,7 @@ class SummaryMetrics:
 
         return round(max_drawdown, 2), round(maximum_drawdown_percentage, 2)
 
+    # NOTE: Now used for now
     def calculate_max_consecutive(self, win=True):
         """Calculate maximum consecutive wins or losses."""
         if not self._has_trades():
