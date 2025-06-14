@@ -13,7 +13,7 @@ from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_da
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.strategy_factory import create_strategy, get_strategy_name
-from app.backtesting.summary_metrics import calculate_summary_metrics, print_summary_metrics
+from app.backtesting.summary_metrics import SummaryMetrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR, CACHE_DIR
@@ -254,12 +254,13 @@ class MassTester:
             trades_with_metrics_list.append(trade_with_metrics)
 
         if trades_with_metrics_list:
-            summary_metrics = calculate_summary_metrics(trades_with_metrics_list)
+            metrics = SummaryMetrics(trades_with_metrics_list)
+            summary_metrics = metrics.calculate_all_metrics()
             if verbose:
                 original_stdout = sys.stdout
                 string_io = io.StringIO()
                 sys.stdout = string_io
-                print_summary_metrics(summary_metrics)
+                SummaryMetrics.print_summary_metrics(summary_metrics)
                 sys.stdout = original_stdout
                 output_buffer.append(string_io.getvalue())
 
