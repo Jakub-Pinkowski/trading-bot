@@ -8,19 +8,28 @@ def main():
     # Initialize StrategyAnalyzer
     analyzer = StrategyAnalyzer()
 
-    # Get top strategies for a profit factor for a specific timeframe
+    # Get top strategies for a profit factor for a specific timeframe (weighted)
     top_profit_factor_1h = analyzer.get_top_strategies(metric='profit_factor',
                                                        min_trades=30,
                                                        limit=30,
                                                        aggregate=True,
-                                                       interval='1h')
+                                                       interval='1h',
+                                                       weighted=True)
 
-    # Get top strategies for a total return for a specific timeframe
-    top_profit_factor_1h = analyzer.get_top_strategies(metric='total_return_percentage_of_margin',
+    # Get top strategies for a profit factor for a specific timeframe (simple)
+    top_profit_factor_1h = analyzer.get_top_strategies(metric='profit_factor',
                                                        min_trades=30,
                                                        limit=30,
                                                        aggregate=True,
-                                                       interval='1h')
+                                                       interval='1h',
+                                                       weighted=False)
+
+    # Get top strategies for a total return for a specific timeframe
+    # top_profit_factor_1h = analyzer.get_top_strategies(metric='total_return_percentage_of_margin',
+    #                                                    min_trades=30,
+    #                                                    limit=30,
+    #                                                    aggregate=True,
+    #                                                    interval='1h')
 
 
 if __name__ == "__main__":

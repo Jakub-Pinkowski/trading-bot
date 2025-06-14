@@ -123,56 +123,110 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
     @patch('pandas.read_parquet')
     def test_aggregate_strategies_basic(self, mock_read_parquet):
-        """Test basic aggregation of strategies."""
+        """Test basic aggregation of strategies with both weighted and non-weighted approaches."""
         # Setup mock
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test aggregation
-        aggregated = analyzer.aggregate_strategies()
+        # Test weighted aggregation (default)
+        weighted_aggregated = analyzer.aggregate_strategies(weighted=True)
 
-        # Verify results
-        self.assertEqual(len(aggregated), 2)  # Two strategies
-        self.assertEqual(aggregated['strategy'].tolist(), ['Strategy1', 'Strategy2'])
+        # Verify results for weighted aggregation
+        self.assertEqual(len(weighted_aggregated), 2)  # Two strategies
+        self.assertEqual(weighted_aggregated['strategy'].tolist(), ['Strategy1', 'Strategy2'])
 
         # Check that symbol_count and interval_count are calculated correctly
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy1', 'symbol_count'].iloc[0], 2)
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy2', 'symbol_count'].iloc[0], 2)
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy1', 'interval_count'].iloc[0], 1)
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy2', 'interval_count'].iloc[0], 1)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy1', 'symbol_count'].iloc[0], 2)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy2', 'symbol_count'].iloc[0], 2)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy1', 'interval_count'].iloc[0], 1)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy2', 'interval_count'].iloc[0], 1)
 
         # Check that total_trades is summed correctly
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy1', 'total_trades'].iloc[0], 25)
-        self.assertEqual(aggregated.loc[aggregated['strategy'] == 'Strategy2', 'total_trades'].iloc[0], 45)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy1', 'total_trades'].iloc[0], 25)
+        self.assertEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy2', 'total_trades'].iloc[0], 45)
+
+        # Test non-weighted aggregation
+        non_weighted_aggregated = analyzer.aggregate_strategies(weighted=False)
+
+        # Verify results for non-weighted aggregation
+        self.assertEqual(len(non_weighted_aggregated), 2)  # Two strategies
+        self.assertEqual(non_weighted_aggregated['strategy'].tolist(), ['Strategy1', 'Strategy2'])
+
+        # Check that basic metrics are the same for both approaches
+        self.assertEqual(
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy1', 'symbol_count'].iloc[0], 2)
+        self.assertEqual(
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy2', 'symbol_count'].iloc[0], 2)
+        self.assertEqual(
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy1', 'total_trades'].iloc[0], 25)
+        self.assertEqual(
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy2', 'total_trades'].iloc[0], 45)
+
+        # Verify that some metrics are different between weighted and non-weighted approaches
+        # For example, win_rate should be calculated differently
+        self.assertNotEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy1', 'win_rate'].iloc[0],
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy1', 'win_rate'].iloc[0]
+        )
 
     @patch('pandas.read_parquet')
     def test_aggregate_strategies_with_filters(self, mock_read_parquet):
-        """Test aggregation of strategies with filters."""
+        """Test aggregation of strategies with filters for both weighted and non-weighted approaches."""
         # Setup mock
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test aggregation with min_trades filter
-        aggregated = analyzer.aggregate_strategies(min_trades=20)
-        self.assertEqual(len(aggregated), 1)  # Only Strategy2 has all rows with >= 20 trades
+        # Test weighted aggregation with min_trades filter
+        weighted_aggregated = analyzer.aggregate_strategies(min_trades=20, weighted=True)
+        self.assertEqual(len(weighted_aggregated), 1)  # Only Strategy2 has all rows with >= 20 trades
 
-        # Test aggregation with interval filter
-        aggregated = analyzer.aggregate_strategies(interval='1d')
-        self.assertEqual(len(aggregated), 1)  # Only Strategy1 has 1d interval
-        self.assertEqual(aggregated['strategy'].iloc[0], 'Strategy1')
+        # Test non-weighted aggregation with min_trades filter
+        non_weighted_aggregated = analyzer.aggregate_strategies(min_trades=20, weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 1)  # Only Strategy2 has all rows with >= 20 trades
 
-        # Test aggregation with symbol filter
-        aggregated = analyzer.aggregate_strategies(symbol='ES')
-        self.assertEqual(len(aggregated), 2)  # Both strategies have ES
+        # Verify that some metrics are different between weighted and non-weighted approaches
+        self.assertNotEqual(
+            weighted_aggregated.loc[weighted_aggregated['strategy'] == 'Strategy2', 'win_rate'].iloc[0],
+            non_weighted_aggregated.loc[non_weighted_aggregated['strategy'] == 'Strategy2', 'win_rate'].iloc[0]
+        )
 
-        # Test aggregation with multiple filters
-        aggregated = analyzer.aggregate_strategies(min_trades=20, interval='4h')
-        self.assertEqual(len(aggregated), 1)  # Only Strategy2 has 4h interval with >= 20 trades
-        self.assertEqual(aggregated['strategy'].iloc[0], 'Strategy2')
+        # Test weighted aggregation with interval filter
+        weighted_aggregated = analyzer.aggregate_strategies(interval='1d', weighted=True)
+        self.assertEqual(len(weighted_aggregated), 1)  # Only Strategy1 has 1d interval
+        self.assertEqual(weighted_aggregated['strategy'].iloc[0], 'Strategy1')
+
+        # Test non-weighted aggregation with interval filter
+        non_weighted_aggregated = analyzer.aggregate_strategies(interval='1d', weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 1)  # Only Strategy1 has 1d interval
+        self.assertEqual(non_weighted_aggregated['strategy'].iloc[0], 'Strategy1')
+
+        # Test weighted aggregation with symbol filter
+        weighted_aggregated = analyzer.aggregate_strategies(symbol='ES', weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Both strategies have ES
+
+        # Test non-weighted aggregation with symbol filter
+        non_weighted_aggregated = analyzer.aggregate_strategies(symbol='ES', weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 2)  # Both strategies have ES
+
+        # Test weighted aggregation with multiple filters
+        weighted_aggregated = analyzer.aggregate_strategies(min_trades=20, interval='4h', weighted=True)
+        self.assertEqual(len(weighted_aggregated), 1)  # Only Strategy2 has 4h interval with >= 20 trades
+        self.assertEqual(weighted_aggregated['strategy'].iloc[0], 'Strategy2')
+
+        # Test non-weighted aggregation with multiple filters
+        non_weighted_aggregated = analyzer.aggregate_strategies(min_trades=20, interval='4h', weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 1)  # Only Strategy2 has 4h interval with >= 20 trades
+        self.assertEqual(non_weighted_aggregated['strategy'].iloc[0], 'Strategy2')
 
     @patch('pandas.read_parquet')
     def test_get_top_strategies_no_results(self, mock_read_parquet):
@@ -190,66 +244,127 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('pandas.read_parquet')
     @patch('app.backtesting.strategy_analysis.StrategyAnalyzer.save_results_to_csv')
     def test_get_top_strategies_basic(self, mock_save_results, mock_read_parquet):
-        """Test basic functionality of get_top_strategies."""
+        """Test basic functionality of get_top_strategies with both weighted and non-weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
+        mock_save_results.reset_mock()  # Reset mock to ensure clean state
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test getting top strategies by win_rate
-        top_strategies = analyzer.get_top_strategies('win_rate', 0)
+        # Test getting top strategies by win_rate with weighted=True (default)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=True)
 
-        # Verify results
-        self.assertEqual(len(top_strategies), 4)
-        self.assertEqual(top_strategies.iloc[0]['win_rate'], 70.0)  # Highest win_rate first
+        # Verify results for weighted approach
+        self.assertEqual(len(weighted_top_strategies), 4)
+        self.assertEqual(weighted_top_strategies.iloc[0]['win_rate'], 70.0)  # Highest win_rate first
 
-        # Verify save_results_to_csv was called
+        # Verify save_results_to_csv was called with weighted=True
         mock_save_results.assert_called_once()
+        mock_save_results.reset_mock()  # Reset mock for next test
+
+        # Test getting top strategies by win_rate with weighted=False
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=False)
+
+        # Verify results for non-weighted approach
+        self.assertEqual(len(non_weighted_top_strategies), 4)
+        self.assertEqual(non_weighted_top_strategies.iloc[0]['win_rate'], 70.0)  # Highest win_rate first
+
+        # Verify save_results_to_csv was called with weighted=False
+        mock_save_results.assert_called_once()
+
+        # Compare results between weighted and non-weighted approaches
+        # For individual strategies (not aggregated), the results should be the same
+        pd.testing.assert_frame_equal(weighted_top_strategies, non_weighted_top_strategies)
+
+        # But when aggregated, they should be different
+        mock_save_results.reset_mock()
+        weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=True)
+        mock_save_results.reset_mock()
+        non_weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=False)
+
+        # Verify that the aggregated results are different
+        self.assertFalse(weighted_aggregated.equals(non_weighted_aggregated))
 
     @patch('pandas.read_parquet')
     @patch('app.backtesting.strategy_analysis.StrategyAnalyzer.save_results_to_csv')
     def test_get_top_strategies_with_filters(self, mock_save_results, mock_read_parquet):
-        """Test get_top_strategies with various filters."""
+        """Test get_top_strategies with various filters for both weighted and non-weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test with min_trades filter
-        top_strategies = analyzer.get_top_strategies('win_rate', 20)
-        self.assertEqual(len(top_strategies), 2)  # Only rows with >= 20 trades
+        # Test with min_trades filter (weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=True)
+        self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with >= 20 trades
 
-        # Test with aggregate=True
-        top_strategies = analyzer.get_top_strategies('win_rate', 0, aggregate=True)
-        self.assertEqual(len(top_strategies), 2)  # Aggregated to 2 strategies
+        # Test with min_trades filter (weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=False)
+        self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with >= 20 trades
 
-        # Test with interval filter
-        top_strategies = analyzer.get_top_strategies('win_rate', 0, interval='1d')
-        self.assertEqual(len(top_strategies), 2)  # Only 1d interval
+        # Test with aggregate=True (weighted=True)
+        weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Aggregated to 2 strategies
 
-        # Test with symbol filter
-        top_strategies = analyzer.get_top_strategies('win_rate', 0, symbol='ES')
-        self.assertEqual(len(top_strategies), 2)  # Only ES symbol
+        # Test with aggregate=True (weighted=False)
+        non_weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 2)  # Aggregated to 2 strategies
 
-        # Test with multiple filters
-        top_strategies = analyzer.get_top_strategies('win_rate', 0, interval='4h', symbol='NQ')
-        self.assertEqual(len(top_strategies), 1)  # Only 4h interval and NQ symbol
+        # Verify that the aggregated results are different between weighted and non-weighted
+        self.assertFalse(weighted_aggregated.equals(non_weighted_aggregated))
+
+        # Test with interval filter (weighted=True)
+        weighted_interval = analyzer.get_top_strategies('win_rate', 0, interval='1d', weighted=True)
+        self.assertEqual(len(weighted_interval), 2)  # Only 1d interval
+
+        # Test with interval filter (weighted=False)
+        non_weighted_interval = analyzer.get_top_strategies('win_rate', 0, interval='1d', weighted=False)
+        self.assertEqual(len(non_weighted_interval), 2)  # Only 1d interval
+
+        # Test with symbol filter (weighted=True)
+        weighted_symbol = analyzer.get_top_strategies('win_rate', 0, symbol='ES', weighted=True)
+        self.assertEqual(len(weighted_symbol), 2)  # Only ES symbol
+
+        # Test with symbol filter (weighted=False)
+        non_weighted_symbol = analyzer.get_top_strategies('win_rate', 0, symbol='ES', weighted=False)
+        self.assertEqual(len(non_weighted_symbol), 2)  # Only ES symbol
+
+        # Test with multiple filters (weighted=True)
+        weighted_multiple = analyzer.get_top_strategies('win_rate', 0, interval='4h', symbol='NQ', weighted=True)
+        self.assertEqual(len(weighted_multiple), 1)  # Only 4h interval and NQ symbol
+
+        # Test with multiple filters (weighted=False)
+        non_weighted_multiple = analyzer.get_top_strategies('win_rate', 0, interval='4h', symbol='NQ', weighted=False)
+        self.assertEqual(len(non_weighted_multiple), 1)  # Only 4h interval and NQ symbol
 
     @patch('pandas.read_parquet')
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_basic(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test basic functionality of save_results_to_csv."""
+        """Test basic functionality of save_results_to_csv with both weighted and non-weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test saving results
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None)
+        # Test saving results with weighted=True
+        mock_to_csv.reset_mock()
+        mock_makedirs.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+
+        # Verify os.makedirs was called
+        mock_makedirs.assert_called_once()
+
+        # Verify to_csv was called
+        mock_to_csv.assert_called_once()
+
+        # Test saving results with weighted=False
+        mock_to_csv.reset_mock()
+        mock_makedirs.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
 
         # Verify os.makedirs was called
         mock_makedirs.assert_called_once()
@@ -274,15 +389,23 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_with_formatting(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test save_results_to_csv with column formatting."""
+        """Test save_results_to_csv with column formatting for both weighted and non-weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test saving results
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None)
+        # Test saving results with weighted=True
+        mock_to_csv.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+
+        # Verify to_csv was called
+        mock_to_csv.assert_called_once()
+
+        # Test saving results with weighted=False
+        mock_to_csv.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
 
         # Verify to_csv was called
         mock_to_csv.assert_called_once()
@@ -294,7 +417,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_filename_generation(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test filename generation in save_results_to_csv."""
+        """Test filename generation in save_results_to_csv with both weighted and non-weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
@@ -304,20 +427,37 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Since we can't easily access the filename in the mock,
         # we'll use a different approach to test filename generation
 
-        # Test with different parameters
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None)
+        # Test with different parameters and weighted=True
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, True, None, None)
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, True, None, None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, '1d', None)
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, '1d', None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, 'ES')
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, 'ES', weighted=True)
+        mock_to_csv.assert_called_once()
+        mock_to_csv.reset_mock()
+
+        # Test with different parameters and weighted=False
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
+        mock_to_csv.assert_called_once()
+        mock_to_csv.reset_mock()
+
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, True, None, None, weighted=False)
+        mock_to_csv.assert_called_once()
+        mock_to_csv.reset_mock()
+
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, '1d', None, weighted=False)
+        mock_to_csv.assert_called_once()
+        mock_to_csv.reset_mock()
+
+        analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, 'ES', weighted=False)
         mock_to_csv.assert_called_once()
 
         # Verify that the method completed without errors for all parameter combinations
@@ -326,15 +466,23 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_with_none_df_to_save(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test save_results_to_csv when df_to_save is None but results_df is available."""
+        """Test save_results_to_csv when df_to_save is None but results_df is available for both weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test saving results with df_to_save=None
-        analyzer.save_results_to_csv('win_rate', 10, None, False, None, None)
+        # Test saving results with df_to_save=None and weighted=True
+        mock_to_csv.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, None, False, None, None, weighted=True)
+
+        # Verify to_csv was called (using results_df instead)
+        mock_to_csv.assert_called_once()
+
+        # Test saving results with df_to_save=None and weighted=False
+        mock_to_csv.reset_mock()
+        analyzer.save_results_to_csv('win_rate', 10, None, False, None, None, weighted=False)
 
         # Verify to_csv was called (using results_df instead)
         mock_to_csv.assert_called_once()
@@ -343,7 +491,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_exception(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test exception handling in save_results_to_csv."""
+        """Test exception handling in save_results_to_csv for both weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
         mock_to_csv.side_effect = Exception("CSV write error")
@@ -351,9 +499,20 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test that the exception is propagated
+        # Test that the exception is propagated with weighted=True
         with self.assertRaises(Exception):
-            analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None)
+            analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+
+        # Verify that makedirs was called before the exception
+        mock_makedirs.assert_called_once()
+        mock_makedirs.reset_mock()
+
+        # Reset the side_effect for the next test
+        mock_to_csv.side_effect = Exception("CSV write error")
+
+        # Test that the exception is propagated with weighted=False
+        with self.assertRaises(Exception):
+            analyzer.save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
 
         # Verify that makedirs was called before the exception
         mock_makedirs.assert_called_once()
