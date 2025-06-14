@@ -12,6 +12,7 @@ logger = get_logger('backtesting/strategy_analysis')
 def _format_column_name(column_name):
     """Convert snake_case column names to Title Case with spaces for better readability.
     Also provides shorter names for specific long column names."""
+
     # Special cases for very long column names
     column_name_mapping = {
         'average_trade_return_percentage_of_margin': 'avg_return_%',
