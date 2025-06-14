@@ -86,14 +86,14 @@ class BaseStrategy:
     def _handle_trailing_stop(self, idx, price_high, price_low):
         """Manage trailing stop trigger and update logic."""
 
-        # First check if a trailing stop has been triggered
+        # First, check if a trailing stop has been triggered
         if self.position is not None and self.trailing_stop is not None:
             if self.position == 1 and price_low <= self.trailing_stop:
                 self._close_position(idx, self.trailing_stop, switch=False)
-                return  # Exit early if position is closed
+                return  # Exit early if the position is closed
             elif self.position == -1 and price_high >= self.trailing_stop:
                 self._close_position(idx, self.trailing_stop, switch=False)
-                return  # Exit early if position is closed
+                return  # Exit early if the position is closed
 
         # Only update trailing stop if position wasn't closed
         if self.position is not None and self.trailing_stop is not None:
