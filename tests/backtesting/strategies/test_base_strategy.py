@@ -490,19 +490,18 @@ class TestBaseStrategy:
         # Verify the trade details
         assert trade['side'] == 'long'
 
-        # The key test: verify that the trailing stop was updated before it was triggered
-        # The trailing stop is updated based on the high price of the current bar,
-        # but the check is against the low price of the same bar using the trailing stop from the previous bar.
-        # In this case, the trailing stop from bar 2 (115.0 * 0.98 = 112.7) is used for the check in bar 3,
-        # and since the low of bar 3 (80.0) is below this stop, the position is closed at 112.7.
-        expected_stop_price = round(115.0 * 0.98, 2)  # 112.7
+        # The key test: verify that the trailing stop is checked first before being updated
+        # With the sequential processing approach, the trailing stop from bar 1 (100.0 * 0.98 = 98.0) 
+        # is checked against the low of bar 2 (90.0), which would trigger the stop.
+        # The position should be closed at the trailing stop price of 98.0.
+        expected_stop_price = round(100.0 * 0.98, 2)  # 98.0
         assert trade[
                    'exit_price'] == expected_stop_price, f"Expected exit price to be {expected_stop_price}, got {trade['exit_price']}"
 
-        # This confirms that our fix to the _handle_trailing_stop method is working correctly:
-        # 1. The trailing stop is updated based on the high price of the current bar
-        # 2. Then it's checked against the low price of the same bar
-        # 3. If the low price is below the trailing stop, the position is closed at the trailing stop price
+        # This confirms that our implementation of the _handle_trailing_stop method is working correctly:
+        # 1. First check if a trailing stop has been triggered using the current trailing stop level
+        # 2. Exit early if a position is closed due to a trailing stop
+        # 3. Only update the trailing stop if the position wasn't closed
 
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices."""
