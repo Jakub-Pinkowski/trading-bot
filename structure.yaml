@@ -55,9 +55,7 @@ trading-bot/
 │   │   │   └── indicators_utils.py                # Indicators utilities
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
-│   │   │   ├── connection_utils.py               # Connection utilities
 │   │   │   ├── contracts_utils.py                # Contracts utilities
-│   │   │   ├── ibkr_utils.py                     # Generic IBKR utilities
 │   │   │   └── orders_utils.py                   # Orders utilities
 │   │   ├── routes_utils/
 │   │   │   └── webhook_utils.py                  # Webhook utilities
