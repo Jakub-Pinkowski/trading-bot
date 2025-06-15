@@ -136,7 +136,6 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Developer
-# TODO [HIGH]: Fix PyCharm tests not triggering on commit
 # TODO [MEDIUM]: Extract all mathematical calculations like safe divide etc. into dedicated utils folder
 # TODO [LOW]: Remove helping comments and leave only those that actually bring value
 # TODO [LOW]: Rewrite IBKR logic using classes
