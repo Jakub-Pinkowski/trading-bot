@@ -56,7 +56,8 @@ class StrategyAnalyzer:
         aggregate=False,
         interval=None,
         symbol=None,
-        weighted=True
+        weighted=True,
+        min_slippage=None
     ):
         """  Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
@@ -65,7 +66,7 @@ class StrategyAnalyzer:
 
         if aggregate:
             # Get aggregated strategies
-            df = self._aggregate_strategies(min_trades, interval, symbol, weighted)
+            df = self._aggregate_strategies(min_trades, interval, symbol, weighted, min_slippage)
         else:
             # Filter by minimum trades
             df = self.results_df[self.results_df['total_trades'] >= min_trades]
@@ -77,6 +78,11 @@ class StrategyAnalyzer:
             # Filter by symbol if provided
             if symbol:
                 df = df[df['symbol'] == symbol]
+
+            # Filter by minimum slippage if provided
+            if min_slippage is not None:
+                # Extract slippage from the strategy name
+                df = df[df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
 
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
@@ -109,7 +115,7 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def _aggregate_strategies(self, min_trades=0, interval=None, symbol=None, weighted=True):
+    def _aggregate_strategies(self, min_trades=0, interval=None, symbol=None, weighted=True, min_slippage=None):
         """  Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
@@ -125,6 +131,12 @@ class StrategyAnalyzer:
         # Filter by symbol if provided
         if symbol:
             filtered_df = filtered_df[filtered_df['symbol'] == symbol]
+
+        # Filter by minimum slippage if provided
+        if min_slippage is not None:
+            # Extract slippage from strategy name
+            filtered_df = filtered_df[
+                filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
 
         # Group by strategy
         grouped = filtered_df.groupby('strategy')

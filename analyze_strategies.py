@@ -10,26 +10,29 @@ def main():
 
     # Get top strategies for a profit factor for a specific timeframe (weighted)
     top_profit_factor_1h_weighted = analyzer.get_top_strategies(metric='profit_factor',
-                                                       min_trades=30,
+                                                                min_trades=50,
                                                        limit=30,
                                                        aggregate=True,
                                                        interval='1h',
-                                                       weighted=True)
+                                                                weighted=True,
+                                                                min_slippage=0.05)
 
     # Get top strategies for a profit factor for a specific timeframe (simple)
     top_profit_factor_1h = analyzer.get_top_strategies(metric='profit_factor',
-                                                       min_trades=30,
+                                                       min_trades=50,
                                                        limit=30,
                                                        aggregate=True,
                                                        interval='1h',
-                                                       weighted=False)
+                                                       weighted=False,
+                                                       min_slippage=0.05)
 
     # Get top strategies for a total return for a specific timeframe
     # top_profit_factor_1h = analyzer.get_top_strategies(metric='total_return_percentage_of_margin',
     #                                                    min_trades=30,
     #                                                    limit=30,
     #                                                    aggregate=True,
-    #                                                    interval='1h')
+    #                                                    interval='1h',
+    #                                                    min_slippage=0.1)
 
 
 if __name__ == "__main__":
