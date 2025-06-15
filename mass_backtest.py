@@ -13,41 +13,40 @@ def main():
         intervals=['5m', '15m', '30m', '1h', '2h', '4h', '1d']
     )
 
-    # Add RSI strategy
+    # RSI is a momentum oscillator that measures the speed and change of price movements
     tester.add_rsi_tests(
-        rsi_periods=[14],
-        lower_thresholds=[20, 25, 30, 35],
-        upper_thresholds=[65, 70, 75, 80],
+        rsi_periods=[7, 14, 21],
+        lower_thresholds=[20, 25, 30, 35, 40],
+        upper_thresholds=[60, 65, 70, 75, 80],
         rollovers=[False],
-        trailing_stops=[None, 2],
+        trailing_stops=[None, 1, 2],
         slippages=[0, 0.05, 0.1]
     )
 
-    # Add EMA Crossover strategy
+    # EMA Crossover uses two moving averages to identify trend changes
     tester.add_ema_crossover_tests(
-        ema_shorts=[9, 10],
-        ema_longs=[21],
-        rollovers=[False, True],
-        trailing_stops=[None, 2],
+        ema_shorts=[5, 8, 9, 10, 12],
+        ema_longs=[20, 21, 25, 30, 50],
+        rollovers=[False],
+        trailing_stops=[None, 1, 2],
         slippages=[0, 0.05, 0.1]
     )
 
-    # Add Bollinger Bands strategy
     tester.add_bollinger_bands_tests(
-        periods=[22],
-        num_stds=[2],
+        periods=[10, 20, 22, 30, 40],
+        num_stds=[1.5, 2, 2.5, 3],
         rollovers=[False],
-        trailing_stops=[None, 2],
+        trailing_stops=[None, 1, 2],
         slippages=[0, 0.05, 0.1]
     )
 
-    # Add MACD strategy
+    # MACD identifies changes in momentum, direction, and strength
     tester.add_macd_tests(
-        fast_periods=[12],
-        slow_periods=[26],
-        signal_periods=[9],
+        fast_periods=[8, 10, 12, 15],
+        slow_periods=[21, 26, 30, 35],
+        signal_periods=[5, 7, 9, 12],
         rollovers=[False],
-        trailing_stops=[None, 2],
+        trailing_stops=[None, 1, 2],
         slippages=[0, 0.05, 0.1]
     )
 
