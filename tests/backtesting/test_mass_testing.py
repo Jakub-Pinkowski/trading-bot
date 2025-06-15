@@ -29,7 +29,7 @@ class TestMassTester:
             mock_create.return_value = mock_strategy
 
             # Call the method under test
-            tester.add_strategy_tests('test_strategy', param_grid)
+            tester._add_strategy_tests('test_strategy', param_grid)
 
             # Calculate expected number of strategies
             expected_count = len(param_grid['param1']) * len(param_grid['param2']) * len(param_grid['param3'])
@@ -61,15 +61,15 @@ class TestMassTester:
             mock_create.return_value = mock_strategy
 
             # Call the method under test
-            tester.add_strategy_tests('test_strategy', param_grid)
+            tester._add_strategy_tests('test_strategy', param_grid)
 
             # Verify that empty parameter lists are replaced with [None]
             assert param_grid['param2'] == [None]
 
-            # Calculate expected number of strategies
+            # Calculate the expected number of strategies
             expected_count = len(param_grid['param1']) * len(param_grid['param2']) * len(param_grid['param3'])
 
-            # Verify the correct number of strategies were added
+            # Verify the correct number of strategies was added
             assert len(tester.strategies) == expected_count
 
     def test_add_rsi_tests(self):
@@ -85,7 +85,7 @@ class TestMassTester:
         slippages = [0.0]
 
         # Mock the add_strategy_tests method
-        with patch.object(tester, 'add_strategy_tests') as mock_add_strategy:
+        with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
             tester.add_rsi_tests(rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages)
 
             # Verify add_strategy_tests was called with correct parameters
@@ -113,7 +113,7 @@ class TestMassTester:
         slippages = [0.0]
 
         # Mock the add_strategy_tests method
-        with patch.object(tester, 'add_strategy_tests') as mock_add_strategy:
+        with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
             tester.add_ema_crossover_tests(ema_shorts, ema_longs, rollovers, trailing_stops, slippages)
 
             # Verify add_strategy_tests was called with correct parameters
@@ -218,7 +218,7 @@ class TestMassTester:
         slippages = [0.0]
 
         # Mock the add_strategy_tests method
-        with patch.object(tester, 'add_strategy_tests') as mock_add_strategy:
+        with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
             tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
 
             # Verify add_strategy_tests was called with correct parameters
@@ -308,7 +308,7 @@ class TestMassTester:
 
         # Create a tester with a strategy
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
-        tester.add_strategy_tests(
+        tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )
@@ -366,7 +366,7 @@ class TestMassTester:
 
         # Create a tester with a strategy
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
-        tester.add_strategy_tests(
+        tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )
@@ -402,7 +402,7 @@ class TestMassTester:
         mock_test_exists.return_value = True  # All tests already exist
 
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
-        tester.add_strategy_tests(
+        tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )
@@ -426,7 +426,7 @@ class TestMassTester:
         mock_get_name.return_value = strategy_name
 
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
-        tester.add_strategy_tests(
+        tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
         )

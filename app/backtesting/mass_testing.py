@@ -67,31 +67,9 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    def add_strategy_tests(self, strategy_type, param_grid):
-        """ Generic method for adding strategy tests with all combinations of given parameters. """
-
-        # Ensure every parameter has at least one value. Use [None] if empty
-        for param_name, values_list in param_grid.items():
-            if not values_list:
-                param_grid[param_name] = [None]
-
-        # Extract the names of the parameters to preserve order.
-        param_names = list(param_grid.keys())
-
-        # Generate all possible combinations of parameter values using Cartesian product.
-        param_value_combinations = itertools.product(*(param_grid[param_name] for param_name in param_names))
-
-        # Loop over parameter values to create strategy instances and store them in self.strategies.
-        for param_values in param_value_combinations:
-            strategy_params = dict(zip(param_names, param_values))
-            strategy_name = get_strategy_name(strategy_type, **strategy_params)
-            strategy_instance = create_strategy(strategy_type, **strategy_params)
-
-            self.strategies.append((strategy_name, strategy_instance))
-
     # NOTE: Tested and approved
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
-        self.add_strategy_tests(
+        self._add_strategy_tests(
             strategy_type='rsi',
             param_grid={
                 'rsi_period': rsi_periods,
@@ -105,7 +83,7 @@ class MassTester:
 
     # NOTE: Tested and approved
     def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops, slippages=None):
-        self.add_strategy_tests(
+        self._add_strategy_tests(
             strategy_type='ema',
             param_grid={
                 'ema_short': ema_shorts,
@@ -118,7 +96,7 @@ class MassTester:
 
     # TODO [MEDIUM]: Still to be tested
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
-        self.add_strategy_tests(
+        self._add_strategy_tests(
             strategy_type='macd',
             param_grid={
                 'fast_period': fast_periods,
@@ -132,7 +110,7 @@ class MassTester:
 
     # TODO [MEDIUM]: Still to be tested
     def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
-        self.add_strategy_tests(
+        self._add_strategy_tests(
             strategy_type='bollinger',
             param_grid={
                 'period': periods,
@@ -217,6 +195,28 @@ class MassTester:
         return self.results
 
     # --- Private methods ---
+    def _add_strategy_tests(self, strategy_type, param_grid):
+        """ Generic method for adding strategy tests with all combinations of given parameters. """
+
+        # Ensure every parameter has at least one value. Use [None] if empty
+        for param_name, values_list in param_grid.items():
+            if not values_list:
+                param_grid[param_name] = [None]
+
+        # Extract the names of the parameters to preserve order.
+        param_names = list(param_grid.keys())
+
+        # Generate all possible combinations of parameter values using Cartesian product.
+        param_value_combinations = itertools.product(*(param_grid[param_name] for param_name in param_names))
+
+        # Loop over parameter values to create strategy instances and store them in self.strategies.
+        for param_values in param_value_combinations:
+            strategy_params = dict(zip(param_names, param_values))
+            strategy_name = get_strategy_name(strategy_type, **strategy_params)
+            strategy_instance = create_strategy(strategy_type, **strategy_params)
+
+            self.strategies.append((strategy_name, strategy_instance))
+
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""
         tested_month, symbol, interval, strategy_name, strategy_instance, verbose = test_params
