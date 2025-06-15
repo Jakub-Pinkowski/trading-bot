@@ -35,7 +35,7 @@ class TestCalculateMaxDrawdown:
     def test_empty_trades_list(self):
         """Test calculation of max drawdown with an empty trades list."""
         metrics = SummaryMetrics([])
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 0
         assert max_drawdown_pct == 0
 
@@ -43,7 +43,7 @@ class TestCalculateMaxDrawdown:
         """Test calculation of max drawdown with a single positive trade."""
         trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
         metrics = SummaryMetrics([trade])
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 0
         assert max_drawdown_pct == 0
 
@@ -51,7 +51,7 @@ class TestCalculateMaxDrawdown:
         """Test calculation of max drawdown with a single negative trade."""
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         metrics = SummaryMetrics([trade])
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         # For a single negative trade, the peak is initialized to the first value (which is negative)
         # Since there are no further values to compare against, the drawdown remains 0
         assert max_drawdown == 0
@@ -65,7 +65,7 @@ class TestCalculateMaxDrawdown:
             create_sample_trade(net_pnl=300.0, return_percentage=3.0)
         ]
         metrics = SummaryMetrics(trades)
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 0
         assert max_drawdown_pct == 0
 
@@ -77,9 +77,9 @@ class TestCalculateMaxDrawdown:
             create_sample_trade(net_pnl=200.0, return_percentage=2.0)
         ]
         metrics = SummaryMetrics(trades)
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max__drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 150.0
-        assert max_drawdown_pct == 1.5
+        assert max__drawdown_pct == 1.5
 
     def test_complex_drawdown_scenario(self):
         """Test calculation of max drawdown with a complex sequence of trades."""
@@ -91,7 +91,7 @@ class TestCalculateMaxDrawdown:
             create_sample_trade(net_pnl=150.0, return_percentage=1.5)  # Cumulative: 100, 1%
         ]
         metrics = SummaryMetrics(trades)
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 350.0  # From peak of 300 to low of -50
         assert max_drawdown_pct == 3.5  # From peak of 3% to low of -0.5%
 
@@ -105,7 +105,7 @@ class TestCalculateMaxDrawdown:
             create_sample_trade(net_pnl=100.0, return_percentage=1.0)  # Cumulative: 290, 2.9%
         ]
         metrics = SummaryMetrics(trades)
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 110.0  # From peak of 100 to low of -10
         assert max_drawdown_pct == 1.1  # From peak of 1% to low of -0.1%
 
@@ -119,7 +119,7 @@ class TestCalculateMaxDrawdown:
             create_sample_trade(net_pnl=300.0, return_percentage=3.0)  # Cumulative: 400, 4%
         ]
         metrics = SummaryMetrics(trades)
-        max_drawdown, max_drawdown_pct = metrics.calculate_max_drawdown()
+        max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 150.0  # The larger of the two drawdowns
         assert max_drawdown_pct == 1.5  # The larger of the two drawdowns in percentage
 
@@ -612,8 +612,8 @@ class TestCalculateMaxConsecutive:
     def test_empty_trades_list(self):
         """Test calculation of max consecutive wins/losses with an empty trades list."""
         metrics = SummaryMetrics([])
-        max_consecutive_wins = metrics.calculate_max_consecutive(win=True)
-        max_consecutive_losses = metrics.calculate_max_consecutive(win=False)
+        max_consecutive_wins = metrics._calculate_max_consecutive(win=True)
+        max_consecutive_losses = metrics._calculate_max_consecutive(win=False)
         assert max_consecutive_wins == 0
         assert max_consecutive_losses == 0
 
@@ -621,14 +621,14 @@ class TestCalculateMaxConsecutive:
         """Test calculation of max consecutive wins with a single winning trade."""
         trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
         metrics = SummaryMetrics([trade])
-        max_consecutive_wins = metrics.calculate_max_consecutive(win=True)
+        max_consecutive_wins = metrics._calculate_max_consecutive(win=True)
         assert max_consecutive_wins == 1
 
     def test_single_trade_loss(self):
         """Test calculation of max consecutive losses with a single losing trade."""
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         metrics = SummaryMetrics([trade])
-        max_consecutive_losses = metrics.calculate_max_consecutive(win=False)
+        max_consecutive_losses = metrics._calculate_max_consecutive(win=False)
         assert max_consecutive_losses == 1
 
     def test_multiple_trades_consecutive_wins(self):
@@ -641,7 +641,7 @@ class TestCalculateMaxConsecutive:
             create_sample_trade(net_pnl=150.0, return_percentage=1.5)  # Win
         ]
         metrics = SummaryMetrics(trades)
-        max_consecutive_wins = metrics.calculate_max_consecutive(win=True)
+        max_consecutive_wins = metrics._calculate_max_consecutive(win=True)
         assert max_consecutive_wins == 2  # Two consecutive wins at the beginning and end
 
     def test_multiple_trades_consecutive_losses(self):
@@ -654,7 +654,7 @@ class TestCalculateMaxConsecutive:
             create_sample_trade(net_pnl=200.0, return_percentage=2.0)  # Win
         ]
         metrics = SummaryMetrics(trades)
-        max_consecutive_losses = metrics.calculate_max_consecutive(win=False)
+        max_consecutive_losses = metrics._calculate_max_consecutive(win=False)
         assert max_consecutive_losses == 3  # Three consecutive losses in the middle
 
     def test_trades_with_date_sorting(self):
@@ -692,11 +692,11 @@ class TestCalculateMaxConsecutive:
 
         # Test max consecutive wins
         metrics = SummaryMetrics(trades)
-        max_consecutive_wins = metrics.calculate_max_consecutive(win=True)
+        max_consecutive_wins = metrics._calculate_max_consecutive(win=True)
         assert max_consecutive_wins == 2  # Two consecutive wins at the beginning
 
         # Test max consecutive losses
-        max_consecutive_losses = metrics.calculate_max_consecutive(win=False)
+        max_consecutive_losses = metrics._calculate_max_consecutive(win=False)
         assert max_consecutive_losses == 2  # Two consecutive losses in the middle
 
 
@@ -704,16 +704,16 @@ class TestCalculateSharpeRatio:
     """Tests for the calculate_sharpe_ratio function."""
 
     def test_empty_trades_list(self):
-        """Test calculation of Sharpe ratio with an empty trades list."""
+        """Test calculation of a Sharpe ratio with an empty trades list."""
         metrics = SummaryMetrics([])
-        sharpe_ratio = metrics.calculate_sharpe_ratio()
+        sharpe_ratio = metrics._calculate_sharpe_ratio()
         assert sharpe_ratio == 0
 
     def test_single_trade(self):
-        """Test calculation of Sharpe ratio with a single trade."""
+        """Test calculation of a Sharpe ratio with a single trade."""
         trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
         metrics = SummaryMetrics([trade])
-        sharpe_ratio = metrics.calculate_sharpe_ratio()
+        sharpe_ratio = metrics._calculate_sharpe_ratio()
         assert sharpe_ratio == 0  # Need at least 2 trades for standard deviation
 
     def test_multiple_trades(self):
@@ -724,7 +724,7 @@ class TestCalculateSharpeRatio:
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
         ]
         metrics = SummaryMetrics(trades)
-        sharpe_ratio = metrics.calculate_sharpe_ratio()
+        sharpe_ratio = metrics._calculate_sharpe_ratio()
         assert isinstance(sharpe_ratio, float)
         assert sharpe_ratio != 0  # Should be a non-zero value
 
@@ -736,7 +736,7 @@ class TestCalculateSharpeRatio:
             create_sample_trade(net_pnl=100.0, return_percentage=1.0)
         ]
         metrics = SummaryMetrics(trades)
-        sharpe_ratio = metrics.calculate_sharpe_ratio()
+        sharpe_ratio = metrics._calculate_sharpe_ratio()
         assert sharpe_ratio == 0  # Should return 0 to avoid division by zero
 
     def test_with_risk_free_rate(self):
@@ -748,7 +748,7 @@ class TestCalculateSharpeRatio:
         ]
         risk_free_rate = 0.5  # 0.5%
         metrics = SummaryMetrics(trades)
-        sharpe_ratio = metrics.calculate_sharpe_ratio(risk_free_rate)
+        sharpe_ratio = metrics._calculate_sharpe_ratio(risk_free_rate)
 
         # Calculate expected value manually
         returns = [1.0, 2.0, 3.0]
@@ -766,7 +766,7 @@ class TestCalculateSortinoRatio:
     def test_empty_trades_list(self):
         """Test calculation of Sortino ratio with an empty trades list."""
         metrics = SummaryMetrics([])
-        sortino_ratio = metrics.calculate_sortino_ratio()
+        sortino_ratio = metrics._calculate_sortino_ratio()
         assert sortino_ratio == 0
 
     def test_no_negative_returns(self):
@@ -778,7 +778,7 @@ class TestCalculateSortinoRatio:
             create_sample_trade(net_pnl=300.0, return_percentage=2.0)
         ]
         metrics = SummaryMetrics(trades)
-        sortino_ratio = metrics.calculate_sortino_ratio()
+        sortino_ratio = metrics._calculate_sortino_ratio()
         assert sortino_ratio == float('inf')  # Should return infinity when there are no negative returns
 
     def test_zero_downside_deviation(self):
@@ -895,13 +895,13 @@ class TestCalculateSortinoRatio:
         with unittest.mock.patch('builtins.sum', side_effect=patched_sum):
             # Call the original function
             metrics = SummaryMetrics(trades)
-            sortino_ratio = metrics.calculate_sortino_ratio()
+            sortino_ratio = metrics._calculate_sortino_ratio()
 
             # Verify the result
             assert sortino_ratio == 0, "Sortino ratio should be 0 when downside_deviation is zero"
 
     def test_with_negative_returns(self):
-        """Test calculation of Sortino ratio with a mix of positive and negative returns."""
+        """Test calculation of a Sortino ratio with a mix of positive and negative returns."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),
@@ -909,7 +909,7 @@ class TestCalculateSortinoRatio:
             create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         ]
         metrics = SummaryMetrics(trades)
-        sortino_ratio = metrics.calculate_sortino_ratio()
+        sortino_ratio = metrics._calculate_sortino_ratio()
         assert isinstance(sortino_ratio, float)
         assert sortino_ratio != 0  # Should be a non-zero value
 
@@ -922,7 +922,7 @@ class TestCalculateSortinoRatio:
         ]
         risk_free_rate = 0.5  # 0.5%
         metrics = SummaryMetrics(trades)
-        sortino_ratio = metrics.calculate_sortino_ratio(risk_free_rate)
+        sortino_ratio = metrics._calculate_sortino_ratio(risk_free_rate)
         assert isinstance(sortino_ratio, float)
         # The actual value would depend on the implementation details
 
@@ -931,35 +931,35 @@ class TestCalculateCalmarRatio:
     """Tests for the calculate_calmar_ratio function."""
 
     def test_empty_trades_list(self):
-        """Test calculation of Calmar ratio with an empty trades list."""
+        """Test calculation of a Calmar ratio with an empty trades list."""
         metrics = SummaryMetrics([])
-        calmar_ratio = metrics.calculate_calmar_ratio()
+        calmar_ratio = metrics._calculate_calmar_ratio()
         assert calmar_ratio == 0
 
     def test_zero_drawdown(self):
-        """Test calculation of Calmar ratio when there is no drawdown."""
+        """Test calculation of a Calmar ratio when there is no drawdown."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),
             create_sample_trade(net_pnl=300.0, return_percentage=3.0)
         ]
         metrics = SummaryMetrics(trades)
-        calmar_ratio = metrics.calculate_calmar_ratio()
+        calmar_ratio = metrics._calculate_calmar_ratio()
         assert calmar_ratio == float('inf')  # Should return infinity when there is no drawdown
 
     def test_with_drawdown(self):
-        """Test calculation of Calmar ratio with a drawdown."""
+        """Test calculation of a Calmar ratio with a drawdown."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0)
         ]
         metrics = SummaryMetrics(trades)
-        calmar_ratio = metrics.calculate_calmar_ratio()
+        calmar_ratio = metrics._calculate_calmar_ratio()
 
         # Calculate expected value manually
         total_return = 1.0 + (-0.5) + 2.0
-        _, max_drawdown_pct = metrics.calculate_max_drawdown()
+        _, max_drawdown_pct = metrics._calculate_max_drawdown()
         expected_calmar = total_return / max_drawdown_pct if max_drawdown_pct > 0 else float('inf')
 
         assert calmar_ratio == expected_calmar
