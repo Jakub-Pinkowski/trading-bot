@@ -14,44 +14,45 @@ def main():
     )
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
-    tester.add_rsi_tests(
-        rsi_periods=[7, 14, 21],
-        lower_thresholds=[20, 25, 30, 35, 40],
-        upper_thresholds=[60, 65, 70, 75, 80],
-        rollovers=[False],
-        trailing_stops=[None, 1, 2],
-        slippages=[0, 0.05, 0.1]
-    )
-
-    # EMA Crossover uses two moving averages to identify trend changes
-    tester.add_ema_crossover_tests(
-        ema_shorts=[5, 8, 9, 10, 12],
-        ema_longs=[20, 21, 25, 30, 50],
-        rollovers=[False],
-        trailing_stops=[None, 1, 2],
-        slippages=[0, 0.05, 0.1]
-    )
-
-    # Bollinger Bands measure volatility and relative price levels
-    tester.add_bollinger_bands_tests(
-        periods=[10, 20, 22, 30, 40],
-        num_stds=[1.5, 2, 2.5, 3],
-        rollovers=[False],
-        trailing_stops=[None, 1, 2],
-        slippages=[0, 0.05, 0.1]
-    )
+    # tester.add_rsi_tests(
+    #     rsi_periods=[7, 14, 21],
+    #     lower_thresholds=[20, 25, 30, 35, 40],
+    #     upper_thresholds=[60, 65, 70, 75, 80],
+    #     rollovers=[False],
+    #     trailing_stops=[None, 1, 2],
+    #     slippages=[0, 0.05, 0.1]
+    # )
+    #
+    # # EMA Crossover uses two moving averages to identify trend changes
+    # tester.add_ema_crossover_tests(
+    #     ema_shorts=[5, 8, 9, 10, 12],
+    #     ema_longs=[20, 21, 25, 30, 50],
+    #     rollovers=[False],
+    #     trailing_stops=[None, 1, 2],
+    #     slippages=[0, 0.05, 0.1]
+    # )
+    #
+    # # Bollinger Bands measure volatility and relative price levels
+    # tester.add_bollinger_bands_tests(
+    #     periods=[10, 20, 22, 30, 40],
+    #     num_stds=[1.5, 2, 2.5, 3],
+    #     rollovers=[False],
+    #     trailing_stops=[None, 1, 2],
+    #     slippages=[0, 0.05, 0.1]
+    # )
 
     # MACD identifies changes in momentum, direction, and strength
     tester.add_macd_tests(
         fast_periods=[8, 10, 12, 15],
-        slow_periods=[21, 26, 30, 35],
-        signal_periods=[5, 7, 9, 12],
+        slow_periods=[21, 26, 28],
+        signal_periods=[5, 7],
         rollovers=[False],
         trailing_stops=[None, 1, 2],
         slippages=[0, 0.05, 0.1]
     )
 
     # Run all tests
+    # Set skip_existing=False to force re-running of all tests
     tester.run_tests(verbose=False, max_workers=None)
 
     end_time = time.time()

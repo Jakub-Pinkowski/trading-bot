@@ -3,6 +3,7 @@ import io
 import itertools
 import os
 import sys
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -121,14 +122,14 @@ class MassTester:
             }
         )
 
-    def run_tests(self, verbose=True, max_workers=None):
-        """  Run all tests with the configured parameters in parallel."""
+    def run_tests(self, verbose=True, max_workers=None, skip_existing=True):
+        """  Run all tests with the configured parameters in parallel. """
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
 
         # Load existing results to check for already run tests
-        existing_results = _load_existing_results()
+        existing_results = _load_existing_results() if skip_existing else pd.DataFrame()
 
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
         print(f'Found {total_combinations} potential test combinations...')
@@ -147,7 +148,11 @@ class MassTester:
 
                     for strategy_name, strategy_instance in self.strategies:
                         # Check if this test has already been run
-                        if _test_already_exists(existing_results, tested_month, symbol, interval, strategy_name):
+                        if skip_existing and _test_already_exists(existing_results,
+                                                                  tested_month,
+                                                                  symbol,
+                                                                  interval,
+                                                                  strategy_name):
                             if verbose:
                                 print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
                             skipped_combinations += 1
@@ -174,7 +179,18 @@ class MassTester:
             future_to_test = {executor.submit(self._run_single_test, test_params): test_params for test_params in
                               test_combinations}
 
+            total_tests = len(test_combinations)
+            completed_tests = 0
+            batch_start_time = time.time()
+
             for future in concurrent.futures.as_completed(future_to_test):
+                completed_tests += 1
+                if completed_tests % 100 == 0 or completed_tests == total_tests:
+                    current_time = time.time()
+                    elapsed_time = current_time - batch_start_time
+                    print(f'Progress: {completed_tests}/{total_tests} tests completed ({(completed_tests / total_tests * 100):.1f}%) - Time taken: {elapsed_time:.2f} seconds')
+                    batch_start_time = current_time
+
                 result = future.result()
                 if result:
                     # Print verbose output if available
