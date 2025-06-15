@@ -31,7 +31,8 @@ def safe_average(values, count=None):
     """
     if not values:
         return 0
-    count = count or len(values)
+    if count is None:
+        count = len(values)
     return sum(values) / count if count > 0 else 0
 
 
