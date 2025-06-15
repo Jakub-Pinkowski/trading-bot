@@ -252,7 +252,7 @@ class MassTester:
 
         trades_list = strategy_instance.run(df, switch_dates)
 
-        # Save caches only periodically (e.g., every 10 tests)
+        # Save caches only periodically
         # Add this as a class variable
         self.__class__.tests_completed = getattr(self.__class__, 'tests_completed', 0) + 1
         if self.__class__.tests_completed % 10 == 0:  # Adjust frequency as needed
