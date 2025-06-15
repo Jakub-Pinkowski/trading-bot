@@ -17,10 +17,8 @@ from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.summary_metrics import SummaryMetrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR, CACHE_DIR
-
-# Create a global lock file for coordinating cache saves
-CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "global_cache.lock")
+from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR,
+                    INDICATOR_CACHE_LOCK_FILE, DATAFRAME_CACHE_LOCK_FILE)
 
 logger = get_logger('backtesting/mass_testing')
 
@@ -254,16 +252,18 @@ class MassTester:
 
         trades_list = strategy_instance.run(df, switch_dates)
 
-        # Save the indicator and dataframe caches after each test
-        # This is important when running tests in parallel, as each process has its own cache
-        # Use a single lock for both cache operations to ensure atomicity
-        lock = FileLock(CACHE_LOCK_FILE, timeout=60)  # 60 seconds timeout
-        try:
-            with lock:
-                indicator_cache.save_cache()
-                dataframe_cache.save_cache()
-        except Exception as e:
-            logger.error(f"Failed to save caches: {e}")
+        # Save caches only periodically (e.g., every 10 tests)
+        # Add this as a class variable
+        self.__class__.tests_completed = getattr(self.__class__, 'tests_completed', 0) + 1
+        if self.__class__.tests_completed % 10 == 0:  # Adjust frequency as needed
+            # Use separate locks for indicator and dataframe caches to reduce contention
+            try:
+                with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
+                    indicator_cache.save_cache()
+                with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
+                    dataframe_cache.save_cache()
+            except Exception as e:
+                logger.error(f"Failed to save caches: {e}")
 
         trades_with_metrics_list = []
         for trade in trades_list:

@@ -31,6 +31,8 @@ HISTORICAL_DATA_DIR = os.path.join(BASE_DIR, "historical_data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
 CACHE_DIR = os.path.join(BACKTESTING_DATA_DIR, "cache")
+INDICATOR_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "indicator_cache.lock")
+DATAFRAME_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "dataframe_cache.lock")
 
 ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")

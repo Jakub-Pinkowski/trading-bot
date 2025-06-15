@@ -44,10 +44,10 @@ def main():
     # MACD identifies changes in momentum, direction, and strength
     tester.add_macd_tests(
         fast_periods=[8, 10, 12, 15],
-        slow_periods=[21, 26, 28],
-        signal_periods=[5, 7],
+        slow_periods=[21, 26, 30, 35],
+        signal_periods=[5, 7, 9, 12],
         rollovers=[False],
-        trailing_stops=[None, 1, 2],
+        trailing_stops=[None, 1, 1.5, 2],
         slippages=[0, 0.05, 0.1]
     )
 

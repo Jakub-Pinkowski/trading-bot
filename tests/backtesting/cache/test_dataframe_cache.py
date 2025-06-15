@@ -27,7 +27,7 @@ def test_dataframe_cache_instance():
     """Test that the dataframe_cache is properly initialized."""
     assert dataframe_cache.cache_name == "dataframe"
     assert dataframe_cache.cache_version == CACHE_VERSION
-    assert dataframe_cache.max_size == 100
+    assert dataframe_cache.max_size == 200
     assert dataframe_cache.max_age == 604800  # 7 days in seconds
 
 

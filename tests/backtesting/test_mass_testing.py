@@ -655,12 +655,16 @@ class TestMassTester:
         ]
 
         # Set up mocks file lock to raise an exception when used in a context manager
+        # This will affect both indicator and dataframe cache locks
         mock_lock_instance = MagicMock()
         mock_file_lock.return_value = mock_lock_instance
         mock_lock_instance.__enter__.side_effect = Exception("Lock error")
 
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Set tests_completed to trigger cache save (9 will become 10 when incremented)
+        tester.__class__.tests_completed = 9
 
         # Run a single test
         with patch('app.backtesting.mass_testing.logger') as mock_logger:
