@@ -125,6 +125,7 @@ class SummaryMetrics:
 
         print('=============================\n')
 
+    # --- Private methods ---
     def _has_trades(self):
         """Check if there are any trades."""
         return bool(self.trades)
