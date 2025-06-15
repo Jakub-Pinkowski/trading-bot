@@ -40,7 +40,7 @@ def calculate_trade_metrics(trade, symbol):
     elif trade['side'] == 'short':
         pnl_points = trade['entry_price'] - trade['exit_price']
     else:
-        logger.error(f'Unknown trade side: {trade['side']}')
+        logger.error(f"Unknown trade side: {trade['side']}")
         raise ValueError(f'Unknown trade side: {trade['side']}')
 
     # Calculate gross PnL (before commission)

@@ -1,3 +1,5 @@
+import numpy as np
+
 from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/summary_metrics')
@@ -166,16 +168,10 @@ class SummaryMetrics:
 
     def _calculate_cumulative_pnl(self):
         """Calculate cumulative PnL for drawdown calculations."""
-        self.cumulative_pnl_dollars = []
-        self.cumulative_pnl_pct = []
-        cum_sum_dollars = 0
-        cum_sum_pct = 0
-
-        for trade in self.trades:
-            cum_sum_dollars += trade['net_pnl']
-            cum_sum_pct += trade['return_percentage_of_margin']
-            self.cumulative_pnl_dollars.append(cum_sum_dollars)
-            self.cumulative_pnl_pct.append(cum_sum_pct)
+        net_pnls = [trade['net_pnl'] for trade in self.trades]
+        return_pcts = [trade['return_percentage_of_margin'] for trade in self.trades]
+        self.cumulative_pnl_dollars = np.cumsum(net_pnls).tolist()
+        self.cumulative_pnl_pct = np.cumsum(return_pcts).tolist()
 
     def _calculate_max_drawdown(self):
         """Calculate the maximum drawdown given a list of trades."""
@@ -252,8 +248,7 @@ class SummaryMetrics:
         avg_return = _safe_average(self.returns)
 
         # Calculate standard deviation
-        variance = sum((r - avg_return) ** 2 for r in self.returns) / len(self.returns)
-        std_dev = variance ** 0.5
+        std_dev = np.std(self.returns, ddof=0)
 
         if std_dev == 0:
             return 0  # Avoid division by zero
