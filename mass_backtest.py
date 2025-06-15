@@ -41,6 +41,16 @@ def main():
         slippages=[0, 0.05, 0.1]
     )
 
+    # Add MACD strategy
+    tester.add_macd_tests(
+        fast_periods=[12],
+        slow_periods=[26],
+        signal_periods=[9],
+        rollovers=[False],
+        trailing_stops=[None, 2],
+        slippages=[0, 0.05, 0.1]
+    )
+
     # Run all tests
     tester.run_tests(verbose=False, max_workers=None)
 
