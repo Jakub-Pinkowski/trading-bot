@@ -39,6 +39,28 @@ def _format_column_name(column_name):
     return ' '.join(word.capitalize() for word in column_name.split('_'))
 
 
+def _filter_dataframe(df, min_trades=0, interval=None, symbol=None, min_slippage=None):
+    """Filter DataFrame based on common criteria."""
+    # Filter by minimum trades
+    filtered_df = df[df['total_trades'] >= min_trades]
+
+    # Filter by interval if provided
+    if interval:
+        filtered_df = filtered_df[filtered_df['interval'] == interval]
+
+    # Filter by symbol if provided
+    if symbol:
+        filtered_df = filtered_df[filtered_df['symbol'] == symbol]
+
+    # Filter by minimum slippage if provided
+    if min_slippage is not None:
+        # Extract slippage from the strategy name
+        filtered_df = filtered_df[
+            filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
+
+    return filtered_df
+
+
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
@@ -68,21 +90,8 @@ class StrategyAnalyzer:
             # Get aggregated strategies
             df = self._aggregate_strategies(min_trades, interval, symbol, weighted, min_slippage)
         else:
-            # Filter by minimum trades
-            df = self.results_df[self.results_df['total_trades'] >= min_trades]
-
-            # Filter by interval if provided
-            if interval:
-                df = df[df['interval'] == interval]
-
-            # Filter by symbol if provided
-            if symbol:
-                df = df[df['symbol'] == symbol]
-
-            # Filter by minimum slippage if provided
-            if min_slippage is not None:
-                # Extract slippage from the strategy name
-                df = df[df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
+            # Apply common filtering
+            df = _filter_dataframe(self.results_df, min_trades, interval, symbol, min_slippage)
 
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
@@ -121,22 +130,8 @@ class StrategyAnalyzer:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
 
-        # Filter by minimum trades
-        filtered_df = self.results_df[self.results_df['total_trades'] >= min_trades]
-
-        # Filter by interval if provided
-        if interval:
-            filtered_df = filtered_df[filtered_df['interval'] == interval]
-
-        # Filter by symbol if provided
-        if symbol:
-            filtered_df = filtered_df[filtered_df['symbol'] == symbol]
-
-        # Filter by minimum slippage if provided
-        if min_slippage is not None:
-            # Extract slippage from strategy name
-            filtered_df = filtered_df[
-                filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
+        # Apply common filtering
+        filtered_df = _filter_dataframe(self.results_df, min_trades, interval, symbol, min_slippage)
 
         # Group by strategy
         grouped = filtered_df.groupby('strategy')
