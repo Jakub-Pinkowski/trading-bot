@@ -117,13 +117,15 @@ trading-bot/
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
-# TODO [HIGH]: Add contract switch dates for missing symbols
+# TODO [HIGH]: Decide on the final per_trade_metrics
+# TODO [HIGH]: Decide on the final summary_metrics
 # TODO [HIGH]: Test very thoroughly all the strategies
 # RSI is good
 # EMA is good
 # TODO [HIGH]: Test very thoroughly all summaries
 # RSI is good
 # EMA is good
+# TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
 
