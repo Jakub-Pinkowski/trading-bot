@@ -202,31 +202,45 @@ class SummaryMetrics:
 
         return round(max_drawdown, 2), round(maximum_drawdown_percentage, 2)
 
-    # NOTE: Now used for now
-    def _calculate_max_consecutive(self, win=True):
-        """Calculate maximum consecutive wins or losses."""
+    def _calculate_average_win_percentage_of_margin(self):
+        """Calculate average win percentage of margin."""
+        if not self._has_winning_trades():
+            return 0
+
+        return _safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
+
+    def _calculate_average_loss_percentage_of_margin(self):
+        """Calculate average loss percentage of margin."""
+        if not self._has_losing_trades():
+            return 0
+
+        return _safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
+
+    def _calculate_commission_percentage_of_margin(self):
+        """Calculate commission as percentage of margin."""
         if not self._has_trades():
             return 0
 
-        # Sort trades by date if available
-        sorted_trades = self.trades.copy()  # Create a copy to avoid modifying the original list
-        if 'date' in sorted_trades[0]:
-            sorted_trades = sorted(sorted_trades, key=lambda x: x['date'])
+        total_commission_paid = sum(trade.get('commission', 0) for trade in self.trades)
+        total_margin_used = self.total_margin_used
 
-        # Track consecutive wins/losses
-        current_streak = 0
-        max_streak = 0
+        commission_percentage_of_margin = (
+                                                  total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
+        return commission_percentage_of_margin
 
-        for trade in sorted_trades:
-            is_win = trade['return_percentage_of_margin'] > 0
+    def _calculate_profit_factor(self):
+        """Calculate profit factor: Total Net Profit / Total Net Loss."""
+        if not self._has_trades():
+            return 0
 
-            if (win and is_win) or (not win and not is_win):
-                current_streak += 1
-                max_streak = max(max_streak, current_streak)
-            else:
-                current_streak = 0  # Reset streak when we encounter a non-matching trade
+        total_net_profit = sum(trade['net_pnl'] for trade in self.winning_trades)
+        total_net_loss = sum(trade['net_pnl'] for trade in self.losing_trades)
 
-        return max_streak
+        if total_net_loss == 0:
+            return float('inf')  # No losses
+
+        profit_factor = abs(total_net_profit / total_net_loss)
+        return profit_factor
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
         """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
@@ -278,42 +292,28 @@ class SummaryMetrics:
         calmar_ratio = self.total_return / self.maximum_drawdown_percentage
         return calmar_ratio
 
-    def _calculate_profit_factor(self):
-        """Calculate profit factor: Total Net Profit / Total Net Loss."""
+    # NOTE: Not used for now
+    def _calculate_max_consecutive(self, win=True):
+        """Calculate maximum consecutive wins or losses."""
         if not self._has_trades():
             return 0
 
-        total_net_profit = sum(trade['net_pnl'] for trade in self.winning_trades)
-        total_net_loss = sum(trade['net_pnl'] for trade in self.losing_trades)
+        # Sort trades by date if available
+        sorted_trades = self.trades.copy()  # Create a copy to avoid modifying the original list
+        if 'date' in sorted_trades[0]:
+            sorted_trades = sorted(sorted_trades, key=lambda x: x['date'])
 
-        if total_net_loss == 0:
-            return float('inf')  # No losses
+        # Track consecutive wins/losses
+        current_streak = 0
+        max_streak = 0
 
-        profit_factor = abs(total_net_profit / total_net_loss)
-        return profit_factor
+        for trade in sorted_trades:
+            is_win = trade['return_percentage_of_margin'] > 0
 
-    def _calculate_average_win_percentage_of_margin(self):
-        """Calculate average win percentage of margin."""
-        if not self._has_winning_trades():
-            return 0
+            if (win and is_win) or (not win and not is_win):
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
+            else:
+                current_streak = 0  # Reset streak when we encounter a non-matching trade
 
-        return _safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
-
-    def _calculate_average_loss_percentage_of_margin(self):
-        """Calculate average loss percentage of margin."""
-        if not self._has_losing_trades():
-            return 0
-
-        return _safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
-
-    def _calculate_commission_percentage_of_margin(self):
-        """Calculate commission as percentage of margin."""
-        if not self._has_trades():
-            return 0
-
-        total_commission_paid = sum(trade.get('commission', 0) for trade in self.trades)
-        total_margin_used = self.total_margin_used
-
-        commission_percentage_of_margin = (
-                                                  total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
-        return commission_percentage_of_margin
+        return max_streak
