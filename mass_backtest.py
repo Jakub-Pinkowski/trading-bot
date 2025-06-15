@@ -32,6 +32,7 @@ def main():
         slippages=[0, 0.05, 0.1]
     )
 
+    # Bollinger Bands measure volatility and relative price levels
     tester.add_bollinger_bands_tests(
         periods=[10, 20, 22, 30, 40],
         num_stds=[1.5, 2, 2.5, 3],
