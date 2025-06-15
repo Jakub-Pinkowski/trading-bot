@@ -45,28 +45,6 @@ class Cache:
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
         self._load_cache()
 
-    def _load_cache(self):
-        """Load the cache from the disk with file locking."""
-        if os.path.exists(self.cache_file):
-            # Create a lock for the file
-            lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
-            try:
-                # Acquire the lock before reading
-                with lock:
-                    with open(self.cache_file, 'rb') as f:
-                        loaded_cache = pickle.load(f)
-                        # Only use the cache if it's a dictionary
-                        if isinstance(loaded_cache, dict):
-                            # Convert the cache to the new format
-                            self.cache_data = _convert_cache_format(loaded_cache)
-
-                            # Remove expired items
-                            self._remove_expired_items()
-                        else:
-                            logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
-            except Exception as load_err:
-                logger.error(f"Failed to load cache from {self.cache_file}: {load_err}. Using empty cache.")
-
     def save_cache(self):
         """Save the cache to disk with file locking."""
         # Create a lock for the file
@@ -78,37 +56,6 @@ class Cache:
                     pickle.dump(self.cache_data, f)
         except Exception as save_err:
             logger.error(f"Failed to save {self.cache_name} cache to {self.cache_file}: {save_err}")
-
-    def _remove_expired_items(self):
-        """Remove expired items from the cache."""
-        if self.max_age is None:
-            return  # No expiration
-
-        current_time = time.time()
-        expired_keys = []
-
-        # Find expired keys
-        for key, (timestamp, _) in list(self.cache_data.items()):
-            if current_time - timestamp > self.max_age:
-                expired_keys.append(key)
-
-        # Remove expired keys
-        for key in expired_keys:
-            del self.cache_data[key]
-
-        if expired_keys:
-            logger.debug(f"Removed {len(expired_keys)} expired items from {self.cache_name} cache")
-
-    def _enforce_size_limit(self):
-        """Enforce the cache size limit by removing the least recently used items."""
-        if self.max_size is None:
-            return  # No size limit
-
-        # Remove the oldest items until we're under the limit
-        while len(self.cache_data) > self.max_size:
-            # In our implementation, the least recently used item is the first one in the OrderedDict
-            # because we move items to the end when they are accessed in the get() method
-            self.cache_data.popitem(last=False)  # Remove the first item (least recently used)
 
     def get(self, key, default=None):
         """ Get a value from the cache. """
@@ -152,3 +99,58 @@ class Cache:
     def size(self):
         """Get the number of items in the cache."""
         return len(self.cache_data)
+
+    # --- Private methods ---
+
+    def _load_cache(self):
+        """Load the cache from the disk with file locking."""
+        if os.path.exists(self.cache_file):
+            # Create a lock for the file
+            lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
+            try:
+                # Acquire the lock before reading
+                with lock:
+                    with open(self.cache_file, 'rb') as f:
+                        loaded_cache = pickle.load(f)
+                        # Only use the cache if it's a dictionary
+                        if isinstance(loaded_cache, dict):
+                            # Convert the cache to the new format
+                            self.cache_data = _convert_cache_format(loaded_cache)
+
+                            # Remove expired items
+                            self._remove_expired_items()
+                        else:
+                            logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
+            except Exception as load_err:
+                logger.error(f"Failed to load cache from {self.cache_file}: {load_err}. Using empty cache.")
+
+    def _remove_expired_items(self):
+        """Remove expired items from the cache."""
+        if self.max_age is None:
+            return  # No expiration
+
+        current_time = time.time()
+        expired_keys = []
+
+        # Find expired keys
+        for key, (timestamp, _) in list(self.cache_data.items()):
+            if current_time - timestamp > self.max_age:
+                expired_keys.append(key)
+
+        # Remove expired keys
+        for key in expired_keys:
+            del self.cache_data[key]
+
+        if expired_keys:
+            logger.debug(f"Removed {len(expired_keys)} expired items from {self.cache_name} cache")
+
+    def _enforce_size_limit(self):
+        """Enforce the cache size limit by removing the least recently used items."""
+        if self.max_size is None:
+            return  # No size limit
+
+        # Remove the oldest items until we're under the limit
+        while len(self.cache_data) > self.max_size:
+            # In our implementation, the least recently used item is the first one in the OrderedDict
+            # because we move items to the end when they are accessed in the get() method
+            self.cache_data.popitem(last=False)  # Remove the first item (least recently used)

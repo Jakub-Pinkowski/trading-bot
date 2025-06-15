@@ -83,6 +83,20 @@ class BaseStrategy:
 
     # --- Private methods ---
 
+    def _reset(self):
+        """Reset all state variables"""
+        self.position = None
+        self.entry_time = None
+        self.entry_price = None
+        self.trailing_stop = None
+        self.next_switch_idx = 0
+        self.next_switch = None
+        self.must_reopen = None
+        self.prev_row = None
+        self.skip_signal_this_bar = False
+        self.queued_signal = None
+        self.trades = []
+
     def _handle_trailing_stop(self, idx, price_high, price_low):
         """Manage trailing stop trigger and update logic."""
 
@@ -139,49 +153,6 @@ class BaseStrategy:
         else:
             self.must_reopen = None
 
-    def _reset(self):
-        """Reset all state variables"""
-        self.position = None
-        self.entry_time = None
-        self.entry_price = None
-        self.trailing_stop = None
-        self.next_switch_idx = 0
-        self.next_switch = None
-        self.must_reopen = None
-        self.prev_row = None
-        self.skip_signal_this_bar = False
-        self.queued_signal = None
-        self.trades = []
-
-    def _reset_position(self):
-        """Reset position variables"""
-        self.entry_time = None
-        self.entry_price = None
-        self.position = None
-        self.trailing_stop = None
-
-    def _apply_slippage_to_entry_price(self, direction, price):
-        """Apply slippage to entry price based on a position direction"""
-        if direction == 1:  # Long position
-            # For long positions, pay more on entry (higher price)
-            adjusted_price = price * (1 + self.slippage / 100)
-        else:  # Short position
-            # For short positions, receive less on entry (lower price)
-            adjusted_price = price * (1 - self.slippage / 100)
-
-        return round(adjusted_price, 2)
-
-    def _apply_slippage_to_exit_price(self, direction, price):
-        """Apply slippage to exit price based on a position direction"""
-        if direction == 1:  # Long position
-            # For long positions, receive less on exit (lower price)
-            adjusted_price = price * (1 - self.slippage / 100)
-        else:  # Short position
-            # For short positions, pay more on exit (higher price)
-            adjusted_price = price * (1 + self.slippage / 100)
-
-        return round(adjusted_price, 2)
-
     def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
 
@@ -217,6 +188,35 @@ class BaseStrategy:
             trade['switch'] = True
         self.trades.append(trade)
         self._reset_position()
+
+    def _reset_position(self):
+        """Reset position variables"""
+        self.entry_time = None
+        self.entry_price = None
+        self.position = None
+        self.trailing_stop = None
+
+    def _apply_slippage_to_entry_price(self, direction, price):
+        """Apply slippage to entry price based on a position direction"""
+        if direction == 1:  # Long position
+            # For long positions, pay more on entry (higher price)
+            adjusted_price = price * (1 + self.slippage / 100)
+        else:  # Short position
+            # For short positions, receive less on entry (lower price)
+            adjusted_price = price * (1 - self.slippage / 100)
+
+        return round(adjusted_price, 2)
+
+    def _apply_slippage_to_exit_price(self, direction, price):
+        """Apply slippage to exit price based on a position direction"""
+        if direction == 1:  # Long position
+            # For long positions, receive less on exit (lower price)
+            adjusted_price = price * (1 - self.slippage / 100)
+        else:  # Short position
+            # For short positions, pay more on exit (higher price)
+            adjusted_price = price * (1 + self.slippage / 100)
+
+        return round(adjusted_price, 2)
 
     def _open_new_position(self, direction, idx, price_open):
         self.position = direction
