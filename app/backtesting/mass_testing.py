@@ -195,6 +195,7 @@ class MassTester:
         return self.results
 
     # --- Private methods ---
+
     def _add_strategy_tests(self, strategy_type, param_grid):
         """ Generic method for adding strategy tests with all combinations of given parameters. """
 

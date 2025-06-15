@@ -46,9 +46,62 @@ class StrategyAnalyzer:
         """Initialize the strategy analyzer and load results from the default file."""
         self.results_df = None
         results_file = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
-        self.load_results(results_file)
+        self._load_results(results_file)
 
-    def load_results(self, file_path):
+    def get_top_strategies(
+        self,
+        metric,
+        min_trades,
+        limit=30,
+        aggregate=False,
+        interval=None,
+        symbol=None,
+        weighted=True
+    ):
+        """  Get top-performing strategies based on a specific metric. """
+        if self.results_df is None or self.results_df.empty:
+            logger.error('No results available. Load results first.')
+            raise ValueError('No results available. Load results first.')
+
+        if aggregate:
+            # Get aggregated strategies
+            df = self._aggregate_strategies(min_trades, interval, symbol, weighted)
+        else:
+            # Filter by minimum trades
+            df = self.results_df[self.results_df['total_trades'] >= min_trades]
+
+            # Filter by interval if provided
+            if interval:
+                df = df[df['interval'] == interval]
+
+            # Filter by symbol if provided
+            if symbol:
+                df = df[df['symbol'] == symbol]
+
+        # Sort by the metric in descending order
+        sorted_df = df.sort_values(by=metric, ascending=False)
+
+        # Save results to a CSV file with formatted column names
+        self._save_results_to_csv(metric,
+                                  limit,
+                                  df_to_save=sorted_df,
+                                  aggregate=aggregate,
+                                  weighted=weighted,
+                                  interval=interval,
+                                  symbol=symbol)
+
+        # Create a message with interval and symbol information
+        interval_msg = f" for {interval} interval" if interval else ""
+        symbol_msg = f" and {symbol} symbol" if symbol else ""
+        weighted_msg = " with weighted aggregation" if aggregate and weighted else ""
+        weighted_msg = " with simple aggregation" if aggregate and not weighted else weighted_msg
+        print(f"Top strategies by {metric}{interval_msg}{symbol_msg}{weighted_msg} saved")
+
+        return sorted_df
+
+    # --- Private methods ---
+
+    def _load_results(self, file_path):
         """Load results from a parquet file."""
         try:
             self.results_df = pd.read_parquet(file_path)
@@ -56,7 +109,7 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def aggregate_strategies(self, min_trades=0, interval=None, symbol=None, weighted=True):
+    def _aggregate_strategies(self, min_trades=0, interval=None, symbol=None, weighted=True):
         """  Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
@@ -180,58 +233,7 @@ class StrategyAnalyzer:
 
         return aggregated_df
 
-    def get_top_strategies(
-        self,
-        metric,
-        min_trades,
-        limit=30,
-        aggregate=False,
-        interval=None,
-        symbol=None,
-        weighted=True
-    ):
-        """  Get top-performing strategies based on a specific metric. """
-        if self.results_df is None or self.results_df.empty:
-            logger.error('No results available. Load results first.')
-            raise ValueError('No results available. Load results first.')
-
-        if aggregate:
-            # Get aggregated strategies
-            df = self.aggregate_strategies(min_trades, interval, symbol, weighted)
-        else:
-            # Filter by minimum trades
-            df = self.results_df[self.results_df['total_trades'] >= min_trades]
-
-            # Filter by interval if provided
-            if interval:
-                df = df[df['interval'] == interval]
-
-            # Filter by symbol if provided
-            if symbol:
-                df = df[df['symbol'] == symbol]
-
-        # Sort by the metric in descending order
-        sorted_df = df.sort_values(by=metric, ascending=False)
-
-        # Save results to a CSV file with formatted column names
-        self.save_results_to_csv(metric,
-                                 limit,
-                                 df_to_save=sorted_df,
-                                 aggregate=aggregate,
-                                 weighted=weighted,
-                                 interval=interval,
-                                 symbol=symbol)
-
-        # Create a message with interval and symbol information
-        interval_msg = f" for {interval} interval" if interval else ""
-        symbol_msg = f" and {symbol} symbol" if symbol else ""
-        weighted_msg = " with weighted aggregation" if aggregate and weighted else ""
-        weighted_msg = " with simple aggregation" if aggregate and not weighted else weighted_msg
-        print(f"Top strategies by {metric}{interval_msg}{symbol_msg}{weighted_msg} saved")
-
-        return sorted_df
-
-    def save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval=None, symbol=None, weighted=True):
+    def _save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval=None, symbol=None, weighted=True):
         """  Save results to a human-readable CSV file with formatted column names. """
         if df_to_save is None:
             if self.results_df is None or self.results_df.empty:
