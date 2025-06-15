@@ -136,7 +136,6 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Developer
-# TODO [HIGH]: Standardize the class usage across the whole project, private methods last and change all non-public methods to private ones
 # TODO [HIGH]: Fix PyCharm tests not triggering on commit
 # TODO [MEDIUM]: Extract all mathematical calculations like safe divide etc. into dedicated utils folder
 # TODO [LOW]: Remove helping comments and leave only those that actually bring value
