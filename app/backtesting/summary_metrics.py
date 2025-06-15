@@ -1,16 +1,9 @@
 import numpy as np
 
 from app.utils.logger import get_logger
+from app.utils.math_utils import safe_average, safe_divide
 
 logger = get_logger('backtesting/summary_metrics')
-
-
-def _safe_average(values, count=None):
-    """Safely calculate average of values."""
-    if not values:
-        return 0
-    count = count or len(values)
-    return sum(values) / count if count > 0 else 0
 
 
 class SummaryMetrics:
@@ -40,11 +33,11 @@ class SummaryMetrics:
         win_rate = self.win_rate
         win_count = self.win_count
         loss_count = self.loss_count
-        avg_duration_hours = _safe_average(self.durations, self.total_trades)
+        avg_duration_hours = safe_average(self.durations, self.total_trades)
 
         # ===== NORMALIZED METRICS (PERCENTAGES) =====
         total_return_percentage_of_margin = self.total_return
-        average_trade_return_percentage_of_margin = _safe_average([self.total_return], self.total_trades)
+        average_trade_return_percentage_of_margin = safe_average([self.total_return], self.total_trades)
         average_win_percentage_of_margin = self._calculate_average_win_percentage_of_margin()
         average_loss_percentage_of_margin = self._calculate_average_loss_percentage_of_margin()
         commission_percentage_of_margin = self._calculate_commission_percentage_of_margin()
@@ -205,14 +198,14 @@ class SummaryMetrics:
         if not self._has_winning_trades():
             return 0
 
-        return _safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
+        return safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
 
     def _calculate_average_loss_percentage_of_margin(self):
         """Calculate average loss percentage of margin."""
         if not self._has_losing_trades():
             return 0
 
-        return _safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
+        return safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
 
     def _calculate_commission_percentage_of_margin(self):
         """Calculate commission as percentage of margin."""
@@ -237,15 +230,14 @@ class SummaryMetrics:
         if total_net_loss == 0:
             return float('inf')  # No losses
 
-        profit_factor = abs(total_net_profit / total_net_loss)
-        return profit_factor
+        return abs(safe_divide(total_net_profit, total_net_loss))
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
         """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
-        if not self._has_trades() or len(self.trades) < 2:  # Need at least 2 trades for standard deviation
+        if not self._has_trades() or len(self.returns) < 2:  # Need at least 2 returns for standard deviation
             return 0
 
-        avg_return = _safe_average(self.returns)
+        avg_return = safe_average(self.returns)
 
         # Calculate standard deviation
         std_dev = np.std(self.returns, ddof=0)
@@ -253,15 +245,14 @@ class SummaryMetrics:
         if std_dev == 0:
             return 0  # Avoid division by zero
 
-        sharpe_ratio = (avg_return - risk_free_rate) / std_dev
-        return sharpe_ratio
+        return safe_divide(avg_return - risk_free_rate, std_dev)
 
     def _calculate_sortino_ratio(self, risk_free_rate=0.0):
         """Calculate Sortino ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Negative Returns."""
         if not self._has_trades():
             return 0
 
-        avg_return = _safe_average(self.returns)
+        avg_return = safe_average(self.returns)
 
         # Calculate downside deviation (returns below the risk-free rate)
         negative_returns = [r - risk_free_rate for r in self.returns if r < risk_free_rate]
@@ -269,14 +260,13 @@ class SummaryMetrics:
         if not negative_returns:
             return float('inf')  # No negative returns
 
-        downside_variance = sum(r ** 2 for r in negative_returns) / len(negative_returns)
+        downside_variance = safe_average([r ** 2 for r in negative_returns])
         downside_deviation = downside_variance ** 0.5
 
         if downside_deviation == 0:
             return 0  # Avoid division by zero
 
-        sortino_ratio = (avg_return - risk_free_rate) / downside_deviation
-        return sortino_ratio
+        return safe_divide(avg_return - risk_free_rate, downside_deviation)
 
     def _calculate_calmar_ratio(self):
         """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
@@ -286,8 +276,7 @@ class SummaryMetrics:
         if self.maximum_drawdown_percentage == 0:
             return float('inf')  # No drawdown
 
-        calmar_ratio = self.total_return / self.maximum_drawdown_percentage
-        return calmar_ratio
+        return safe_divide(self.total_return, self.maximum_drawdown_percentage)
 
     # NOTE: Not used for now
     def _calculate_max_consecutive(self, win=True):

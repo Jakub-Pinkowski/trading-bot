@@ -1,4 +1,5 @@
 from app.utils.logger import get_logger
+from app.utils.math_utils import calculate_percentage
 from config import CONTRACT_MULTIPLIERS, MARGIN_REQUIREMENTS
 
 logger = get_logger('backtesting/per_trade_metrics')
@@ -50,11 +51,11 @@ def calculate_trade_metrics(trade, symbol):
     net_pnl = gross_pnl - total_commission
 
     # Calculate return percentage as a percentage of the margin requirement
-    return_percentage_of_margin = round((net_pnl / margin_requirement) * 100, 2)
+    return_percentage_of_margin = calculate_percentage(net_pnl, margin_requirement)
 
     # Calculate return percentage as a percentage of the contract value (entry price)
     contract_value = trade['entry_price'] * contract_multiplier
-    return_percentage_of_contract = round((net_pnl / contract_value) * 100, 2)
+    return_percentage_of_contract = calculate_percentage(net_pnl, contract_value)
 
     return {
         # Original trade data
