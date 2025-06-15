@@ -273,3 +273,170 @@ def test_calculate_atr_with_constant_prices():
 
     # With constant prices, true range is 0, so ATR should be 0 after the initial period
     assert (atr.iloc[14:] == 0).all()
+
+
+def test_calculate_atr_with_nan_values():
+    """Test ATR calculation with NaN values in the input data"""
+    # Create a dataframe with NaN values
+    df = create_test_df(length=30)
+
+    # Introduce NaN values
+    df.loc[5, 'high'] = np.nan
+    df.loc[10, 'low'] = np.nan
+    df.loc[15, 'close'] = np.nan
+    df.loc[20, ['high', 'low', 'close']] = np.nan
+
+    # Create a clean dataframe by forward filling NaN values
+    df_clean = df.ffill()
+
+    # Calculate ATR for both dataframes
+    atr_with_nans = calculate_atr(df)
+    atr_clean = calculate_atr(df_clean)
+
+    # Check that the result is a Series
+    assert isinstance(atr_with_nans, pd.Series)
+
+    # The NaN values should be handled in the calculation
+    # The results will differ from the clean dataframe because NaN values affect the true range calculation
+    # and the exponential moving average
+
+    # Find valid indices (after the initial NaN period)
+    valid_idx = ~atr_with_nans.isna() & ~atr_clean.isna()
+
+    if valid_idx.any():
+        # Instead of comparing exact values, we'll check that:
+        # 1. Both ATRs have similar trends (correlation)
+        # 2. The values are within a reasonable range of each other
+
+        # Check the correlation between the two ATR series
+        correlation = np.corrcoef(atr_with_nans.loc[valid_idx], atr_clean.loc[valid_idx])[0, 1]
+        assert correlation > 0.4, "ATR with NaNs should be correlated with ATR with filled values"
+
+        # Check that the values are within a reasonable range
+        # Calculate the maximum relative difference
+        max_rel_diff = np.max(np.abs(atr_with_nans.loc[valid_idx] - atr_clean.loc[valid_idx]) / atr_clean.loc[
+            valid_idx])
+        assert max_rel_diff < 0.3, f"Maximum relative difference should be less than 30%, got {max_rel_diff:.2%}"
+
+        # Check that the mean values are reasonably close
+        mean_with_nans = atr_with_nans.loc[valid_idx].mean()
+        mean_clean = atr_clean.loc[valid_idx].mean()
+        rel_diff_means = abs(mean_with_nans - mean_clean) / mean_clean
+        assert rel_diff_means < 0.2, f"Mean values should be within 20%, got {rel_diff_means:.2%}"
+
+
+def test_calculate_atr_with_market_crash():
+    """Test ATR calculation during a market crash scenario"""
+    # Create a dataframe with a stable period followed by a sharp decline (crash)
+    df_stable = create_test_df(length=30, trend='sideways', volatility=1.0)
+
+    # Create a crash period with high volatility
+    df_crash = create_test_df(length=20, trend='down', volatility=3.0)
+
+    # Make the crash more severe by adjusting prices
+    crash_factor = 0.5  # 50% crash
+    df_crash['close'] = df_crash['close'] * crash_factor
+    df_crash['high'] = df_crash['high'] * crash_factor
+    df_crash['low'] = df_crash['low'] * crash_factor
+
+    # Combine the stable and crash periods
+    df = pd.concat([df_stable, df_crash]).reset_index(drop=True)
+
+    # Calculate ATR
+    atr = calculate_atr(df)
+
+    # During a crash, ATR should increase due to higher volatility
+
+    # Get ATR values for stable and crash periods
+    stable_atr = atr.iloc[14:30]  # After initial NaN period but before crash
+    crash_atr = atr.iloc[40:]  # During crash period
+
+    # ATR should be higher during the crash
+    assert crash_atr.mean() > stable_atr.mean() * 1.5  # At least 50% higher
+
+
+def test_calculate_atr_with_market_bubble():
+    """Test ATR calculation during a market bubble scenario"""
+    # Create a dataframe with a normal growth period
+    df_normal = create_test_df(length=30, trend='up', volatility=1.0)
+
+    # Create a bubble period with high volatility and exponential growth
+    df_bubble = create_test_df(length=20, trend='up', volatility=3.0)
+
+    # Make the bubble more extreme by adjusting prices
+    bubble_factor = 2.0  # 100% additional growth
+    df_bubble['close'] = df_bubble['close'] * bubble_factor
+    df_bubble['high'] = df_bubble['high'] * bubble_factor
+    df_bubble['low'] = df_bubble['low'] * bubble_factor
+
+    # Combine the normal and bubble periods
+    df = pd.concat([df_normal, df_bubble]).reset_index(drop=True)
+
+    # Calculate ATR
+    atr = calculate_atr(df)
+
+    # During a bubble, ATR should increase due to higher volatility
+
+    # Get ATR values for normal and bubble periods
+    normal_atr = atr.iloc[14:30]  # After initial NaN period but before bubble
+    bubble_atr = atr.iloc[40:]  # During bubble period
+
+    # ATR should be higher during the bubble
+    assert bubble_atr.mean() > normal_atr.mean() * 1.5  # At least 50% higher
+
+
+def test_calculate_atr_as_trend_strength_indicator():
+    """Test ATR as a trend strength indicator"""
+    # Create dataframes with different trend strengths
+    # Weak trend: low slope, low volatility
+    df_weak = create_test_df(length=60, trend='up', volatility=0.5)
+
+    # Strong trend: high slope, medium volatility
+    df_strong = create_test_df(length=60, trend='up', volatility=1.0)
+    close_values = df_strong['close'].values
+    # Make the trend stronger by increasing the slope
+    df_strong['close'] = np.linspace(close_values[0], close_values[-1] * 1.5, len(close_values))
+    # Adjust high and low accordingly
+    df_strong['high'] = df_strong['close'] + (df_strong['high'] - close_values)
+    df_strong['low'] = df_strong['close'] - (close_values - df_strong['low'])
+
+    # Calculate ATR for both trends
+    atr_weak = calculate_atr(df_weak)
+    atr_strong = calculate_atr(df_strong)
+
+    # Calculate the average ATR as a percentage of price for both trends
+    # This normalizes ATR to make it comparable across different price levels
+    atr_pct_weak = (atr_weak / df_weak['close']).iloc[14:].mean() * 100  # As percentage
+    atr_pct_strong = (atr_strong / df_strong['close']).iloc[14:].mean() * 100  # As percentage
+
+    # A stronger trend should have a higher ATR percentage
+    assert atr_pct_strong > atr_pct_weak
+
+
+def test_calculate_atr_percentage():
+    """Test ATR percentage calculation (ATR relative to price)"""
+    # Create dataframes with different price levels but similar volatility characteristics
+    df_low_price = create_test_df(length=60, trend='sideways', volatility=0.05)
+    df_low_price['close'] = df_low_price['close'] * 0.1  # Scale down to a low price level (around 15)
+    df_low_price['high'] = df_low_price['high'] * 0.1
+    df_low_price['low'] = df_low_price['low'] * 0.1
+
+    df_high_price = create_test_df(length=60, trend='sideways', volatility=0.05)
+    df_high_price['close'] = df_high_price['close'] * 10  # Scale up to high price level (around 1500)
+    df_high_price['high'] = df_high_price['high'] * 10
+    df_high_price['low'] = df_high_price['low'] * 10
+
+    # Calculate ATR for both price levels
+    atr_low_price = calculate_atr(df_low_price)
+    atr_high_price = calculate_atr(df_high_price)
+
+    # Calculate ATR as a percentage of price
+    atr_pct_low_price = (atr_low_price / df_low_price['close']).iloc[14:].mean() * 100  # As percentage
+    atr_pct_high_price = (atr_high_price / df_high_price['close']).iloc[14:].mean() * 100  # As percentage
+
+    # The absolute ATR values should be very different due to price levels
+    assert atr_high_price.iloc[14:].mean() > atr_low_price.iloc[14:].mean() * 50  # High price ATR should be much larger
+
+    # But the ATR percentages should be similar since the volatility characteristics are similar
+    # Allow for some variation due to random noise in the test data
+    assert abs(atr_pct_high_price - atr_pct_low_price) / atr_pct_low_price < 0.3  # Within 30%
