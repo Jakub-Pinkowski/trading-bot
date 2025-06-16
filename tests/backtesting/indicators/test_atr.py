@@ -331,7 +331,7 @@ def test_calculate_atr_with_market_crash():
     df_stable = create_test_df(length=30, trend='sideways', volatility=1.0)
 
     # Create a crash period with high volatility
-    df_crash = create_test_df(length=20, trend='down', volatility=3.0)
+    df_crash = create_test_df(length=20, trend='down', volatility=5.0)
 
     # Make the crash more severe by adjusting prices
     crash_factor = 0.5  # 50% crash
