@@ -25,7 +25,10 @@ def _format_column_name(column_name):
         'max_consecutive_losses': 'max_cons_losses',
         'sharpe_ratio': 'sharpe',
         'sortino_ratio': 'sortino',
-        'calmar_ratio': 'calmar'
+        'calmar_ratio': 'calmar',
+        'value_at_risk': 'var_95%',
+        'expected_shortfall': 'cvar_95%',
+        'ulcer_index': 'ulcer_idx'
     }
 
     # Check if this column has a special shorter name
@@ -211,8 +214,28 @@ class StrategyAnalyzer:
                                                    filtered_df['calmar_ratio'] * filtered_df['total_trades']
                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
+            # Add the new risk metrics with weighted average based on total trades
+            metrics_dict['value_at_risk'] = (
+                                                    filtered_df['value_at_risk'] * filtered_df['total_trades']
+                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
+
+            metrics_dict['expected_shortfall'] = (
+                                                         filtered_df['expected_shortfall'] * filtered_df['total_trades']
+                                                 ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
+
+            metrics_dict['ulcer_index'] = (
+                                                  filtered_df['ulcer_index'] * filtered_df['total_trades']
+                                          ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
+
             # Round the ratio metrics
-            for ratio in ['sharpe_ratio', 'sortino_ratio', 'calmar_ratio']:
+            for ratio in [
+                'sharpe_ratio',
+                'sortino_ratio',
+                'calmar_ratio',
+                'value_at_risk',
+                'expected_shortfall',
+                'ulcer_index'
+            ]:
                 metrics_dict[ratio] = metrics_dict[ratio].round(2)
         else:
             # Averages all metrics across strategies
@@ -233,7 +256,10 @@ class StrategyAnalyzer:
                 'return_to_drawdown_ratio': grouped['return_to_drawdown_ratio'].mean(),
                 'sharpe_ratio': grouped['sharpe_ratio'].mean(),
                 'sortino_ratio': grouped['sortino_ratio'].mean(),
-                'calmar_ratio': grouped['calmar_ratio'].mean()
+                'calmar_ratio': grouped['calmar_ratio'].mean(),
+                'value_at_risk': grouped['value_at_risk'].mean(),
+                'expected_shortfall': grouped['expected_shortfall'].mean(),
+                'ulcer_index': grouped['ulcer_index'].mean()
             })
 
         aggregated_df = pd.DataFrame(metrics_dict).reset_index()

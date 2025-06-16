@@ -707,7 +707,10 @@ class TestMassTester:
                     'max_consecutive_losses': 1,
                     'sharpe_ratio': 1.2,
                     'sortino_ratio': 1.5,
-                    'calmar_ratio': 2.5
+                    'calmar_ratio': 2.5,
+                    'value_at_risk': 0.8,
+                    'expected_shortfall': 1.2,
+                    'ulcer_index': 0.5
                 },
                 'timestamp': '2023-01-01T00:00:00'
             },
@@ -731,7 +734,10 @@ class TestMassTester:
                     'max_consecutive_losses': 2,
                     'sharpe_ratio': -0.8,
                     'sortino_ratio': -1.0,
-                    'calmar_ratio': -0.7
+                    'calmar_ratio': -0.7,
+                    'value_at_risk': 1.5,
+                    'expected_shortfall': 2.0,
+                    'ulcer_index': 0.9
                 },
                 'timestamp': '2023-01-01T00:00:00'
             }
@@ -765,7 +771,10 @@ class TestMassTester:
             'return_to_drawdown_ratio',
             'sharpe_ratio',
             'sortino_ratio',
-            'calmar_ratio'
+            'calmar_ratio',
+            'value_at_risk',
+            'expected_shortfall',
+            'ulcer_index'
         ]
 
         # Verify the values

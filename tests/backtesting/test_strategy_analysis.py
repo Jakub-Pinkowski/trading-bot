@@ -23,7 +23,10 @@ class TestFormatColumnName(unittest.TestCase):
             'max_consecutive_losses': 'Max Cons Losses',
             'sharpe_ratio': 'Sharpe',
             'sortino_ratio': 'Sortino',
-            'calmar_ratio': 'Calmar'
+            'calmar_ratio': 'Calmar',
+            'value_at_risk': 'Var 95%',
+            'expected_shortfall': 'Cvar 95%',
+            'ulcer_index': 'Ulcer Idx'
         }
 
         for column_name, expected_formatted_name in special_cases.items():
@@ -84,7 +87,10 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'return_to_drawdown_ratio': [2.5, 4.67, 1.6, 3.33],
             'sharpe_ratio': [1.5, 1.8, 1.2, 1.6],
             'sortino_ratio': [2.0, 2.5, 1.8, 2.2],
-            'calmar_ratio': [2.5, 4.67, 1.6, 3.33]
+            'calmar_ratio': [2.5, 4.67, 1.6, 3.33],
+            'value_at_risk': [1.0, 0.8, 1.2, 0.9],
+            'expected_shortfall': [1.5, 1.2, 1.8, 1.4],
+            'ulcer_index': [0.5, 0.4, 0.6, 0.3]
         })
 
     @patch('pandas.read_parquet')

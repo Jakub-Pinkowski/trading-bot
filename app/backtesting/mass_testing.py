@@ -23,6 +23,7 @@ from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DAT
 logger = get_logger('backtesting/mass_testing')
 
 
+# TODO [HIGH]: Speed up this process
 def _load_existing_results():
     """Load existing results from the parquet file."""
     parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
@@ -339,7 +340,10 @@ class MassTester:
                     'return_to_drawdown_ratio': result['metrics'].get('return_to_drawdown_ratio', 0),
                     'sharpe_ratio': result['metrics'].get('sharpe_ratio', 0),
                     'sortino_ratio': result['metrics'].get('sortino_ratio', 0),
-                    'calmar_ratio': result['metrics'].get('calmar_ratio', 0)
+                    'calmar_ratio': result['metrics'].get('calmar_ratio', 0),
+                    'value_at_risk': result['metrics'].get('value_at_risk', 0),
+                    'expected_shortfall': result['metrics'].get('expected_shortfall', 0),
+                    'ulcer_index': result['metrics'].get('ulcer_index', 0)
                 }
                 for result in self.results
             ]

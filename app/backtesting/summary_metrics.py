@@ -48,6 +48,9 @@ class SummaryMetrics:
         sharpe_ratio = self._calculate_sharpe_ratio()
         sortino_ratio = self._calculate_sortino_ratio()
         calmar_ratio = self._calculate_calmar_ratio()
+        value_at_risk = self._calculate_value_at_risk()
+        expected_shortfall = self._calculate_expected_shortfall()
+        ulcer_index = self._calculate_ulcer_index()
 
         return {
             # Basic info
@@ -70,6 +73,9 @@ class SummaryMetrics:
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
+            'value_at_risk': round(value_at_risk, 2),
+            'expected_shortfall': round(expected_shortfall, 2),
+            'ulcer_index': round(ulcer_index, 2),
         }
 
     @staticmethod
@@ -117,6 +123,9 @@ class SummaryMetrics:
         print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
         print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
         print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
+        print(f'Value at Risk (95%): {summary.get("value_at_risk", 0)}%')
+        print(f'Expected Shortfall (95%): {summary.get("expected_shortfall", 0)}%')
+        print(f'Ulcer Index: {summary.get("ulcer_index", 0)}')
 
         print('=============================\n')
 
@@ -277,6 +286,55 @@ class SummaryMetrics:
             return float('inf')  # No drawdown
 
         return safe_divide(self.total_return, self.maximum_drawdown_percentage)
+
+    def _calculate_value_at_risk(self, confidence=0.95):
+        """ Returns the loss that won't be exceeded with the given confidence level. """
+        if not self._has_trades() or len(self.returns) < 5:
+            return 0
+
+        # Sort returns in ascending order (worst to best)
+        sorted_returns = sorted(self.returns)
+
+        # Find the index corresponding to the confidence level
+        index = int((1 - confidence) * len(sorted_returns))
+
+        # Return the absolute value of the loss at that index
+        return abs(sorted_returns[max(0, index)])
+
+    def _calculate_expected_shortfall(self, confidence=0.95):
+        """ Returns the average loss in the worst (1-confidence)% of cases."""
+        if not self._has_trades() or len(self.returns) < 5:
+            return 0
+
+        # Sort returns in ascending order (worst to best)
+        sorted_returns = sorted(self.returns)
+
+        # Find the index corresponding to the confidence level
+        index = int((1 - confidence) * len(sorted_returns))
+
+        # Calculate the average of the worst returns
+        worst_returns = sorted_returns[:max(1, index + 1)]
+        return abs(safe_average(worst_returns))
+
+    def _calculate_ulcer_index(self):
+        """Calculate Ulcer Index, a measure of downside risk that considers both depth and duration of drawdowns."""
+        if not self._has_trades():
+            return 0
+
+        # Calculate percentage drawdowns at each point
+        drawdowns = []
+        peak = 0
+
+        for val in self.cumulative_pnl_pct:
+            if val > peak:
+                peak = val
+                drawdowns.append(0)
+            else:
+                drawdown_pct = (peak - val) / peak * 100 if peak != 0 else 0
+                drawdowns.append(drawdown_pct)
+
+        # Calculate Ulcer Index
+        return np.sqrt(np.mean(np.array(drawdowns) ** 2))
 
     # NOTE: Not used for now
     def _calculate_max_consecutive(self, win=True):

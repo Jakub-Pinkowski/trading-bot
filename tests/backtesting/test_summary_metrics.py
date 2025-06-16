@@ -258,6 +258,18 @@ class TestCalculateSummaryMetrics:
         # Return-to-drawdown ratio should be calculated correctly
         assert summary['calmar_ratio'] == round(2.5 / summary['maximum_drawdown_percentage'], 2)
 
+        # Value at Risk should be calculated correctly
+        assert 'value_at_risk' in summary
+        assert isinstance(summary['value_at_risk'], (int, float))
+
+        # Expected Shortfall should be calculated correctly
+        assert 'expected_shortfall' in summary
+        assert isinstance(summary['expected_shortfall'], (int, float))
+
+        # Ulcer Index should be calculated correctly
+        assert 'ulcer_index' in summary
+        assert isinstance(summary['ulcer_index'], (int, float))
+
     def test_performance_ratios(self):
         """Test calculation of performance ratios."""
         trades = [
@@ -965,6 +977,219 @@ class TestCalculateCalmarRatio:
         assert calmar_ratio == expected_calmar
 
 
+class TestCalculateValueAtRisk:
+    """Tests for the calculate_value_at_risk function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Value at Risk with an empty trades list."""
+        metrics = SummaryMetrics([])
+        var = metrics._calculate_value_at_risk()
+        assert var == 0
+
+    def test_insufficient_trades(self):
+        """Test calculation of Value at Risk with fewer than 5 trades."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
+        ]
+        metrics = SummaryMetrics(trades)
+        var = metrics._calculate_value_at_risk()
+        assert var == 0  # Should return 0 when there are fewer than 5 trades
+
+    def test_all_positive_returns(self):
+        """Test calculation of Value at Risk with all positive returns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        var = metrics._calculate_value_at_risk()
+
+        # With 5 trades and 95% confidence, we expect the VaR to be the absolute value
+        # of the worst 5% of returns, which is the worst return (1.0)
+        assert var == 1.0
+
+    def test_mixed_returns(self):
+        """Test calculation of Value at Risk with mixed positive and negative returns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
+            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        var = metrics._calculate_value_at_risk()
+
+        # With 10 trades and 95% confidence, we expect the VaR to be the absolute value
+        # of the return at the 5th percentile, which is the 1st worst return (-4.0)
+        assert var == 4.0
+
+    def test_custom_confidence_level(self):
+        """Test calculation of Value at Risk with a custom confidence level."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
+            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        var = metrics._calculate_value_at_risk(confidence=0.9)
+
+        # With 10 trades and 90% confidence, we expect the VaR to be the absolute value
+        # of the return at the 10th percentile, which is the 1st worst return (-4.0)
+        assert var == 4.0
+
+
+class TestCalculateExpectedShortfall:
+    """Tests for the calculate_expected_shortfall function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Expected Shortfall with an empty trades list."""
+        metrics = SummaryMetrics([])
+        es = metrics._calculate_expected_shortfall()
+        assert es == 0
+
+    def test_insufficient_trades(self):
+        """Test calculation of Expected Shortfall with fewer than 5 trades."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
+        ]
+        metrics = SummaryMetrics(trades)
+        es = metrics._calculate_expected_shortfall()
+        assert es == 0  # Should return 0 when there are fewer than 5 trades
+
+    def test_all_positive_returns(self):
+        """Test calculation of Expected Shortfall with all positive returns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        es = metrics._calculate_expected_shortfall()
+
+        # With 5 trades and 95% confidence, we expect the ES to be the average of the worst 5% of returns,
+        # which is just the worst return (1.0)
+        assert es == 1.0
+
+    def test_mixed_returns(self):
+        """Test calculation of Expected Shortfall with mixed positive and negative returns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
+            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        es = metrics._calculate_expected_shortfall()
+
+        # With 10 trades and 95% confidence, we expect the ES to be the average of the worst 5% of returns,
+        # which is the average of the worst return (-4.0)
+        assert es == 4.0
+
+    def test_custom_confidence_level(self):
+        """Test calculation of Expected Shortfall with a custom confidence level."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
+            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
+            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
+            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
+            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
+            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        es = metrics._calculate_expected_shortfall(confidence=0.8)
+
+        # With 10 trades and 80% confidence, we expect the ES to be the average of the worst 20% of returns,
+        # which is the average of the 2 worst returns (-4.0 and -3.0)
+        assert es == (4.0 + 3.0) / 2
+
+
+class TestCalculateUlcerIndex:
+    """Tests for the calculate_ulcer_index function."""
+
+    def test_empty_trades_list(self):
+        """Test calculation of Ulcer Index with an empty trades list."""
+        metrics = SummaryMetrics([])
+        ui = metrics._calculate_ulcer_index()
+        assert ui == 0
+
+    def test_no_drawdown(self):
+        """Test calculation of Ulcer Index when there is no drawdown."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        ui = metrics._calculate_ulcer_index()
+        assert ui == 0  # Should be 0 when there is no drawdown
+
+    def test_with_drawdown(self):
+        """Test calculation of Ulcer Index with a drawdown."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Cumulative: 1.0
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Cumulative: 0.5, Drawdown: 0.5
+            create_sample_trade(net_pnl=-60.0, return_percentage=-0.6),  # Cumulative: -0.1, Drawdown: 1.1
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0)  # Cumulative: 1.9, Drawdown: 0
+        ]
+        metrics = SummaryMetrics(trades)
+        ui = metrics._calculate_ulcer_index()
+
+        # Calculate expected value manually
+        # Drawdowns: 0, 0.5/1.0*100=50%, 1.1/1.0*100=110%, 0
+        # UI = sqrt(mean([0^2, 50^2, 110^2, 0^2])) = sqrt((0 + 2500 + 12100 + 0)/4) = sqrt(3650) ≈ 60.41
+
+        # Allow for small floating-point differences
+        assert ui > 0
+        assert abs(ui - 60.41) < 1.0  # Allow for some difference due to implementation details
+
+    def test_multiple_drawdowns(self):
+        """Test calculation of Ulcer Index with multiple drawdowns."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Cumulative: 1.0
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Cumulative: 0.5, Drawdown: 0.5
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),  # Cumulative: 2.5
+            create_sample_trade(net_pnl=-150.0, return_percentage=-1.5),  # Cumulative: 1.0, Drawdown: 1.5
+            create_sample_trade(net_pnl=300.0, return_percentage=3.0)  # Cumulative: 4.0
+        ]
+        metrics = SummaryMetrics(trades)
+        ui = metrics._calculate_ulcer_index()
+
+        # Ulcer Index should be greater than 0 with these drawdowns
+        assert ui > 0
+
+
 class TestPrintSummaryMetrics:
     """Tests for the print_summary_metrics function."""
 
@@ -992,7 +1217,10 @@ class TestPrintSummaryMetrics:
             'max_consecutive_wins': 2,
             'max_consecutive_losses': 2,
             'sharpe_ratio': 0.0,
-            'sortino_ratio': 0.0
+            'sortino_ratio': 0.0,
+            'value_at_risk': 0.8,
+            'expected_shortfall': 1.0,
+            'ulcer_index': 0.3
         }
 
         # Capture stdout
@@ -1012,6 +1240,9 @@ class TestPrintSummaryMetrics:
         assert "SUMMARY METRICS" in output
         assert "Total Return Percentage of Margin: 0.0%" in output
         assert "Average Trade Return Percentage of Margin: 0.0%" in output
+        assert "Value at Risk (95%): 0.8%" in output
+        assert "Expected Shortfall (95%): 1.0%" in output
+        assert "Ulcer Index: 0.3" in output
 
     def test_print_positive_summary(self):
         """Test printing of a positive summary."""
@@ -1035,7 +1266,10 @@ class TestPrintSummaryMetrics:
             'maximum_drawdown_percentage': 1.0,
             'calmar_ratio': 5.0,
             'sharpe_ratio': 1.5,
-            'sortino_ratio': 2.0
+            'sortino_ratio': 2.0,
+            'value_at_risk': 1.2,
+            'expected_shortfall': 1.8,
+            'ulcer_index': 0.5
         }
 
         # Capture stdout
@@ -1080,6 +1314,9 @@ class TestPrintSummaryMetrics:
         assert "Calmar Ratio: 5.0" in output
         assert "Sharpe Ratio: 1.5" in output
         assert "Sortino Ratio: 2.0" in output
+        assert "Value at Risk (95%): 1.2%" in output
+        assert "Expected Shortfall (95%): 1.8%" in output
+        assert "Ulcer Index: 0.5" in output
 
     def test_print_negative_summary(self):
         """Test printing of a negative summary."""
@@ -1103,7 +1340,10 @@ class TestPrintSummaryMetrics:
             'maximum_drawdown_percentage': 5.0,
             'calmar_ratio': -1.0,
             'sharpe_ratio': -0.8,
-            'sortino_ratio': -1.2
+            'sortino_ratio': -1.2,
+            'value_at_risk': 2.5,
+            'expected_shortfall': 3.2,
+            'ulcer_index': 1.8
         }
 
         # Capture stdout
@@ -1148,3 +1388,6 @@ class TestPrintSummaryMetrics:
         assert "Calmar Ratio: -1.0" in output
         assert "Sharpe Ratio: -0.8" in output
         assert "Sortino Ratio: -1.2" in output
+        assert "Value at Risk (95%): 2.5%" in output
+        assert "Expected Shortfall (95%): 3.2%" in output
+        assert "Ulcer Index: 1.8" in output
