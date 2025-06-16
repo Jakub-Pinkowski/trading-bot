@@ -136,35 +136,64 @@ class MassTester:
         # Clear previous results
         self.results = []
 
-        # Prepare all test combinations
-        test_combinations = []
-        skipped_combinations = 0
+        # Preprocess switch dates for all symbols once
+        preprocessed_switch_dates = {}
+        for symbol in self.symbols:
+            switch_dates = self.switch_dates_dict.get(symbol, [])
+            preprocessed_switch_dates[symbol] = [pd.to_datetime(switch_date) for switch_date in switch_dates]
+
+        # Cache filepath patterns for faster construction
+        filepath_patterns = {}
         for tested_month in self.tested_months:
             for symbol in self.symbols:
                 for interval in self.intervals:
-                    if verbose:
-                        print(f'Preparing: Month={tested_month}, Symbol={symbol}, Interval={interval}')
+                    filepath_patterns[(
+                        tested_month, symbol, interval
+                    )] = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
 
-                    for strategy_name, strategy_instance in self.strategies:
-                        # Check if this test has already been run
-                        if skip_existing and _test_already_exists(existing_data,
-                                                                  tested_month,
-                                                                  symbol,
-                                                                  interval,
-                                                                  strategy_name):
-                            if verbose:
-                                print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
-                            skipped_combinations += 1
-                            continue
+        # Generate all combinations more efficiently
+        all_combinations = [(tested_month, symbol, interval, strategy_name, strategy_instance)
+                            for tested_month in self.tested_months
+                            for symbol in self.symbols
+                            for interval in self.intervals
+                            for strategy_name, strategy_instance in self.strategies]
 
-                        test_combinations.append((
-                            tested_month,
-                            symbol,
-                            interval,
-                            strategy_name,
-                            strategy_instance,
-                            verbose
-                        ))
+        # Prepare all test combinations
+        test_combinations = []
+        skipped_combinations = 0
+        last_verbose_combo = None
+
+        # Filter out already run tests
+        for combo in all_combinations:
+            tested_month, symbol, interval, strategy_name, strategy_instance = combo
+
+            # Print verbose output only when a month/symbol/interval combination changes
+            if verbose and (tested_month, symbol, interval) != last_verbose_combo:
+                print(f'Preparing: Month={tested_month}, Symbol={symbol}, Interval={interval}')
+                last_verbose_combo = (tested_month, symbol, interval)
+
+            # Check if this test has already been run
+            if skip_existing and _test_already_exists(existing_data,
+                                                      tested_month,
+                                                      symbol,
+                                                      interval,
+                                                      strategy_name):
+                if verbose:
+                    print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
+                skipped_combinations += 1
+                continue
+
+            # Add preprocessed switch dates and filepath to the test parameters
+            test_combinations.append((
+                tested_month,
+                symbol,
+                interval,
+                strategy_name,
+                strategy_instance,
+                verbose,
+                preprocessed_switch_dates[symbol],  # Pass preprocessed switch dates
+                filepath_patterns[(tested_month, symbol, interval)]  # Pass cached filepath
+            ))
 
         print(f'Skipped {skipped_combinations} already run test combinations.')
         print(f'Running {len(test_combinations)} new test combinations...')
@@ -235,13 +264,10 @@ class MassTester:
 
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""
-        tested_month, symbol, interval, strategy_name, strategy_instance, verbose = test_params
+        # Unpack parameters
+        tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath = test_params
+
         output_buffer = []  # Buffer to collect verbose output
-
-        switch_dates = self.switch_dates_dict.get(symbol, [])
-        switch_dates = [pd.to_datetime(switch_date) for switch_date in switch_dates]
-
-        filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
         try:
             df = get_cached_dataframe(filepath)
         except Exception as error:

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.mass_testing import MassTester, _load_existing_results, _test_already_exists
+from config import HISTORICAL_DATA_DIR
 
 
 class TestMassTester:
@@ -480,8 +481,21 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Run a single test
-        result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, False))
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test with the new format
+        result = tester._run_single_test((
+                                             '2023-01',
+                                             'ES',
+                                             '1h',
+                                             'Test Strategy',
+                                             strategy,
+                                             False,
+                                             switch_dates,
+                                             filepath
+                                         ))
 
         # Verify the result
         assert result is not None
@@ -532,8 +546,21 @@ class TestMassTester:
             mock_string_io.return_value = mock_string_io_instance
             mock_string_io_instance.getvalue.return_value = "Test output"
 
-            # Run a single test with verbose=True
-            result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, True))
+            # Create preprocessed switch dates and filepath
+            switch_dates = []
+            filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+            # Run a single test with verbose=True using the new format
+            result = tester._run_single_test((
+                                                 '2023-01',
+                                                 'ES',
+                                                 '1h',
+                                                 'Test Strategy',
+                                                 strategy,
+                                                 True,
+                                                 switch_dates,
+                                                 filepath
+                                             ))
 
             # Verify the result
             assert result is not None
@@ -566,8 +593,21 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Run a single test
-        result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, False))
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test with the new format
+        result = tester._run_single_test((
+                                             '2023-01',
+                                             'ES',
+                                             '1h',
+                                             'Test Strategy',
+                                             strategy,
+                                             False,
+                                             switch_dates,
+                                             filepath
+                                         ))
 
         # Verify the result
         assert result is not None
@@ -597,8 +637,21 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Run a single test with verbose=True
-        result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, True))
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test with verbose=True using the new format
+        result = tester._run_single_test((
+                                             '2023-01',
+                                             'ES',
+                                             '1h',
+                                             'Test Strategy',
+                                             strategy,
+                                             True,
+                                             switch_dates,
+                                             filepath
+                                         ))
 
         # Verify the result
         assert result is not None
@@ -624,8 +677,21 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Run a single test
-        result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', MagicMock(), False))
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test with the new format
+        result = tester._run_single_test((
+                                             '2023-01',
+                                             'ES',
+                                             '1h',
+                                             'Test Strategy',
+                                             MagicMock(),
+                                             False,
+                                             switch_dates,
+                                             filepath
+                                         ))
 
         # Verify the result
         assert result is None
@@ -667,9 +733,22 @@ class TestMassTester:
         # Set tests_completed to trigger cache save (99 will become 100 when incremented)
         tester.__class__.tests_completed = 99
 
-        # Run a single test
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test with the new format
         with patch('app.backtesting.mass_testing.logger') as mock_logger:
-            result = tester._run_single_test(('2023-01', 'ES', '1h', 'Test Strategy', strategy, False))
+            result = tester._run_single_test((
+                                                 '2023-01',
+                                                 'ES',
+                                                 '1h',
+                                                 'Test Strategy',
+                                                 strategy,
+                                                 False,
+                                                 switch_dates,
+                                                 filepath
+                                             ))
 
             # Verify that the error was logged
             mock_logger.error.assert_called_once()
