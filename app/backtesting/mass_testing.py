@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import yaml
 from filelock import FileLock
@@ -359,7 +360,7 @@ class MassTester:
             logger.warning('No results available to convert to DataFrame.')
             return pd.DataFrame()
 
-        # Define column names and default values for better performance
+        # Define column names
         columns = [
             # Basic info
             'month', 'symbol', 'interval', 'strategy', 'total_trades', 'win_rate',
@@ -373,39 +374,35 @@ class MassTester:
             'expected_shortfall', 'ulcer_index'
         ]
 
-        # Prepare data with list comprehension for better performance
-        data = []
-        for result in self.results:
-            metrics = result['metrics']
-            row = [
-                # Basic info
-                result['month'],
-                result['symbol'],
-                result['interval'],
-                result['strategy'],
-                metrics.get('total_trades', 0),
-                metrics.get('win_rate', 0),
-                # Percentage-based metrics
-                metrics.get('total_return_percentage_of_margin', 0),
-                metrics.get('average_trade_return_percentage_of_margin', 0),
-                metrics.get('average_win_percentage_of_margin', 0),
-                metrics.get('average_loss_percentage_of_margin', 0),
-                metrics.get('commission_percentage_of_margin', 0),
-                # Risk metrics
-                metrics.get('profit_factor', 0),
-                metrics.get('maximum_drawdown_percentage', 0),
-                metrics.get('return_to_drawdown_ratio', 0),
-                metrics.get('sharpe_ratio', 0),
-                metrics.get('sortino_ratio', 0),
-                metrics.get('calmar_ratio', 0),
-                metrics.get('value_at_risk', 0),
-                metrics.get('expected_shortfall', 0),
-                metrics.get('ulcer_index', 0)
-            ]
-            data.append(row)
+        # Pre-allocate numpy arrays for each column
+        n_results = len(self.results)
 
-        # Create DataFrame directly from data with predefined columns
-        return pd.DataFrame(data, columns=columns)
+        # Create arrays for numeric columns
+        numeric_columns = columns[4:]  # All columns except month, symbol, interval, strategy
+        data = {
+            'month': [],
+            'symbol': [],
+            'interval': [],
+            'strategy': [],
+        }
+
+        for col in numeric_columns:
+            data[col] = np.zeros(n_results)
+
+        # Fill the arrays directly
+        for i, result in enumerate(self.results):
+            metrics = result['metrics']
+            data['month'].append(result['month'])
+            data['symbol'].append(result['symbol'])
+            data['interval'].append(result['interval'])
+            data['strategy'].append(result['strategy'])
+
+            # Fill numeric columns
+            for col in numeric_columns:
+                data[col][i] = metrics.get(col, 0)
+
+        # Create DataFrame from pre-filled arrays
+        return pd.DataFrame(data)
 
     def _save_results(self):
         """Save results to one big parquet file."""
