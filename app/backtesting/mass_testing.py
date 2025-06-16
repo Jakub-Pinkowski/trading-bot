@@ -338,39 +338,53 @@ class MassTester:
             logger.warning('No results available to convert to DataFrame.')
             return pd.DataFrame()
 
-        return pd.DataFrame(
-            [
-                {
-                    # Basic info
-                    'month': result['month'],
-                    'symbol': result['symbol'],
-                    'interval': result['interval'],
-                    'strategy': result['strategy'],
-                    'total_trades': result['metrics'].get('total_trades', 0),
-                    'win_rate': result['metrics'].get('win_rate', 0),
+        # Define column names and default values for better performance
+        columns = [
+            # Basic info
+            'month', 'symbol', 'interval', 'strategy', 'total_trades', 'win_rate',
+            # Percentage-based metrics
+            'total_return_percentage_of_margin', 'average_trade_return_percentage_of_margin',
+            'average_win_percentage_of_margin', 'average_loss_percentage_of_margin',
+            'commission_percentage_of_margin',
+            # Risk metrics
+            'profit_factor', 'maximum_drawdown_percentage', 'return_to_drawdown_ratio',
+            'sharpe_ratio', 'sortino_ratio', 'calmar_ratio', 'value_at_risk',
+            'expected_shortfall', 'ulcer_index'
+        ]
 
-                    # Percentage-based metrics
-                    'total_return_percentage_of_margin': result['metrics'].get('total_return_percentage_of_margin', 0),
-                    'average_trade_return_percentage_of_margin': result['metrics'].get(
-                        'average_trade_return_percentage_of_margin', 0),
-                    'average_win_percentage_of_margin': result['metrics'].get('average_win_percentage_of_margin', 0),
-                    'average_loss_percentage_of_margin': result['metrics'].get('average_loss_percentage_of_margin', 0),
-                    'commission_percentage_of_margin': result['metrics'].get('commission_percentage_of_margin', 0),
-
-                    # Risk metrics
-                    'profit_factor': result['metrics'].get('profit_factor', 0),
-                    'maximum_drawdown_percentage': result['metrics'].get('maximum_drawdown_percentage', 0),
-                    'return_to_drawdown_ratio': result['metrics'].get('return_to_drawdown_ratio', 0),
-                    'sharpe_ratio': result['metrics'].get('sharpe_ratio', 0),
-                    'sortino_ratio': result['metrics'].get('sortino_ratio', 0),
-                    'calmar_ratio': result['metrics'].get('calmar_ratio', 0),
-                    'value_at_risk': result['metrics'].get('value_at_risk', 0),
-                    'expected_shortfall': result['metrics'].get('expected_shortfall', 0),
-                    'ulcer_index': result['metrics'].get('ulcer_index', 0)
-                }
-                for result in self.results
+        # Prepare data with list comprehension for better performance
+        data = []
+        for result in self.results:
+            metrics = result['metrics']
+            row = [
+                # Basic info
+                result['month'],
+                result['symbol'],
+                result['interval'],
+                result['strategy'],
+                metrics.get('total_trades', 0),
+                metrics.get('win_rate', 0),
+                # Percentage-based metrics
+                metrics.get('total_return_percentage_of_margin', 0),
+                metrics.get('average_trade_return_percentage_of_margin', 0),
+                metrics.get('average_win_percentage_of_margin', 0),
+                metrics.get('average_loss_percentage_of_margin', 0),
+                metrics.get('commission_percentage_of_margin', 0),
+                # Risk metrics
+                metrics.get('profit_factor', 0),
+                metrics.get('maximum_drawdown_percentage', 0),
+                metrics.get('return_to_drawdown_ratio', 0),
+                metrics.get('sharpe_ratio', 0),
+                metrics.get('sortino_ratio', 0),
+                metrics.get('calmar_ratio', 0),
+                metrics.get('value_at_risk', 0),
+                metrics.get('expected_shortfall', 0),
+                metrics.get('ulcer_index', 0)
             ]
-        )
+            data.append(row)
+
+        # Create DataFrame directly from data with predefined columns
+        return pd.DataFrame(data, columns=columns)
 
     def _save_results(self):
         """Save results to one big parquet file."""
