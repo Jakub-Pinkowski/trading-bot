@@ -1063,10 +1063,13 @@ class TestHelperFunctions:
             'strategy': ['Strategy 1', 'Strategy 2']
         })
 
-        # Create a set of combinations
-        existing_combinations = set()
-        for _, row in existing_df.iterrows():
-            existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+        # Create a set of combinations using vectorized operation
+        existing_combinations = set(zip(
+            existing_df['month'].values,
+            existing_df['symbol'].values,
+            existing_df['interval'].values,
+            existing_df['strategy'].values
+        ))
 
         existing_data = (existing_df, existing_combinations)
 
@@ -1083,10 +1086,13 @@ class TestHelperFunctions:
             'strategy': ['Strategy 1', 'Strategy 2']
         })
 
-        # Create a set of combinations
-        existing_combinations = set()
-        for _, row in existing_df.iterrows():
-            existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+        # Create a set of combinations using vectorized operation
+        existing_combinations = set(zip(
+            existing_df['month'].values,
+            existing_df['symbol'].values,
+            existing_df['interval'].values,
+            existing_df['strategy'].values
+        ))
 
         existing_data = (existing_df, existing_combinations)
 

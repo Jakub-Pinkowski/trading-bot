@@ -29,10 +29,13 @@ def _load_existing_results():
     if os.path.exists(parquet_filename):
         try:
             df = pd.read_parquet(parquet_filename)
-            # Create a set of tuples for faster lookup
-            existing_combinations = set()
-            for _, row in df.iterrows():
-                existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+            # Create tuples directly from DataFrame columns - O(1) operation with vectorization
+            existing_combinations = set(zip(
+                df['month'].values,
+                df['symbol'].values,
+                df['interval'].values,
+                df['strategy'].values
+            ))
             return df, existing_combinations
         except Exception as error:
             logger.error(f'Failed to load existing results: {error}')
@@ -249,8 +252,8 @@ class MassTester:
         total_time = end_time - start_time
 
         if len(test_combinations) > 0:
-            avg_time_per_test = total_time / len(test_combinations)
-            print(f'Average time per test: {avg_time_per_test:.4f} seconds')
+            average_time_per_100_tests = total_time / len(test_combinations) * 100
+            print(f'Average time per 100 tests: {average_time_per_100_tests:.4f} seconds')
 
         print(f'Total execution time: {total_time:.2f} seconds')
 
