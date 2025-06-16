@@ -664,8 +664,8 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Set tests_completed to trigger cache save (9 will become 10 when incremented)
-        tester.__class__.tests_completed = 9
+        # Set tests_completed to trigger cache save (99 will become 100 when incremented)
+        tester.__class__.tests_completed = 99
 
         # Run a single test
         with patch('app.backtesting.mass_testing.logger') as mock_logger:

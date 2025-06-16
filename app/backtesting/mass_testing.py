@@ -256,7 +256,7 @@ class MassTester:
         # Save caches only periodically
         # Add this as a class variable
         self.__class__.tests_completed = getattr(self.__class__, 'tests_completed', 0) + 1
-        if self.__class__.tests_completed % 10 == 0:  # Adjust frequency as needed
+        if self.__class__.tests_completed % 100 == 0:  # Adjust frequency as needed
             # Use separate locks for indicator and dataframe caches to reduce contention
             try:
                 with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
@@ -266,10 +266,7 @@ class MassTester:
             except Exception as e:
                 logger.error(f"Failed to save caches: {e}")
 
-        trades_with_metrics_list = []
-        for trade in trades_list:
-            trade_with_metrics = calculate_trade_metrics(trade, symbol)
-            trades_with_metrics_list.append(trade_with_metrics)
+        trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
 
         if trades_with_metrics_list:
             metrics = SummaryMetrics(trades_with_metrics_list)

@@ -15,7 +15,7 @@ def main():
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
     tester.add_rsi_tests(
-        rsi_periods=[7, 8, 14, 15, 16, 17, 21],
+        rsi_periods=[6],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],

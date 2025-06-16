@@ -109,8 +109,8 @@ def test_get_cached_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sam
     cached_df = dataframe_cache.get(filepath)
     pd.testing.assert_frame_equal(cached_df, sample_dataframe)
 
-    # Verify that save_cache was called
-    mock_save_cache.assert_called_once()
+    # Verify that save_cache was NOT called - this is now handled periodically by MassTester
+    mock_save_cache.assert_not_called()
 
 
 def test_get_cached_dataframe_cache_hit(sample_dataframe):
@@ -165,8 +165,8 @@ def test_get_cached_dataframe_with_real_file(tmp_path, sample_dataframe):
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache') as mock_save_cache:
         result_df = get_cached_dataframe(filepath)
 
-        # Verify that save_cache was called
-        mock_save_cache.assert_called_once()
+        # Verify that save_cache was NOT called - this is now handled periodically by MassTester
+        mock_save_cache.assert_not_called()
 
     # Verify that the result matches the sample dataframe
     pd.testing.assert_frame_equal(result_df, sample_dataframe)

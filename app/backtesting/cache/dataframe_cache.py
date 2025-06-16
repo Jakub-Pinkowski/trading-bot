@@ -23,7 +23,7 @@ def get_cached_dataframe(filepath):
     # Store in cache
     dataframe_cache.set(filepath, df)
 
-    # Save cache to disk
-    dataframe_cache.save_cache()
+    # Don't save cache to disk on every miss - this will be handled periodically by MassTester
+    # dataframe_cache.save_cache()
 
     return df.copy()
