@@ -275,6 +275,7 @@ def test_calculate_atr_with_constant_prices():
     assert (atr.iloc[14:] == 0).all()
 
 
+# BUG [HIGH]: Sometimes it fails randomly
 def test_calculate_atr_with_nan_values():
     """Test ATR calculation with NaN values in the input data"""
     # Create a dataframe with NaN values
