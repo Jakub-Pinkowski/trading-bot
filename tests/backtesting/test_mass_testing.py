@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock, mock_open, ANY
 
 import pandas as pd
 import pytest
@@ -382,6 +382,10 @@ class TestMassTester:
         mock_print.assert_any_call('Preparing: Month=2023-01, Symbol=ES, Interval=1h')
         mock_print.assert_any_call('Verbose test output')
 
+        # Verify that the timing information was printed
+        mock_print.assert_any_call(ANY)  # Average time per test
+        mock_print.assert_any_call(ANY)  # Total execution time
+
         # Verify that verbose_output was removed from the result
         assert 'verbose_output' not in results[0]
 
@@ -453,6 +457,17 @@ class TestMassTester:
                 break
 
         assert found, f"Expected message not found in print calls: {expected_message}"
+
+        # Verify that the timing information was printed
+        # Since we're skipping all tests, we should only see the total execution time
+        total_time_found = False
+        for call in mock_print.call_args_list:
+            args, _ = call
+            if len(args) > 0 and "Total execution time:" in args[0]:
+                total_time_found = True
+                break
+
+        assert total_time_found, "Total execution time message not found in print calls"
 
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
     def test_run_single_test(self, mock_get_df):

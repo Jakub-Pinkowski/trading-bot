@@ -123,6 +123,8 @@ class MassTester:
 
     def run_tests(self, verbose=True, max_workers=None, skip_existing=True):
         """  Run all tests with the configured parameters in parallel. """
+        start_time = time.time()  # Track the start time of the entire process
+
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
@@ -200,6 +202,12 @@ class MassTester:
 
         if not test_combinations:
             print('All tests have already been run. No new tests to execute.')
+
+            # Calculate and print the total time even when no tests are run
+            end_time = time.time()
+            total_time = end_time - start_time
+            print(f'Total execution time: {total_time:.2f} seconds')
+
             return self.results
 
         # Run tests in parallel
@@ -235,6 +243,16 @@ class MassTester:
 
         if self.results:
             self._save_results()
+
+        # Calculate and print the total and average time
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        if len(test_combinations) > 0:
+            avg_time_per_test = total_time / len(test_combinations)
+            print(f'Average time per test: {avg_time_per_test:.4f} seconds')
+
+        print(f'Total execution time: {total_time:.2f} seconds')
 
         return self.results
 

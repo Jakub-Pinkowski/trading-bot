@@ -1,11 +1,7 @@
-import time
-
 from app.backtesting.mass_testing import MassTester
 
 
 def main():
-    start_time = time.time()
-
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
@@ -15,7 +11,7 @@ def main():
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
     tester.add_rsi_tests(
-        rsi_periods=[5],
+        rsi_periods=[4],
         lower_thresholds=[20, 25, 30, 35],
         upper_thresholds=[65, 70, 75, 80],
         rollovers=[False],
@@ -54,14 +50,6 @@ def main():
     # Run all tests
     # Set skip_existing=False to force re-running of all tests
     tester.run_tests(verbose=False, max_workers=None)
-
-    end_time = time.time()
-    total_time = end_time - start_time
-
-    # Format total_time as MM:SS
-    minutes = int(total_time // 60)
-    seconds = int(total_time % 60)
-    print(f'Total execution time: {minutes:02}:{seconds:02} (MM:SS) | {total_time:.2f} seconds')
 
 
 if __name__ == '__main__':
