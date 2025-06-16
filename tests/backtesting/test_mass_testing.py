@@ -281,7 +281,7 @@ class TestMassTester:
     def test_run_tests_basic(self, mock_executor, mock_as_completed, mock_test_exists, mock_load_results):
         """Test the basic functionality of run_tests."""
         # Setup mocks
-        mock_load_results.return_value = pd.DataFrame()
+        mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = False
 
         # Create a mock result that will be returned by the future
@@ -338,7 +338,7 @@ class TestMassTester:
     def test_run_tests_verbose(self, mock_print, mock_executor, mock_as_completed, mock_test_exists, mock_load_results):
         """Test the run_tests method with verbose=True."""
         # Setup mocks
-        mock_load_results.return_value = pd.DataFrame()
+        mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = False
 
         # Create a mock result that will be returned by the future
@@ -387,7 +387,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing._load_existing_results')
     def test_run_tests_no_strategies(self, mock_load_results):
         """Test that run_tests raises an error when no strategies are added."""
-        mock_load_results.return_value = pd.DataFrame()
+        mock_load_results.return_value = (pd.DataFrame(), set())
 
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
@@ -398,7 +398,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing._test_already_exists')
     def test_run_tests_all_skipped(self, mock_test_exists, mock_load_results):
         """Test that run_tests handles the case where all tests are skipped."""
-        mock_load_results.return_value = pd.DataFrame()
+        mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = True  # All tests already exist
 
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
@@ -418,7 +418,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing.get_strategy_name')
     def test_run_tests_skipped_verbose(self, mock_get_name, mock_print, mock_test_exists, mock_load_results):
         """Test that run_tests handles skipped tests with verbose=True."""
-        mock_load_results.return_value = pd.DataFrame()
+        mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = True  # All tests already exist
 
         # Mock the strategy name
@@ -495,6 +495,7 @@ class TestMassTester:
         assert result['verbose_output'] is None  # Should be None when verbose=False
 
         # Verify the strategy was called correctly
+        # The switch_dates are generated inside _run_single_test based on the symbol
         strategy.run.assert_called_once_with(mock_df, [])
 
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
@@ -898,14 +899,25 @@ class TestHelperFunctions:
     def test_load_existing_results_file_exists(self, mock_read_parquet, mock_exists):
         """Test _load_existing_results when the file exists."""
         mock_exists.return_value = True
-        mock_df = pd.DataFrame({'strategy': ['Test']})
+        mock_df = pd.DataFrame({
+            'month': ['2023-01'],
+            'symbol': ['ES'],
+            'interval': ['1h'],
+            'strategy': ['Test']
+        })
         mock_read_parquet.return_value = mock_df
 
-        result = _load_existing_results()
+        df, existing_combinations = _load_existing_results()
 
-        assert isinstance(result, pd.DataFrame)
-        assert not result.empty
-        assert result.iloc[0]['strategy'] == 'Test'
+        # Check the DataFrame
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+        assert df.iloc[0]['strategy'] == 'Test'
+
+        # Check the set of combinations
+        assert isinstance(existing_combinations, set)
+        assert ('2023-01', 'ES', '1h', 'Test') in existing_combinations
+
         mock_exists.assert_called_once()
         mock_read_parquet.assert_called_once()
 
@@ -915,10 +927,16 @@ class TestHelperFunctions:
         """Test _load_existing_results when the file doesn't exist."""
         mock_exists.return_value = False
 
-        result = _load_existing_results()
+        df, existing_combinations = _load_existing_results()
 
-        assert isinstance(result, pd.DataFrame)
-        assert result.empty
+        # Check the DataFrame
+        assert isinstance(df, pd.DataFrame)
+        assert df.empty
+
+        # Check the set of combinations
+        assert isinstance(existing_combinations, set)
+        assert len(existing_combinations) == 0
+
         mock_exists.assert_called_once()
         mock_read_parquet.assert_not_called()
 
@@ -929,43 +947,65 @@ class TestHelperFunctions:
         mock_exists.return_value = True
         mock_read_parquet.side_effect = Exception("Error reading file")
 
-        result = _load_existing_results()
+        df, existing_combinations = _load_existing_results()
 
-        assert isinstance(result, pd.DataFrame)
-        assert result.empty
+        # Check the DataFrame
+        assert isinstance(df, pd.DataFrame)
+        assert df.empty
+
+        # Check the set of combinations
+        assert isinstance(existing_combinations, set)
+        assert len(existing_combinations) == 0
+
         mock_exists.assert_called_once()
         mock_read_parquet.assert_called_once()
 
     def test_test_already_exists_match(self):
         """Test _test_already_exists when there's a match."""
-        existing_results = pd.DataFrame({
+        existing_df = pd.DataFrame({
             'month': ['2023-01', '2023-02'],
             'symbol': ['ES', 'NQ'],
             'interval': ['1h', '4h'],
             'strategy': ['Strategy 1', 'Strategy 2']
         })
 
-        result = _test_already_exists(existing_results, '2023-01', 'ES', '1h', 'Strategy 1')
+        # Create a set of combinations
+        existing_combinations = set()
+        for _, row in existing_df.iterrows():
+            existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+
+        existing_data = (existing_df, existing_combinations)
+
+        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 1')
 
         assert result == True
 
     def test_test_already_exists_no_match(self):
         """Test _test_already_exists when there's no match."""
-        existing_results = pd.DataFrame({
+        existing_df = pd.DataFrame({
             'month': ['2023-01', '2023-02'],
             'symbol': ['ES', 'NQ'],
             'interval': ['1h', '4h'],
             'strategy': ['Strategy 1', 'Strategy 2']
         })
 
-        result = _test_already_exists(existing_results, '2023-01', 'ES', '1h', 'Strategy 3')
+        # Create a set of combinations
+        existing_combinations = set()
+        for _, row in existing_df.iterrows():
+            existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+
+        existing_data = (existing_df, existing_combinations)
+
+        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 3')
 
         assert result == False
 
     def test_test_already_exists_empty_results(self):
         """Test _test_already_exists with empty results."""
-        existing_results = pd.DataFrame()
+        existing_df = pd.DataFrame()
+        existing_combinations = set()
+        existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_results, '2023-01', 'ES', '1h', 'Strategy 1')
+        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 1')
 
         assert result is False

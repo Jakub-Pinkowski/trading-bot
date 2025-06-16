@@ -23,31 +23,31 @@ from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DAT
 logger = get_logger('backtesting/mass_testing')
 
 
-# TODO [HIGH]: Speed up this process
 def _load_existing_results():
     """Load existing results from the parquet file."""
     parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
     if os.path.exists(parquet_filename):
         try:
-            return pd.read_parquet(parquet_filename)
+            df = pd.read_parquet(parquet_filename)
+            # Create a set of tuples for faster lookup
+            existing_combinations = set()
+            for _, row in df.iterrows():
+                existing_combinations.add((row['month'], row['symbol'], row['interval'], row['strategy']))
+            return df, existing_combinations
         except Exception as error:
             logger.error(f'Failed to load existing results: {error}')
-    return pd.DataFrame()
+    return pd.DataFrame(), set()
 
 
-def _test_already_exists(existing_results, month, symbol, interval, strategy):
+def _test_already_exists(existing_data, month, symbol, interval, strategy):
     """Check if a test with the given parameters already exists in the results."""
+    existing_results, existing_combinations = existing_data
+
     if existing_results.empty:
         return False
 
-    # Filter the existing results to find a match
-    mask = (
-            (existing_results['month'] == month) &
-            (existing_results['symbol'] == symbol) &
-            (existing_results['interval'] == interval) &
-            (existing_results['strategy'] == strategy)
-    )
-    return mask.any()
+    # Check if the combination exists in the set (O(1) operation)
+    return (month, symbol, interval, strategy) in existing_combinations
 
 
 class MassTester:
@@ -128,7 +128,7 @@ class MassTester:
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
 
         # Load existing results to check for already run tests
-        existing_results = _load_existing_results() if skip_existing else pd.DataFrame()
+        existing_data = _load_existing_results() if skip_existing else (pd.DataFrame(), set())
 
         total_combinations = len(self.tested_months) * len(self.symbols) * len(self.intervals) * len(self.strategies)
         print(f'Found {total_combinations} potential test combinations...')
@@ -147,7 +147,7 @@ class MassTester:
 
                     for strategy_name, strategy_instance in self.strategies:
                         # Check if this test has already been run
-                        if skip_existing and _test_already_exists(existing_results,
+                        if skip_existing and _test_already_exists(existing_data,
                                                                   tested_month,
                                                                   symbol,
                                                                   interval,
