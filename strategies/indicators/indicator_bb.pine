@@ -1,0 +1,35 @@
+//@version=6
+indicator(title="Indicator Bollinger Bands", overlay=true)
+
+// === INPUTS ===
+bbPeriod = input.int(20, title="BB Period", minval=2)
+bbMultiplier = input.float(2.0, title="BB Standard Deviation", minval=0.1, step=0.1)
+
+// === BOLLINGER BANDS CALCULATION ===
+[middle, upper, lower] = ta.bb(close, bbPeriod, bbMultiplier)
+
+// === SIGNALS ON BAR CLOSE ===
+priceAboveUpper = close > upper
+priceBelowLower = close < lower
+priceBackBelowUpper = ta.crossunder(close, upper)
+priceBackAboveLower = ta.crossover(close, lower)
+
+// === BUY/SELL SIGNALS ===
+buy = priceBackAboveLower[1]  // Price bounces back from lower band
+sell = priceBackBelowUpper[1] // Price falls back from upper band
+
+// === PLOTS ===
+plot(middle, title="Middle Band", color=color.yellow, linewidth=2)
+plot(upper, title="Upper Band", color=color.blue)
+plot(lower, title="Lower Band", color=color.blue)
+
+// Fill between bands
+fill(plot(upper, title="Upper Band (fill)", color=na), plot(lower, title="Lower Band (fill)", color=na), color=color.new(color.blue, 95), title="BB Background")
+
+// Plot buy/sell signals
+plotshape(buy, title="Buy", text="Buy", style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, size=size.small)
+plotshape(sell, title="Sell", text="Sell", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+
+// === ALERTS (triggered at open of N+1) ===
+alertcondition(buy, title="BB Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
+alertcondition(sell, title="BB Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
