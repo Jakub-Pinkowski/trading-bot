@@ -117,7 +117,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
-# TODO [HIGH]: Should I reset indicators values on contract switches?
 # BUG [HIGH]: Fix drawdown calculations
 # TODO [HIGH]: Decide on the final per_trade_metrics
 # TODO [HIGH]: Decide on the final summary_metrics

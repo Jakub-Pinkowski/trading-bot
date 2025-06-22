@@ -1,7 +1,6 @@
 import pandas as pd
 
 
-# TODO [MEDIUM]: Some of those should be private methods
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None, slippage=0):
         self.switch_dates = None
