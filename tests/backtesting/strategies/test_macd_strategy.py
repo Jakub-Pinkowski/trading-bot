@@ -294,7 +294,7 @@ class TestMACDStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         if len(trades) > 0:
@@ -575,7 +575,7 @@ class TestMACDStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Verify the strategy ran without errors
         assert isinstance(trades, list)

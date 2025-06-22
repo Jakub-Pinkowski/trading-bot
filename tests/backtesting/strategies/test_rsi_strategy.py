@@ -501,7 +501,7 @@ class TestRSIStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Verify the strategy ran without errors and generated trades
         assert isinstance(trades, list)
@@ -626,7 +626,7 @@ class TestRSIStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Verify the strategy ran without errors
         assert isinstance(trades, list)
@@ -762,7 +762,7 @@ class TestRSIStrategy:
         has_sell_signal = -1 in second_peak_signals.values
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Verify the strategy ran without errors
         assert isinstance(trades, list)
@@ -869,7 +869,7 @@ class TestRSIStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0

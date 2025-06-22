@@ -65,7 +65,7 @@ class TestTrailingScenarios:
             df.loc[df.index[105], 'low'] = 100.0  # Price drops, may trigger trailing stop depending on trailing value
 
             df = strategy.generate_signals(df)  # Add signals
-            trades = strategy.extract_trades(df, [])
+            trades = strategy._extract_trades(df, [])
 
             # Should have at least one trade
             assert len(trades) > 0
@@ -121,7 +121,7 @@ class TestTrailingScenarios:
 
         # Generate signals and extract trades
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -198,7 +198,7 @@ class TestTrailingScenarios:
 
         # Generate signals and extract trades
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -263,7 +263,7 @@ class TestTrailingScenarios:
 
         # Generate signals and extract trades
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -335,7 +335,7 @@ class TestTrailingScenarios:
                 df['signal'] = 0
                 return df
 
-            def extract_trades(self, df, switch_dates):
+            def _extract_trades(self, df, switch_dates):
                 # Create a trade with the switch flag
                 # Use indices after the warm-up period
                 switch_trade = {

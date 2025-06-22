@@ -82,7 +82,7 @@ class TestBaseStrategy:
         # Spy on the methods to ensure they're called
         original_add_indicators = strategy.add_indicators
         original_generate_signals = strategy.generate_signals
-        original_extract_trades = strategy.extract_trades
+        original_extract_trades = strategy._extract_trades
 
         calls = {'add_indicators': 0, 'generate_signals': 0, 'extract_trades': 0}
 
@@ -100,7 +100,7 @@ class TestBaseStrategy:
 
         strategy.add_indicators = mock_add_indicators
         strategy.generate_signals = mock_generate_signals
-        strategy.extract_trades = mock_extract_trades
+        strategy._extract_trades = mock_extract_trades
 
         trades = strategy.run(df, switch_dates)
 
@@ -115,7 +115,7 @@ class TestBaseStrategy:
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -141,7 +141,7 @@ class TestBaseStrategy:
         df.loc[df.index[5], 'low'] = 90.0  # Price drops below trailing stop
 
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -172,7 +172,7 @@ class TestBaseStrategy:
         df.loc[df.index[4], 'high'] = 95.0  # Price rises but not enough to trigger stop
         df.loc[df.index[5], 'high'] = 105.0  # Price rises above trailing stop
 
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -200,7 +200,7 @@ class TestBaseStrategy:
                 df['signal'] = 0
                 return df
 
-            def extract_trades(self, df, switch_dates):
+            def _extract_trades(self, df, switch_dates):
                 # Create a trade with the switch flag
                 # Use indices after the warm-up period
                 trade = {
@@ -498,7 +498,7 @@ class TestBaseStrategy:
         df.iloc[100, df.columns.get_loc('signal')] = 1
 
         # Run the strategy
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -531,7 +531,7 @@ class TestBaseStrategy:
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0

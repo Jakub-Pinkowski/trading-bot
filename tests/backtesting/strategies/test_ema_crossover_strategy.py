@@ -341,7 +341,7 @@ class TestEMACrossoverStrategy:
 
         # Create a custom strategy that returns trades with switch flags
         class MultiSwitchTestStrategy(EMACrossoverStrategy):
-            def extract_trades(self, df, switch_dates):
+            def _extract_trades(self, df, switch_dates):
                 # Create trades with switch flags
                 trades = []
                 for i, switch_date in enumerate(switch_dates):

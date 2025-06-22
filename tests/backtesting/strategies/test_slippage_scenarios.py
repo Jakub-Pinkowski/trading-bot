@@ -57,7 +57,7 @@ class TestSlippageScenarios:
             df = create_test_df()
             df = strategy.generate_signals(df)  # Add signals
 
-            trades = strategy.extract_trades(df, [])
+            trades = strategy._extract_trades(df, [])
 
             # Should have at least one trade
             assert len(trades) > 0
@@ -123,7 +123,7 @@ class TestSlippageScenarios:
         df.loc[df.index[105], 'low'] = 90.0  # Price drops below trailing stop
 
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         assert len(trades) > 0
@@ -196,7 +196,7 @@ class TestSlippageScenarios:
 
         # Generate signals and extract trades
         df = strategy.generate_signals(df)
-        trades = strategy.extract_trades(df, [switch_date])
+        trades = strategy._extract_trades(df, [switch_date])
 
         # Should have at least one trade
         assert len(trades) > 0

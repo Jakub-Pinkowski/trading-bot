@@ -267,7 +267,7 @@ class TestBollingerBandsStrategy:
         df = strategy.generate_signals(df)
 
         # Extract trades
-        trades = strategy.extract_trades(df, [])
+        trades = strategy._extract_trades(df, [])
 
         # Should have at least one trade
         if len(trades) > 0:
