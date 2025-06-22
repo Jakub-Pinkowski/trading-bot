@@ -5,18 +5,18 @@ def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=['ZC', 'ZW', 'ZS', 'ZL'],
-        intervals=['5m', '15m', '30m', '1h', '2h', '4h', '1d']
+        symbols=['ZW'],
+        intervals=['4h']
     )
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
     tester.add_rsi_tests(
-        rsi_periods=[26],
-        lower_thresholds=[20, 25],
-        upper_thresholds=[65, 70, 75, 80],
+        rsi_periods=[20],
+        lower_thresholds=[30],
+        upper_thresholds=[70],
         rollovers=[False],
-        trailing_stops=[None, 1],
-        slippages=[0, 0.05]
+        trailing_stops=[None],
+        slippages=[0]
     )
     #
     # # EMA Crossover uses two moving averages to identify trend changes
@@ -42,7 +42,7 @@ def main():
     #     fast_periods=[8, 10, 12, 15],
     #     slow_periods=[21, 26, 30, 35],
     #     signal_periods=[5, 7, 9, 12],
-    #     rollovers=[False],
+    #     rollovers=[False]
     #     trailing_stops=[None,0.5, 1],
     #     slippages=[0, 0.05, 0.1, 0.15, 0.2]
     # )
