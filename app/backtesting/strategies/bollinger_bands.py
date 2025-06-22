@@ -2,7 +2,6 @@ from app.backtesting.indicators import calculate_bollinger_bands
 from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
-# TODO [MEDIUM]: To be tested
 class BollingerBandsStrategy(BaseStrategy):
     def __init__(self, period=20, num_std=2, rollover=False, trailing=None, slippage=0):
         super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
