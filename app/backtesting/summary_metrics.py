@@ -181,7 +181,7 @@ class SummaryMetrics:
             return 0, 0
 
         # Calculate max drawdown in dollars
-        peak_dollars = self.cumulative_pnl_dollars[0]
+        peak_dollars = 0
         max_drawdown = 0
         for val in self.cumulative_pnl_dollars:
             if val > peak_dollars:
@@ -191,7 +191,7 @@ class SummaryMetrics:
                 max_drawdown = drawdown
 
         # Calculate max drawdown in percentage
-        peak_pct = self.cumulative_pnl_pct[0]
+        peak_pct = 0
         maximum_drawdown_percentage = 0
         for val in self.cumulative_pnl_pct:
             if val > peak_pct:
@@ -330,7 +330,8 @@ class SummaryMetrics:
                 peak = val
                 drawdowns.append(0)
             else:
-                drawdown_pct = (peak - val) / peak * 100 if peak != 0 else 0
+                # Use the same drawdown calculation as in _calculate_max_drawdown
+                drawdown_pct = peak - val
                 drawdowns.append(drawdown_pct)
 
         # Calculate Ulcer Index

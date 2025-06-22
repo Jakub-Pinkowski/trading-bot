@@ -52,10 +52,10 @@ class TestCalculateMaxDrawdown:
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         metrics = SummaryMetrics([trade])
         max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
-        # For a single negative trade, the peak is initialized to the first value (which is negative)
-        # Since there are no further values to compare against, the drawdown remains 0
-        assert max_drawdown == 0
-        assert max_drawdown_pct == 0
+        # For a single negative trade, the peak is initialized to 0
+        # Since the cumulative PnL is negative, there is a drawdown from 0 to -100
+        assert max_drawdown == 100.0
+        assert max_drawdown_pct == 1.0
 
     def test_multiple_trades_no_drawdown(self):
         """Test calculation of max drawdown with multiple trades but no drawdown."""
@@ -1167,12 +1167,12 @@ class TestCalculateUlcerIndex:
         ui = metrics._calculate_ulcer_index()
 
         # Calculate expected value manually
-        # Drawdowns: 0, 0.5/1.0*100=50%, 1.1/1.0*100=110%, 0
-        # UI = sqrt(mean([0^2, 50^2, 110^2, 0^2])) = sqrt((0 + 2500 + 12100 + 0)/4) = sqrt(3650) ≈ 60.41
+        # Drawdowns: 0, 0.5, 1.1, 0
+        # UI = sqrt(mean([0^2, 0.5^2, 1.1^2, 0^2])) = sqrt((0 + 0.25 + 1.21 + 0)/4) = sqrt(0.365) ≈ 0.604
 
         # Allow for small floating-point differences
         assert ui > 0
-        assert abs(ui - 60.41) < 1.0  # Allow for some difference due to implementation details
+        assert abs(ui - 0.604) < 0.1  # Allow for some difference due to implementation details
 
     def test_multiple_drawdowns(self):
         """Test calculation of Ulcer Index with multiple drawdowns."""
