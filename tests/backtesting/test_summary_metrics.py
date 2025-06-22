@@ -1391,3 +1391,223 @@ class TestPrintSummaryMetrics:
         assert "Value at Risk (95%): 2.5%" in output
         assert "Expected Shortfall (95%): 3.2%" in output
         assert "Ulcer Index: 1.8" in output
+
+
+class TestPrivateHelperMethods:
+    """Tests for private helper methods in SummaryMetrics."""
+
+    def test_has_trades(self):
+        """Test _has_trades method."""
+        # Test with trades
+        trades = [create_sample_trade()]
+        metrics = SummaryMetrics(trades)
+        assert metrics._has_trades() == True
+
+        # Test without trades
+        metrics = SummaryMetrics([])
+        assert metrics._has_trades() == False
+
+    def test_has_winning_trades(self):
+        """Test _has_winning_trades method."""
+        # Test with winning trades
+        trades = [create_sample_trade(net_pnl=100.0, return_percentage=1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()  # This sets self.winning_trades
+        assert metrics._has_winning_trades() == True
+
+        # Test without winning trades
+        trades = [create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()  # This sets self.winning_trades
+        assert metrics._has_winning_trades() == False
+
+        # Test with empty trades
+        metrics = SummaryMetrics([])
+        metrics.total_trades = 0
+        metrics.winning_trades = []  # Set directly for empty case
+        assert metrics._has_winning_trades() == False
+
+    def test_has_losing_trades(self):
+        """Test _has_losing_trades method."""
+        # Test with losing trades
+        trades = [create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()  # This sets self.losing_trades
+        assert metrics._has_losing_trades() == True
+
+        # Test without losing trades
+        trades = [create_sample_trade(net_pnl=100.0, return_percentage=1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()  # This sets self.losing_trades
+        assert metrics._has_losing_trades() == False
+
+        # Test with empty trades
+        metrics = SummaryMetrics([])
+        metrics.total_trades = 0
+        metrics.losing_trades = []  # Set directly for empty case
+        assert metrics._has_losing_trades() == False
+
+    def test_initialize_calculations(self):
+        """Test _initialize_calculations method."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
+        ]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)  # Set this first as it's needed by other methods
+
+        # Call the method
+        metrics._initialize_calculations()
+
+        # Verify the calculations were initialized
+        assert hasattr(metrics, 'winning_trades')
+        assert hasattr(metrics, 'losing_trades')
+        assert hasattr(metrics, 'win_rate')
+        assert hasattr(metrics, 'total_return')
+        assert hasattr(metrics, 'total_margin_used')
+        assert hasattr(metrics, 'max_drawdown')
+        assert hasattr(metrics, 'maximum_drawdown_percentage')
+        assert hasattr(metrics, 'returns')
+        assert hasattr(metrics, 'durations')
+        assert hasattr(metrics, 'cumulative_pnl_dollars')
+        assert hasattr(metrics, 'cumulative_pnl_pct')
+
+        assert len(metrics.winning_trades) == 1
+        assert len(metrics.losing_trades) == 1
+        assert metrics.win_rate == 50.0
+
+    def test_calculate_win_loss_trades(self):
+        """Test _calculate_win_loss_trades method."""
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=0.0, return_percentage=0.0)  # Break-even trade
+        ]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+
+        # Call the method (it doesn't return values, it sets instance variables)
+        metrics._calculate_win_loss_trades()
+
+        assert len(metrics.winning_trades) == 2  # Two positive trades
+        assert len(metrics.losing_trades) == 2  # Two non-positive trades (including break-even)
+        assert metrics.win_count == 2
+        assert metrics.loss_count == 2
+        assert metrics.win_rate == 50.0
+
+    def test_calculate_cumulative_pnl(self):
+        """Test _calculate_cumulative_pnl method."""
+        # Create trades with specific dates
+        base_date = datetime.now()
+        trades = [
+            {
+                'entry_time': base_date,
+                'exit_time': base_date + timedelta(hours=1),
+                'return_percentage_of_margin': 1.0,
+                'net_pnl': 100.0
+            },
+            {
+                'entry_time': base_date + timedelta(hours=2),
+                'exit_time': base_date + timedelta(hours=3),
+                'return_percentage_of_margin': -0.5,
+                'net_pnl': -50.0
+            },
+            {
+                'entry_time': base_date + timedelta(hours=4),
+                'exit_time': base_date + timedelta(hours=5),
+                'return_percentage_of_margin': 2.0,
+                'net_pnl': 200.0
+            }
+        ]
+
+        metrics = SummaryMetrics(trades)
+
+        # Call the method (it doesn't return values, it sets instance variables)
+        metrics._calculate_cumulative_pnl()
+
+        # Verify cumulative calculations
+        assert len(metrics.cumulative_pnl_pct) == 3
+        assert len(metrics.cumulative_pnl_dollars) == 3
+        assert metrics.cumulative_pnl_pct == [1.0, 0.5, 2.5]  # 1.0, 1.0-0.5, 0.5+2.0
+        assert metrics.cumulative_pnl_dollars == [100.0, 50.0, 250.0]  # 100, 100-50, 50+200
+
+    def test_calculate_average_win_percentage_of_margin(self):
+        """Test _calculate_average_win_percentage_of_margin method."""
+        trades = [
+            create_sample_trade(return_percentage=1.0),
+            create_sample_trade(return_percentage=2.0),
+            create_sample_trade(return_percentage=-0.5)  # This should be ignored
+        ]
+        metrics = SummaryMetrics(trades)
+
+        avg_win = metrics._calculate_average_win_percentage_of_margin()
+
+        assert avg_win == 1.5  # (1.0 + 2.0) / 2
+
+    def test_calculate_average_loss_percentage_of_margin(self):
+        """Test _calculate_average_loss_percentage_of_margin method."""
+        trades = [
+            create_sample_trade(return_percentage=1.0),  # This should be ignored
+            create_sample_trade(return_percentage=-0.5),
+            create_sample_trade(return_percentage=-1.5)
+        ]
+        metrics = SummaryMetrics(trades)
+
+        avg_loss = metrics._calculate_average_loss_percentage_of_margin()
+
+        assert avg_loss == -1.0  # (-0.5 + -1.5) / 2
+
+    def test_calculate_commission_percentage_of_margin(self):
+        """Test _calculate_commission_percentage_of_margin method."""
+        trades = [
+            create_sample_trade(commission=5.0, margin_requirement=10000.0),
+            create_sample_trade(commission=10.0, margin_requirement=20000.0)
+        ]
+        metrics = SummaryMetrics(trades)
+
+        commission_pct = metrics._calculate_commission_percentage_of_margin()
+
+        # Total commission: 15.0, Total margin: 30000.0
+        # Commission percentage: (15.0 / 30000.0) * 100 = 0.05%
+        expected = round((15.0 / 30000.0) * 100, 2)
+        assert commission_pct == expected
+
+    def test_calculate_profit_factor(self):
+        """Test _calculate_profit_factor method."""
+        # Test with both wins and losses
+        trades = [
+            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
+            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
+            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
+            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
+        ]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()  # This sets winning_trades and losing_trades
+
+        profit_factor = metrics._calculate_profit_factor()
+
+        # Total wins: 300.0, Total losses: -150.0 (absolute value = 150.0)
+        # Profit factor: 300.0 / 150.0 = 2.0
+        assert profit_factor == 2.0
+
+        # Test with only wins
+        trades = [create_sample_trade(net_pnl=100.0, return_percentage=1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()
+        profit_factor = metrics._calculate_profit_factor()
+        assert profit_factor == float('inf')
+
+        # Test with only losses
+        trades = [create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)]
+        metrics = SummaryMetrics(trades)
+        metrics.total_trades = len(trades)
+        metrics._calculate_win_loss_trades()
+        profit_factor = metrics._calculate_profit_factor()
+        assert profit_factor == 0.0

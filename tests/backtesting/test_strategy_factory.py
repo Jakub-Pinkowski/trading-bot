@@ -5,9 +5,13 @@ import pytest
 
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.strategy_factory import create_strategy, get_strategy_name
+from app.backtesting.strategy_factory import (
+    create_strategy, get_strategy_name, _extract_common_params,
+    _validate_positive_integer, _validate_positive_number, _validate_range, _format_common_params
+)
 
 
 class TestStrategyFactory(unittest.TestCase):
@@ -196,6 +200,56 @@ class TestStrategyFactory(unittest.TestCase):
         with pytest.raises(ValueError, match="number of standard deviations must be positive"):
             create_strategy('bollinger', num_std=-1)
 
+    def test_create_strategy_ichimoku(self):
+        """Test creating an Ichimoku Cloud strategy."""
+        # Test with default parameters
+        strategy = create_strategy('ichimoku')
+
+        self.assertIsInstance(strategy, IchimokuCloudStrategy)
+        self.assertEqual(strategy.tenkan_period, 9)
+        self.assertEqual(strategy.kijun_period, 26)
+        self.assertEqual(strategy.senkou_span_b_period, 52)
+        self.assertEqual(strategy.displacement, 26)
+        self.assertEqual(strategy.rollover, False)
+        self.assertIsNone(strategy.trailing)
+
+        # Test with custom parameters
+        strategy = create_strategy(
+            'ichimoku',
+            tenkan_period=7,
+            kijun_period=22,
+            senkou_span_b_period=44,
+            displacement=22,
+            rollover=True,
+            trailing=2.0
+        )
+
+        self.assertIsInstance(strategy, IchimokuCloudStrategy)
+        self.assertEqual(strategy.tenkan_period, 7)
+        self.assertEqual(strategy.kijun_period, 22)
+        self.assertEqual(strategy.senkou_span_b_period, 44)
+        self.assertEqual(strategy.displacement, 22)
+        self.assertEqual(strategy.rollover, True)
+        self.assertEqual(strategy.trailing, 2.0)
+
+    def test_create_ichimoku_strategy_invalid_parameters(self):
+        """Test creating an Ichimoku strategy with invalid parameters."""
+        # Invalid tenkan period
+        with pytest.raises(ValueError, match="tenkan period must be a positive integer"):
+            create_strategy('ichimoku', tenkan_period=-1)
+
+        # Invalid kijun period
+        with pytest.raises(ValueError, match="kijun period must be a positive integer"):
+            create_strategy('ichimoku', kijun_period=-1)
+
+        # Invalid senkou span B period
+        with pytest.raises(ValueError, match="senkou span B period must be a positive integer"):
+            create_strategy('ichimoku', senkou_span_b_period=-1)
+
+        # Invalid displacement
+        with pytest.raises(ValueError, match="displacement must be a positive integer"):
+            create_strategy('ichimoku', displacement=-1)
+
     def test_create_strategy_invalid_common_parameters(self):
         """Test creating a strategy with invalid common parameters."""
         # Invalid rollover (not a boolean)
@@ -259,9 +313,148 @@ class TestStrategyFactory(unittest.TestCase):
                                  slippage=None)
         self.assertEqual(name, 'BB(period=20,std=2,rollover=True,trailing=None,slippage=None)')
 
+        # Ichimoku strategy
+        name = get_strategy_name('ichimoku',
+                                 tenkan_period=9,
+                                 kijun_period=26,
+                                 senkou_span_b_period=52,
+                                 displacement=26,
+                                 rollover=False,
+                                 trailing=None,
+                                 slippage=None)
+        self.assertEqual(name,
+                         'Ichimoku(tenkan=9,kijun=26,senkou_b=52,displacement=26,rollover=False,trailing=None,slippage=None)')
+
         # Unknown strategy type
         name = get_strategy_name('unknown')
         self.assertEqual(name, 'Unknown(unknown)')
+
+
+class TestPrivateHelperFunctions(unittest.TestCase):
+    """Tests for private helper functions in strategy_factory."""
+
+    def test_extract_common_params_valid(self):
+        """Test _extract_common_params with valid parameters."""
+        params = {
+            'rollover': True,
+            'trailing': 2.5,
+            'slippage': 0.1,
+            'other_param': 'ignored'
+        }
+        result = _extract_common_params(**params)
+
+        self.assertEqual(result['rollover'], True)
+        self.assertEqual(result['trailing'], 2.5)
+        self.assertEqual(result['slippage'], 0.1)
+        self.assertNotIn('other_param', result)
+
+    def test_extract_common_params_defaults(self):
+        """Test _extract_common_params with default values."""
+        result = _extract_common_params()
+
+        self.assertEqual(result['rollover'], False)
+        self.assertIsNone(result['trailing'])
+        self.assertIsNone(result['slippage'])
+
+    def test_extract_common_params_invalid_rollover(self):
+        """Test _extract_common_params with invalid rollover."""
+        with pytest.raises(ValueError, match="rollover must be a boolean"):
+            _extract_common_params(rollover="True")
+
+    def test_extract_common_params_invalid_trailing(self):
+        """Test _extract_common_params with invalid trailing."""
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            _extract_common_params(trailing=0)
+
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            _extract_common_params(trailing=-1)
+
+        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+            _extract_common_params(trailing="2.0")
+
+    def test_extract_common_params_invalid_slippage(self):
+        """Test _extract_common_params with invalid slippage."""
+        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
+            _extract_common_params(slippage=-1)
+
+        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
+            _extract_common_params(slippage="0.5")
+
+    def test_validate_positive_integer_valid(self):
+        """Test _validate_positive_integer with valid values."""
+        # Should not raise any exception
+        _validate_positive_integer(1, "test_param")
+        _validate_positive_integer(100, "test_param")
+
+    def test_validate_positive_integer_invalid(self):
+        """Test _validate_positive_integer with invalid values."""
+        with pytest.raises(ValueError, match="test_param must be a positive integer"):
+            _validate_positive_integer(0, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be a positive integer"):
+            _validate_positive_integer(-1, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be a positive integer"):
+            _validate_positive_integer(1.5, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be a positive integer"):
+            _validate_positive_integer("1", "test_param")
+
+    def test_validate_positive_number_valid(self):
+        """Test _validate_positive_number with valid values."""
+        # Should not raise any exception
+        _validate_positive_number(1, "test_param")
+        _validate_positive_number(1.5, "test_param")
+        _validate_positive_number(100.0, "test_param")
+
+    def test_validate_positive_number_invalid(self):
+        """Test _validate_positive_number with invalid values."""
+        with pytest.raises(ValueError, match="test_param must be positive"):
+            _validate_positive_number(0, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be positive"):
+            _validate_positive_number(-1, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be positive"):
+            _validate_positive_number(-1.5, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be positive"):
+            _validate_positive_number("1", "test_param")
+
+    def test_validate_range_valid(self):
+        """Test _validate_range with valid values."""
+        # Should not raise any exception
+        _validate_range(5, "test_param", 0, 10)
+        _validate_range(0, "test_param", 0, 10)
+        _validate_range(10, "test_param", 0, 10)
+        _validate_range(5.5, "test_param", 0, 10)
+
+    def test_validate_range_invalid(self):
+        """Test _validate_range with invalid values."""
+        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
+            _validate_range(-1, "test_param", 0, 10)
+
+        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
+            _validate_range(11, "test_param", 0, 10)
+
+        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
+            _validate_range("5", "test_param", 0, 10)
+
+    def test_format_common_params(self):
+        """Test _format_common_params function."""
+        params = {
+            'rollover': True,
+            'trailing': 2.5,
+            'slippage': 0.1
+        }
+        result = _format_common_params(**params)
+        expected = "rollover=True,trailing=2.5,slippage=0.1"
+        self.assertEqual(result, expected)
+
+        # Test with defaults
+        result = _format_common_params()
+        expected = "rollover=False,trailing=None,slippage=None"
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':

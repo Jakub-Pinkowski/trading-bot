@@ -234,6 +234,83 @@ class TestMassTester:
                 }
             )
 
+    def test_add_ichimoku_cloud_tests(self):
+        """Test that add_ichimoku_cloud_tests correctly adds Ichimoku strategies with all parameter combinations."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Add Ichimoku tests with various parameters
+        tenkan_periods = [7, 9]
+        kijun_periods = [22, 26]
+        senkou_span_b_periods = [44, 52]
+        displacements = [22, 26]
+        rollovers = [True, False]
+        trailing_stops = [None, 2.0]
+        slippages = [0.0, 1.0]
+
+        # Test with direct call
+        tester.add_ichimoku_cloud_tests(tenkan_periods, kijun_periods, senkou_span_b_periods,
+                                        displacements, rollovers, trailing_stops, slippages)
+
+        # Calculate expected number of strategies
+        expected_count = (
+                len(tenkan_periods) *
+                len(kijun_periods) *
+                len(senkou_span_b_periods) *
+                len(displacements) *
+                len(rollovers) *
+                len(trailing_stops) *
+                len(slippages)
+        )
+
+        # Verify the correct number of strategies were added
+        assert len(tester.strategies) == expected_count
+
+        # Verify strategy names and parameters
+        for strategy_name, strategy_instance in tester.strategies:
+            # Check that strategy name contains Ichimoku
+            assert 'Ichimoku' in strategy_name
+
+            # Check that strategy parameters are within the expected ranges
+            assert strategy_instance.tenkan_period in tenkan_periods
+            assert strategy_instance.kijun_period in kijun_periods
+            assert strategy_instance.senkou_span_b_period in senkou_span_b_periods
+            assert strategy_instance.displacement in displacements
+            assert strategy_instance.rollover in rollovers
+            assert strategy_instance.trailing in trailing_stops
+            assert strategy_instance.slippage in slippages
+
+    def test_add_ichimoku_cloud_tests_with_mock(self):
+        """Test that add_ichimoku_cloud_tests correctly calls add_strategy_tests with the right parameters."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Add Ichimoku tests with various parameters
+        tenkan_periods = [7, 9]
+        kijun_periods = [22, 26]
+        senkou_span_b_periods = [44, 52]
+        displacements = [22, 26]
+        rollovers = [True]
+        trailing_stops = [None, 2.0]
+        slippages = [0.0]
+
+        # Mock the add_strategy_tests method
+        with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
+            tester.add_ichimoku_cloud_tests(tenkan_periods, kijun_periods, senkou_span_b_periods,
+                                            displacements, rollovers, trailing_stops, slippages)
+
+            # Verify add_strategy_tests was called with correct parameters
+            mock_add_strategy.assert_called_once_with(
+                strategy_type='ichimoku',
+                param_grid={
+                    'tenkan_period': tenkan_periods,
+                    'kijun_period': kijun_periods,
+                    'senkou_span_b_period': senkou_span_b_periods,
+                    'displacement': displacements,
+                    'rollover': rollovers,
+                    'trailing': trailing_stops,
+                    'slippage': slippages
+                }
+            )
+
     def test_initialization(self):
         """Test that the MassTester initializes correctly with the provided parameters."""
         # Test with minimal parameters
