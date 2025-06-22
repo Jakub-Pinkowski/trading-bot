@@ -201,7 +201,7 @@ def test_calculate_bollinger_bands_calculation_correctness():
 
     # Manually calculate the expected values
     expected_middle_band = prices.rolling(window=period).mean()
-    expected_std = prices.rolling(window=period).std()
+    expected_std = prices.rolling(window=period).std(ddof=0)
     expected_upper_band = expected_middle_band + (expected_std * num_std)
     expected_lower_band = expected_middle_band - (expected_std * num_std)
 
@@ -444,7 +444,7 @@ def test_calculate_bollinger_bands_width_as_volatility_indicator():
 
         # Calculate the correlation between rolling volatility and bandwidth
         # First, calculate rolling standard deviation of prices as a measure of volatility
-        rolling_vol = prices.rolling(window=20).std()
+        rolling_vol = prices.rolling(window=20).std(ddof=0)
 
         # Calculate the correlation between rolling volatility and bandwidth
         # (only for valid indices where both are defined)

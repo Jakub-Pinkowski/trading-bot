@@ -17,7 +17,7 @@ def calculate_bollinger_bands(prices, period=20, num_std=2):
     middle_band = prices.rolling(window=period).mean()
 
     # Calculate standard deviation
-    std = prices.rolling(window=period).std()
+    std = prices.rolling(window=period).std(ddof=0)
 
     # Calculate upper and lower bands
     upper_band = middle_band + (std * num_std)
