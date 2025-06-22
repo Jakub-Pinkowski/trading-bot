@@ -206,6 +206,10 @@ The project follows a modular structure:
   - `routes/`: Flask routes for webhooks
   - `services/`: Services for interacting with IBKR
   - `utils/`: Utility functions
+- `backtesting_data/`: Backtesting results data
+  - `cache/`: Cache storage for backtesting
+  - `csv_results/`: CSV results from backtesting
+  - `mass_test_results_all.parquet`: Parquet file with backtesting results
 - `clientportal/`: IBKR Client Portal Gateway
 - `data/`: Data storage
   - `analysis/`: Processed data for analysis
@@ -214,7 +218,11 @@ The project follows a modular structure:
 - `historical_data/`: Historical market data for backtesting
   - `1!/`: Front month contract data
   - `2!/`: Next month contract data
+  - `contract_switch_dates.yaml`: Configuration for contract switch dates
 - `logs/`: Application logs
+  - `debug.log`: Debug logs
+  - `error.log`: Error logs
+  - `info.log`: Info logs
 - `strategies/`: TradingView strategies
 - `tests/`: Test suite
 
@@ -240,6 +248,7 @@ As noted in `structure.yaml`, there are several planned enhancements:
 - Database integration
 - User interface
 - Improved backtesting capabilities:
+  - Fixing drawdown calculations
   - Improving visualization of backtesting results
   - Advanced parameter optimization techniques
 - New trading strategies and improvements to existing ones
