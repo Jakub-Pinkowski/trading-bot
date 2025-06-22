@@ -18,6 +18,7 @@ trading-bot/
 │   │   │   ├── atr.py                            # Average True Range indicator
 │   │   │   ├── bollinger_bands.py                # Bollinger Bands indicator
 │   │   │   ├── ema.py                            # Exponential Moving Average indicator
+│   │   │   ├── ichimoku.py                       # Ichimoku Cloud indicator
 │   │   │   ├── macd.py                           # Moving Average Convergence Divergence indicator
 │   │   │   └── rsi.py                            # Relative Strength Index indicator
 │   │   ├── strategies/                           # Trading strategies to backtest
@@ -25,6 +26,7 @@ trading-bot/
 │   │   │   ├── base_strategy.py                  # Base strategy class
 │   │   │   ├── bollinger_bands.py                # Bollinger Bands strategy
 │   │   │   ├── ema_crossover.py                  # EMA Crossover strategy
+│   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
 │   │   ├── __init__.py
@@ -82,10 +84,11 @@ trading-bot/
 ├── historical_data/
 │   ├── 1!/                                       # Front month
 │   ├── 2!/                                       # Next month
+│   └── contract_switch_dates.yaml                # Configuration for contract switch dates
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
-│   └── info.logs                                 # Info logs 
+│   └── info.log                                  # Info logs
 ├── strategies/
 │   ├── indicators/                               # Indicators
 │   ├── indicators_testing/                       # Testing indicators
@@ -118,7 +121,6 @@ trading-bot/
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
 # BUG [HIGH]: Fix drawdown calculations
-
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
