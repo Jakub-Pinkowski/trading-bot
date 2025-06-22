@@ -1,5 +1,6 @@
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.utils.logger import get_logger
@@ -7,7 +8,7 @@ from app.utils.logger import get_logger
 logger = get_logger('backtesting/strategy_factory')
 
 # Define strategy types
-STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger']
+STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger', 'ichimoku']
 
 
 def _extract_common_params(**params):
@@ -76,6 +77,8 @@ def create_strategy(strategy_type, **params):
         return _create_macd_strategy(**params)
     elif strategy_type.lower() == 'bollinger':
         return _create_bollinger_strategy(**params)
+    elif strategy_type.lower() == 'ichimoku':
+        return _create_ichimoku_strategy(**params)
     return None
 
 
@@ -173,6 +176,31 @@ def _create_bollinger_strategy(**params):
     )
 
 
+def _create_ichimoku_strategy(**params):
+    """ Create an Ichimoku Cloud strategy instance. """
+    # Extract parameters with defaults
+    tenkan_period = params.get('tenkan_period', 9)
+    kijun_period = params.get('kijun_period', 26)
+    senkou_span_b_period = params.get('senkou_span_b_period', 52)
+    displacement = params.get('displacement', 26)
+    common_params = _extract_common_params(**params)
+
+    # Validate parameters
+    _validate_positive_integer(tenkan_period, "tenkan period")
+    _validate_positive_integer(kijun_period, "kijun period")
+    _validate_positive_integer(senkou_span_b_period, "senkou span B period")
+    _validate_positive_integer(displacement, "displacement")
+
+    # Create and return strategy
+    return IchimokuCloudStrategy(
+        tenkan_period=tenkan_period,
+        kijun_period=kijun_period,
+        senkou_span_b_period=senkou_span_b_period,
+        displacement=displacement,
+        **common_params
+    )
+
+
 def _format_common_params(**params):
     """Format common parameters for the strategy name."""
     common_params = _extract_common_params(**params)
@@ -204,6 +232,13 @@ def get_strategy_name(strategy_type, **params):
         period = params.get('period', 20)
         num_std = params.get('num_std', 2)
         return f'BB(period={period},std={num_std},{common_params_str})'
+
+    elif strategy_type.lower() == 'ichimoku':
+        tenkan_period = params.get('tenkan_period', 9)
+        kijun_period = params.get('kijun_period', 26)
+        senkou_span_b_period = params.get('senkou_span_b_period', 52)
+        displacement = params.get('displacement', 26)
+        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},{common_params_str})'
 
     else:
         return f'Unknown({strategy_type})'

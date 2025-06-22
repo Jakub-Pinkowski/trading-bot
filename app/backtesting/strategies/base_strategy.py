@@ -29,6 +29,8 @@ class BaseStrategy:
         df = self.add_indicators(df)
         df = self.generate_signals(df)
         trades = self._extract_trades(df, switch_dates)
+        for trade in trades:
+            print(trade)
         return trades
 
     def add_indicators(self, df):

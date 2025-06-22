@@ -98,7 +98,7 @@ class MassTester:
             }
         )
 
-    # TODO [MEDIUM]: Still to be tested
+    # NOTE: Tested and approved
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='macd',
@@ -112,13 +112,37 @@ class MassTester:
             }
         )
 
-    # TODO [MEDIUM]: Still to be tested
+    # NOTE: Tested and approved
     def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='bollinger',
             param_grid={
                 'period': periods,
                 'num_std': num_stds,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            }
+        )
+
+    # NOTE: Tested and approved
+    def add_ichimoku_cloud_tests(
+        self,
+        tenkan_periods,
+        kijun_periods,
+        senkou_span_b_periods,
+        displacements,
+        rollovers,
+        trailing_stops,
+        slippages=None
+    ):
+        self._add_strategy_tests(
+            strategy_type='ichimoku',
+            param_grid={
+                'tenkan_period': tenkan_periods,
+                'kijun_period': kijun_periods,
+                'senkou_span_b_period': senkou_span_b_periods,
+                'displacement': displacements,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages

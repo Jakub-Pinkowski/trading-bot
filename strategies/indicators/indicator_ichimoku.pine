@@ -1,0 +1,61 @@
+//@version=6
+indicator(title="Indicator Ichimoku Cloud", overlay=true)
+
+// === INPUTS ===
+tenkanPeriod = input.int(9, title="Tenkan-sen Period", minval=1)
+kijunPeriod = input.int(26, title="Kijun-sen Period", minval=1)
+senkouSpanBPeriod = input.int(52, title="Senkou Span B Period", minval=1)
+displacement = input.int(26, title="Displacement", minval=1)
+
+// === DISPLAY OPTIONS ===
+showTenkan = input.bool(true, title="Show Tenkan-sen")
+showKijun = input.bool(true, title="Show Kijun-sen")
+showCloud = input.bool(true, title="Show Cloud")
+showChikou = input.bool(false, title="Show Chikou Span")
+showSignals = input.bool(true, title="Show Buy/Sell Signals")
+
+// === ICHIMOKU CALCULATION ===
+donchian(len) => math.avg(ta.highest(len), ta.lowest(len))
+tenkan = donchian(tenkanPeriod)
+kijun = donchian(kijunPeriod)
+senkouA = math.avg(tenkan, kijun)
+senkouB = donchian(senkouSpanBPeriod)
+
+// === SIGNALS ON BAR CLOSE ===
+tenkanKijunCrossover = ta.crossover(tenkan, kijun)
+tenkanKijunCrossunder = ta.crossunder(tenkan, kijun)
+aboveCloud = close > senkouA[displacement] and close > senkouB[displacement]
+belowCloud = close < senkouA[displacement] and close < senkouB[displacement]
+
+// === BUY/SELL SIGNALS ===
+buy = tenkanKijunCrossover[1] and aboveCloud[1]
+sell = tenkanKijunCrossunder[1] and belowCloud[1]
+
+// === PLOTS ===
+// Only plot components that are enabled
+tenkanPlot = plot(showTenkan ? tenkan : na, title="Tenkan-sen", color=color.new(color.blue, 20), linewidth=1)
+kijunPlot = plot(showKijun ? kijun : na, title="Kijun-sen", color=color.new(color.red, 20), linewidth=1)
+
+// Price is not visible anyway (transparency 100)
+plot(close, title="Price", color=color.new(color.black, 100))
+
+// Cloud components
+senkouA26 = senkouA
+senkouB26 = senkouB
+senkouAPlot = plot(showCloud ? senkouA26 : na, title="Senkou Span A", color=color.new(color.green, 40), offset=displacement)
+senkouBPlot = plot(showCloud ? senkouB26 : na, title="Senkou Span B", color=color.new(color.red, 40), offset=displacement)
+
+// Chikou Span (optional)
+plot(showChikou ? close : na, title="Chikou Span", color=color.new(color.blue, 30), offset=-displacement)
+
+// Fill cloud only if cloud is enabled (using conditional color instead of conditional fill)
+fillColor = showCloud ? (senkouA26 > senkouB26 ? color.new(color.green, 90) : color.new(color.red, 90)) : color.new(color.gray, 100)
+fill(senkouAPlot, senkouBPlot, color=fillColor, title="Cloud")
+
+// Plot buy/sell signals only if enabled
+plotshape(showSignals and buy, title="Buy", text="Buy", style=shape.labelup, location=location.belowbar, color=color.green, textcolor=color.white, size=size.small)
+plotshape(showSignals and sell, title="Sell", text="Sell", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+
+// === ALERTS (triggered at open of N+1) ===
+alertcondition(buy, title="Ichimoku Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
+alertcondition(sell, title="Ichimoku Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
