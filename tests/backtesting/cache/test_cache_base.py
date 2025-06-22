@@ -356,10 +356,7 @@ def test_cache_performance_with_large_dataset():
     contains_time = time.time() - start_time
 
     # Log performance metrics (these are not strict assertions, just informational)
-    print(f"\nCache performance with {num_items} items:")
-    print(f"  Set time: {set_time:.4f} seconds ({num_items / set_time:.0f} ops/sec)")
-    print(f"  Get time: {get_time:.4f} seconds ({num_items / get_time:.0f} ops/sec)")
-    print(f"  Contains time: {contains_time:.4f} seconds ({num_items / contains_time:.0f} ops/sec)")
+    # Performance metrics are measured but not printed to keep test output clean
 
     # Ensure operations complete in a reasonable time
     # These thresholds are very generous and should pass on any modern system

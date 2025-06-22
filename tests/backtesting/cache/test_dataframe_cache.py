@@ -265,10 +265,7 @@ def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
     large_time = time.time() - start_time
 
     # Log performance metrics (these are not strict assertions, just informational)
-    print(f"\nDataframe cache retrieval performance:")
-    print(f"  Small dataframe ({small_df.shape}): {small_time:.6f} seconds")
-    print(f"  Medium dataframe ({medium_df.shape}): {medium_time:.6f} seconds")
-    print(f"  Large dataframe ({large_df.shape}): {large_time:.6f} seconds")
+    # Performance metrics are measured but not printed to keep test output clean
 
 
 def test_dataframe_cache_with_different_data_types(tmp_path):
