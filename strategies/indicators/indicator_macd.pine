@@ -1,0 +1,32 @@
+//@version=6
+indicator(title="Indicator MACD", overlay=false)
+
+// === INPUTS ===
+fastLength = input.int(12, title="MACD Fast Length", minval=1)
+slowLength = input.int(26, title="MACD Slow Length", minval=1)
+signalLength = input.int(9, title="MACD Signal Smoothing", minval=1)
+
+// === MACD CALCULATION ===
+[macdLine, signalLine, histLine] = ta.macd(close, fastLength, slowLength, signalLength)
+
+// === SIGNALS ON BAR CLOSE ===
+macdCrossover = ta.crossover(macdLine, signalLine)
+macdCrossunder = ta.crossunder(macdLine, signalLine)
+
+// === BUY/SELL SIGNALS ===
+buy = macdCrossover[1]  // MACD line crosses above signal line
+sell = macdCrossunder[1] // MACD line crosses below signal line
+
+// === PLOTS ===
+plot(macdLine, title="MACD Line", color=color.blue)
+plot(signalLine, title="Signal Line", color=color.orange)
+plot(histLine, title="Histogram", color=histLine >= 0 ? color.green : color.red, style=plot.style_histogram)
+plot(0, title="Zero Line", color=color.gray, linewidth=1)
+
+// Plot buy/sell signals
+plotshape(buy, title="Buy", text="Buy", style=shape.labelup, location=location.bottom, color=color.green, textcolor=color.white, size=size.small)
+plotshape(sell, title="Sell", text="Sell", style=shape.labeldown, location=location.top, color=color.red, textcolor=color.white, size=size.small)
+
+// === ALERTS (triggered at open of N+1) ===
+alertcondition(buy, title="MACD Buy Alert", message='{"symbol":"{{ticker}}","side":"Buy","price":{{close}}}')
+alertcondition(sell, title="MACD Sell Alert", message='{"symbol":"{{ticker}}","side":"Sell","price":{{close}}}')
