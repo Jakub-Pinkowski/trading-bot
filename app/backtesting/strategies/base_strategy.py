@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+# TODO [MEDIUM]: Some of those should be private methods
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None, slippage=0):
         self.switch_dates = None
@@ -51,12 +52,23 @@ class BaseStrategy:
         self._reset()
         self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
 
+        # Counter to skip the first 100 candles for indicator warm-up
+        candle_count = 0
+
         for idx, row in df.iterrows():
             current_time = pd.to_datetime(idx)
             signal = row['signal']
             price_open = row['open']
             price_high = row['high']
             price_low = row['low']
+
+            # Increment candle counter
+            candle_count += 1
+
+            # Skip signal processing for the first 100 candles to allow indicators to warm up
+            if candle_count <= 100:
+                self.prev_row = row
+                continue
 
             # Handle trailing stop logic if enabled
             self._handle_trailing_stop(idx, price_high, price_low)

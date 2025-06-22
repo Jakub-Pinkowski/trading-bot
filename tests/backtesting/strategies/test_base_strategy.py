@@ -19,20 +19,20 @@ class StrategyForTesting(BaseStrategy):
     def generate_signals(self, df):
         # Simple implementation for testing
         df['signal'] = 0
-        # Set some signals for testing
-        if len(df) > 5:
-            df.iloc[2, df.columns.get_loc('signal')] = 1  # Buy signal
-            # For contract switch test, ensure there's an open position at the switch date (index 7)
+        # Set some signals for testing after the warm-up period
+        if len(df) > 105:
+            df.iloc[102, df.columns.get_loc('signal')] = 1  # Buy signal
+            # For contract switch test, ensure there's an open position at the switch date (index 107)
             # by not closing the position before the switch
-            if len(df) > 10:
-                df.iloc[9, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
+            if len(df) > 110:
+                df.iloc[109, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
             else:
-                df.iloc[4, df.columns.get_loc('signal')] = -1  # Sell signal
+                df.iloc[104, df.columns.get_loc('signal')] = -1  # Sell signal
         return df
 
 
 # Helper function to create test dataframe
-def create_test_df(length=10):
+def create_test_df(length=150):
     dates = [datetime.now() + timedelta(days=i) for i in range(length)]
     data = {
         'open': np.random.rand(length) * 100 + 50,
@@ -202,10 +202,11 @@ class TestBaseStrategy:
 
             def extract_trades(self, df, switch_dates):
                 # Create a trade with the switch flag
+                # Use indices after the warm-up period
                 trade = {
-                    'entry_time': df.index[0],
+                    'entry_time': df.index[101],
                     'entry_price': 100.0,
-                    'exit_time': df.index[1],
+                    'exit_time': df.index[102],
                     'exit_price': 110.0,
                     'side': 'long',
                     'switch': True
@@ -214,7 +215,7 @@ class TestBaseStrategy:
 
         # Use the simple test strategy
         strategy = SwitchTestStrategy(rollover=True)
-        df = create_test_df(length=5)
+        df = create_test_df(length=150)
 
         # Run the strategy
         trades = strategy.run(df, [df.index[1]])
@@ -240,18 +241,18 @@ class TestBaseStrategy:
 
             def generate_signals(self, df):
                 df['signal'] = 0
-                # Add a buy signal at the beginning
-                if len(df) > 0:
-                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                # Add a buy signal after the warm-up period
+                if len(df) > 100:
+                    df.iloc[101, df.columns.get_loc('signal')] = 1
                 return df
 
             # We'll use the default extract_trades implementation
 
-        # Create a dataframe with 10 bars
-        df = create_test_df(length=10)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
-        # Create switch dates for each bar
-        switch_dates = [df.index[i] for i in range(1, 10)]
+        # Create switch dates after the warm-up period
+        switch_dates = [df.index[i] for i in range(101, 110)]
 
         # Create the strategy
         strategy = MultiSwitchStrategy(rollover=True)
@@ -276,18 +277,18 @@ class TestBaseStrategy:
 
             def generate_signals(self, df):
                 df['signal'] = 0
-                # Add a buy signal at the beginning
-                if len(df) > 0:
-                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                # Add a buy signal after the warm-up period
+                if len(df) > 100:
+                    df.iloc[101, df.columns.get_loc('signal')] = 1
                 return df
 
             # We'll use the default extract_trades implementation
 
-        # Create a dataframe with 5 bars
-        df = create_test_df(length=5)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
-        # Create a switch date
-        switch_dates = [df.index[2]]  # Switch at the third bar
+        # Create a switch date - make sure it's after the signal at index 101
+        switch_dates = [df.index[103]]  # Switch after the signal at index 101
 
         # Create the strategy with rollover=False
         strategy = NoRolloverSwitchStrategy(rollover=False)
@@ -310,17 +311,17 @@ class TestBaseStrategy:
         strategy = BaseStrategy(rollover=True, slippage=1.0)
 
         # Create a test dataframe
-        df = create_test_df(length=5)
+        df = create_test_df(length=150)
 
         # Set up the strategy state to simulate a short position before switch
         strategy._reset()
         strategy.position = -1  # Short position
-        strategy.entry_time = df.index[0]
-        strategy.entry_price = df.iloc[0]['open']
-        strategy.prev_row = df.iloc[0]  # Set prev_row to avoid None
+        strategy.entry_time = df.index[101]
+        strategy.entry_price = df.iloc[101]['open']
+        strategy.prev_row = df.iloc[101]  # Set prev_row to avoid None
 
         # Set up switch dates
-        switch_date = df.index[2]
+        switch_date = df.index[102]
         strategy.switch_dates = [switch_date]
         strategy.next_switch = switch_date
         strategy.next_switch_idx = 0
@@ -333,10 +334,10 @@ class TestBaseStrategy:
         assert strategy.must_reopen == -1, "must_reopen should be set to -1 for short position"
 
         # Now test the reopening with slippage
-        price_open = df.iloc[3]['open']
+        price_open = df.iloc[103]['open']
 
         # Call _handle_contract_switch to reopen the position
-        strategy._handle_contract_switch(df.index[3], df.index[3], price_open)
+        strategy._handle_contract_switch(df.index[103], df.index[103], price_open)
 
         # Verify position is reopened
         assert strategy.position == -1, "Position should be reopened as short"
@@ -346,7 +347,7 @@ class TestBaseStrategy:
         assert strategy.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.entry_price}"
 
         # Close the position to create a trade
-        strategy._close_position(df.index[4], df.iloc[4]['close'])
+        strategy._close_position(df.index[104], df.iloc[104]['close'])
 
         # Verify we have a trade with the correct entry price
         assert len(strategy.trades) > 0, "Should have at least one trade"
@@ -365,18 +366,18 @@ class TestBaseStrategy:
 
             def generate_signals(self, df):
                 df['signal'] = 0
-                # Add a buy signal at the beginning
-                if len(df) > 0:
-                    df.iloc[0, df.columns.get_loc('signal')] = 1
+                # Add a buy signal after the warm-up period
+                if len(df) > 100:
+                    df.iloc[101, df.columns.get_loc('signal')] = 1
                 return df
 
             # We'll use the default extract_trades implementation
 
-        # Create a dataframe with 5 bars
-        df = create_test_df(length=5)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
         # Create a switch date
-        switch_dates = [df.index[2]]  # Switch at the third bar
+        switch_dates = [df.index[102]]  # Switch after the warm-up period
 
         # Create the strategy with rollover=True
         strategy = RolloverSwitchStrategy(rollover=True)
@@ -390,9 +391,9 @@ class TestBaseStrategy:
 
         # Now call _handle_contract_switch directly to test the reopening logic
         # This tests the code path where must_reopen is not None and position is None
-        current_time = df.index[3]  # After the switch
-        idx = df.index[3]
-        price_open = df.iloc[3]['open']
+        current_time = df.index[103]  # After the switch
+        idx = df.index[103]
+        price_open = df.iloc[103]['open']
 
         strategy._handle_contract_switch(current_time, idx, price_open)
 
@@ -414,8 +415,8 @@ class TestBaseStrategy:
                 df['signal'] = 0
                 return df
 
-        # Create a dataframe with 5 bars
-        df = create_test_df(length=5)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
         # Create the strategy
         strategy = SwitchTestStrategy()
@@ -423,12 +424,12 @@ class TestBaseStrategy:
         # Set up the state to simulate an open position
         strategy._reset()
         strategy.position = 1  # Long position
-        strategy.entry_time = df.index[0]
+        strategy.entry_time = df.index[101]
         strategy.entry_price = 100.0
         strategy.prev_row = {'open': 110.0}  # Exit price for the switch
 
         # Call _close_position_at_switch directly
-        strategy._close_position_at_switch(df.index[2])
+        strategy._close_position_at_switch(df.index[102])
 
         # Verify the position was closed
         assert strategy.position is None
@@ -463,18 +464,38 @@ class TestBaseStrategy:
         strategy = StrategyForTesting(trailing=2.0)
 
         # Create a test dataframe with controlled price movements
-        dates = [datetime.now() + timedelta(days=i) for i in range(5)]
-        data = {
+        # First create 100 candles for warm-up
+        dates = [datetime.now() + timedelta(days=i) for i in range(105)]
+
+        # Create data for warm-up period (100 candles)
+        warmup_data = {
+            'open': [100.0] * 100,
+            'high': [105.0] * 100,
+            'low': [95.0] * 100,
+            'close': [102.0] * 100,
+        }
+
+        # Add the test scenario data (5 candles)
+        test_data = {
             'open': [100.0, 100.0, 100.0, 100.0, 100.0],
             'high': [105.0, 110.0, 115.0, 120.0, 105.0],
             'low': [95.0, 90.0, 85.0, 80.0, 95.0],
             'close': [102.0, 105.0, 110.0, 90.0, 100.0],
         }
+
+        # Combine the data
+        data = {
+            'open': warmup_data['open'] + test_data['open'],
+            'high': warmup_data['high'] + test_data['high'],
+            'low': warmup_data['low'] + test_data['low'],
+            'close': warmup_data['close'] + test_data['close'],
+        }
+
         df = pd.DataFrame(data, index=dates)
 
-        # Add a buy signal at the first bar
+        # Add a buy signal after the warm-up period
         df['signal'] = 0
-        df.iloc[0, df.columns.get_loc('signal')] = 1
+        df.iloc[100, df.columns.get_loc('signal')] = 1
 
         # Run the strategy
         trades = strategy.extract_trades(df, [])

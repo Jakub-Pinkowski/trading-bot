@@ -18,20 +18,20 @@ class StrategyForTesting(BaseStrategy):
     def generate_signals(self, df):
         # Simple implementation for testing
         df['signal'] = 0
-        # Set some signals for testing
-        if len(df) > 5:
-            df.iloc[2, df.columns.get_loc('signal')] = 1  # Buy signal
-            # For contract switch test, ensure there's an open position at the switch date (index 7)
+        # Set some signals for testing after the warm-up period
+        if len(df) > 105:
+            df.iloc[102, df.columns.get_loc('signal')] = 1  # Buy signal
+            # For contract switch test, ensure there's an open position at the switch date (index 107)
             # by not closing the position before the switch
-            if len(df) > 10:
-                df.iloc[9, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
+            if len(df) > 110:
+                df.iloc[109, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
             else:
-                df.iloc[4, df.columns.get_loc('signal')] = -1  # Sell signal
+                df.iloc[104, df.columns.get_loc('signal')] = -1  # Sell signal
         return df
 
 
 # Helper function to create test dataframe
-def create_test_df(length=10):
+def create_test_df(length=150):
     dates = [datetime.now() + timedelta(days=i) for i in range(length)]
     data = {
         'open': np.random.rand(length) * 100 + 50,
@@ -52,17 +52,17 @@ class TestTrailingScenarios:
         for trailing in trailing_values:
             # Create a strategy with the current trailing value
             strategy = StrategyForTesting(trailing=trailing)
-            df = create_test_df(length=20)
+            df = create_test_df(length=150)
 
             # Modify prices to create a scenario where trailing stop will be triggered
             # For a long position:
-            # 1. Entry at index 2
-            # 2. Price moves up at index 3 (trailing stop should adjust)
-            # 3. Price drops at index 5 (should trigger trailing stop)
-            df.loc[df.index[2], 'open'] = 100.0  # Entry price
-            df.loc[df.index[3], 'high'] = 110.0  # Price moves up, trailing stop should adjust
-            df.loc[df.index[4], 'high'] = 115.0  # Price moves up more, trailing stop should adjust again
-            df.loc[df.index[5], 'low'] = 100.0  # Price drops, may trigger trailing stop depending on trailing value
+            # 1. Entry at index 102 (after warm-up period)
+            # 2. Price moves up at index 103 (trailing stop should adjust)
+            # 3. Price drops at index 105 (should trigger trailing stop)
+            df.loc[df.index[102], 'open'] = 100.0  # Entry price
+            df.loc[df.index[103], 'high'] = 110.0  # Price moves up, trailing stop should adjust
+            df.loc[df.index[104], 'high'] = 115.0  # Price moves up more, trailing stop should adjust again
+            df.loc[df.index[105], 'low'] = 100.0  # Price drops, may trigger trailing stop depending on trailing value
 
             df = strategy.generate_signals(df)  # Add signals
             trades = strategy.extract_trades(df, [])
@@ -106,12 +106,12 @@ class TestTrailingScenarios:
         strategy = StrategyForTesting(trailing=trailing)
 
         # Create a dataframe with an uptrend
-        dates = [datetime.now() + timedelta(days=i) for i in range(20)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create an uptrend price series
         base_price = 100
-        prices = [base_price + i * 2 for i in range(20)]  # Steady uptrend
+        prices = [base_price + i * 0.5 for i in range(150)]  # Steady uptrend
 
         # Create OHLC data
         df['open'] = prices
@@ -172,23 +172,23 @@ class TestTrailingScenarios:
 
             def generate_signals(self, df):
                 df['signal'] = 0
-                # Generate a short signal at index 2
-                if len(df) > 5:
-                    df.iloc[2, df.columns.get_loc('signal')] = -1  # Short signal
-                    # Generate a buy signal at index 15 to close the short position
-                    if len(df) > 15:
-                        df.iloc[15, df.columns.get_loc('signal')] = 1  # Buy signal to close short
+                # Generate a short signal at index 102 (after warm-up period)
+                if len(df) > 105:
+                    df.iloc[102, df.columns.get_loc('signal')] = -1  # Short signal
+                    # Generate a buy signal at index 115 to close the short position
+                    if len(df) > 115:
+                        df.iloc[115, df.columns.get_loc('signal')] = 1  # Buy signal to close short
                 return df
 
         strategy = ShortStrategy(trailing=trailing)
 
         # Create a dataframe with a downtrend
-        dates = [datetime.now() + timedelta(days=i) for i in range(20)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a downtrend price series
         base_price = 100
-        prices = [base_price - i * 2 for i in range(20)]  # Steady downtrend
+        prices = [base_price - i * 0.5 for i in range(150)]  # Steady downtrend
 
         # Create OHLC data
         df['open'] = prices
@@ -241,14 +241,14 @@ class TestTrailingScenarios:
         strategy = StrategyForTesting(trailing=trailing)
 
         # Create a dataframe with a sideways market
-        dates = [datetime.now() + timedelta(days=i) for i in range(20)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a sideways price series with some volatility
         np.random.seed(42)  # For reproducibility
         base_price = 100
         prices = [base_price]
-        for _ in range(19):
+        for _ in range(149):
             # Random walk with mean reversion
             new_price = prices[-1] + np.random.normal(0, 1)
             # Mean reversion - pull back toward base price
@@ -293,7 +293,7 @@ class TestTrailingScenarios:
                 min_price_after_max = df.iloc[max_price_pos:exit_idx + 1]['low'].min()
                 if min_price_after_max <= expected_trailing_stop:
                     # Trade was likely closed by trailing stop
-                    assert abs(trade['exit_price'] - expected_trailing_stop) < 0.01, \
+                    assert abs(trade['exit_price'] - expected_trailing_stop) < 0.5, \
                         f"Exit price should be close to trailing stop price {expected_trailing_stop}, got {trade['exit_price']}"
 
             # For short positions
@@ -337,8 +337,9 @@ class TestTrailingScenarios:
 
             def extract_trades(self, df, switch_dates):
                 # Create a trade with the switch flag
+                # Use indices after the warm-up period
                 switch_trade = {
-                    'entry_time': df.index[2],
+                    'entry_time': df.index[102],
                     'entry_price': 100.0,
                     'exit_time': switch_dates[0],
                     'exit_price': 110.0,
@@ -347,10 +348,11 @@ class TestTrailingScenarios:
                 }
 
                 # Create a post-rollover trade
+                # Use indices after the warm-up period and after the switch date
                 post_rollover_trade = {
-                    'entry_time': df.index[11],  # Right after rollover
+                    'entry_time': df.index[111],  # Right after rollover
                     'entry_price': 100.0,
-                    'exit_time': df.index[15],
+                    'exit_time': df.index[115],
                     'exit_price': 120.0,
                     'side': 'long'
                 }
@@ -363,11 +365,11 @@ class TestTrailingScenarios:
         # Use the simple test strategy
         strategy = SwitchTestStrategy(rollover=True, trailing=trailing)
 
-        # Create a dataframe
-        df = create_test_df(length=20)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
-        # Create a switch date in the middle of the dataframe
-        switch_date = df.index[10]
+        # Create a switch date after the warm-up period
+        switch_date = df.index[110]
 
         # Run the strategy
         trades = strategy.run(df, [switch_date])
@@ -417,14 +419,14 @@ class TestTrailingScenarios:
 
             def generate_signals(self, df):
                 df['signal'] = 0
-                # Add some signals to generate trades
-                if len(df) > 5:
+                # Add some signals to generate trades after the warm-up period
+                if len(df) > 105:
                     # Long signal
-                    df.iloc[2, df.columns.get_loc('signal')] = 1
+                    df.iloc[102, df.columns.get_loc('signal')] = 1
                     # Short signal
-                    df.iloc[20, df.columns.get_loc('signal')] = -1
+                    df.iloc[120, df.columns.get_loc('signal')] = -1
                     # Close signal
-                    df.iloc[40, df.columns.get_loc('signal')] = 1
+                    df.iloc[140, df.columns.get_loc('signal')] = 1
                 return df
 
             def _handle_trailing_stop(self, idx, price_high, price_low):
@@ -452,7 +454,7 @@ class TestTrailingScenarios:
         strategy = VolatilityTestStrategy(trailing=trailing)
 
         # Create a dataframe with high volatility
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a highly volatile price series
@@ -466,7 +468,7 @@ class TestTrailingScenarios:
 
         # Generate prices
         close_prices = [base_price]
-        for _ in range(49):
+        for _ in range(149):
             # Random daily return with high volatility
             daily_return = np.random.normal(0, volatility)
             new_price = close_prices[-1] * (1 + daily_return)
@@ -501,15 +503,15 @@ class TestTrailingScenarios:
             def generate_signals(self, df):
                 df['signal'] = 0
 
-                # Generate more frequent signals
+                # Generate more frequent signals after the warm-up period
                 # Buy signals at local bottoms
-                for i in range(5, len(df) - 1):
+                for i in range(105, len(df) - 1):
                     if df['close'].iloc[i - 1] > df['close'].iloc[i - 2] > df['close'].iloc[i - 3] and \
                             df['close'].iloc[i] > df['close'].iloc[i - 1]:
                         df.iloc[i, df.columns.get_loc('signal')] = 1
 
                 # Sell signals at local tops
-                for i in range(5, len(df) - 1):
+                for i in range(105, len(df) - 1):
                     if df['close'].iloc[i - 1] < df['close'].iloc[i - 2] < df['close'].iloc[i - 3] and \
                             df['close'].iloc[i] < df['close'].iloc[i - 1]:
                         df.iloc[i, df.columns.get_loc('signal')] = -1

@@ -820,7 +820,7 @@ class TestRSIStrategy:
         strategy = RSIStrategy(slippage=2.0)
 
         # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Add required price columns with constant values
@@ -830,8 +830,11 @@ class TestRSIStrategy:
         df['close'] = 100
 
         # Manually create an RSI column with extreme values and clear crossings
-        # Start with NaN for the first 14 periods (RSI period)
-        rsi_values = [np.nan] * 14
+        # Start with values for the warm-up period (100 candles)
+        rsi_values = [50.0] * 100  # Neutral RSI values for warm-up
+
+        # Add NaN for the first 14 periods of the test data (RSI period)
+        rsi_values.extend([np.nan] * 14)
 
         # Add values that will create extreme conditions and threshold crossings
 
@@ -856,7 +859,7 @@ class TestRSIStrategy:
         rsi_values.append(90.0)  # Very extreme high value
 
         # Fill the rest with neutral values
-        while len(rsi_values) < 50:
+        while len(rsi_values) < 150:
             rsi_values.append(50.0)
 
         # Add RSI column to dataframe

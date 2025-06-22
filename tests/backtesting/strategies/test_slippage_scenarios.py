@@ -20,20 +20,20 @@ class StrategyForTesting(BaseStrategy):
     def generate_signals(self, df):
         # Simple implementation for testing
         df['signal'] = 0
-        # Set some signals for testing
-        if len(df) > 5:
-            df.iloc[2, df.columns.get_loc('signal')] = 1  # Buy signal
-            # For contract switch test, ensure there's an open position at the switch date (index 7)
+        # Set some signals for testing after the warm-up period
+        if len(df) > 105:
+            df.iloc[102, df.columns.get_loc('signal')] = 1  # Buy signal
+            # For contract switch test, ensure there's an open position at the switch date (index 107)
             # by not closing the position before the switch
-            if len(df) > 10:
-                df.iloc[9, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
+            if len(df) > 110:
+                df.iloc[109, df.columns.get_loc('signal')] = -1  # Sell signal after switch date
             else:
-                df.iloc[4, df.columns.get_loc('signal')] = -1  # Sell signal
+                df.iloc[104, df.columns.get_loc('signal')] = -1  # Sell signal
         return df
 
 
 # Helper function to create test dataframe
-def create_test_df(length=10):
+def create_test_df(length=150):
     dates = [datetime.now() + timedelta(days=i) for i in range(length)]
     data = {
         'open': np.random.rand(length) * 100 + 50,
@@ -114,13 +114,13 @@ class TestSlippageScenarios:
         strategy = StrategyForTesting(slippage=slippage, trailing=trailing)
 
         # Create a dataframe with a price pattern that will trigger a trailing stop
-        df = create_test_df(length=20)
+        df = create_test_df(length=150)
 
-        # Modify prices to test trailing stop
-        df.loc[df.index[2], 'open'] = 100.0  # Entry price
-        df.loc[df.index[3], 'high'] = 110.0  # Price moves up, trailing stop should adjust
-        df.loc[df.index[4], 'low'] = 95.0  # Price drops but not enough to trigger stop
-        df.loc[df.index[5], 'low'] = 90.0  # Price drops below trailing stop
+        # Modify prices to test trailing stop after the warm-up period
+        df.loc[df.index[102], 'open'] = 100.0  # Entry price
+        df.loc[df.index[103], 'high'] = 110.0  # Price moves up, trailing stop should adjust
+        df.loc[df.index[104], 'low'] = 95.0  # Price drops but not enough to trigger stop
+        df.loc[df.index[105], 'low'] = 90.0  # Price drops below trailing stop
 
         df = strategy.generate_signals(df)
         trades = strategy.extract_trades(df, [])
@@ -188,11 +188,11 @@ class TestSlippageScenarios:
         slippage = 2.0
         strategy = StrategyForTesting(rollover=True, slippage=slippage)
 
-        # Create a dataframe
-        df = create_test_df(length=20)
+        # Create a dataframe with 150 bars
+        df = create_test_df(length=150)
 
-        # Create a switch date in the middle of the dataframe
-        switch_date = df.index[10]
+        # Create a switch date after the warm-up period
+        switch_date = df.index[110]
 
         # Generate signals and extract trades
         df = strategy.generate_signals(df)
@@ -249,7 +249,7 @@ class TestSlippageScenarios:
         strategy = EMACrossoverStrategy(ema_short=5, ema_long=15, slippage=slippage)
 
         # Create a dataframe with high volatility
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a highly volatile price series
@@ -263,7 +263,7 @@ class TestSlippageScenarios:
 
         # Generate prices
         close_prices = [base_price]
-        for _ in range(49):
+        for _ in range(149):
             # Random daily return with high volatility
             daily_return = np.random.normal(0, volatility)
             new_price = close_prices[-1] * (1 + daily_return)

@@ -276,20 +276,20 @@ class TestEMACrossoverStrategy:
         strategy = EMACrossoverStrategy(ema_short=5, ema_long=7)
 
         # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a price series that will definitely result in close EMA values
         # Start with a flat price for a long period to make EMAs converge
-        close_prices = [100] * 20
+        close_prices = [100] * 100  # First 100 candles for warm-up
 
         # Then add a very small oscillation to create small differences
-        for i in range(20):
+        for i in range(40):
             # Oscillate between 100 and 100.2
             close_prices.append(100 + (0.2 * (i % 2)))
 
         # Fill the rest with flat prices
-        while len(close_prices) < 50:
+        while len(close_prices) < 150:
             close_prices.append(100)
 
         # Create OHLC data
@@ -603,12 +603,14 @@ class TestEMACrossoverStrategy:
         strategy = EMACrossoverStrategy(ema_short=5, ema_long=15, slippage=2.0)
 
         # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
+        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
         df = pd.DataFrame(index=dates)
 
         # Create a price series that will definitely result in EMA crossovers
+        # Start with 100 candles for warm-up
+        close_prices = [100] * 100
+
         # Start with an uptrend
-        close_prices = []
         for i in range(15):
             close_prices.append(100 + i * 2)
 
@@ -621,7 +623,7 @@ class TestEMACrossoverStrategy:
             close_prices.append(100 + i * 2)
 
         # Fill the rest with flat prices
-        while len(close_prices) < 50:
+        while len(close_prices) < 150:
             close_prices.append(close_prices[-1])
 
         # Create OHLC data
