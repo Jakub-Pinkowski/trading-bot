@@ -11,7 +11,8 @@ API. It focuses on streamlining the processes of trading, data fetching, analysi
 - **Webhook Support**: Receives trading alerts and commands (e.g., from TradingView) via webhooks.
 - **Data Analysis**: Cleans, matches, and analyzes both alerts and trade data, providing per-trade and aggregate metrics to evaluate
   performance.
-- **Backtesting Framework**: Tests multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover) against historical data to
+- **Backtesting Framework**: Tests multiple trading strategies (RSI, MACD, Bollinger Bands, EMA Crossover, Ichimoku
+  Cloud) against historical data to
   evaluate performance.
 - **Historical Data Management**: Organizes and processes historical market data for different contract months and time intervals.
 - **Comprehensive Logging**: Maintains detailed logs for debugging, error tracking, and info-level monitoring.
@@ -196,36 +197,6 @@ Example webhook payload:
 }
 ```
 
-## Project Structure
-
-The project follows a modular structure:
-
-- `app/`: Main application code
-  - `analysis/`: Data analysis modules
-  - `backtesting/`: Backtesting framework and strategies
-  - `routes/`: Flask routes for webhooks
-  - `services/`: Services for interacting with IBKR
-  - `utils/`: Utility functions
-- `backtesting_data/`: Backtesting results data
-  - `cache/`: Cache storage for backtesting
-  - `csv_results/`: CSV results from backtesting
-  - `mass_test_results_all.parquet`: Parquet file with backtesting results
-- `clientportal/`: IBKR Client Portal Gateway
-- `data/`: Data storage
-  - `analysis/`: Processed data for analysis
-  - `contracts/`: Contract information
-  - `raw_data/`: Raw data from alerts and trades
-- `historical_data/`: Historical market data for backtesting
-  - `1!/`: Front month contract data
-  - `2!/`: Next month contract data
-  - `contract_switch_dates.yaml`: Configuration for contract switch dates
-- `logs/`: Application logs
-  - `debug.log`: Debug logs
-  - `error.log`: Error logs
-  - `info.log`: Info logs
-- `strategies/`: TradingView strategies
-- `tests/`: Test suite
-
 For a detailed breakdown of the project structure, see `structure.yaml`.
 
 ## Typical Use Cases
@@ -238,18 +209,84 @@ For a detailed breakdown of the project structure, see `structure.yaml`.
 - Logging trading activities and analysis operations for audit or debugging.
 - Running analyses on historical data to derive actionable insights.
 
+## Development
+
+### Project Structure
+
+The project follows a modular structure as detailed in `structure.yaml`. Key directories include:
+
+- `app/`: Main application code
+  - `analysis/`: Data analysis modules
+  - `backtesting/`: Backtesting framework and strategies
+  - `routes/`: Flask routes for webhooks
+  - `services/`: Services for interacting with IBKR
+  - `utils/`: Utility functions
+- `tests/`: Test suite organized by module
+
+### Running Tests
+
+To run the test suite:
+
+```bash
+python -m pytest
+```
+
+To run tests for a specific module:
+
+```bash
+python -m pytest tests/analysis/
+```
+
+### Coding Standards
+
+- Use PEP 8 style guidelines
+- Add docstrings to all functions, classes, and modules
+- Write unit tests for new functionality
+- Update `structure.yaml` when adding new files or directories
+
+## Known Issues
+
+The following known issues are currently being tracked:
+
+- **Backtesting**: Drawdown calculations need to be fixed for more accurate risk assessment
+- **IBKR Authentication**: Periodic authentication issues with the IBKR API (see notes in `structure.yaml`)
+- **Symbol Mapping**: Some symbols have different tickers on TradingView vs IBKR (e.g., YC vs XC)
+
 ## Future Enhancements
 
 As noted in `structure.yaml`, there are several planned enhancements:
 
+### Trading
+
+- Handling near delivery cases where positions are still held close to the Close-Out date
 - Automatic tool for IBKR login and session maintenance
-- Handling near delivery cases for futures positions
+
+### Backtesting
+
+- Fixing drawdown calculations (high priority)
+- Adding contract switch dates for missing symbols
+- Updating margin requirements on a monthly basis
+- Rewriting the switch contract logic to sell on the last possible day before the switch
+- Improving visualization of backtesting results
+- Advanced parameter optimization techniques
+
+### Strategies
+
+- Aligning TradingView strategies to match backtesting logic
+- Updating TradingView strategies to BUY/SELL on n+1 candle after backtesting
+- New trading strategies and improvements to existing ones
+
+### Data Analysis
+
 - Google Sheets integration for data analysis
+
+### Development
+
 - Database integration
 - User interface
-- Improved backtesting capabilities:
-  - Fixing drawdown calculations
-  - Improving visualization of backtesting results
-  - Advanced parameter optimization techniques
-- New trading strategies and improvements to existing ones
-- Aligning backtesting results with TradingView alerts
+- Code refactoring:
+  - Rewriting IBKR logic using classes
+  - Rewriting analysis logic using classes
+  - Adding comprehensive docstrings
+  - Removing unnecessary comments
+- Adding end-to-end tests
