@@ -118,18 +118,6 @@ trading-bot/
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
 # BUG [HIGH]: Fix drawdown calculations
-# TODO [HIGH]: Test very thoroughly all the indicators
-# RSI is good
-# EMA is good
-# BB is good
-# MACD is good
-
-
-# TODO [HIGH]: Test very thoroughly all the strategies
-# RSI is good
-# EMA is good
-# BB is good
-# MACD is good
 
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
