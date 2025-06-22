@@ -120,7 +120,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
-# BUG [HIGH]: Fix drawdown calculations
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
