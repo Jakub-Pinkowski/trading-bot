@@ -11,10 +11,6 @@ class RSIStrategy(BaseStrategy):
 
     def add_indicators(self, df):
         df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period)
-        # Print RSI values, open and close prices for each candle
-        print("\nRSI Values, Open and Close prices for each candle:")
-        for idx, row in df.iterrows():
-            print(f"Date: {idx}, RSI: {row['rsi']:.2f}, Open: {row['open']:.2f}, Close: {row['close']:.2f}")
         return df
 
     def generate_signals(self, df):
