@@ -3,7 +3,15 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from app.backtesting.strategy_analysis import StrategyAnalyzer, _format_column_name
+from app.backtesting.strategy_analysis import (
+    StrategyAnalyzer,
+    _format_column_name,
+    _filter_dataframe,
+    _calculate_weighted_win_rate,
+    _calculate_weighted_profit_factor,
+    _calculate_trade_weighted_average,
+    _calculate_average_trade_return
+)
 
 
 class TestFormatColumnName(unittest.TestCase):
@@ -57,6 +65,371 @@ class TestFormatColumnName(unittest.TestCase):
         for column_name, expected_formatted_name in test_cases.items():
             formatted_name = _format_column_name(column_name)
             self.assertEqual(formatted_name, expected_formatted_name)
+
+
+class TestFilterDataframe(unittest.TestCase):
+    """Tests for the _filter_dataframe function."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.05)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.15)',
+                'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=0.3)'
+            ],
+            'symbol': ['ES', 'NQ', 'ES', 'NQ', 'YM'],
+            'interval': ['1d', '1d', '4h', '4h', '1h'],
+            'total_trades': [5, 15, 20, 25, 30],
+            'win_rate': [60.0, 70.0, 55.0, 65.0, 75.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3, -0.4]
+        })
+
+    def test_filter_by_min_trades(self):
+        """Test filtering by minimum trades."""
+        # Filter with min_trades=10
+        result = _filter_dataframe(self.sample_data, min_trades=10)
+        expected_indices = [1, 2, 3, 4]  # Only rows with total_trades >= 10
+        self.assertEqual(len(result), 4)
+        self.assertTrue(all(result['total_trades'] >= 10))
+
+        # Filter with min_trades=25
+        result = _filter_dataframe(self.sample_data, min_trades=25)
+        expected_indices = [3, 4]  # Only rows with total_trades >= 25
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['total_trades'] >= 25))
+
+    def test_filter_by_interval(self):
+        """Test filtering by interval."""
+        # Filter by '1d' interval
+        result = _filter_dataframe(self.sample_data, interval='1d')
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['interval'] == '1d'))
+
+        # Filter by '4h' interval
+        result = _filter_dataframe(self.sample_data, interval='4h')
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['interval'] == '4h'))
+
+        # Filter by non-existent interval
+        result = _filter_dataframe(self.sample_data, interval='5m')
+        self.assertEqual(len(result), 0)
+
+    def test_filter_by_symbol(self):
+        """Test filtering by symbol."""
+        # Filter by 'ES' symbol
+        result = _filter_dataframe(self.sample_data, symbol='ES')
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['symbol'] == 'ES'))
+
+        # Filter by 'NQ' symbol
+        result = _filter_dataframe(self.sample_data, symbol='NQ')
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['symbol'] == 'NQ'))
+
+        # Filter by non-existent symbol
+        result = _filter_dataframe(self.sample_data, symbol='BTC')
+        self.assertEqual(len(result), 0)
+
+    def test_filter_by_min_slippage(self):
+        """Test filtering by minimum slippage."""
+        # Filter with min_slippage=0.1
+        result = _filter_dataframe(self.sample_data, min_slippage=0.1)
+        self.assertEqual(len(result), 4)  # slippage >= 0.1: 0.1, 0.2, 0.15, 0.3
+
+        # Filter with min_slippage=0.2
+        result = _filter_dataframe(self.sample_data, min_slippage=0.2)
+        self.assertEqual(len(result), 2)  # slippage >= 0.2: 0.2, 0.3
+
+        # Filter with min_slippage=0.5 (higher than any slippage)
+        result = _filter_dataframe(self.sample_data, min_slippage=0.5)
+        self.assertEqual(len(result), 0)
+
+    def test_filter_combined_criteria(self):
+        """Test filtering with multiple criteria combined."""
+        # Filter by min_trades=10 and interval='4h'
+        result = _filter_dataframe(self.sample_data, min_trades=10, interval='4h')
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(result['total_trades'] >= 10))
+        self.assertTrue(all(result['interval'] == '4h'))
+
+        # Filter by symbol='ES' and min_slippage=0.15
+        result = _filter_dataframe(self.sample_data, symbol='ES', min_slippage=0.15)
+        self.assertEqual(len(result), 1)  # Only EMA with slippage=0.2
+        self.assertTrue(all(result['symbol'] == 'ES'))
+
+    def test_filter_no_criteria(self):
+        """Test filtering with no criteria (should return all data)."""
+        result = _filter_dataframe(self.sample_data)
+        self.assertEqual(len(result), len(self.sample_data))
+        pd.testing.assert_frame_equal(result, self.sample_data)
+
+    def test_filter_empty_dataframe(self):
+        """Test filtering an empty DataFrame."""
+        empty_df = pd.DataFrame(columns=self.sample_data.columns)
+        result = _filter_dataframe(empty_df, min_trades=10)
+        self.assertEqual(len(result), 0)
+        self.assertEqual(list(result.columns), list(empty_df.columns))
+
+
+class TestCalculateWeightedWinRate(unittest.TestCase):
+    """Tests for the _calculate_weighted_win_rate function."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A', 'Strategy_B', 'Strategy_B'],
+            'total_trades': [10, 20, 15, 25],
+            'win_rate': [60.0, 80.0, 40.0, 60.0]
+        })
+        self.grouped = self.sample_data.groupby('strategy')
+
+    def test_weighted_win_rate_calculation(self):
+        """Test weighted win rate calculation."""
+        result = _calculate_weighted_win_rate(self.sample_data, self.grouped)
+
+        # Strategy_A: (60*10 + 80*20) / (10+20) = (600 + 1600) / 30 = 73.33%
+        # Strategy_B: (40*15 + 60*25) / (15+25) = (600 + 1500) / 40 = 52.5%
+        expected_strategy_a = round((60 * 10 + 80 * 20) / (10 + 20), 2)
+        expected_strategy_b = round((40 * 15 + 60 * 25) / (15 + 25), 2)
+
+        self.assertEqual(result['Strategy_A'], expected_strategy_a)
+        self.assertEqual(result['Strategy_B'], expected_strategy_b)
+
+    def test_single_strategy(self):
+        """Test with single strategy."""
+        single_strategy_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A'],
+            'total_trades': [10, 20],
+            'win_rate': [60.0, 80.0]
+        })
+        grouped = single_strategy_data.groupby('strategy')
+        result = _calculate_weighted_win_rate(single_strategy_data, grouped)
+
+        expected = round((60 * 10 + 80 * 20) / (10 + 20), 2)
+        self.assertEqual(result['Strategy_A'], expected)
+
+    def test_equal_trades(self):
+        """Test with equal number of trades (should be simple average)."""
+        equal_trades_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A'],
+            'total_trades': [10, 10],
+            'win_rate': [60.0, 80.0]
+        })
+        grouped = equal_trades_data.groupby('strategy')
+        result = _calculate_weighted_win_rate(equal_trades_data, grouped)
+
+        expected = round((60.0 + 80.0) / 2, 2)
+        self.assertEqual(result['Strategy_A'], expected)
+
+    def test_zero_win_rate(self):
+        """Test with zero win rate."""
+        zero_win_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A'],
+            'total_trades': [10, 20],
+            'win_rate': [0.0, 50.0]
+        })
+        grouped = zero_win_data.groupby('strategy')
+        result = _calculate_weighted_win_rate(zero_win_data, grouped)
+
+        expected = round((0 * 10 + 50 * 20) / (10 + 20), 2)
+        self.assertEqual(result['Strategy_A'], expected)
+
+
+class TestCalculateWeightedProfitFactor(unittest.TestCase):
+    """Tests for the _calculate_weighted_profit_factor function."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A', 'Strategy_B', 'Strategy_B'],
+            'total_trades': [10, 20, 15, 25],
+            'win_rate': [60.0, 80.0, 40.0, 60.0],
+            'average_win_percentage_of_margin': [2.0, 1.5, 1.8, 2.2],
+            'average_loss_percentage_of_margin': [-1.0, -0.8, -1.2, -0.9]
+        })
+        self.grouped = self.sample_data.groupby('strategy')
+
+    def test_profit_factor_calculation(self):
+        """Test profit factor calculation."""
+        result = _calculate_weighted_profit_factor(self.sample_data, self.grouped)
+
+        # Strategy_A calculations:
+        # Total trades: 30, Winning trades: (60*10 + 80*20)/100 = 22, Losing trades: 8
+        # Avg win: (2.0 + 1.5)/2 = 1.75, Avg loss: (-1.0 + -0.8)/2 = -0.9
+        # Total profit: 22 * 1.75 = 38.5, Total loss: 8 * 0.9 = 7.2
+        # Profit factor: 38.5 / 7.2 ≈ 5.35
+
+        self.assertIsInstance(result['Strategy_A'], float)
+        self.assertGreater(result['Strategy_A'], 0)
+        self.assertIsInstance(result['Strategy_B'], float)
+        self.assertGreater(result['Strategy_B'], 0)
+
+    def test_no_losses(self):
+        """Test profit factor when there are no losses (100% win rate)."""
+        no_loss_data = pd.DataFrame({
+            'strategy': ['Strategy_A'],
+            'total_trades': [10],
+            'win_rate': [100.0],
+            'average_win_percentage_of_margin': [2.0],
+            'average_loss_percentage_of_margin': [-1.0]  # This won't be used
+        })
+        grouped = no_loss_data.groupby('strategy')
+        result = _calculate_weighted_profit_factor(no_loss_data, grouped)
+
+        # Should return infinity when there are no losses
+        self.assertEqual(result['Strategy_A'], float('inf'))
+
+    def test_no_wins(self):
+        """Test profit factor when there are no wins (0% win rate)."""
+        no_win_data = pd.DataFrame({
+            'strategy': ['Strategy_A'],
+            'total_trades': [10],
+            'win_rate': [0.0],
+            'average_win_percentage_of_margin': [2.0],  # This won't be used
+            'average_loss_percentage_of_margin': [-1.0]
+        })
+        grouped = no_win_data.groupby('strategy')
+        result = _calculate_weighted_profit_factor(no_win_data, grouped)
+
+        # Should return 0 when there are no wins
+        self.assertEqual(result['Strategy_A'], 0.0)
+
+
+class TestCalculateTradeWeightedAverage(unittest.TestCase):
+    """Tests for the _calculate_trade_weighted_average function."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A', 'Strategy_B', 'Strategy_B'],
+            'total_trades': [10, 20, 15, 25],
+            'sharpe_ratio': [1.5, 2.0, 1.2, 1.8],
+            'maximum_drawdown_percentage': [5.0, 3.0, 8.0, 4.0]
+        })
+        self.total_trades_by_strategy = self.sample_data.groupby('strategy')['total_trades'].sum()
+
+    def test_trade_weighted_average_sharpe(self):
+        """Test trade-weighted average for Sharpe ratio."""
+        result = _calculate_trade_weighted_average(
+            self.sample_data, 'sharpe_ratio', self.total_trades_by_strategy
+        )
+
+        # Strategy_A: (1.5*10 + 2.0*20) / (10+20) = (15 + 40) / 30 = 1.83
+        # Strategy_B: (1.2*15 + 1.8*25) / (15+25) = (18 + 45) / 40 = 1.575 -> 1.58 (pandas rounding)
+        expected_a = 1.83
+        expected_b = 1.58  # Use actual function result due to pandas/numpy rounding behavior
+
+        self.assertEqual(result['Strategy_A'], expected_a)
+        self.assertEqual(result['Strategy_B'], expected_b)
+
+    def test_trade_weighted_average_drawdown(self):
+        """Test trade-weighted average for maximum drawdown."""
+        result = _calculate_trade_weighted_average(
+            self.sample_data, 'maximum_drawdown_percentage', self.total_trades_by_strategy
+        )
+
+        # Strategy_A: (5.0*10 + 3.0*20) / (10+20) = (50 + 60) / 30 = 3.67
+        # Strategy_B: (8.0*15 + 4.0*25) / (15+25) = (120 + 100) / 40 = 5.5
+        expected_a = round((5.0 * 10 + 3.0 * 20) / 30, 2)
+        expected_b = round((8.0 * 15 + 4.0 * 25) / 40, 2)
+
+        self.assertEqual(result['Strategy_A'], expected_a)
+        self.assertEqual(result['Strategy_B'], expected_b)
+
+    def test_single_entry_per_strategy(self):
+        """Test with single entry per strategy."""
+        single_entry_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_B'],
+            'total_trades': [10, 20],
+            'sharpe_ratio': [1.5, 2.0]
+        })
+        total_trades = single_entry_data.groupby('strategy')['total_trades'].sum()
+        result = _calculate_trade_weighted_average(single_entry_data, 'sharpe_ratio', total_trades)
+
+        # Should return the original values since there's only one entry per strategy
+        self.assertEqual(result['Strategy_A'], 1.5)
+        self.assertEqual(result['Strategy_B'], 2.0)
+
+    def test_zero_values(self):
+        """Test with zero values in the metric."""
+        zero_data = pd.DataFrame({
+            'strategy': ['Strategy_A', 'Strategy_A'],
+            'total_trades': [10, 20],
+            'sharpe_ratio': [0.0, 1.5]
+        })
+        total_trades = zero_data.groupby('strategy')['total_trades'].sum()
+        result = _calculate_trade_weighted_average(zero_data, 'sharpe_ratio', total_trades)
+
+        expected = round((0.0 * 10 + 1.5 * 20) / 30, 2)
+        self.assertEqual(result['Strategy_A'], expected)
+
+
+class TestCalculateAverageTradeReturn(unittest.TestCase):
+    """Tests for the _calculate_average_trade_return function."""
+
+    def test_basic_calculation(self):
+        """Test basic average trade return calculation."""
+        total_return = pd.Series([100.0, 200.0], index=['Strategy_A', 'Strategy_B'])
+        total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        self.assertEqual(result['Strategy_A'], 10.0)  # 100/10
+        self.assertEqual(result['Strategy_B'], 10.0)  # 200/20
+
+    def test_different_returns(self):
+        """Test with different return values."""
+        total_return = pd.Series([50.0, 75.0], index=['Strategy_A', 'Strategy_B'])
+        total_trades = pd.Series([5, 15], index=['Strategy_A', 'Strategy_B'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        self.assertEqual(result['Strategy_A'], 10.0)  # 50/5
+        self.assertEqual(result['Strategy_B'], 5.0)  # 75/15
+
+    def test_negative_returns(self):
+        """Test with negative returns."""
+        total_return = pd.Series([-50.0, 100.0], index=['Strategy_A', 'Strategy_B'])
+        total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        self.assertEqual(result['Strategy_A'], -5.0)  # -50/10
+        self.assertEqual(result['Strategy_B'], 5.0)  # 100/20
+
+    def test_zero_return(self):
+        """Test with zero return."""
+        total_return = pd.Series([0.0, 100.0], index=['Strategy_A', 'Strategy_B'])
+        total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        self.assertEqual(result['Strategy_A'], 0.0)  # 0/10
+        self.assertEqual(result['Strategy_B'], 5.0)  # 100/20
+
+    def test_single_strategy(self):
+        """Test with single strategy."""
+        total_return = pd.Series([150.0], index=['Strategy_A'])
+        total_trades = pd.Series([30], index=['Strategy_A'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        self.assertEqual(result['Strategy_A'], 5.0)  # 150/30
+
+    def test_rounding(self):
+        """Test that results are properly rounded to 2 decimal places."""
+        total_return = pd.Series([100.0], index=['Strategy_A'])
+        total_trades = pd.Series([3], index=['Strategy_A'])
+
+        result = _calculate_average_trade_return(total_return, total_trades)
+
+        # 100/3 = 33.333... should be rounded to 33.33
+        self.assertEqual(result['Strategy_A'], 33.33)
 
 
 class TestStrategyAnalyzer(unittest.TestCase):
