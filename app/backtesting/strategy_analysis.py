@@ -207,23 +207,21 @@ class StrategyAnalyzer:
         grouped = filtered_df.groupby('strategy')
 
         # Calculate aggregated metrics
+        total_trades = grouped['total_trades'].sum()
+        symbol_count = grouped['symbol'].nunique()
+        interval_count = grouped['interval'].nunique()
+
         metrics_dict = {
             # Basic info
-            'symbol_count': grouped['symbol'].nunique(),
-            'interval_count': grouped['interval'].nunique(),
-            'total_trades': grouped['total_trades'].sum(),
-            'avg_trades_per_combination': (
-                    grouped['total_trades'].sum() /
-                    (grouped['symbol'].nunique() * grouped['interval'].nunique())
-            ).round(2),
-            'avg_trades_per_symbol': (grouped['total_trades'].sum() / grouped['symbol'].nunique()).round(2),
-            'avg_trades_per_interval': (grouped['total_trades'].sum() / grouped['interval'].nunique()).round(2),
+            'symbol_count': symbol_count,
+            'interval_count': interval_count,
+            'total_trades': total_trades,
+            'avg_trades_per_combination': (total_trades / (symbol_count * interval_count)).round(2),
+            'avg_trades_per_symbol': (total_trades / symbol_count).round(2),
+            'avg_trades_per_interval': (total_trades / interval_count).round(2),
         }
 
         if weighted:
-            # Calculate total trades by strategy for weighted calculations
-            total_trades_by_strategy = grouped['total_trades'].sum()
-
             # Calculate weighted metrics
             metrics_dict['win_rate'] = _calculate_weighted_win_rate(filtered_df, grouped)
 
@@ -254,7 +252,7 @@ class StrategyAnalyzer:
 
             for metric in risk_metrics:
                 metrics_dict[metric] = _calculate_trade_weighted_average(
-                    filtered_df, metric, total_trades_by_strategy
+                    filtered_df, metric, total_trades
                 )
         else:
             # Averages all metrics across strategies
