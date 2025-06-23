@@ -64,6 +64,45 @@ def _filter_dataframe(df, min_trades=0, interval=None, symbol=None, min_slippage
     return filtered_df
 
 
+def _calculate_weighted_win_rate(filtered_df, grouped):
+    """Calculate win rate weighted by total trades."""
+    total_trades_by_strategy = grouped['total_trades'].sum()
+    winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
+        filtered_df['strategy']).sum()
+    return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
+
+
+def _calculate_weighted_profit_factor(filtered_df, grouped):
+    """Calculate profit factor weighted by total trades."""
+    total_trades_by_strategy = grouped['total_trades'].sum()
+    winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
+        filtered_df['strategy']).sum()
+    losing_trades = total_trades_by_strategy - winning_trades_by_strategy
+
+    avg_win_by_strategy = filtered_df.groupby('strategy')['average_win_percentage_of_margin'].mean()
+    avg_loss_by_strategy = filtered_df.groupby('strategy')['average_loss_percentage_of_margin'].mean()
+
+    # Total profit = winning_trades * average_win
+    total_profit = (winning_trades_by_strategy * avg_win_by_strategy).abs()
+    # Total loss = losing_trades * average_loss
+    total_loss = (losing_trades * avg_loss_by_strategy).abs()
+
+    # Profit factor
+    return (total_profit / total_loss).replace([float('inf'), float('-inf')], float('inf')).round(2)
+
+
+def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
+    """Calculate trade-weighted average for a given metric."""
+    weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
+        filtered_df['strategy']).sum()
+    return (weighted_sum / total_trades_by_strategy).round(2)
+
+
+def _calculate_average_trade_return(total_return, total_trades):
+    """Calculate average trade return from total return and total trades."""
+    return (total_return / total_trades).round(2)
+
+
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
@@ -148,93 +187,41 @@ class StrategyAnalyzer:
         }
 
         if weighted:
-            # Calculates win rate from total trades
+            # Calculate total trades by strategy for weighted calculations
             total_trades_by_strategy = grouped['total_trades'].sum()
-            # Estimate winning trades by multiplying win_rate by total_trades for each strategy
-            winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
-                filtered_df['strategy']).sum()
-            # Calculate aggregated win rate
-            metrics_dict['win_rate'] = (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
+
+            # Calculate weighted metrics
+            metrics_dict['win_rate'] = _calculate_weighted_win_rate(filtered_df, grouped)
 
             # Percentage-based metrics
             metrics_dict['total_return_percentage_of_margin'] = grouped['total_return_percentage_of_margin'].sum()
-
-            # Calculate average trade return from total return and total trades
-            metrics_dict['average_trade_return_percentage_of_margin'] = (
-                    metrics_dict['total_return_percentage_of_margin'] / metrics_dict['total_trades']
-            ).round(2)
+            metrics_dict['average_trade_return_percentage_of_margin'] = _calculate_average_trade_return(
+                metrics_dict['total_return_percentage_of_margin'], metrics_dict['total_trades']
+            )
 
             # These metrics can be averaged as they are already normalized
             metrics_dict['average_win_percentage_of_margin'] = grouped['average_win_percentage_of_margin'].mean()
             metrics_dict['average_loss_percentage_of_margin'] = grouped['average_loss_percentage_of_margin'].mean()
             metrics_dict['commission_percentage_of_margin'] = grouped['commission_percentage_of_margin'].mean()
 
-            # Recalculate risk metrics from aggregated data
+            # Calculate profit factor
+            metrics_dict['profit_factor'] = _calculate_weighted_profit_factor(filtered_df, grouped)
 
-            # Profit factor: total profit / total loss
-            winning_trades = winning_trades_by_strategy
-            losing_trades = total_trades_by_strategy - winning_trades
-
-            avg_win_by_strategy = filtered_df.groupby('strategy')['average_win_percentage_of_margin'].mean()
-            avg_loss_by_strategy = filtered_df.groupby('strategy')['average_loss_percentage_of_margin'].mean()
-
-            # Total profit = winning_trades * average_win
-            total_profit = (winning_trades * avg_win_by_strategy).abs()
-
-            # Total loss = losing_trades * average_loss
-            total_loss = (losing_trades * avg_loss_by_strategy).abs()
-
-            # Profit factor
-            metrics_dict['profit_factor'] = (total_profit / total_loss).replace([float('inf'), float('-inf')],
-                                                                                float('inf')).round(2)
-
-            # Maximum drawdown percentage
-            metrics_dict['maximum_drawdown_percentage'] = (
-                                                                  filtered_df['maximum_drawdown_percentage'] *
-                                                                  filtered_df['total_trades']
-                                                          ).groupby(
-                filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Sharpe ratio
-            metrics_dict['sharpe_ratio'] = (
-                                                   filtered_df['sharpe_ratio'] * filtered_df['total_trades']
-                                           ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Sortino ratio
-            metrics_dict['sortino_ratio'] = (
-                                                    filtered_df['sortino_ratio'] * filtered_df['total_trades']
-                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Calmar ratio
-            metrics_dict['calmar_ratio'] = (
-                                                   filtered_df['calmar_ratio'] * filtered_df['total_trades']
-                                           ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Value at risk
-            metrics_dict['value_at_risk'] = (
-                                                    filtered_df['value_at_risk'] * filtered_df['total_trades']
-                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Expected shortfall
-            metrics_dict['expected_shortfall'] = (
-                                                         filtered_df['expected_shortfall'] * filtered_df['total_trades']
-                                                 ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Ulcer index
-            metrics_dict['ulcer_index'] = (
-                                                  filtered_df['ulcer_index'] * filtered_df['total_trades']
-                                          ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
-
-            # Round the ratio metrics
-            for ratio in [
+            # Calculate trade-weighted averages for risk metrics
+            risk_metrics = [
+                'maximum_drawdown_percentage',
                 'sharpe_ratio',
                 'sortino_ratio',
                 'calmar_ratio',
                 'value_at_risk',
                 'expected_shortfall',
                 'ulcer_index'
-            ]:
-                metrics_dict[ratio] = metrics_dict[ratio].round(2)
+            ]
+
+            for metric in risk_metrics:
+                metrics_dict[metric] = _calculate_trade_weighted_average(
+                    filtered_df, metric, total_trades_by_strategy
+                )
         else:
             # Averages all metrics across strategies
             metrics_dict.update({
