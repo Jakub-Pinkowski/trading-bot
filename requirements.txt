@@ -23,7 +23,7 @@ pandas==2.3.0
 pip-tools==7.4.1
 pluggy==1.6.0
 pyarrow==20.0.0
-Pygments==2.19.1
+Pygments==2.19.2
 pyproject_hooks==1.2.0
 pytest==8.4.0
 pytest-cov==6.2.1
