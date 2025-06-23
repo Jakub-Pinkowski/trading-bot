@@ -1,4 +1,5 @@
 import concurrent.futures
+import gc
 import io
 import itertools
 import os
@@ -153,6 +154,9 @@ class MassTester:
         """  Run all tests with the configured parameters in parallel. """
         start_time = time.time()  # Track the start time of the entire process
 
+        # Reset counters to prevent accumulation
+        self._reset_counters()  #
+
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
@@ -246,14 +250,30 @@ class MassTester:
             total_tests = len(test_combinations)
             completed_tests = 0
             batch_start_time = time.time()
+            overall_start_time = time.time()
 
             for future in concurrent.futures.as_completed(future_to_test):
                 completed_tests += 1
                 if completed_tests % 100 == 0 or completed_tests == total_tests:
                     current_time = time.time()
-                    elapsed_time = current_time - batch_start_time
-                    print(f'Progress: {completed_tests}/{total_tests} tests completed ({(completed_tests / total_tests * 100):.1f}%) - Time taken: {elapsed_time:.2f} seconds')
+                    batch_elapsed_time = current_time - batch_start_time
+                    total_elapsed_time = current_time - overall_start_time
+                    avg_time_per_100_tests = total_elapsed_time / completed_tests * 100
+
+                    print(f'Progress: {completed_tests}/{total_tests} tests completed '
+                          f'({(completed_tests / total_tests * 100):.1f}%) - '
+                          f'Batch: {batch_elapsed_time:.2f}s - '
+                          f'Total: {total_elapsed_time:.2f}s - '
+                          f'Avg: {avg_time_per_100_tests:.2f}s/100tests')
                     batch_start_time = current_time
+
+                    # Periodic cleanup
+                    gc.collect()
+
+                    # Save intermediate results and clear memory
+                    if completed_tests % 1000 == 0 and self.results:
+                        self._save_results()
+                        self.results.clear()
 
                 result = future.result()
                 if result:
@@ -308,6 +328,10 @@ class MassTester:
 
             self.strategies.append((strategy_name, strategy_instance))
 
+    def _reset_counters(self):
+        """Reset class-level counters to prevent accumulation across runs."""
+        self.__class__.tests_completed = 0
+
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""
         # Unpack parameters
@@ -328,9 +352,17 @@ class MassTester:
         # Save caches only periodically
         # Add this as a class variable
         self.__class__.tests_completed = getattr(self.__class__, 'tests_completed', 0) + 1
-        if self.__class__.tests_completed % 100 == 0:  # Adjust frequency as needed
+        if self.__class__.tests_completed % 500 == 0:  # Adjust frequency as needed
             # Use separate locks for indicator and dataframe caches to reduce contention
             try:
+                # Check cache sizes before saving and clear if getting too large
+                if indicator_cache.size() > 400:  # Near max_size
+                    logger.info(f"Indicator cache size ({indicator_cache.size()}) approaching limit, clearing cache")
+                    indicator_cache.clear()
+                if dataframe_cache.size() > 40:  # Near max_size
+                    logger.info(f"Dataframe cache size ({dataframe_cache.size()}) approaching limit, clearing cache")
+                    dataframe_cache.clear()
+
                 with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
                     indicator_cache.save_cache()
                 with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):

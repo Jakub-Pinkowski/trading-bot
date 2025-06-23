@@ -5,4 +5,4 @@ CACHE_VERSION = 1
 
 # Create the indicator cache instance
 # Set max_age to 30 days (30 * 24 * 60 * 60 = 2,592,000 seconds)
-indicator_cache = Cache("indicator", CACHE_VERSION, max_size=2000, max_age=2592000)
+indicator_cache = Cache("indicator", CACHE_VERSION, max_size=500, max_age=2592000)

@@ -15,7 +15,7 @@ def test_indicator_cache_instance():
     """Test that the indicator_cache is properly initialized."""
     assert indicator_cache.cache_name == "indicator"
     assert indicator_cache.cache_version == CACHE_VERSION
-    assert indicator_cache.max_size == 2000
+    assert indicator_cache.max_size == 500
     assert indicator_cache.max_age == 2592000  # 30 days in seconds
 
 

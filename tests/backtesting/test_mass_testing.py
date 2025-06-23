@@ -822,8 +822,8 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
 
-        # Set tests_completed to trigger cache save (99 will become 100 when incremented)
-        tester.__class__.tests_completed = 99
+        # Set tests_completed to trigger cache save (499 will become 500 when incremented)
+        tester.__class__.tests_completed = 499
 
         # Create preprocessed switch dates and filepath
         switch_dates = []
@@ -1183,3 +1183,385 @@ class TestHelperFunctions:
         result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 1')
 
         assert result is False
+
+
+class TestMassTesterPerformanceOptimizations:
+    """Test class for performance optimization features added to MassTester."""
+
+    def test_reset_counters(self):
+        """Test the _reset_counters method."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Set a non-zero value for tests_completed
+        tester.__class__.tests_completed = 100
+
+        # Call _reset_counters
+        tester._reset_counters()
+
+        # Verify it was reset to 0
+        assert tester.__class__.tests_completed == 0
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('builtins.print')
+    @patch('time.time')
+    def test_run_tests_progress_timing(
+        self,
+        mock_time,
+        mock_print,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that run_tests correctly calculates and displays progress timing."""
+        # Setup mocks
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Mock time.time() to return predictable values
+        # Start time: 0, batch times: 10, 20, 30, etc.
+        mock_time.side_effect = [
+            0,
+            10,
+            20,
+            30,
+            40,
+            50,
+            60,
+            70,
+            80,
+            90,
+            100
+        ]  # start, batch1, batch2, batch3, end + extras
+
+        # Create mock results
+        mock_results = []
+        for i in range(200):  # 200 tests to trigger progress reporting twice
+            mock_results.append({
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': f'Test Strategy {i}',
+                'metrics': {'total_trades': 10, 'win_rate': 60.0},
+                'timestamp': '2023-01-01T00:00:00'
+            })
+
+        # Mock futures
+        mock_futures = []
+        for result in mock_results:
+            mock_future = MagicMock()
+            mock_future.result.return_value = result
+            mock_futures.append(mock_future)
+
+        # Mock the executor instance
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.side_effect = mock_futures
+        mock_executor.return_value = mock_executor_instance
+
+        # Mock as_completed to return futures in order
+        mock_as_completed.return_value = mock_futures
+
+        # Create a tester with strategies
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Run tests
+        results = tester.run_tests(verbose=False)
+
+        # Verify progress timing was printed correctly
+        # Should have progress reports at 100 and 200 tests
+        progress_calls = [call for call in mock_print.call_args_list if 'Progress:' in str(call)]
+        assert len(progress_calls) >= 2
+
+        # Check that the progress messages contain the expected timing information
+        for call in progress_calls:
+            message = str(call)
+            assert 'Batch:' in message
+            assert 'Total:' in message
+            assert 'Avg:' in message
+            assert 's/100tests' in message
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('gc.collect')
+    def test_run_tests_periodic_cleanup(
+        self,
+        mock_gc_collect,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that run_tests calls gc.collect() periodically."""
+        # Setup mocks
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Create mock results for 200 tests
+        mock_results = []
+        for i in range(200):
+            mock_results.append({
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': f'Test Strategy {i}',
+                'metrics': {'total_trades': 10, 'win_rate': 60.0},
+                'timestamp': '2023-01-01T00:00:00'
+            })
+
+        # Mock futures
+        mock_futures = []
+        for result in mock_results:
+            mock_future = MagicMock()
+            mock_future.result.return_value = result
+            mock_futures.append(mock_future)
+
+        # Mock the executor instance
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.side_effect = mock_futures
+        mock_executor.return_value = mock_executor_instance
+
+        # Mock as_completed to return futures in order
+        mock_as_completed.return_value = mock_futures
+
+        # Create a tester with strategies
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Run tests
+        tester.run_tests(verbose=False)
+
+        # Verify gc.collect() was called at least twice (at 100 and 200 tests)
+        assert mock_gc_collect.call_count >= 2
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    def test_run_tests_intermediate_result_saving(
+        self,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that run_tests saves results every 1000 tests and clears memory."""
+        # Setup mocks
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Create mock results for 1500 tests to trigger intermediate saving
+        mock_results = []
+        for i in range(1500):
+            mock_results.append({
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': f'Test Strategy {i}',
+                'metrics': {'total_trades': 10, 'win_rate': 60.0},
+                'timestamp': '2023-01-01T00:00:00'
+            })
+
+        # Mock futures
+        mock_futures = []
+        for result in mock_results:
+            mock_future = MagicMock()
+            mock_future.result.return_value = result
+            mock_futures.append(mock_future)
+
+        # Mock the executor instance
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.side_effect = mock_futures
+        mock_executor.return_value = mock_executor_instance
+
+        # Mock as_completed to return futures in order
+        mock_as_completed.return_value = mock_futures
+
+        # Create a tester with strategies
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': list(range(1, 1501)), 'ema_long': [1600], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Mock the _save_results method to track calls
+        with patch.object(tester, '_save_results') as mock_save_results:
+            # Run tests
+            results = tester.run_tests(verbose=False)
+
+            # Verify _save_results was called at least twice:
+            # Once at 1000 tests (intermediate) and once at the end (final)
+            assert mock_save_results.call_count >= 2
+
+            # Verify that results list was cleared after intermediate save
+            # The final results should only contain the last 501 tests (1500 - 999 cleared)
+            assert len(results) == 501  # 1500 - 999 (cleared at intermediate save)
+
+    @patch('app.backtesting.mass_testing.get_cached_dataframe')
+    @patch('app.backtesting.mass_testing.indicator_cache')
+    @patch('app.backtesting.mass_testing.dataframe_cache')
+    @patch('app.backtesting.mass_testing.FileLock')
+    def test_run_single_test_cache_size_monitoring(
+        self,
+        mock_file_lock,
+        mock_dataframe_cache,
+        mock_indicator_cache,
+        mock_get_df
+    ):
+        """Test that _run_single_test monitors cache sizes and clears when approaching limits."""
+        # Setup mock dataframe
+        mock_df = pd.DataFrame({
+            'open': [100, 101, 102],
+            'high': [105, 106, 107],
+            'low': [95, 96, 97],
+            'close': [102, 103, 104]
+        })
+        mock_get_df.return_value = mock_df
+
+        # Setup mock strategy
+        strategy = MagicMock()
+        strategy.run.return_value = []  # No trades to simplify test
+
+        # Setup cache size mocks - simulate caches approaching limits
+        mock_indicator_cache.size.return_value = 450  # Above threshold of 400
+        mock_dataframe_cache.size.return_value = 45  # Above threshold of 40
+
+        # Setup file lock mock
+        mock_lock_instance = MagicMock()
+        mock_file_lock.return_value = mock_lock_instance
+
+        # Create a tester
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Set tests_completed to trigger cache save (499 will become 500 when incremented)
+        tester.__class__.tests_completed = 499
+
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Run a single test
+        result = tester._run_single_test((
+            '2023-01',
+            'ES',
+            '1h',
+            'Test Strategy',
+            strategy,
+            False,
+            switch_dates,
+            filepath
+        ))
+
+        # Verify that cache.clear() was called for both caches due to size limits
+        mock_indicator_cache.clear.assert_called_once()
+        mock_dataframe_cache.clear.assert_called_once()
+
+        # Verify that cache.save_cache() was called
+        mock_indicator_cache.save_cache.assert_called_once()
+        mock_dataframe_cache.save_cache.assert_called_once()
+
+    @patch('app.backtesting.mass_testing.get_cached_dataframe')
+    @patch('app.backtesting.mass_testing.indicator_cache')
+    @patch('app.backtesting.mass_testing.dataframe_cache')
+    @patch('app.backtesting.mass_testing.FileLock')
+    def test_run_single_test_cache_save_frequency_500(
+        self,
+        mock_file_lock,
+        mock_dataframe_cache,
+        mock_indicator_cache,
+        mock_get_df
+    ):
+        """Test that _run_single_test saves caches every 500 tests, not every 100."""
+        # Setup mock dataframe
+        mock_df = pd.DataFrame({
+            'open': [100, 101, 102],
+            'high': [105, 106, 107],
+            'low': [95, 96, 97],
+            'close': [102, 103, 104]
+        })
+        mock_get_df.return_value = mock_df
+
+        # Setup mock strategy
+        strategy = MagicMock()
+        strategy.run.return_value = []  # No trades to simplify test
+
+        # Setup cache size mocks - below thresholds
+        mock_indicator_cache.size.return_value = 100
+        mock_dataframe_cache.size.return_value = 10
+
+        # Setup file lock mock
+        mock_lock_instance = MagicMock()
+        mock_file_lock.return_value = mock_lock_instance
+
+        # Create a tester
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Reset the class counter to ensure test isolation
+        tester.__class__.tests_completed = 0
+
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+
+        # Test that cache is NOT saved at 100 tests
+        tester.__class__.tests_completed = 99  # Will become 100
+        tester._run_single_test((
+            '2023-01', 'ES', '1h', 'Test Strategy', strategy, False, switch_dates, filepath
+        ))
+
+        # Verify cache save was NOT called at 100 tests
+        mock_indicator_cache.save_cache.assert_not_called()
+        mock_dataframe_cache.save_cache.assert_not_called()
+
+        # Reset mocks
+        mock_indicator_cache.reset_mock()
+        mock_dataframe_cache.reset_mock()
+
+        # Test that cache IS saved at 500 tests
+        tester.__class__.tests_completed = 499  # Will become 500
+        tester._run_single_test((
+            '2023-01', 'ES', '1h', 'Test Strategy', strategy, False, switch_dates, filepath
+        ))
+
+        # Verify cache save WAS called at 500 tests
+        mock_indicator_cache.save_cache.assert_called_once()
+        mock_dataframe_cache.save_cache.assert_called_once()
+
+    def test_reset_counters_called_at_start_of_run_tests(self):
+        """Test that _reset_counters is called at the start of run_tests."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Set a non-zero value for tests_completed
+        tester.__class__.tests_completed = 100
+
+        # Mock _reset_counters to track if it's called
+        with patch.object(tester, '_reset_counters') as mock_reset:
+            with patch('app.backtesting.mass_testing._load_existing_results') as mock_load:
+                mock_load.return_value = (pd.DataFrame(), set())
+
+                # Add a strategy to avoid the "no strategies" error
+                tester._add_strategy_tests(
+                    strategy_type='ema',
+                    param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+                )
+
+                # Mock the test existence check to skip all tests
+                with patch('app.backtesting.mass_testing._test_already_exists') as mock_exists:
+                    mock_exists.return_value = True  # All tests already exist
+
+                    # Run tests
+                    tester.run_tests(verbose=False)
+
+                    # Verify _reset_counters was called
+                    mock_reset.assert_called_once()
