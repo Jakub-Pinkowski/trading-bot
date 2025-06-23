@@ -10,9 +10,9 @@ def main():
 
     # Get top strategies for a profit factor for a specific timeframe (weighted)
     top_profit_factor_1h_weighted = analyzer.get_top_strategies(metric='profit_factor',
-                                                                min_trades=50,
-                                                       limit=30,
-                                                       aggregate=True,
+                                                                min_trades=0,
+                                                                limit=30,
+                                                                aggregate=True,
                                                                 interval='4h',
                                                                 weighted=True,
                                                                 min_slippage=0.05)

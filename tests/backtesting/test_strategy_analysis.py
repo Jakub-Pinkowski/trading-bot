@@ -557,6 +557,20 @@ class TestStrategyAnalyzer(unittest.TestCase):
                 'slippage=0.15')]
         self.assertEqual(ema_015_strategy['total_trades'].iloc[0], 25)  # EMA with slippage=0.15 has 25 trades
 
+        # Check that the new avg_trades_per_symbol and avg_trades_per_interval columns are present and calculated correctly
+        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol and avg_trades_per_interval should equal total_trades
+        self.assertEqual(rsi_01_strategy['avg_trades_per_symbol'].iloc[0], 10.0)  # 10 trades / 1 symbol = 10.0
+        self.assertEqual(rsi_01_strategy['avg_trades_per_interval'].iloc[0], 10.0)  # 10 trades / 1 interval = 10.0
+
+        self.assertEqual(rsi_005_strategy['avg_trades_per_symbol'].iloc[0], 15.0)  # 15 trades / 1 symbol = 15.0
+        self.assertEqual(rsi_005_strategy['avg_trades_per_interval'].iloc[0], 15.0)  # 15 trades / 1 interval = 15.0
+
+        self.assertEqual(ema_02_strategy['avg_trades_per_symbol'].iloc[0], 20.0)  # 20 trades / 1 symbol = 20.0
+        self.assertEqual(ema_02_strategy['avg_trades_per_interval'].iloc[0], 20.0)  # 20 trades / 1 interval = 20.0
+
+        self.assertEqual(ema_015_strategy['avg_trades_per_symbol'].iloc[0], 25.0)  # 25 trades / 1 symbol = 25.0
+        self.assertEqual(ema_015_strategy['avg_trades_per_interval'].iloc[0], 25.0)  # 25 trades / 1 interval = 25.0
+
         # Test non-weighted aggregation
         non_weighted_aggregated = analyzer._aggregate_strategies(weighted=False)
 
@@ -602,6 +616,20 @@ class TestStrategyAnalyzer(unittest.TestCase):
             non_weighted_aggregated['strategy'].str.contains('EMA') & non_weighted_aggregated['strategy'].str.contains(
                 'slippage=0.15')]
         self.assertEqual(ema_015_strategy['total_trades'].iloc[0], 25)  # EMA with slippage=0.15 has 25 trades
+
+        # Check that the new avg_trades_per_symbol and avg_trades_per_interval columns are present and calculated correctly
+        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol and avg_trades_per_interval should equal total_trades
+        self.assertEqual(rsi_01_strategy['avg_trades_per_symbol'].iloc[0], 10.0)  # 10 trades / 1 symbol = 10.0
+        self.assertEqual(rsi_01_strategy['avg_trades_per_interval'].iloc[0], 10.0)  # 10 trades / 1 interval = 10.0
+
+        self.assertEqual(rsi_005_strategy['avg_trades_per_symbol'].iloc[0], 15.0)  # 15 trades / 1 symbol = 15.0
+        self.assertEqual(rsi_005_strategy['avg_trades_per_interval'].iloc[0], 15.0)  # 15 trades / 1 interval = 15.0
+
+        self.assertEqual(ema_02_strategy['avg_trades_per_symbol'].iloc[0], 20.0)  # 20 trades / 1 symbol = 20.0
+        self.assertEqual(ema_02_strategy['avg_trades_per_interval'].iloc[0], 20.0)  # 20 trades / 1 interval = 20.0
+
+        self.assertEqual(ema_015_strategy['avg_trades_per_symbol'].iloc[0], 25.0)  # 25 trades / 1 symbol = 25.0
+        self.assertEqual(ema_015_strategy['avg_trades_per_interval'].iloc[0], 25.0)  # 25 trades / 1 interval = 25.0
 
         # In this test setup, the win_rate values are the same for both weighted and non-weighted approaches
         # because we're using a simple dataset. In a real-world scenario with more data,
