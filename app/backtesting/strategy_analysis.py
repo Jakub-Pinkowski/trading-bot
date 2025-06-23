@@ -172,53 +172,55 @@ class StrategyAnalyzer:
             # Recalculate risk metrics from aggregated data
 
             # Profit factor: total profit / total loss
-            # We need to estimate total profit and total loss from the available metrics
-            # Total profit = winning_trades * average_win
-            # Total loss = losing_trades * average_loss
             winning_trades = winning_trades_by_strategy
             losing_trades = total_trades_by_strategy - winning_trades
 
             avg_win_by_strategy = filtered_df.groupby('strategy')['average_win_percentage_of_margin'].mean()
             avg_loss_by_strategy = filtered_df.groupby('strategy')['average_loss_percentage_of_margin'].mean()
 
+            # Total profit = winning_trades * average_win
             total_profit = (winning_trades * avg_win_by_strategy).abs()
+
+            # Total loss = losing_trades * average_loss
             total_loss = (losing_trades * avg_loss_by_strategy).abs()
 
-            # Calculate profit factor
+            # Profit factor
             metrics_dict['profit_factor'] = (total_profit / total_loss).replace([float('inf'), float('-inf')],
                                                                                 float('inf')).round(2)
 
-            # Maximum drawdown percentage - use weighted average based on total trades
+            # Maximum drawdown percentage
             metrics_dict['maximum_drawdown_percentage'] = (
                                                                   filtered_df['maximum_drawdown_percentage'] *
                                                                   filtered_df['total_trades']
                                                           ).groupby(
                 filtered_df['strategy']).sum() / total_trades_by_strategy
 
-
-            # For Sharpe, Sortino, and Calmar ratios, we need to recalculate them based on the aggregated returns
-            # Since we don't have access to individual trade returns, we'll use a weighted average based on total trades
+            # Sharpe ratio
             metrics_dict['sharpe_ratio'] = (
                                                    filtered_df['sharpe_ratio'] * filtered_df['total_trades']
                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
+            # Sortino ratio
             metrics_dict['sortino_ratio'] = (
                                                     filtered_df['sortino_ratio'] * filtered_df['total_trades']
                                             ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
+            # Calmar ratio
             metrics_dict['calmar_ratio'] = (
                                                    filtered_df['calmar_ratio'] * filtered_df['total_trades']
                                            ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
-            # Add the new risk metrics with weighted average based on total trades
+            # Value at risk
             metrics_dict['value_at_risk'] = (
                                                     filtered_df['value_at_risk'] * filtered_df['total_trades']
                                             ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
+            # Expected shortfall
             metrics_dict['expected_shortfall'] = (
                                                          filtered_df['expected_shortfall'] * filtered_df['total_trades']
                                                  ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy
 
+            # Ulcer index
             metrics_dict['ulcer_index'] = (
                                                   filtered_df['ulcer_index'] * filtered_df['total_trades']
                                           ).groupby(filtered_df['strategy']).sum() / total_trades_by_strategy

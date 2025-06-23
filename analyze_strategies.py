@@ -13,7 +13,7 @@ def main():
                                                                 min_trades=50,
                                                        limit=30,
                                                        aggregate=True,
-                                                       interval='1h',
+                                                                interval='4h',
                                                                 weighted=True,
                                                                 min_slippage=0.05)
 
@@ -22,7 +22,7 @@ def main():
                                                        min_trades=50,
                                                        limit=30,
                                                        aggregate=True,
-                                                       interval='1h',
+                                                       interval='4h',
                                                        weighted=False,
                                                        min_slippage=0.05)
 
