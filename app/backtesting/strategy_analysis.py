@@ -184,6 +184,9 @@ class StrategyAnalyzer:
             'symbol_count': grouped['symbol'].nunique(),
             'interval_count': grouped['interval'].nunique(),
             'total_trades': grouped['total_trades'].sum(),
+            # Add average trades calculations
+            'avg_trades_per_symbol': (grouped['total_trades'].sum() / grouped['symbol'].nunique()).round(2),
+            'avg_trades_per_interval': (grouped['total_trades'].sum() / grouped['interval'].nunique()).round(2),
         }
 
         if weighted:
