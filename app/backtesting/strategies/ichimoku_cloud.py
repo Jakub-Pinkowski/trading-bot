@@ -63,33 +63,4 @@ class IchimokuCloudStrategy(BaseStrategy):
         sell_condition = (prev_tenkan >= prev_kijun) & (df['tenkan_sen'] < df['kijun_sen']) & below_cloud
         df.loc[sell_condition, 'signal'] = -1
 
-        # Collect all signals with their details
-        all_signals = []
-
-        # Collect buy signals
-        for idx in df[buy_condition].index:
-            all_signals.append({
-                'timestamp': idx,
-                'type': 'BUY',
-                'message': f"BUY SIGNAL at {idx}: Tenkan-sen crossed above Kijun-sen while price above cloud (Tenkan: {df['tenkan_sen'][idx]:.2f}, Kijun: {df['kijun_sen'][idx]:.2f})"
-            })
-
-        # Collect sell signals
-        for idx in df[sell_condition].index:
-            all_signals.append({
-                'timestamp': idx,
-                'type': 'SELL',
-                'message': f"SELL SIGNAL at {idx}: Tenkan-sen crossed below Kijun-sen while price below cloud (Tenkan: {df['tenkan_sen'][idx]:.2f}, Kijun: {df['kijun_sen'][idx]:.2f})"
-            })
-
-        # Sort signals by timestamp
-        all_signals.sort(key=lambda x: x['timestamp'])
-
-        # Print signals in chronological order
-        for signal in all_signals:
-            print(signal['message'])
-
-        # Print summary of signals
-        print(f"Total signals: {len(df[df['signal'] != 0])}, Buy signals: {len(df[df['signal'] == 1])}, Sell signals: {len(df[df['signal'] == -1])}")
-
         return df
