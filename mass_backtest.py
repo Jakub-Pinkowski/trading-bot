@@ -10,14 +10,14 @@ def main():
     )
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
-    # tester.add_rsi_tests(
-    #     rsi_periods=[14],
-    #     lower_thresholds=[30],
-    #     upper_thresholds=[70],
-    #     rollovers=[False],
-    #     trailing_stops=[None],
-    #     slippages=[0]
-    # )
+    tester.add_rsi_tests(
+        rsi_periods=[13, 14, 15],
+        lower_thresholds=[20, 25, 30],
+        upper_thresholds=[60, 65, 70],
+        rollovers=[False],
+        trailing_stops=[None],
+        slippages=[0]
+    )
     #
     # # EMA Crossover uses two moving averages to identify trend changes
     # tester.add_ema_crossover_tests(
@@ -48,17 +48,15 @@ def main():
     # )
 
     # Ichimoku Cloud is a comprehensive indicator that provides information on support/resistance, trend direction, and momentum
-    tester.add_ichimoku_cloud_tests(
-        tenkan_periods=[9],
-        kijun_periods=[26],
-        senkou_span_b_periods=[52],
-        displacements=[26],
-        rollovers=[False],
-        trailing_stops=[None],
-        slippages=[0]
-    )
-
-
+    # tester.add_ichimoku_cloud_tests(
+    #     tenkan_periods=[9],
+    #     kijun_periods=[26],
+    #     senkou_span_b_periods=[52],
+    #     displacements=[26],
+    #     rollovers=[False],
+    #     trailing_stops=[None],
+    #     slippages=[0, 0.05, 0.1]
+    # )
 
     # Run all tests
     # Set skip_existing=False to force re-running of all tests

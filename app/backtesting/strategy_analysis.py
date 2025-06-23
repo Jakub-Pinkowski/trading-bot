@@ -195,10 +195,6 @@ class StrategyAnalyzer:
                                                           ).groupby(
                 filtered_df['strategy']).sum() / total_trades_by_strategy
 
-            # Return to drawdown ratio - recalculate from total return and maximum drawdown
-            metrics_dict['return_to_drawdown_ratio'] = (
-                    metrics_dict['total_return_percentage_of_margin'] / metrics_dict['maximum_drawdown_percentage']
-            ).replace([float('inf'), float('-inf')], float('inf')).round(2)
 
             # For Sharpe, Sortino, and Calmar ratios, we need to recalculate them based on the aggregated returns
             # Since we don't have access to individual trade returns, we'll use a weighted average based on total trades
@@ -253,7 +249,6 @@ class StrategyAnalyzer:
                 # Risk metrics
                 'profit_factor': grouped['profit_factor'].mean(),
                 'maximum_drawdown_percentage': grouped['maximum_drawdown_percentage'].mean(),
-                'return_to_drawdown_ratio': grouped['return_to_drawdown_ratio'].mean(),
                 'sharpe_ratio': grouped['sharpe_ratio'].mean(),
                 'sortino_ratio': grouped['sortino_ratio'].mean(),
                 'calmar_ratio': grouped['calmar_ratio'].mean(),

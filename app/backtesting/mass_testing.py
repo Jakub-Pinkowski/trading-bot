@@ -393,7 +393,7 @@ class MassTester:
             'average_win_percentage_of_margin', 'average_loss_percentage_of_margin',
             'commission_percentage_of_margin',
             # Risk metrics
-            'profit_factor', 'maximum_drawdown_percentage', 'return_to_drawdown_ratio',
+            'profit_factor', 'maximum_drawdown_percentage',
             'sharpe_ratio', 'sortino_ratio', 'calmar_ratio', 'value_at_risk',
             'expected_shortfall', 'ulcer_index'
         ]

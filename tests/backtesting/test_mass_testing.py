@@ -940,7 +940,6 @@ class TestMassTester:
             # Risk metrics
             'profit_factor',
             'maximum_drawdown_percentage',
-            'return_to_drawdown_ratio',
             'sharpe_ratio',
             'sortino_ratio',
             'calmar_ratio',
@@ -963,7 +962,6 @@ class TestMassTester:
         # Risk metrics
         assert df.iloc[0]['profit_factor'] == 1.5
         assert df.iloc[0]['maximum_drawdown_percentage'] == 2.0
-        assert df.iloc[0]['return_to_drawdown_ratio'] >= 0
         assert df.iloc[0]['sharpe_ratio'] == 1.2
         assert df.iloc[0]['sortino_ratio'] == 1.5
         assert df.iloc[0]['calmar_ratio'] == 2.5
@@ -981,7 +979,6 @@ class TestMassTester:
         # Risk metrics
         assert df.iloc[1]['profit_factor'] == 0.8
         assert df.iloc[1]['maximum_drawdown_percentage'] == 3.0
-        assert df.iloc[1]['return_to_drawdown_ratio'] <= 0
         assert df.iloc[1]['sharpe_ratio'] == -0.8
         assert df.iloc[1]['sortino_ratio'] == -1.0
         assert df.iloc[1]['calmar_ratio'] == -0.7

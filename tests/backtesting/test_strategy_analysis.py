@@ -52,7 +52,6 @@ class TestFormatColumnName(unittest.TestCase):
         test_cases = {
             'symbol_count': 'Symbol Count',
             'interval_count': 'Interval Count',
-            'return_to_drawdown_ratio': 'Return To Drawdown Ratio'
         }
 
         for column_name, expected_formatted_name in test_cases.items():
@@ -84,7 +83,6 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1],
             'profit_factor': [2.0, 2.5, 1.8, 2.2],
             'maximum_drawdown_percentage': [2.0, 1.5, 2.5, 1.8],
-            'return_to_drawdown_ratio': [2.5, 4.67, 1.6, 3.33],
             'sharpe_ratio': [1.5, 1.8, 1.2, 1.6],
             'sortino_ratio': [2.0, 2.5, 1.8, 2.2],
             'calmar_ratio': [2.5, 4.67, 1.6, 3.33],
