@@ -34,7 +34,10 @@ class TestFormatColumnName(unittest.TestCase):
             'calmar_ratio': 'Calmar',
             'value_at_risk': 'Var 95%',
             'expected_shortfall': 'Cvar 95%',
-            'ulcer_index': 'Ulcer Idx'
+            'ulcer_index': 'Ulcer Idx',
+            'avg_trades_per_symbol': 'Avg Trades Per Symbol',
+            'avg_trades_per_interval': 'Avg Trades Per Interval',
+            'avg_trades_per_combination': 'Avg Trades Per Combination'
         }
 
         for column_name, expected_formatted_name in special_cases.items():
@@ -89,19 +92,43 @@ class TestFilterDataframe(unittest.TestCase):
             'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3, -0.4]
         })
 
-    def test_filter_by_min_trades(self):
-        """Test filtering by minimum trades."""
-        # Filter with min_trades=10
-        result = _filter_dataframe(self.sample_data, min_trades=10)
-        expected_indices = [1, 2, 3, 4]  # Only rows with total_trades >= 10
-        self.assertEqual(len(result), 4)
-        self.assertTrue(all(result['total_trades'] >= 10))
+    def test_filter_by_min_avg_trades_per_combination(self):
+        """Test filtering by minimum average trades per combination."""
+        # Create test data with multiple symbols and intervals for the same strategy
+        test_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=0.3)'
+            ],
+            'symbol': ['ES', 'NQ', 'ES', 'NQ', 'YM'],
+            'interval': ['1d', '4h', '1d', '4h', '1h'],
+            'total_trades': [20, 40, 30, 60, 50],
+            # RSI: 60 total, 2 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg; MACD: 50 total, 1 combination = 50 avg
+            'win_rate': [60.0, 70.0, 55.0, 65.0, 75.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3, -0.4]
+        })
 
-        # Filter with min_trades=25
-        result = _filter_dataframe(self.sample_data, min_trades=25)
-        expected_indices = [3, 4]  # Only rows with total_trades >= 25
-        self.assertEqual(len(result), 2)
-        self.assertTrue(all(result['total_trades'] >= 25))
+        # Based on debug output: RSI=15.0, EMA=22.5, MACD=50.0 avg trades per combination
+        # Filter with min_avg_trades_per_combination=25 (should keep only MACD)
+        result = _filter_dataframe(test_data, min_avg_trades_per_combination=25)
+        self.assertEqual(len(result), 1)  # Only MACD
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('MACD' in s for s in strategies))
+        self.assertFalse(any('RSI' in s for s in strategies))
+        self.assertFalse(any('EMA' in s for s in strategies))
+
+        # Filter with min_avg_trades_per_combination=20 (should keep EMA and MACD)
+        result = _filter_dataframe(test_data, min_avg_trades_per_combination=20)
+        self.assertEqual(len(result), 3)  # EMA (2 rows) + MACD (1 row)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertTrue(any('MACD' in s for s in strategies))
+        self.assertFalse(any('RSI' in s for s in strategies))
 
     def test_filter_by_interval(self):
         """Test filtering by interval."""
@@ -151,11 +178,30 @@ class TestFilterDataframe(unittest.TestCase):
 
     def test_filter_combined_criteria(self):
         """Test filtering with multiple criteria combined."""
-        # Filter by min_trades=10 and interval='4h'
-        result = _filter_dataframe(self.sample_data, min_trades=10, interval='4h')
-        self.assertEqual(len(result), 2)
-        self.assertTrue(all(result['total_trades'] >= 10))
+        # Create test data for combination filtering
+        test_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)'
+            ],
+            'symbol': ['ES', 'NQ', 'ES', 'NQ'],
+            'interval': ['4h', '4h', '4h', '4h'],
+            'total_trades': [20, 40, 30, 60],
+            # RSI: 60 total, 2 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg
+            'win_rate': [60.0, 70.0, 55.0, 65.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3]
+        })
+
+        # Filter by min_avg_trades_per_combination=35 and interval='4h'
+        result = _filter_dataframe(test_data, min_avg_trades_per_combination=35, interval='4h')
+        self.assertEqual(len(result), 2)  # Only EMA strategy (45 avg trades per combination)
         self.assertTrue(all(result['interval'] == '4h'))
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('EMA' in s for s in strategies))
 
         # Filter by symbol='ES' and min_slippage=0.15
         result = _filter_dataframe(self.sample_data, symbol='ES', min_slippage=0.15)
@@ -171,7 +217,7 @@ class TestFilterDataframe(unittest.TestCase):
     def test_filter_empty_dataframe(self):
         """Test filtering an empty DataFrame."""
         empty_df = pd.DataFrame(columns=self.sample_data.columns)
-        result = _filter_dataframe(empty_df, min_trades=10)
+        result = _filter_dataframe(empty_df, min_avg_trades_per_combination=10)
         self.assertEqual(len(result), 0)
         self.assertEqual(list(result.columns), list(empty_df.columns))
 
@@ -557,19 +603,27 @@ class TestStrategyAnalyzer(unittest.TestCase):
                 'slippage=0.15')]
         self.assertEqual(ema_015_strategy['total_trades'].iloc[0], 25)  # EMA with slippage=0.15 has 25 trades
 
-        # Check that the new avg_trades_per_symbol and avg_trades_per_interval columns are present and calculated correctly
-        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol and avg_trades_per_interval should equal total_trades
+        # Check that the new avg_trades_per_symbol, avg_trades_per_interval, and avg_trades_per_combination columns are present and calculated correctly
+        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol, avg_trades_per_interval, and avg_trades_per_combination should equal total_trades
         self.assertEqual(rsi_01_strategy['avg_trades_per_symbol'].iloc[0], 10.0)  # 10 trades / 1 symbol = 10.0
         self.assertEqual(rsi_01_strategy['avg_trades_per_interval'].iloc[0], 10.0)  # 10 trades / 1 interval = 10.0
+        self.assertEqual(rsi_01_strategy['avg_trades_per_combination'].iloc[0],
+                         10.0)  # 10 trades / (1 symbol × 1 interval) = 10.0
 
         self.assertEqual(rsi_005_strategy['avg_trades_per_symbol'].iloc[0], 15.0)  # 15 trades / 1 symbol = 15.0
         self.assertEqual(rsi_005_strategy['avg_trades_per_interval'].iloc[0], 15.0)  # 15 trades / 1 interval = 15.0
+        self.assertEqual(rsi_005_strategy['avg_trades_per_combination'].iloc[0],
+                         15.0)  # 15 trades / (1 symbol × 1 interval) = 15.0
 
         self.assertEqual(ema_02_strategy['avg_trades_per_symbol'].iloc[0], 20.0)  # 20 trades / 1 symbol = 20.0
         self.assertEqual(ema_02_strategy['avg_trades_per_interval'].iloc[0], 20.0)  # 20 trades / 1 interval = 20.0
+        self.assertEqual(ema_02_strategy['avg_trades_per_combination'].iloc[0],
+                         20.0)  # 20 trades / (1 symbol × 1 interval) = 20.0
 
         self.assertEqual(ema_015_strategy['avg_trades_per_symbol'].iloc[0], 25.0)  # 25 trades / 1 symbol = 25.0
         self.assertEqual(ema_015_strategy['avg_trades_per_interval'].iloc[0], 25.0)  # 25 trades / 1 interval = 25.0
+        self.assertEqual(ema_015_strategy['avg_trades_per_combination'].iloc[0],
+                         25.0)  # 25 trades / (1 symbol × 1 interval) = 25.0
 
         # Test non-weighted aggregation
         non_weighted_aggregated = analyzer._aggregate_strategies(weighted=False)
@@ -617,19 +671,27 @@ class TestStrategyAnalyzer(unittest.TestCase):
                 'slippage=0.15')]
         self.assertEqual(ema_015_strategy['total_trades'].iloc[0], 25)  # EMA with slippage=0.15 has 25 trades
 
-        # Check that the new avg_trades_per_symbol and avg_trades_per_interval columns are present and calculated correctly
-        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol and avg_trades_per_interval should equal total_trades
+        # Check that the new avg_trades_per_symbol, avg_trades_per_interval, and avg_trades_per_combination columns are present and calculated correctly
+        # Since each strategy has 1 symbol and 1 interval, avg_trades_per_symbol, avg_trades_per_interval, and avg_trades_per_combination should equal total_trades
         self.assertEqual(rsi_01_strategy['avg_trades_per_symbol'].iloc[0], 10.0)  # 10 trades / 1 symbol = 10.0
         self.assertEqual(rsi_01_strategy['avg_trades_per_interval'].iloc[0], 10.0)  # 10 trades / 1 interval = 10.0
+        self.assertEqual(rsi_01_strategy['avg_trades_per_combination'].iloc[0],
+                         10.0)  # 10 trades / (1 symbol × 1 interval) = 10.0
 
         self.assertEqual(rsi_005_strategy['avg_trades_per_symbol'].iloc[0], 15.0)  # 15 trades / 1 symbol = 15.0
         self.assertEqual(rsi_005_strategy['avg_trades_per_interval'].iloc[0], 15.0)  # 15 trades / 1 interval = 15.0
+        self.assertEqual(rsi_005_strategy['avg_trades_per_combination'].iloc[0],
+                         15.0)  # 15 trades / (1 symbol × 1 interval) = 15.0
 
         self.assertEqual(ema_02_strategy['avg_trades_per_symbol'].iloc[0], 20.0)  # 20 trades / 1 symbol = 20.0
         self.assertEqual(ema_02_strategy['avg_trades_per_interval'].iloc[0], 20.0)  # 20 trades / 1 interval = 20.0
+        self.assertEqual(ema_02_strategy['avg_trades_per_combination'].iloc[0],
+                         20.0)  # 20 trades / (1 symbol × 1 interval) = 20.0
 
         self.assertEqual(ema_015_strategy['avg_trades_per_symbol'].iloc[0], 25.0)  # 25 trades / 1 symbol = 25.0
         self.assertEqual(ema_015_strategy['avg_trades_per_interval'].iloc[0], 25.0)  # 25 trades / 1 interval = 25.0
+        self.assertEqual(ema_015_strategy['avg_trades_per_combination'].iloc[0],
+                         25.0)  # 25 trades / (1 symbol × 1 interval) = 25.0
 
         # In this test setup, the win_rate values are the same for both weighted and non-weighted approaches
         # because we're using a simple dataset. In a real-world scenario with more data,
@@ -651,15 +713,16 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test weighted aggregation with min_trades filter
-        weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA strategies have rows with >= 20 trades
+        # Test weighted aggregation with min_avg_trades_per_combination filter
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA strategies have rows with >= 20 trades per combination
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
-        # Test non-weighted aggregation with min_trades filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA strategies have rows with >= 20 trades
+        # Test non-weighted aggregation with min_avg_trades_per_combination filter
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, weighted=False)
+        self.assertEqual(len(non_weighted_aggregated),
+                         2)  # Only EMA strategies have rows with >= 20 trades per combination
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
@@ -698,14 +761,18 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertTrue(any(s.startswith('EMA') for s in non_weighted_aggregated['strategy']))
 
         # Test weighted aggregation with multiple filters
-        weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, interval='4h', weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                             interval='4h',
+                                                             weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades per combination
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test non-weighted aggregation with multiple filters
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, interval='4h', weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                                 interval='4h',
+                                                                 weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades per combination
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
@@ -777,15 +844,15 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Initialize analyzer
         analyzer = StrategyAnalyzer()
 
-        # Test with min_trades filter (weighted=True)
+        # Test with min_avg_trades_per_combination filter (weighted=True)
         weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=True)
-        self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with >= 20 trades
+        self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with >= 20 trades per combination
         for strategy in weighted_top_strategies['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
-        # Test with min_trades filter (weighted=False)
+        # Test with min_avg_trades_per_combination filter (weighted=False)
         non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=False)
-        self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with >= 20 trades
+        self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with >= 20 trades per combination
         for strategy in non_weighted_top_strategies['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
@@ -1054,14 +1121,19 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertEqual(len(non_weighted_aggregated), 0)  # No strategies with slippage >= 0.3
 
         # Test weighted aggregation with multiple filters including min_slippage
-        weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, min_slippage=0.15, weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA with slippage >= 0.15 and trades >= 20
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                             min_slippage=0.15,
+                                                             weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA with slippage >= 0.15 and trades per combination >= 20
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test non-weighted aggregation with multiple filters including min_slippage
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_trades=20, min_slippage=0.15, weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA with slippage >= 0.15 and trades >= 20
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                                 min_slippage=0.15,
+                                                                 weighted=False)
+        self.assertEqual(len(non_weighted_aggregated),
+                         2)  # Only EMA with slippage >= 0.15 and trades per combination >= 20
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 

@@ -42,10 +42,31 @@ def _format_column_name(column_name):
     return ' '.join(word.capitalize() for word in column_name.split('_'))
 
 
-def _filter_dataframe(df, min_trades=0, interval=None, symbol=None, min_slippage=None):
+def _filter_dataframe(df, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage=None):
     """Filter DataFrame based on common criteria."""
-    # Filter by minimum trades
-    filtered_df = df[df['total_trades'] >= min_trades]
+
+    # Filter by minimum average trades per combination
+    if min_avg_trades_per_combination > 0:
+        strategy_stats = df.groupby('strategy').agg({
+            'total_trades': 'sum',
+            'symbol': 'nunique',
+            'interval': 'nunique'
+        }).reset_index()
+
+        # Calculate combinations (symbol × interval)
+        strategy_stats['combination_count'] = strategy_stats['symbol'] * strategy_stats['interval']
+        strategy_stats['avg_trades_per_combination'] = (
+                strategy_stats['total_trades'] / strategy_stats['combination_count']
+        )
+
+        # Filter strategies that meet the minimum
+        valid_strategies = strategy_stats[
+            strategy_stats['avg_trades_per_combination'] >= min_avg_trades_per_combination
+            ]['strategy'].tolist()
+
+        filtered_df = df[df['strategy'].isin(valid_strategies)]
+    else:
+        filtered_df = df.copy()
 
     # Filter by interval if provided
     if interval:
@@ -115,7 +136,7 @@ class StrategyAnalyzer:
     def get_top_strategies(
         self,
         metric,
-        min_trades,
+        min_avg_trades_per_combination,
         limit=30,
         aggregate=False,
         interval=None,
@@ -130,10 +151,10 @@ class StrategyAnalyzer:
 
         if aggregate:
             # Get aggregated strategies
-            df = self._aggregate_strategies(min_trades, interval, symbol, weighted, min_slippage)
+            df = self._aggregate_strategies(min_avg_trades_per_combination, interval, symbol, weighted, min_slippage)
         else:
             # Apply common filtering
-            df = _filter_dataframe(self.results_df, min_trades, interval, symbol, min_slippage)
+            df = _filter_dataframe(self.results_df, min_avg_trades_per_combination, interval, symbol, min_slippage)
 
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
@@ -166,14 +187,21 @@ class StrategyAnalyzer:
             logger.error(f'Failed to load results from {file_path}: {error}')
             raise
 
-    def _aggregate_strategies(self, min_trades=0, interval=None, symbol=None, weighted=True, min_slippage=None):
+    def _aggregate_strategies(
+        self,
+        min_avg_trades_per_combination=0,
+        interval=None,
+        symbol=None,
+        weighted=True,
+        min_slippage=None
+    ):
         """  Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
 
         # Apply common filtering
-        filtered_df = _filter_dataframe(self.results_df, min_trades, interval, symbol, min_slippage)
+        filtered_df = _filter_dataframe(self.results_df, min_avg_trades_per_combination, interval, symbol, min_slippage)
 
         # Group by strategy
         grouped = filtered_df.groupby('strategy')
@@ -184,7 +212,10 @@ class StrategyAnalyzer:
             'symbol_count': grouped['symbol'].nunique(),
             'interval_count': grouped['interval'].nunique(),
             'total_trades': grouped['total_trades'].sum(),
-            # Add average trades calculations
+            'avg_trades_per_combination': (
+                    grouped['total_trades'].sum() /
+                    (grouped['symbol'].nunique() * grouped['interval'].nunique())
+            ).round(2),
             'avg_trades_per_symbol': (grouped['total_trades'].sum() / grouped['symbol'].nunique()).round(2),
             'avg_trades_per_interval': (grouped['total_trades'].sum() / grouped['interval'].nunique()).round(2),
         }
