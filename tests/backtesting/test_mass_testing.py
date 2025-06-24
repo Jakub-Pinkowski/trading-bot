@@ -352,6 +352,298 @@ class TestMassTester:
         mock_yaml_load.assert_called_once()
         assert tester.switch_dates_dict == {'ES': ['2023-01-15', '2023-02-15']}
 
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_initialization_with_micro_mini_symbol_mappings(self, mock_file, mock_yaml_load):
+        """Test that the MassTester loads switch dates with micro/mini symbol mappings correctly."""
+        mock_yaml_load.return_value = {
+            'CL': ['2023-01-15', '2023-02-15'],
+            'GC': ['2023-01-20', '2023-02-20'],
+            '_symbol_mappings': {
+                'MCL': 'CL',  # Micro crude oil -> Crude oil
+                'MGC': 'GC',  # Micro gold -> Gold
+                'MNG': 'NG'  # Micro natural gas -> Natural gas (no switch dates for NG)
+            }
+        }
+
+        tester = MassTester(['2023-01'], ['MCL', 'MGC', 'MNG'], ['1h'])
+
+        mock_file.assert_called_once()
+        mock_yaml_load.assert_called_once()
+        assert tester.switch_dates_dict == {
+            'CL': ['2023-01-15', '2023-02-15'],
+            'GC': ['2023-01-20', '2023-02-20'],
+            '_symbol_mappings': {
+                'MCL': 'CL',
+                'MGC': 'GC',
+                'MNG': 'NG'
+            }
+        }
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_switch_dates_preprocessing_for_micro_symbols(
+        self,
+        mock_file,
+        mock_yaml_load,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that switch dates are correctly preprocessed for micro/mini symbols."""
+        # Setup switch dates with symbol mappings
+        mock_yaml_load.return_value = {
+            'CL': ['2023-01-15T00:00:00', '2023-02-15T00:00:00'],
+            'GC': ['2023-01-20T00:00:00', '2023-02-20T00:00:00'],
+            '_symbol_mappings': {
+                'MCL': 'CL',  # Micro crude oil -> Crude oil
+                'MGC': 'GC',  # Micro gold -> Gold
+                'MNG': 'NG'  # Micro natural gas -> Natural gas (no switch dates)
+            }
+        }
+
+        # Setup mocks for run_tests
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Mock the future and executor
+        mock_future = MagicMock()
+        mock_future.result.return_value = {
+            'month': '2023-01',
+            'symbol': 'MCL',
+            'interval': '1h',
+            'strategy': 'Test Strategy',
+            'metrics': {'total_trades': 5},
+            'timestamp': '2023-01-01T00:00:00'
+        }
+
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
+        mock_as_completed.return_value = [mock_future]
+
+        # Create tester with micro symbols
+        tester = MassTester(['2023-01'], ['MCL', 'MGC', 'MNG'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Run tests to trigger switch dates preprocessing
+        results = tester.run_tests(verbose=False)
+
+        # Verify that the executor was called with the correct parameters
+        mock_executor_instance.__enter__.return_value.submit.assert_called()
+
+        # Get the call arguments to verify switch dates preprocessing
+        call_args = mock_executor_instance.__enter__.return_value.submit.call_args_list
+
+        # Check that switch dates were preprocessed correctly for each symbol
+        # MCL should get CL's switch dates, MGC should get GC's switch dates, MNG should get empty list
+        submitted_params = [call[0][1] for call in call_args]  # Get the test_params from each submit call
+
+        # Find the parameters for each symbol
+        mcl_params = next((params for params in submitted_params if params[1] == 'MCL'), None)
+        mgc_params = next((params for params in submitted_params if params[1] == 'MGC'), None)
+        mng_params = next((params for params in submitted_params if params[1] == 'MNG'), None)
+
+        assert mcl_params is not None, "MCL test parameters should be found"
+        assert mgc_params is not None, "MGC test parameters should be found"
+        assert mng_params is not None, "MNG test parameters should be found"
+
+        # Verify switch dates (index 6 in test_params tuple)
+        mcl_switch_dates = mcl_params[6]
+        mgc_switch_dates = mgc_params[6]
+        mng_switch_dates = mng_params[6]
+
+        # MCL should have CL's switch dates (converted to datetime)
+        assert len(mcl_switch_dates) == 2
+        assert str(mcl_switch_dates[0]) == '2023-01-15 00:00:00'
+        assert str(mcl_switch_dates[1]) == '2023-02-15 00:00:00'
+
+        # MGC should have GC's switch dates (converted to datetime)
+        assert len(mgc_switch_dates) == 2
+        assert str(mgc_switch_dates[0]) == '2023-01-20 00:00:00'
+        assert str(mgc_switch_dates[1]) == '2023-02-20 00:00:00'
+
+        # MNG should have empty switch dates (NG not in main symbols)
+        assert len(mng_switch_dates) == 0
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_switch_dates_preprocessing_for_main_symbols(
+        self,
+        mock_file,
+        mock_yaml_load,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that switch dates are correctly preprocessed for main symbols (direct mapping)."""
+        # Setup switch dates with symbol mappings
+        mock_yaml_load.return_value = {
+            'CL': ['2023-01-15T00:00:00', '2023-02-15T00:00:00'],
+            'GC': ['2023-01-20T00:00:00', '2023-02-20T00:00:00'],
+            '_symbol_mappings': {
+                'MCL': 'CL',
+                'MGC': 'GC'
+            }
+        }
+
+        # Setup mocks for run_tests
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Mock the future and executor
+        mock_future = MagicMock()
+        mock_future.result.return_value = {
+            'month': '2023-01',
+            'symbol': 'CL',
+            'interval': '1h',
+            'strategy': 'Test Strategy',
+            'metrics': {'total_trades': 5},
+            'timestamp': '2023-01-01T00:00:00'
+        }
+
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
+        mock_as_completed.return_value = [mock_future]
+
+        # Create tester with main symbols
+        tester = MassTester(['2023-01'], ['CL', 'GC'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Run tests to trigger switch dates preprocessing
+        results = tester.run_tests(verbose=False)
+
+        # Get the call arguments to verify switch dates preprocessing
+        call_args = mock_executor_instance.__enter__.return_value.submit.call_args_list
+        submitted_params = [call[0][1] for call in call_args]
+
+        # Find the parameters for each symbol
+        cl_params = next((params for params in submitted_params if params[1] == 'CL'), None)
+        gc_params = next((params for params in submitted_params if params[1] == 'GC'), None)
+
+        assert cl_params is not None, "CL test parameters should be found"
+        assert gc_params is not None, "GC test parameters should be found"
+
+        # Verify switch dates (index 6 in test_params tuple)
+        cl_switch_dates = cl_params[6]
+        gc_switch_dates = gc_params[6]
+
+        # CL should have its own switch dates
+        assert len(cl_switch_dates) == 2
+        assert str(cl_switch_dates[0]) == '2023-01-15 00:00:00'
+        assert str(cl_switch_dates[1]) == '2023-02-15 00:00:00'
+
+        # GC should have its own switch dates
+        assert len(gc_switch_dates) == 2
+        assert str(gc_switch_dates[0]) == '2023-01-20 00:00:00'
+        assert str(gc_switch_dates[1]) == '2023-02-20 00:00:00'
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_switch_dates_preprocessing_symbol_not_found(
+        self,
+        mock_file,
+        mock_yaml_load,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that symbols not found in switch dates or mappings get empty switch dates."""
+        # Setup switch dates without the symbols we'll test
+        mock_yaml_load.return_value = {
+            'CL': ['2023-01-15T00:00:00'],
+            '_symbol_mappings': {
+                'MCL': 'CL'
+            }
+        }
+
+        # Setup mocks for run_tests
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Mock the future and executor
+        mock_future = MagicMock()
+        mock_future.result.return_value = {
+            'month': '2023-01',
+            'symbol': 'UNKNOWN',
+            'interval': '1h',
+            'strategy': 'Test Strategy',
+            'metrics': {'total_trades': 0},
+            'timestamp': '2023-01-01T00:00:00'
+        }
+
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
+        mock_as_completed.return_value = [mock_future]
+
+        # Create tester with unknown symbol
+        tester = MassTester(['2023-01'], ['UNKNOWN'], ['1h'])
+        tester._add_strategy_tests(
+            strategy_type='ema',
+            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+        )
+
+        # Run tests to trigger switch dates preprocessing
+        results = tester.run_tests(verbose=False)
+
+        # Get the call arguments to verify switch dates preprocessing
+        call_args = mock_executor_instance.__enter__.return_value.submit.call_args_list
+        submitted_params = [call[0][1] for call in call_args]
+
+        # Find the parameters for the unknown symbol
+        unknown_params = next((params for params in submitted_params if params[1] == 'UNKNOWN'), None)
+
+        assert unknown_params is not None, "UNKNOWN test parameters should be found"
+
+        # Verify switch dates (index 6 in test_params tuple) - should be empty
+        unknown_switch_dates = unknown_params[6]
+        assert len(unknown_switch_dates) == 0
+
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_switch_dates_preprocessing_no_symbol_mappings_section(self, mock_file, mock_yaml_load):
+        """Test that missing _symbol_mappings section is handled gracefully."""
+        # Setup switch dates without _symbol_mappings section
+        mock_yaml_load.return_value = {
+            'CL': ['2023-01-15T00:00:00'],
+            'GC': ['2023-01-20T00:00:00']
+        }
+
+        # Create tester with micro symbol (should not find mapping)
+        tester = MassTester(['2023-01'], ['MCL'], ['1h'])
+
+        # Verify that the tester was created successfully
+        assert tester.switch_dates_dict == {
+            'CL': ['2023-01-15T00:00:00'],
+            'GC': ['2023-01-20T00:00:00']
+        }
+
+        # The preprocessing logic should handle missing _symbol_mappings gracefully
+        # This will be tested when run_tests is called, but we can verify the structure is loaded correctly
+
     @patch('app.backtesting.mass_testing._load_existing_results')
     @patch('app.backtesting.mass_testing._test_already_exists')
     @patch('concurrent.futures.as_completed')
