@@ -126,7 +126,6 @@ trading-bot/
 # TODO [MEDIUM]: Test cases when switch happens exactly at midnight 00:00, GC, SI, HG, CL, NG
 # TODO [MEDIUM]: Test cases when switch happens on the day before at 23:00 PL. In the
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
-# TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
 
 # Strategies
 # TODO [LOW]: Align TW strategies to match my backtesting logic
