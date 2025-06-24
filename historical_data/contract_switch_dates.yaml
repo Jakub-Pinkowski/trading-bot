@@ -403,3 +403,36 @@ CC:
   - "2025-06-10T01:00:00"
   - "2025-08-08T01:00:00"
   - "2025-11-07T01:00:00"
+
+# Mini/Micro symbol mappings
+_symbol_mappings:
+  # Gold mini/micro
+  MGC: GC    # Mini gold -> Gold
+
+  # Crude oil mini/micro
+  MCL: CL    # Micro crude oil -> Crude oil
+
+  # Wheat mini/micro
+  MZW: ZW    # Mini wheat -> Wheat
+  MZC: ZC    # Mini corn -> Corn
+  MZS: ZS    # Mini soybeans -> Soybeans
+  MZL: ZL    # Mini soybean oil -> Soybean oil
+
+  # Silver mini/micro
+  SIL: SI    # Mini silver -> Silver
+
+  # Copper mini/micro
+  MHG: HG    # Mini copper -> Copper
+
+  # Natural gas mini/micro
+  MNG: NG    # Mini natural gas -> Natural gas
+  MHNG: HG   # Mini heating oil natural gas -> Copper (assuming this maps to HG based on config)
+
+  # Platinum mini/micro
+  PLM: PL    # Mini platinum -> Platinum
+
+  # Other mini/micro symbols from config.py
+  MES: ES    # Mini S&P 500 -> S&P 500 (if ES dates are added later)
+  MNQ: NQ    # Mini NASDAQ -> NASDAQ (if NQ dates are added later)
+  MYM: YM    # Mini Dow -> Dow (if YM dates are added later)
+  M2K: RTY   # Mini Russell 2000 -> Russell 2000 (if RTY dates are added later)

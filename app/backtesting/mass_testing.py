@@ -170,10 +170,19 @@ class MassTester:
         # Clear previous results
         self.results = []
 
-        # Preprocess switch dates for all symbols once
+        # Preprocess switch dates for all symbols at once
         preprocessed_switch_dates = {}
         for symbol in self.symbols:
-            switch_dates = self.switch_dates_dict.get(symbol, [])
+            # Check if the symbol has direct switch dates
+            if symbol in self.switch_dates_dict:
+                switch_dates = self.switch_dates_dict[symbol]
+            # Check if the symbol is a mini/micro that maps to a main symbol
+            elif '_symbol_mappings' in self.switch_dates_dict and symbol in self.switch_dates_dict['_symbol_mappings']:
+                main_symbol = self.switch_dates_dict['_symbol_mappings'][symbol]
+                switch_dates = self.switch_dates_dict.get(main_symbol, [])
+            else:
+                switch_dates = []
+
             preprocessed_switch_dates[symbol] = [pd.to_datetime(switch_date) for switch_date in switch_dates]
 
         # Cache filepath patterns for faster construction
