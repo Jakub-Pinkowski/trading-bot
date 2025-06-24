@@ -16,7 +16,8 @@ clientportal/
 # Data
 backtesting_data/
 data/
-historical_data/
+historical_data/*
+!historical_data/contract_switch_dates.yaml
 tw_fetching.py
 
 # Logs
