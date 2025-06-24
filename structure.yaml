@@ -122,7 +122,6 @@ trading-bot/
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
-# TODO [MEDIUM]: All symbols have mini/micro switches on the same days
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 
 # Strategies
