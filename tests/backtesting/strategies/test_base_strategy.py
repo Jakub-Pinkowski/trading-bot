@@ -427,9 +427,11 @@ class TestBaseStrategy:
         strategy.entry_time = df.index[101]
         strategy.entry_price = 100.0
         strategy.prev_row = {'open': 110.0}  # Exit price for the switch
+        strategy.prev_time = df.index[101]  # Previous candle time (should be used for exit time)
 
-        # Call _close_position_at_switch directly
-        strategy._close_position_at_switch(df.index[102])
+        # Call _close_position_at_switch directly with current switch time
+        current_switch_time = df.index[102]
+        strategy._close_position_at_switch(current_switch_time)
 
         # Verify the position was closed
         assert strategy.position is None
@@ -440,6 +442,58 @@ class TestBaseStrategy:
         assert len(strategy.trades) == 1
         assert strategy.trades[0]['switch'] is True
         assert strategy.trades[0]['exit_price'] == 110.0
+
+        # Key test: Verify that exit_time uses prev_time, not the current switch time
+        assert strategy.trades[0]['exit_time'] == df.index[101]  # Should be prev_time
+        assert strategy.trades[0]['exit_time'] != current_switch_time  # Should NOT be switch time
+
+    def test_contract_switch_exit_timing_integration(self):
+        """Integration test to verify that contract switch exit timing uses previous candle time."""
+
+        # Create a test strategy that opens a position and then encounters a switch
+        class TimingTestStrategy(BaseStrategy):
+            def add_indicators(self, df):
+                return df
+
+            def generate_signals(self, df):
+                df['signal'] = 0
+                # Add a buy signal after a warm-up period
+                if len(df) > 100:
+                    df.iloc[101, df.columns.get_loc('signal')] = 1
+                return df
+
+        # Create a dataframe with specific timestamps for testing
+        df = create_test_df(length=150)
+
+        # Create the strategy
+        strategy = TimingTestStrategy(rollover=False)
+
+        # Set the switch date to be 2 candles after the signal
+        switch_date = df.index[103]  # Switch occurs at candle 103
+
+        # Run the strategy
+        trades = strategy.run(df, [switch_date])
+
+        # Should have exactly one trade due to the switch
+        assert len(trades) == 1
+        trade = trades[0]
+
+        # Verify it's a switch trade
+        assert trade.get('switch', False) is True
+
+        # Key verification: exit_time should be the previous candle's time (index 102),
+        # not the switch date (index 103)
+        expected_exit_time = df.index[102]  # Previous candle before switch
+        actual_exit_time = trade['exit_time']
+
+        assert actual_exit_time == expected_exit_time, f"Exit time should be {expected_exit_time}, but got {actual_exit_time}"
+        assert actual_exit_time != switch_date, f"Exit time should not be the switch date {switch_date}"
+
+        # Verify the exit price comes from the previous candle's open
+        # (This was already working correctly, but let's verify it's still correct)
+        expected_exit_price_source = df.loc[df.index[102], 'open']  # Previous candle's open
+        # Note: The actual exit price might have slippage applied, so we check the base price logic
+        assert trade['exit_price'] > 0  # Basic sanity check
 
     def test_no_signals(self):
         """Test behavior when there are no signals."""

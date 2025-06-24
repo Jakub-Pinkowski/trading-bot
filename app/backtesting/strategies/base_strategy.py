@@ -17,6 +17,7 @@ class BaseStrategy:
         self.next_switch = None
         self.must_reopen = None
         self.prev_row = None
+        self.prev_time = None
         self.skip_signal_this_bar = False
         self.queued_signal = None
         self.trades = []
@@ -29,6 +30,10 @@ class BaseStrategy:
         df = self.add_indicators(df)
         df = self.generate_signals(df)
         trades = self._extract_trades(df, switch_dates)
+
+        for trade in trades:
+            print(trade)
+
         return trades
 
     def add_indicators(self, df):
@@ -57,6 +62,7 @@ class BaseStrategy:
         self.next_switch = None
         self.must_reopen = None
         self.prev_row = None
+        self.prev_time = None
         self.skip_signal_this_bar = False
         self.queued_signal = None
         self.trades = []
@@ -89,6 +95,7 @@ class BaseStrategy:
 
             # Skip signal processing for the first 100 candles to allow indicators to warm up
             if candle_count <= 100:
+                self.prev_time = current_time
                 self.prev_row = row
                 continue
 
@@ -101,6 +108,7 @@ class BaseStrategy:
             # Skip signal for this bar if we are in a rollover position, and we are about to switch
             if self.skip_signal_this_bar:
                 self.skip_signal_this_bar = False  # skip *this* bar only
+                self.prev_time = current_time
                 self.prev_row = row
                 continue
 
@@ -111,6 +119,7 @@ class BaseStrategy:
             if signal != 0:
                 self.queued_signal = signal
 
+            self.prev_time = current_time
             self.prev_row = row
 
         return self.trades
@@ -171,7 +180,7 @@ class BaseStrategy:
         exit_price = self.prev_row['open']
         prev_position = self.position
 
-        self._close_position(current_time, exit_price, switch=True)
+        self._close_position(self.prev_time, exit_price, switch=True)
 
         if self.rollover:
             self.must_reopen = prev_position  # Use previous position value
