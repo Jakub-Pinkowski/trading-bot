@@ -123,7 +123,7 @@ trading-bot/
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [MEDIUM]: All symbols have mini/micro switches on the same days
-# TODO [MEDIUM]: Test cases when switch happens exactly at midnight 00:00, GC, SI, HG
+# TODO [MEDIUM]: Test cases when switch happens exactly at midnight 00:00, GC, SI, HG, CL
 # TODO [MEDIUM]: Test cases when switch happens on the day before at 23:00 PL. In the
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
 # TODO [LOW]: Consider rewriting the switch contract logic to sell instead on the last possible day before the switch
