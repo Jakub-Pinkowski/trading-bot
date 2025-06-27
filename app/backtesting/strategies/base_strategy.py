@@ -173,7 +173,7 @@ class BaseStrategy:
         self.trades.append(trade)
         self._reset_position()
 
-    def _close_position_at_switch(self, current_time):
+    def _close_position_at_switch(self):
         exit_price = self.prev_row['open']
         prev_position = self.position
 
@@ -212,7 +212,7 @@ class BaseStrategy:
         while self.next_switch and current_time >= self.next_switch:
             # On rollover date close at the price of *last bar before switch* (prev_row)
             if self.position is not None and self.entry_time is not None and self.prev_row is not None:
-                self._close_position_at_switch(current_time)
+                self._close_position_at_switch()
             self.next_switch_idx += 1
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(
                 self.switch_dates

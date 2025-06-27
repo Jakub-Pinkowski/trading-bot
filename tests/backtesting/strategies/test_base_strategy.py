@@ -327,7 +327,7 @@ class TestBaseStrategy:
         strategy.next_switch_idx = 0
 
         # First, close the position at switch
-        strategy._close_position_at_switch(switch_date)
+        strategy._close_position_at_switch()
 
         # Verify position is closed and must_reopen is set
         assert strategy.position is None, "Position should be closed after _close_position_at_switch"
@@ -429,9 +429,9 @@ class TestBaseStrategy:
         strategy.prev_row = {'open': 110.0}  # Exit price for the switch
         strategy.prev_time = df.index[101]  # Previous candle time (should be used for exit time)
 
-        # Call _close_position_at_switch directly with current switch time
+        # Call _close_position_at_switch directly
         current_switch_time = df.index[102]
-        strategy._close_position_at_switch(current_switch_time)
+        strategy._close_position_at_switch()
 
         # Verify the position was closed
         assert strategy.position is None
