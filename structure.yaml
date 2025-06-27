@@ -114,39 +114,31 @@ trading-bot/
 ├── structure.yaml                                # App's structure
 └── tw_fetching.py                                # TradingView data fetching
 
-# Trading
-# TODO [LOW]: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
-# TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
+# Analysis
+# TODO [MEDIUM]: Rewrite analysis logic using classes
+# TODO [LOW]: Add automatic Google Sheets integration
 
 # Backtesting
 # NOTE: When using trail, the exit price is a custom price, it's neither open or close price of any candle
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Add contract switch dates for missing symbols
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time
+# TODO [LOW]: Add new strategies
 
-# Strategies
-# TODO [LOW]: Align TW strategies to match my backtesting logic
-# TODO [LOW]: Update TW strategies to BUY/SELL on n+1 candle after backtesting
 
-# Data analysis
-# TODO [LOW]: Add automatic Google Sheets integration
+# Trading
+# TODO [MEDIUM]: Rewrite IBKR logic using classes
+# TODO [LOW]: Some symbols have different tickers on TW vs IBKR, for example YC vs XC etc.
+# TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
+
 
 # Developer
-# TODO [LOW]: Remove helping comments and leave only those that actually bring value
-# TODO [LOW]: Rewrite IBKR logic using classes
-# TODO [LOW]: Rewrite analysis logic using classes
-# TODO [LOW]: Add docstrings EVERYWHERE
-# TODO [LOW]: Add e2e tests
+# TODO [LOW]: Add docstrings everywhere
 # TODO [LOW]: Set up a database
 # TODO [LOW]: Set up UI
 
+# Tests
+# TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value
+# TODO [LOW]: Add e2e tests
+
 # Virtual Machine
-# NOTE: On 28.04 at 01:17 - User is not authenticated
-# NOTE: On 03.05 at 01:41 - User is not authenticated, At 06:30 - Unexpected error while tickling IBKR API
-# NOTE: On 04.05 at 00:01 - User is not authenticated. At 00:00:06 - Unexpected error while tickling IBKR API: 503 Server Error: Service Unavailable for url.
-# NOTE: 0n 04.05 at 20:34 - Unexpected error while tickling IBKR API.
-# NOTE: On 05.05 at 01:15 - User is not authenticated
-# NOTE: On 06.05 at 01:41 - User is not authenticated
-# NOTE: On 07.05 at 01:31 - User is not authenticated
-# NOTE: On 08.05 at 01:47 - User is not authenticated
-# NOTE: On 09.05 at 01:20 - User is not authenticated
