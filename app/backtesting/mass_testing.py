@@ -72,7 +72,6 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
-    # NOTE: Tested and approved
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='rsi',
@@ -86,7 +85,6 @@ class MassTester:
             }
         )
 
-    # NOTE: Tested and approved
     def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='ema',
@@ -99,7 +97,6 @@ class MassTester:
             }
         )
 
-    # NOTE: Tested and approved
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='macd',
@@ -113,7 +110,6 @@ class MassTester:
             }
         )
 
-    # NOTE: Tested and approved
     def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='bollinger',
@@ -126,7 +122,6 @@ class MassTester:
             }
         )
 
-    # NOTE: Tested and approved
     def add_ichimoku_cloud_tests(
         self,
         tenkan_periods,
