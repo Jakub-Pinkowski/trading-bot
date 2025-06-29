@@ -10,6 +10,24 @@ logger = get_logger('backtesting/strategy_factory')
 # Define strategy types
 STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger', 'ichimoku']
 
+# Set to track already logged warnings to prevent duplicates
+_logged_warnings = set()
+
+# Configuration variable to control whether warnings should be logged
+_log_warnings_enabled = False
+
+
+def _log_warnings_once(warnings, strategy_type):
+    """Log warnings only if they haven't been logged before and warnings are enabled."""
+    if not _log_warnings_enabled:
+        return
+
+    for warning in warnings:
+        warning_key = f"{strategy_type}: {warning}"
+        if warning_key not in _logged_warnings:
+            logger.warning(f"{strategy_type} Strategy Parameter Guidance: {warning}")
+            _logged_warnings.add(warning_key)
+
 
 def _extract_common_params(**params):
     """Extract common parameters used by all strategies."""
@@ -369,10 +387,8 @@ def _create_rsi_strategy(**params):
                                                   common_params['trailing'],
                                                   common_params['slippage'])
 
-    # Log all warnings
-    all_warnings = rsi_warnings + common_warnings
-    for warning in all_warnings:
-        logger.warning(f"RSI Strategy Parameter Guidance: {warning}")
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(rsi_warnings + common_warnings, "RSI")
 
     # Create and return strategy
     return RSIStrategy(
@@ -404,10 +420,8 @@ def _create_ema_strategy(**params):
                                                   common_params['trailing'],
                                                   common_params['slippage'])
 
-    # Log all warnings
-    all_warnings = ema_warnings + common_warnings
-    for warning in all_warnings:
-        logger.warning(f"EMA Strategy Parameter Guidance: {warning}")
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(ema_warnings + common_warnings, "EMA")
 
     # Create and return strategy
     return EMACrossoverStrategy(
@@ -440,10 +454,8 @@ def _create_macd_strategy(**params):
                                                   common_params['trailing'],
                                                   common_params['slippage'])
 
-    # Log all warnings
-    all_warnings = macd_warnings + common_warnings
-    for warning in all_warnings:
-        logger.warning(f"MACD Strategy Parameter Guidance: {warning}")
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(macd_warnings + common_warnings, "MACD")
 
     # Create and return strategy
     return MACDStrategy(
@@ -471,10 +483,8 @@ def _create_bollinger_strategy(**params):
                                                   common_params['trailing'],
                                                   common_params['slippage'])
 
-    # Log all warnings
-    all_warnings = bollinger_warnings + common_warnings
-    for warning in all_warnings:
-        logger.warning(f"Bollinger Bands Strategy Parameter Guidance: {warning}")
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
 
     # Create and return strategy
     return BollingerBandsStrategy(
@@ -505,10 +515,8 @@ def _create_ichimoku_strategy(**params):
                                                   common_params['trailing'],
                                                   common_params['slippage'])
 
-    # Log all warnings
-    all_warnings = ichimoku_warnings + common_warnings
-    for warning in all_warnings:
-        logger.warning(f"Ichimoku Strategy Parameter Guidance: {warning}")
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
 
     # Create and return strategy
     return IchimokuCloudStrategy(

@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
+import app.backtesting.strategy_factory as strategy_factory
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
@@ -12,7 +13,8 @@ from app.backtesting.strategy_factory import (
     create_strategy, get_strategy_name, _extract_common_params,
     _validate_positive_integer, _validate_positive_number, _validate_range, _format_common_params,
     _validate_rsi_parameters, _validate_ema_parameters, _validate_macd_parameters,
-    _validate_bollinger_parameters, _validate_ichimoku_parameters, _validate_common_parameters
+    _validate_bollinger_parameters, _validate_ichimoku_parameters, _validate_common_parameters,
+    _log_warnings_once, _logged_warnings
 )
 
 
@@ -727,6 +729,252 @@ class TestParameterValidation(unittest.TestCase):
         self.assertEqual(strategy.kijun_period, 20)
         self.assertEqual(strategy.senkou_span_b_period, 40)
         self.assertEqual(strategy.displacement, 20)
+
+
+class TestWarningDeduplication(unittest.TestCase):
+    """Tests for warning deduplication functionality."""
+
+    def setUp(self):
+        """Store original warning state, enable warnings, and clear logged warnings before each test."""
+        self.original_warnings_enabled = strategy_factory._log_warnings_enabled
+        strategy_factory._log_warnings_enabled = True  # Enable warnings for these tests
+        _logged_warnings.clear()
+
+    def tearDown(self):
+        """Restore original warning state and clear logged warnings after each test."""
+        strategy_factory._log_warnings_enabled = self.original_warnings_enabled
+        _logged_warnings.clear()
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_log_warnings_once_single_warning(self, mock_logger):
+        """Test that a single warning is logged only once."""
+        warnings = ["Test warning message"]
+        strategy_type = "TEST"
+
+        # Call the function twice with the same warning
+        _log_warnings_once(warnings, strategy_type)
+        _log_warnings_once(warnings, strategy_type)
+
+        # Verify the warning was logged only once
+        self.assertEqual(mock_logger.warning.call_count, 1)
+        mock_logger.warning.assert_called_with("TEST Strategy Parameter Guidance: Test warning message")
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_log_warnings_once_multiple_warnings(self, mock_logger):
+        """Test that multiple different warnings are logged."""
+        warnings1 = ["Warning 1", "Warning 2"]
+        warnings2 = ["Warning 3"]
+        strategy_type = "TEST"
+
+        # Call with different warnings
+        _log_warnings_once(warnings1, strategy_type)
+        _log_warnings_once(warnings2, strategy_type)
+
+        # Verify all warnings were logged
+        self.assertEqual(mock_logger.warning.call_count, 3)
+        expected_calls = [
+            unittest.mock.call("TEST Strategy Parameter Guidance: Warning 1"),
+            unittest.mock.call("TEST Strategy Parameter Guidance: Warning 2"),
+            unittest.mock.call("TEST Strategy Parameter Guidance: Warning 3")
+        ]
+        mock_logger.warning.assert_has_calls(expected_calls)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_log_warnings_once_different_strategy_types(self, mock_logger):
+        """Test that same warning for different strategy types are both logged."""
+        warnings = ["Same warning message"]
+
+        # Call with different strategy types
+        _log_warnings_once(warnings, "RSI")
+        _log_warnings_once(warnings, "EMA")
+
+        # Verify both warnings were logged (different strategy types)
+        self.assertEqual(mock_logger.warning.call_count, 2)
+        expected_calls = [
+            unittest.mock.call("RSI Strategy Parameter Guidance: Same warning message"),
+            unittest.mock.call("EMA Strategy Parameter Guidance: Same warning message")
+        ]
+        mock_logger.warning.assert_has_calls(expected_calls)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_strategy_creation_warning_deduplication(self, mock_logger):
+        """Test that creating multiple strategies with same parameters only logs warnings once."""
+        # Create multiple RSI strategies with the same warning-triggering parameters
+        for _ in range(3):
+            create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+
+        # Count how many times warnings about RSI period 7 were logged
+        rsi_period_warnings = [call for call in mock_logger.warning.call_args_list
+                               if 'RSI period 7' in str(call)]
+
+        # Should only be logged once despite creating 3 strategies
+        self.assertEqual(len(rsi_period_warnings), 1)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_mixed_strategy_creation_warning_deduplication(self, mock_logger):
+        """Test warning deduplication across different strategy types."""
+        # Create strategies with parameters that trigger warnings
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        create_strategy('ema', ema_short=5, ema_long=18)
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)  # Same as first
+        create_strategy('bollinger', period=10, num_std=3)
+        create_strategy('ema', ema_short=5, ema_long=18)  # Same as second
+
+        # Count warnings for each type
+        rsi_warnings = [call for call in mock_logger.warning.call_args_list
+                        if 'RSI Strategy Parameter Guidance' in str(call)]
+        ema_warnings = [call for call in mock_logger.warning.call_args_list
+                        if 'EMA Strategy Parameter Guidance' in str(call)]
+        bb_warnings = [call for call in mock_logger.warning.call_args_list
+                       if 'Bollinger Bands Strategy Parameter Guidance' in str(call)]
+
+        # Each strategy type should have its warnings logged only once
+        # RSI should have warnings about period 7
+        rsi_period_warnings = [call for call in rsi_warnings if 'RSI period 7' in str(call)]
+        self.assertEqual(len(rsi_period_warnings), 1)
+
+        # EMA should have warnings about ratio
+        ema_ratio_warnings = [call for call in ema_warnings if 'ratio' in str(call)]
+        self.assertEqual(len(ema_ratio_warnings), 1)
+
+        # Bollinger Bands should have warnings
+        self.assertGreater(len(bb_warnings), 0)
+
+    def test_logged_warnings_set_persistence(self):
+        """Test that the logged warnings set persists across function calls."""
+        # Initially empty
+        self.assertEqual(len(_logged_warnings), 0)
+
+        # Add some warnings
+        _log_warnings_once(["Test warning 1"], "TEST")
+        self.assertEqual(len(_logged_warnings), 1)
+
+        # Add more warnings
+        _log_warnings_once(["Test warning 2", "Test warning 3"], "TEST")
+        self.assertEqual(len(_logged_warnings), 3)
+
+        # Try to add duplicate
+        _log_warnings_once(["Test warning 1"], "TEST")
+        self.assertEqual(len(_logged_warnings), 3)  # Should not increase
+
+
+class TestWarningConfiguration(unittest.TestCase):
+    """Tests for warning enable/disable functionality."""
+
+    def setUp(self):
+        """Store original warning state and clear logged warnings before each test."""
+        self.original_warnings_enabled = strategy_factory._log_warnings_enabled
+        _logged_warnings.clear()
+
+    def tearDown(self):
+        """Restore original warning state and clear logged warnings after each test."""
+        strategy_factory._log_warnings_enabled = self.original_warnings_enabled
+        _logged_warnings.clear()
+
+    def test_warnings_disabled_by_default(self):
+        """Test that warnings are disabled by default."""
+        # The default state should be False (warnings disabled)
+        self.assertFalse(strategy_factory._log_warnings_enabled)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_warnings_disabled_no_logging(self, mock_logger):
+        """Test that no warnings are logged when warnings are disabled."""
+        # Ensure warnings are disabled
+        strategy_factory._log_warnings_enabled = False
+
+        # Create strategies with parameters that would normally trigger warnings
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        create_strategy('ema', ema_short=5, ema_long=18)
+        create_strategy('bollinger', period=10, num_std=3)
+
+        # Verify no warnings were logged
+        self.assertEqual(mock_logger.warning.call_count, 0)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_warnings_enabled_logging_works(self, mock_logger):
+        """Test that warnings are logged when warnings are enabled."""
+        # Enable warnings
+        strategy_factory._log_warnings_enabled = True
+
+        # Create a strategy with parameters that trigger warnings
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+
+        # Verify warnings were logged
+        self.assertGreater(mock_logger.warning.call_count, 0)
+
+        # Check that at least one warning contains the expected content
+        warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
+        rsi_warnings = [call for call in warning_calls if 'RSI period 7' in call]
+        self.assertGreater(len(rsi_warnings), 0)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_toggle_warnings_during_execution(self, mock_logger):
+        """Test toggling warnings on and off during execution."""
+        # Start with warnings enabled
+        strategy_factory._log_warnings_enabled = True
+
+        # Create strategy - should log warnings
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        initial_warning_count = mock_logger.warning.call_count
+        self.assertGreater(initial_warning_count, 0)
+
+        # Disable warnings
+        strategy_factory._log_warnings_enabled = False
+
+        # Create another strategy - should not log warnings
+        create_strategy('ema', ema_short=5, ema_long=18)
+        self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
+
+        # Re-enable warnings
+        strategy_factory._log_warnings_enabled = True
+
+        # Create another strategy - should log warnings again
+        create_strategy('bollinger', period=10, num_std=3)
+        self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_log_warnings_once_respects_disabled_state(self, mock_logger):
+        """Test that _log_warnings_once respects the disabled state."""
+        # Disable warnings
+        strategy_factory._log_warnings_enabled = False
+
+        # Call _log_warnings_once directly
+        warnings = ["Test warning message"]
+        _log_warnings_once(warnings, "TEST")
+
+        # Verify no warnings were logged
+        self.assertEqual(mock_logger.warning.call_count, 0)
+
+        # Enable warnings and try again
+        strategy_factory._log_warnings_enabled = True
+        _log_warnings_once(warnings, "TEST")
+
+        # Verify warning was logged
+        self.assertEqual(mock_logger.warning.call_count, 1)
+        mock_logger.warning.assert_called_with("TEST Strategy Parameter Guidance: Test warning message")
+
+    @patch('app.backtesting.strategy_factory.logger')
+    def test_warning_deduplication_with_enabled_disabled_cycle(self, mock_logger):
+        """Test that warning deduplication works correctly when toggling enabled/disabled state."""
+        # Enable warnings and create a strategy
+        strategy_factory._log_warnings_enabled = True
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        initial_warning_count = mock_logger.warning.call_count
+        self.assertGreater(initial_warning_count, 0)
+
+        # Disable warnings and create the same strategy - no new warnings
+        strategy_factory._log_warnings_enabled = False
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
+
+        # Re-enable warnings and create the same strategy - still no new warnings (deduplication)
+        strategy_factory._log_warnings_enabled = True
+        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
+
+        # Create a different strategy - should log new warnings
+        create_strategy('ema', ema_short=5, ema_long=18)
+        self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
 
 
 if __name__ == '__main__':
