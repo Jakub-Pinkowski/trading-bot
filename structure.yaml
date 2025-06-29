@@ -119,7 +119,6 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Backtesting
-# TODO [MEDIUM]: Add strategy parameter validation
 # TODO [MEDIUM]: Add strategy performance heatmaps
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add advanced portfolio-level backtesting
