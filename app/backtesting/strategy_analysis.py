@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -7,6 +8,46 @@ from app.utils.logger import get_logger
 from config import BACKTESTING_DATA_DIR
 
 logger = get_logger('backtesting/strategy_analysis')
+
+
+def _parse_strategy_name(strategy_name):
+    """
+    Parse strategy name to extract common parameters and clean strategy name.
+
+    Args:
+        strategy_name (str): Full strategy name like "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26,rollover=False,trailing=1,slippage=0.05)"
+
+    Returns:
+        tuple: (clean_strategy_name, rollover, trailing, slippage)
+    """
+    # Extract common parameters using regex
+    rollover_match = re.search(r'rollover=([^,)]+)', strategy_name)
+    trailing_match = re.search(r'trailing=([^,)]+)', strategy_name)
+    slippage_match = re.search(r'slippage=([^,)]+)', strategy_name)
+
+    # Extract values or set defaults
+    rollover = rollover_match.group(1) if rollover_match else 'False'
+    trailing = trailing_match.group(1) if trailing_match else 'None'
+    slippage = slippage_match.group(1) if slippage_match else '0'
+
+    # Convert string values to appropriate types
+    rollover = rollover == 'True'
+    trailing = None if trailing == 'None' else float(trailing)
+    slippage = float(slippage)
+
+    # Remove common parameters from the strategy name
+    clean_strategy = strategy_name
+    for param in ['rollover', 'trailing', 'slippage']:
+        clean_strategy = re.sub(f',{param}=[^,)]+', '', clean_strategy)
+        clean_strategy = re.sub(f'{param}=[^,)]+,', '', clean_strategy)
+        clean_strategy = re.sub(f'{param}=[^,)]+', '', clean_strategy)
+
+    # Clean up any double commas or trailing commas
+    clean_strategy = re.sub(r',,+', ',', clean_strategy)
+    clean_strategy = re.sub(r',\)', ')', clean_strategy)
+    clean_strategy = re.sub(r'\(,', '(', clean_strategy)
+
+    return clean_strategy, rollover, trailing, slippage
 
 
 def _format_column_name(column_name):
@@ -297,6 +338,25 @@ class StrategyAnalyzer:
             # Limit the number of rows
             if limit and limit > 0:
                 formatted_df = formatted_df.head(limit)
+
+            # Parse strategy names to extract common parameters
+            if 'strategy' in formatted_df.columns:
+                strategy_data = formatted_df['strategy'].apply(_parse_strategy_name)
+                formatted_df['strategy'] = [data[0] for data in strategy_data]  # Clean strategy name
+                formatted_df['rollover'] = [data[1] for data in strategy_data]  # Rollover parameter
+                formatted_df['trailing'] = [data[2] for data in strategy_data]  # Trailing parameter
+                formatted_df['slippage'] = [data[3] for data in strategy_data]  # Slippage parameter
+
+                # Reorder columns to put common parameters after strategy
+                cols = list(formatted_df.columns)
+                strategy_idx = cols.index('strategy')
+                # Remove the new columns from their current positions
+                cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
+                # Insert them after strategy
+                cols.insert(strategy_idx + 1, 'rollover')
+                cols.insert(strategy_idx + 2, 'trailing')
+                cols.insert(strategy_idx + 3, 'slippage')
+                formatted_df = formatted_df[cols]
 
             # Format all numeric columns to 2 decimal places
             numeric_cols = formatted_df.select_dtypes(include='number').columns

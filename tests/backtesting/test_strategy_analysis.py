@@ -10,7 +10,8 @@ from app.backtesting.strategy_analysis import (
     _calculate_weighted_win_rate,
     _calculate_weighted_profit_factor,
     _calculate_trade_weighted_average,
-    _calculate_average_trade_return
+    _calculate_average_trade_return,
+    _parse_strategy_name
 )
 
 
@@ -1219,6 +1220,60 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertEqual(len(non_weighted_multiple), 2)  # EMA strategies with 4h interval and slippage >= 0.15
         for strategy in non_weighted_multiple['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
+
+
+class TestParseStrategyName(unittest.TestCase):
+    """Tests for the _parse_strategy_name function."""
+
+    def test_parse_ichimoku_strategy(self):
+        """Test parsing of Ichimoku strategy names."""
+        strategy_name = "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26,rollover=False,trailing=1,slippage=0.05)"
+        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+
+        self.assertEqual(clean_strategy, "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26)")
+        self.assertEqual(rollover, False)
+        self.assertEqual(trailing, 1.0)
+        self.assertEqual(slippage, 0.05)
+
+    def test_parse_rsi_strategy(self):
+        """Test parsing of RSI strategy names."""
+        strategy_name = "RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)"
+        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+
+        self.assertEqual(clean_strategy, "RSI(period=14,lower=30,upper=70)")
+        self.assertEqual(rollover, False)
+        self.assertIsNone(trailing)
+        self.assertEqual(slippage, 0.1)
+
+    def test_parse_ema_strategy(self):
+        """Test parsing of EMA strategy names."""
+        strategy_name = "EMA(short=9,long=21,rollover=True,trailing=2.5,slippage=0.2)"
+        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+
+        self.assertEqual(clean_strategy, "EMA(short=9,long=21)")
+        self.assertEqual(rollover, True)
+        self.assertEqual(trailing, 2.5)
+        self.assertEqual(slippage, 0.2)
+
+    def test_parse_strategy_with_missing_params(self):
+        """Test parsing of strategy names with missing common parameters."""
+        strategy_name = "MACD(fast=12,slow=26,signal=9)"
+        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+
+        self.assertEqual(clean_strategy, "MACD(fast=12,slow=26,signal=9)")
+        self.assertEqual(rollover, False)  # Default value
+        self.assertIsNone(trailing)  # Default value
+        self.assertEqual(slippage, 0.0)  # Default value
+
+    def test_parse_strategy_different_parameter_order(self):
+        """Test parsing of strategy names with different parameter order."""
+        strategy_name = "BB(period=20,std=2,slippage=0.15,rollover=True,trailing=1.5)"
+        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+
+        self.assertEqual(clean_strategy, "BB(period=20,std=2)")
+        self.assertEqual(rollover, True)
+        self.assertEqual(trailing, 1.5)
+        self.assertEqual(slippage, 0.15)
 
 
 if __name__ == '__main__':
