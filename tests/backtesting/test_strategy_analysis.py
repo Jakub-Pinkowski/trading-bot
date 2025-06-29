@@ -10,6 +10,7 @@ from app.backtesting.strategy_analysis import (
     _calculate_weighted_win_rate,
     _calculate_trade_weighted_average,
     _calculate_average_trade_return,
+    _calculate_profit_ratio,
     _parse_strategy_name
 )
 
@@ -418,6 +419,92 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
 
         # 100/3 = 33.333... should be rounded to 33.33
         self.assertEqual(result['Strategy_A'], 33.33)
+
+
+class TestCalculateProfitRatio(unittest.TestCase):
+    """Tests for the _calculate_profit_ratio function."""
+
+    def test_basic_calculation(self):
+        """Test basic profit ratio calculation."""
+        total_wins = pd.Series([10.0])
+        total_losses = pd.Series([5.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 10/5 = 2.0
+        self.assertEqual(result.iloc[0], 2.0)
+
+    def test_different_ratios(self):
+        """Test calculation with different win/loss ratios."""
+        total_wins = pd.Series([15.0, 8.0, 12.0])
+        total_losses = pd.Series([5.0, 4.0, 3.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 15/5 = 3.0, 8/4 = 2.0, 12/3 = 4.0
+        self.assertEqual(result.iloc[0], 3.0)
+        self.assertEqual(result.iloc[1], 2.0)
+        self.assertEqual(result.iloc[2], 4.0)
+
+    def test_fractional_results(self):
+        """Test calculation with fractional results."""
+        total_wins = pd.Series([7.0])
+        total_losses = pd.Series([3.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 7/3 = 2.333... should be rounded to 2.33
+        self.assertEqual(result.iloc[0], 2.33)
+
+    def test_zero_losses_infinity(self):
+        """Test calculation when losses are zero (should return infinity)."""
+        total_wins = pd.Series([10.0])
+        total_losses = pd.Series([0.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 10/0 should be handled as infinity
+        self.assertEqual(result.iloc[0], float('inf'))
+
+    def test_zero_wins(self):
+        """Test calculation when wins are zero."""
+        total_wins = pd.Series([0.0])
+        total_losses = pd.Series([5.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 0/5 = 0.0
+        self.assertEqual(result.iloc[0], 0.0)
+
+    def test_negative_values(self):
+        """Test calculation with negative values (should use absolute value)."""
+        total_wins = pd.Series([10.0])
+        total_losses = pd.Series([-5.0])  # Losses are typically negative
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # abs(10/-5) = abs(-2) = 2.0
+        self.assertEqual(result.iloc[0], 2.0)
+
+    def test_both_negative(self):
+        """Test calculation with both values negative."""
+        total_wins = pd.Series([-10.0])
+        total_losses = pd.Series([-5.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # abs(-10/-5) = abs(2) = 2.0
+        self.assertEqual(result.iloc[0], 2.0)
+
+    def test_rounding(self):
+        """Test that results are properly rounded to 2 decimal places."""
+        total_wins = pd.Series([10.0])
+        total_losses = pd.Series([3.0])
+
+        result = _calculate_profit_ratio(total_wins, total_losses)
+
+        # 10/3 = 3.333... should be rounded to 3.33
+        self.assertEqual(result.iloc[0], 3.33)
 
 
 class TestStrategyAnalyzer(unittest.TestCase):
