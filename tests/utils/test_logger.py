@@ -149,7 +149,7 @@ def test_get_logger_creates_console_handler(mock_logging_setup):
 
     # Check that the console handler was configured correctly
     console_handler = mock_logging_setup['console_handler']
-    console_handler.setLevel.assert_called_once_with(mock_logging_setup['logging'].ERROR)
+    console_handler.setLevel.assert_called_once_with(mock_logging_setup['logging'].WARNING)
     console_handler.setFormatter.assert_called_once_with(mock_logging_setup['formatter'])
 
 
