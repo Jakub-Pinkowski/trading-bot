@@ -1,11 +1,59 @@
 from app.backtesting.mass_testing import MassTester
 
+# Classification of futures
+grains = [
+    'ZC',  # Corn
+    'ZW',  # Wheat
+    'ZS',  # Soybean
+    'ZL',  # Soybean Oil
+]
+
+softs = [
+    'SB',  # Sugar
+    'KC',  # Coffee
+    'CC',  # Cocoa
+]
+
+energy = [
+    'CL',  # Crude Oil
+    'NG',  # Natural Gas
+]
+
+metal = [
+    'GC',  # Gold
+    'SI',  # Silver
+    'HG',  # Copper
+    'PL',  # Platinum
+]
+
+crypto = [
+    'BTC',  # Bitcoin
+    'ETH',  # Ethereum
+]
+
+index = [
+    'ES',  # S&P-500
+    'NQ',  # NASDAQ-100
+    'YM',  # DOW
+    'RTY',  # RUSSELL 2000
+    'ZB',  # Treasury Bond
+]
+
+forex = [
+    '6E',  # EURO FX
+    '6J',  # Japanese Yen
+    '6B',  # British Pound
+    '6A',  # Australian Dollar
+    '6C',  # Canadian Dollar
+    '6S',  # Swiss Franc
+]
+
 
 def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=['ZC', 'ZS', 'ZL', 'ZW'],
+        symbols=grains,
         intervals=['4h'],
     )
 
@@ -16,17 +64,17 @@ def main():
         upper_thresholds=[70],
         rollovers=[False],
         trailing_stops=[None],
-        slippages=[0]
+        slippages=[0.5]
     )
 
     # EMA Crossover uses two moving averages to identify trend changes
-    # tester.add_ema_crossover_tests(
-    #     ema_shorts=[5, 6, 8, 9, 10, 11, 12, 13, 15],
-    #     ema_longs=[18, 20, 21, 22, 23, 24, 26, 30, 35, 50],
-    #     rollovers=[False],
-    #     trailing_stops=[None, 1, 1.5, 2, 2.5, 3],
-    #     slippages=[0, 0.05, 0.1]
-    # )
+    tester.add_ema_crossover_tests(
+        ema_shorts=[5],
+        ema_longs=[18],
+        rollovers=[False],
+        trailing_stops=[None],
+        slippages=[0, 0.05]
+    )
 
     # Bollinger Bands measure volatility and relative price levels
     # tester.add_bollinger_bands_tests(

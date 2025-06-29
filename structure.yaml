@@ -122,7 +122,7 @@ trading-bot/
 # TODO [MEDIUM]: Add strategy performance heatmaps
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add advanced portfolio-level backtesting
-# TODO [LOW]: Update margin requirements on a monthly basis as they change over time
+# TODO [LOW]: Update margin requirements on a monthly basis as they change over time [last update in 05.2025]
 # TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
 
