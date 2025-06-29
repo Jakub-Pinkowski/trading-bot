@@ -423,16 +423,29 @@ class MassTester:
         # Define column names
         columns = [
             # Basic info
-            'month', 'symbol', 'interval', 'strategy', 'total_trades', 'win_rate',
+            'month',
+            'symbol',
+            'interval',
+            'strategy',
+            'total_trades',
+            'win_rate',
             # Percentage-based metrics
-            'total_return_percentage_of_margin', 'average_trade_return_percentage_of_margin',
-            'average_win_percentage_of_margin', 'average_loss_percentage_of_margin',
-            'commission_percentage_of_margin', 'total_wins_percentage_of_margin',
+            'total_return_percentage_of_margin',
+            'average_trade_return_percentage_of_margin',
+            'average_win_percentage_of_margin',
+            'average_loss_percentage_of_margin',
+            'commission_percentage_of_margin',
+            'total_wins_percentage_of_margin',
             'total_losses_percentage_of_margin',
             # Risk metrics
-            'profit_factor', 'maximum_drawdown_percentage',
-            'sharpe_ratio', 'sortino_ratio', 'calmar_ratio', 'value_at_risk',
-            'expected_shortfall', 'ulcer_index'
+            'profit_factor',
+            'maximum_drawdown_percentage',
+            'sharpe_ratio',
+            'sortino_ratio',
+            'calmar_ratio',
+            'value_at_risk',
+            'expected_shortfall',
+            'ulcer_index'
         ]
 
         # Pre-allocate numpy arrays for each column

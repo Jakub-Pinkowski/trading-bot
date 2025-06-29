@@ -138,6 +138,13 @@ def _calculate_average_trade_return(total_return, total_trades):
     return (total_return / total_trades).round(2)
 
 
+def _calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
+    """Calculate a profit factor from total wins and losses percentages."""
+    return abs(
+        total_wins_percentage / total_losses_percentage
+    ).replace([float('inf'), float('-inf')], float('inf')).round(2)
+
+
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
@@ -255,9 +262,9 @@ class StrategyAnalyzer:
             total_losses_percentage = grouped['total_losses_percentage_of_margin'].sum()
 
             # Recalculate profit factor from aggregated data
-            metrics_dict['profit_factor'] = abs(
-                total_wins_percentage / total_losses_percentage
-            ).replace([float('inf'), float('-inf')], float('inf')).round(2)
+            metrics_dict['profit_factor'] = _calculate_profit_ratio(
+                total_wins_percentage, total_losses_percentage
+            )
 
             # Calculate trade-weighted averages for risk metrics
             risk_metrics = [
