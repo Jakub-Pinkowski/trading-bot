@@ -10,20 +10,20 @@ def main():
 
     # Get top strategies for a profit factor for a specific timeframe (weighted)
     top_profit_factor_1h_weighted = analyzer.get_top_strategies(metric='profit_factor',
-                                                                min_avg_trades_per_combination=60,
+                                                                min_avg_trades_per_combination=20,
                                                                 limit=30,
                                                                 aggregate=True,
                                                                 interval='4h',
                                                                 weighted=True,
                                                                 min_slippage=0.05)
 
-    # Get top strategies for a profit factor for a specific timeframe (simple)
-    top_profit_factor_1h = analyzer.get_top_strategies(metric='profit_factor',
+    # Get top strategies for an average win percentage of a margin for a specific timeframe (weighted)
+    top_profit_factor_1h = analyzer.get_top_strategies(metric='average_trade_return_percentage_of_margin',
                                                        min_avg_trades_per_combination=10,
                                                        limit=30,
                                                        aggregate=True,
                                                        interval='4h',
-                                                       weighted=False,
+                                                       weighted=True,
                                                        min_slippage=0.05)
 
     # Get top strategies for a total return for a specific timeframe

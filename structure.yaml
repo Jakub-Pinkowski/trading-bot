@@ -119,13 +119,12 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Backtesting
-# BUG [HIGH]: I sometimes have positive profit factor and negative total return
-# TODO [MEDIUM]: Add strategy performance heatmaps
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time [last update in 05.2025]
 # TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
+# TODO [LOW]: Add strategy performance heatmaps
 
 # Trading
 # TODO [MEDIUM]: Rewrite IBKR logic using classes

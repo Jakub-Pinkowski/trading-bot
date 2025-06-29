@@ -10,6 +10,76 @@ from config import BACKTESTING_DATA_DIR
 logger = get_logger('backtesting/strategy_analysis')
 
 
+def _filter_dataframe(df, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage=None):
+    """Filter DataFrame based on common criteria."""
+
+    # Filter by minimum average trades per combination
+    if min_avg_trades_per_combination > 0:
+        strategy_stats = df.groupby('strategy').agg({
+            'total_trades': 'sum',
+            'symbol': 'nunique',
+            'interval': 'nunique'
+        }).reset_index()
+
+        # Calculate combinations (symbol × interval)
+        strategy_stats['combination_count'] = strategy_stats['symbol'] * strategy_stats['interval']
+        strategy_stats['avg_trades_per_combination'] = (
+                strategy_stats['total_trades'] / strategy_stats['combination_count']
+        )
+
+        # Filter strategies that meet the minimum
+        valid_strategies = strategy_stats[
+            strategy_stats['avg_trades_per_combination'] >= min_avg_trades_per_combination
+            ]['strategy'].tolist()
+
+        filtered_df = df[df['strategy'].isin(valid_strategies)]
+    else:
+        filtered_df = df.copy()
+
+    # Filter by interval if provided
+    if interval:
+        filtered_df = filtered_df[filtered_df['interval'] == interval]
+
+    # Filter by symbol if provided
+    if symbol:
+        filtered_df = filtered_df[filtered_df['symbol'] == symbol]
+
+    # Filter by minimum slippage if provided
+    if min_slippage is not None:
+        # Extract slippage from the strategy name
+        filtered_df = filtered_df[
+            filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
+
+    return filtered_df
+
+
+def _calculate_weighted_win_rate(filtered_df, grouped):
+    """Calculate win rate weighted by total trades."""
+    total_trades_by_strategy = grouped['total_trades'].sum()
+    winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
+        filtered_df['strategy']).sum()
+    return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
+
+
+def _calculate_average_trade_return(total_return, total_trades):
+    """Calculate average trade return from total return and total trades."""
+    return (total_return / total_trades).round(2)
+
+
+def _calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
+    """Calculate a profit factor from total wins and losses percentages."""
+    return abs(
+        total_wins_percentage / total_losses_percentage
+    ).replace([float('inf'), float('-inf')], float('inf')).round(2)
+
+
+def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
+    """Calculate trade-weighted average for a given metric."""
+    weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
+        filtered_df['strategy']).sum()
+    return (weighted_sum / total_trades_by_strategy).round(2)
+
+
 def _parse_strategy_name(strategy_name):
     """ Parse strategy name to extract common parameters and clean the strategy name. """
     # Extract common parameters using regex
@@ -73,76 +143,6 @@ def _format_column_name(column_name):
 
     # Default case: Replace underscores with spaces and capitalize each word
     return ' '.join(word.capitalize() for word in column_name.split('_'))
-
-
-def _filter_dataframe(df, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage=None):
-    """Filter DataFrame based on common criteria."""
-
-    # Filter by minimum average trades per combination
-    if min_avg_trades_per_combination > 0:
-        strategy_stats = df.groupby('strategy').agg({
-            'total_trades': 'sum',
-            'symbol': 'nunique',
-            'interval': 'nunique'
-        }).reset_index()
-
-        # Calculate combinations (symbol × interval)
-        strategy_stats['combination_count'] = strategy_stats['symbol'] * strategy_stats['interval']
-        strategy_stats['avg_trades_per_combination'] = (
-                strategy_stats['total_trades'] / strategy_stats['combination_count']
-        )
-
-        # Filter strategies that meet the minimum
-        valid_strategies = strategy_stats[
-            strategy_stats['avg_trades_per_combination'] >= min_avg_trades_per_combination
-            ]['strategy'].tolist()
-
-        filtered_df = df[df['strategy'].isin(valid_strategies)]
-    else:
-        filtered_df = df.copy()
-
-    # Filter by interval if provided
-    if interval:
-        filtered_df = filtered_df[filtered_df['interval'] == interval]
-
-    # Filter by symbol if provided
-    if symbol:
-        filtered_df = filtered_df[filtered_df['symbol'] == symbol]
-
-    # Filter by minimum slippage if provided
-    if min_slippage is not None:
-        # Extract slippage from the strategy name
-        filtered_df = filtered_df[
-            filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
-
-    return filtered_df
-
-
-def _calculate_weighted_win_rate(filtered_df, grouped):
-    """Calculate win rate weighted by total trades."""
-    total_trades_by_strategy = grouped['total_trades'].sum()
-    winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
-        filtered_df['strategy']).sum()
-    return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
-
-
-def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
-    """Calculate trade-weighted average for a given metric."""
-    weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
-        filtered_df['strategy']).sum()
-    return (weighted_sum / total_trades_by_strategy).round(2)
-
-
-def _calculate_average_trade_return(total_return, total_trades):
-    """Calculate average trade return from total return and total trades."""
-    return (total_return / total_trades).round(2)
-
-
-def _calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
-    """Calculate a profit factor from total wins and losses percentages."""
-    return abs(
-        total_wins_percentage / total_losses_percentage
-    ).replace([float('inf'), float('-inf')], float('inf')).round(2)
 
 
 class StrategyAnalyzer:
