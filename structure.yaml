@@ -119,6 +119,7 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Backtesting
+# BUG [HIGH]: I sometimes have positive profit factor and negative total return
 # TODO [MEDIUM]: Add strategy performance heatmaps
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add advanced portfolio-level backtesting

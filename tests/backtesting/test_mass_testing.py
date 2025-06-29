@@ -1164,6 +1164,9 @@ class TestMassTester:
                     'average_trade_return_percentage_of_margin': 0.5,
                     'average_win_percentage_of_margin': 1.0,
                     'average_loss_percentage_of_margin': -0.5,
+                    'commission_percentage_of_margin': 0.1,
+                    'total_wins_percentage_of_margin': 6.0,
+                    'total_losses_percentage_of_margin': -2.0,
                     'maximum_drawdown_percentage': 2.0,
                     'total_net_pnl': 1000.0,
                     'avg_trade_net_pnl': 100.0,
@@ -1191,6 +1194,9 @@ class TestMassTester:
                     'average_trade_return_percentage_of_margin': -0.4,
                     'average_win_percentage_of_margin': 0.8,
                     'average_loss_percentage_of_margin': -1.0,
+                    'commission_percentage_of_margin': 0.1,
+                    'total_wins_percentage_of_margin': 1.6,
+                    'total_losses_percentage_of_margin': -3.0,
                     'maximum_drawdown_percentage': 3.0,
                     'total_net_pnl': -500.0,
                     'avg_trade_net_pnl': -100.0,
@@ -1228,6 +1234,8 @@ class TestMassTester:
             'average_win_percentage_of_margin',
             'average_loss_percentage_of_margin',
             'commission_percentage_of_margin',
+            'total_wins_percentage_of_margin',
+            'total_losses_percentage_of_margin',
 
             # Risk metrics
             'profit_factor',

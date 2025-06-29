@@ -8,7 +8,6 @@ from app.backtesting.strategy_analysis import (
     _format_column_name,
     _filter_dataframe,
     _calculate_weighted_win_rate,
-    _calculate_weighted_profit_factor,
     _calculate_trade_weighted_average,
     _calculate_average_trade_return,
     _parse_strategy_name
@@ -287,64 +286,6 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
         self.assertEqual(result['Strategy_A'], expected)
 
 
-class TestCalculateWeightedProfitFactor(unittest.TestCase):
-    """Tests for the _calculate_weighted_profit_factor function."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.sample_data = pd.DataFrame({
-            'strategy': ['Strategy_A', 'Strategy_A', 'Strategy_B', 'Strategy_B'],
-            'total_trades': [10, 20, 15, 25],
-            'win_rate': [60.0, 80.0, 40.0, 60.0],
-            'average_win_percentage_of_margin': [2.0, 1.5, 1.8, 2.2],
-            'average_loss_percentage_of_margin': [-1.0, -0.8, -1.2, -0.9]
-        })
-        self.grouped = self.sample_data.groupby('strategy')
-
-    def test_profit_factor_calculation(self):
-        """Test profit factor calculation."""
-        result = _calculate_weighted_profit_factor(self.sample_data, self.grouped)
-
-        # Strategy_A calculations:
-        # Total trades: 30, Winning trades: (60*10 + 80*20)/100 = 22, Losing trades: 8
-        # Avg win: (2.0 + 1.5)/2 = 1.75, Avg loss: (-1.0 + -0.8)/2 = -0.9
-        # Total profit: 22 * 1.75 = 38.5, Total loss: 8 * 0.9 = 7.2
-        # Profit factor: 38.5 / 7.2 ≈ 5.35
-
-        self.assertIsInstance(result['Strategy_A'], float)
-        self.assertGreater(result['Strategy_A'], 0)
-        self.assertIsInstance(result['Strategy_B'], float)
-        self.assertGreater(result['Strategy_B'], 0)
-
-    def test_no_losses(self):
-        """Test profit factor when there are no losses (100% win rate)."""
-        no_loss_data = pd.DataFrame({
-            'strategy': ['Strategy_A'],
-            'total_trades': [10],
-            'win_rate': [100.0],
-            'average_win_percentage_of_margin': [2.0],
-            'average_loss_percentage_of_margin': [-1.0]  # This won't be used
-        })
-        grouped = no_loss_data.groupby('strategy')
-        result = _calculate_weighted_profit_factor(no_loss_data, grouped)
-
-        # Should return infinity when there are no losses
-        self.assertEqual(result['Strategy_A'], float('inf'))
-
-    def test_no_wins(self):
-        """Test profit factor when there are no wins (0% win rate)."""
-        no_win_data = pd.DataFrame({
-            'strategy': ['Strategy_A'],
-            'total_trades': [10],
-            'win_rate': [0.0],
-            'average_win_percentage_of_margin': [2.0],  # This won't be used
-            'average_loss_percentage_of_margin': [-1.0]
-        })
-        grouped = no_win_data.groupby('strategy')
-        result = _calculate_weighted_profit_factor(no_win_data, grouped)
-
-        # Should return 0 when there are no wins
-        self.assertEqual(result['Strategy_A'], 0.0)
 
 
 class TestCalculateTradeWeightedAverage(unittest.TestCase):
@@ -501,6 +442,12 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7],
             'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3],
             'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1],
+            # Calculate total wins and losses for new profit factor calculation
+            # total_wins = (win_rate/100) * total_trades * average_win_percentage_of_margin
+            # total_losses = ((100-win_rate)/100) * total_trades * average_loss_percentage_of_margin
+            'total_wins_percentage_of_margin': [6.0, 9.45, 8.8, 11.375],  # [6*1.0, 10.5*0.9, 11*0.8, 16.25*0.7]
+            'total_losses_percentage_of_margin': [-2.0, -1.8, -5.4, -2.625],
+            # [4*(-0.5), 4.5*(-0.4), 9*(-0.6), 8.75*(-0.3)]
             'profit_factor': [2.0, 2.5, 1.8, 2.2],
             'maximum_drawdown_percentage': [2.0, 1.5, 2.5, 1.8],
             'sharpe_ratio': [1.5, 1.8, 1.2, 1.6],

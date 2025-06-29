@@ -42,6 +42,10 @@ class SummaryMetrics:
         average_loss_percentage_of_margin = self._calculate_average_loss_percentage_of_margin()
         commission_percentage_of_margin = self._calculate_commission_percentage_of_margin()
 
+        # Calculate total wins and losses for aggregation
+        total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
+        total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
+
         # ===== RISK METRICS =====
         profit_factor = self._calculate_profit_factor()
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
@@ -66,6 +70,8 @@ class SummaryMetrics:
             'average_win_percentage_of_margin': round(average_win_percentage_of_margin, 2),
             'average_loss_percentage_of_margin': round(average_loss_percentage_of_margin, 2),
             'commission_percentage_of_margin': round(commission_percentage_of_margin, 2),
+            'total_wins_percentage_of_margin': round(total_wins_percentage_of_margin, 2),
+            'total_losses_percentage_of_margin': round(total_losses_percentage_of_margin, 2),
 
             # Risk metrics
             'profit_factor': round(profit_factor, 2),
@@ -118,7 +124,7 @@ class SummaryMetrics:
 
         # ===== RISK METRICS =====
         print('\n--- RISK METRICS ---')
-        print(f'Profit Factor: {summary["profit_factor"]}')
+        print(f'Profit Factor: {summary.get("profit_factor", 0)}')
         print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
         print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
         print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
@@ -239,17 +245,17 @@ class SummaryMetrics:
         return commission_percentage_of_margin
 
     def _calculate_profit_factor(self):
-        """Calculate profit factor: Total Net Profit / Total Net Loss."""
+        """Calculate a profit factor using percentage returns: Total Win % / Total Loss %."""
         if not self._has_trades():
             return 0
 
-        total_net_profit = sum(trade['net_pnl'] for trade in self.winning_trades)
-        total_net_loss = sum(trade['net_pnl'] for trade in self.losing_trades)
+        total_win_percentage = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
+        total_loss_percentage = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
 
-        if total_net_loss == 0:
+        if total_loss_percentage == 0:
             return float('inf')  # No losses
 
-        return abs(safe_divide(total_net_profit, total_net_loss))
+        return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
         """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""

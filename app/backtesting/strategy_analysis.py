@@ -11,15 +11,7 @@ logger = get_logger('backtesting/strategy_analysis')
 
 
 def _parse_strategy_name(strategy_name):
-    """
-    Parse strategy name to extract common parameters and clean strategy name.
-
-    Args:
-        strategy_name (str): Full strategy name like "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26,rollover=False,trailing=1,slippage=0.05)"
-
-    Returns:
-        tuple: (clean_strategy_name, rollover, trailing, slippage)
-    """
+    """ Parse strategy name to extract common parameters and clean the strategy name. """
     # Extract common parameters using regex
     rollover_match = re.search(r'rollover=([^,)]+)', strategy_name)
     trailing_match = re.search(r'trailing=([^,)]+)', strategy_name)
@@ -132,25 +124,6 @@ def _calculate_weighted_win_rate(filtered_df, grouped):
     winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
         filtered_df['strategy']).sum()
     return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
-
-
-def _calculate_weighted_profit_factor(filtered_df, grouped):
-    """Calculate profit factor weighted by total trades."""
-    total_trades_by_strategy = grouped['total_trades'].sum()
-    winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
-        filtered_df['strategy']).sum()
-    losing_trades = total_trades_by_strategy - winning_trades_by_strategy
-
-    avg_win_by_strategy = filtered_df.groupby('strategy')['average_win_percentage_of_margin'].mean()
-    avg_loss_by_strategy = filtered_df.groupby('strategy')['average_loss_percentage_of_margin'].mean()
-
-    # Total profit = winning_trades * average_win
-    total_profit = (winning_trades_by_strategy * avg_win_by_strategy).abs()
-    # Total loss = losing_trades * average_loss
-    total_loss = (losing_trades * avg_loss_by_strategy).abs()
-
-    # Profit factor
-    return (total_profit / total_loss).replace([float('inf'), float('-inf')], float('inf')).round(2)
 
 
 def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
@@ -277,8 +250,14 @@ class StrategyAnalyzer:
             metrics_dict['average_loss_percentage_of_margin'] = grouped['average_loss_percentage_of_margin'].mean()
             metrics_dict['commission_percentage_of_margin'] = grouped['commission_percentage_of_margin'].mean()
 
-            # Calculate profit factor
-            metrics_dict['profit_factor'] = _calculate_weighted_profit_factor(filtered_df, grouped)
+            # Calculate profit factor percentage from aggregated wins and losses
+            total_wins_percentage = grouped['total_wins_percentage_of_margin'].sum()
+            total_losses_percentage = grouped['total_losses_percentage_of_margin'].sum()
+
+            # Recalculate profit factor from aggregated data
+            metrics_dict['profit_factor'] = abs(
+                total_wins_percentage / total_losses_percentage
+            ).replace([float('inf'), float('-inf')], float('inf')).round(2)
 
             # Calculate trade-weighted averages for risk metrics
             risk_metrics = [
