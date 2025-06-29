@@ -43,10 +43,12 @@ def get_logger(name='app'):
             error_handler.setFormatter(formatter)
             logger.addHandler(error_handler)
 
-        # Console handler for WARNING, ERROR and CRITICAL (always added, even in tests)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.WARNING)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+            # Console handler for WARNING, ERROR and CRITICAL (not added during tests)
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.WARNING)
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+
+
 
     return logger
