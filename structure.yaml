@@ -120,7 +120,7 @@ trading-bot/
 
 # Backtesting
 # TODO [MEDIUM]: Run extensive backtesting
-# TODO [MEDIUM]: Consider setting up a strategy for 2021-2023 and then trying them for 2025
+# TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time [last update in 05.2025]
 # TODO [LOW]: Add contract switch dates for missing symbols
