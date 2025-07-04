@@ -10,11 +10,18 @@ from config import BACKTESTING_DATA_DIR
 logger = get_logger('backtesting/strategy_analysis')
 
 
-def _filter_dataframe(df, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage=None):
+def _filter_dataframe(
+    df,
+    min_avg_trades_per_combination=0,
+    interval=None,
+    symbol=None,
+    min_slippage=None,
+    min_symbol_count=None
+):
     """Filter DataFrame based on common criteria."""
 
-    # Filter by minimum average trades per combination
-    if min_avg_trades_per_combination > 0:
+    # Filter by minimum average trades per combination or minimum symbol count
+    if min_avg_trades_per_combination > 0 or min_symbol_count is not None:
         strategy_stats = df.groupby('strategy').agg({
             'total_trades': 'sum',
             'symbol': 'nunique',
@@ -27,10 +34,28 @@ def _filter_dataframe(df, min_avg_trades_per_combination=0, interval=None, symbo
                 strategy_stats['total_trades'] / strategy_stats['combination_count']
         )
 
-        # Filter strategies that meet the minimum
-        valid_strategies = strategy_stats[
-            strategy_stats['avg_trades_per_combination'] >= min_avg_trades_per_combination
-            ]['strategy'].tolist()
+        # Apply filters
+        filter_conditions = []
+
+        if min_avg_trades_per_combination > 0:
+            filter_conditions.append(
+                strategy_stats['avg_trades_per_combination'] >= min_avg_trades_per_combination
+            )
+
+        if min_symbol_count is not None:
+            filter_conditions.append(
+                strategy_stats['symbol'] >= min_symbol_count
+            )
+
+        # Combine all filter conditions with AND logic
+        if filter_conditions:
+            combined_filter = filter_conditions[0]
+            for condition in filter_conditions[1:]:
+                combined_filter = combined_filter & condition
+
+            valid_strategies = strategy_stats[combined_filter]['strategy'].tolist()
+        else:
+            valid_strategies = strategy_stats['strategy'].tolist()
 
         filtered_df = df[df['strategy'].isin(valid_strategies)]
     else:
@@ -163,7 +188,8 @@ class StrategyAnalyzer:
         interval=None,
         symbol=None,
         weighted=True,
-        min_slippage=None
+        min_slippage=None,
+        min_symbol_count=None
     ):
         """  Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
@@ -172,10 +198,20 @@ class StrategyAnalyzer:
 
         if aggregate:
             # Get aggregated strategies
-            df = self._aggregate_strategies(min_avg_trades_per_combination, interval, symbol, weighted, min_slippage)
+            df = self._aggregate_strategies(min_avg_trades_per_combination,
+                                            interval,
+                                            symbol,
+                                            weighted,
+                                            min_slippage,
+                                            min_symbol_count)
         else:
             # Apply common filtering
-            df = _filter_dataframe(self.results_df, min_avg_trades_per_combination, interval, symbol, min_slippage)
+            df = _filter_dataframe(self.results_df,
+                                   min_avg_trades_per_combination,
+                                   interval,
+                                   symbol,
+                                   min_slippage,
+                                   min_symbol_count)
 
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
@@ -214,7 +250,8 @@ class StrategyAnalyzer:
         interval=None,
         symbol=None,
         weighted=True,
-        min_slippage=None
+        min_slippage=None,
+        min_symbol_count=None
     ):
         """  Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
@@ -222,7 +259,12 @@ class StrategyAnalyzer:
             raise ValueError('No results available. Load results first.')
 
         # Apply common filtering
-        filtered_df = _filter_dataframe(self.results_df, min_avg_trades_per_combination, interval, symbol, min_slippage)
+        filtered_df = _filter_dataframe(self.results_df,
+                                        min_avg_trades_per_combination,
+                                        interval,
+                                        symbol,
+                                        min_slippage,
+                                        min_symbol_count)
 
         # Group by strategy
         grouped = filtered_df.groupby('strategy')
@@ -306,6 +348,10 @@ class StrategyAnalyzer:
             })
 
         aggregated_df = pd.DataFrame(metrics_dict).reset_index()
+
+        # Apply a minimum symbol count filter if specified
+        if min_symbol_count is not None:
+            aggregated_df = aggregated_df[aggregated_df['symbol_count'] >= min_symbol_count]
 
         return aggregated_df
 

@@ -15,7 +15,8 @@ def main():
                                                                 aggregate=True,
                                                                 interval='4h',
                                                                 weighted=True,
-                                                                min_slippage=0.05)
+                                                                min_slippage=0.05,
+                                                                min_symbol_count=3)
 
     # Get top strategies for an average win percentage of a margin for a specific timeframe (weighted)
     top_profit_factor_1h = analyzer.get_top_strategies(metric='average_trade_return_percentage_of_margin',
@@ -24,7 +25,8 @@ def main():
                                                        aggregate=True,
                                                        interval='4h',
                                                        weighted=True,
-                                                       min_slippage=0.05)
+                                                       min_slippage=0.05,
+                                                       min_symbol_count=3)
 
     # Get top strategies for a total return for a specific timeframe
     # top_profit_factor_1h = analyzer.get_top_strategies(metric='total_return_percentage_of_margin',

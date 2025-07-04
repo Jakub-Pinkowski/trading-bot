@@ -222,6 +222,89 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(list(result.columns), list(empty_df.columns))
 
+    def test_filter_by_min_symbol_count(self):
+        """Test filtering by minimum symbol count."""
+        # Create test data with strategies having different symbol counts
+        test_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=0.3)'
+            ],
+            'symbol': ['ES', 'NQ', 'YM', 'ES', 'NQ', 'ES'],
+            'interval': ['1d', '1d', '1d', '4h', '4h', '1h'],
+            'total_trades': [20, 40, 30, 30, 60, 50],
+            # RSI: 3 symbols, EMA: 2 symbols, MACD: 1 symbol
+            'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0, 75.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4]
+        })
+
+        # Filter with min_symbol_count=1 (should keep all strategies)
+        result = _filter_dataframe(test_data, min_symbol_count=1)
+        self.assertEqual(len(result), 6)  # All strategies
+
+        # Filter with min_symbol_count=2 (should keep RSI and EMA)
+        result = _filter_dataframe(test_data, min_symbol_count=2)
+        self.assertEqual(len(result), 5)  # RSI (3 rows) + EMA (2 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+
+        # Filter with min_symbol_count=3 (should keep only RSI)
+        result = _filter_dataframe(test_data, min_symbol_count=3)
+        self.assertEqual(len(result), 3)  # Only RSI (3 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertFalse(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+
+        # Filter with min_symbol_count=4 (should keep no strategies)
+        result = _filter_dataframe(test_data, min_symbol_count=4)
+        self.assertEqual(len(result), 0)
+
+    def test_filter_by_min_symbol_count_combined_with_other_filters(self):
+        """Test filtering by minimum symbol count combined with other filters."""
+        # Create test data with strategies having different symbol counts
+        test_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+            ],
+            'symbol': ['ES', 'NQ', 'YM', 'ES', 'NQ'],
+            'interval': ['1d', '1d', '1d', '4h', '4h'],
+            'total_trades': [20, 40, 30, 30, 60],
+            # RSI: 90 total, 3 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg
+            'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3]
+        })
+
+        # Filter with min_symbol_count=2 and min_avg_trades_per_combination=35
+        # Should keep only EMA (2 symbols, 45 avg trades per combination)
+        result = _filter_dataframe(test_data, min_symbol_count=2, min_avg_trades_per_combination=35)
+        self.assertEqual(len(result), 2)  # Only EMA (2 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('RSI' in s for s in strategies))
+
+        # Filter with min_symbol_count=3 and interval='1d'
+        # Should keep only RSI (3 symbols, all in 1d interval)
+        result = _filter_dataframe(test_data, min_symbol_count=3, interval='1d')
+        self.assertEqual(len(result), 3)  # Only RSI (3 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertFalse(any('EMA' in s for s in strategies))
+
 
 class TestCalculateWeightedWinRate(unittest.TestCase):
     """Tests for the _calculate_weighted_win_rate function."""
@@ -822,7 +905,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer.results_df = None
 
         with self.assertRaises(ValueError):
-            analyzer.get_top_strategies('win_rate', 0)
+            analyzer.get_top_strategies('win_rate', 0, min_symbol_count=None)
 
     @patch('pandas.read_parquet')
     @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
@@ -836,7 +919,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test getting top strategies by win_rate with weighted=True (default)
-        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=True, min_symbol_count=None)
 
         # Verify results for weighted approach
         self.assertEqual(len(weighted_top_strategies), 4)
@@ -847,7 +930,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         mock_save_results.reset_mock()  # Reset mock for next test
 
         # Test getting top strategies by win_rate with weighted=False
-        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, weighted=False, min_symbol_count=None)
 
         # Verify results for a non-weighted approach
         self.assertEqual(len(non_weighted_top_strategies), 4)
@@ -862,9 +945,17 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
         # But when aggregated, they should be different
         mock_save_results.reset_mock()
-        weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=True)
+        weighted_aggregated = analyzer.get_top_strategies('win_rate',
+                                                          0,
+                                                          aggregate=True,
+                                                          weighted=True,
+                                                          min_symbol_count=None)
         mock_save_results.reset_mock()
-        non_weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=False)
+        non_weighted_aggregated = analyzer.get_top_strategies('win_rate',
+                                                              0,
+                                                              aggregate=True,
+                                                              weighted=False,
+                                                              min_symbol_count=None)
 
         # Verify that the aggregated results are different
         self.assertFalse(weighted_aggregated.equals(non_weighted_aggregated))
@@ -880,55 +971,85 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test with min_avg_trades_per_combination filter (weighted=True)
-        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=True, min_symbol_count=None)
         self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with >= 20 trades per combination
         for strategy in weighted_top_strategies['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test with min_avg_trades_per_combination filter (weighted=False)
-        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 20, weighted=False, min_symbol_count=None)
         self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with >= 20 trades per combination
         for strategy in non_weighted_top_strategies['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test with aggregate=True (weighted=True)
-        weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=True)
+        weighted_aggregated = analyzer.get_top_strategies('win_rate',
+                                                          0,
+                                                          aggregate=True,
+                                                          weighted=True,
+                                                          min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 4)  # Aggregated to 4 strategies (each row is a unique strategy)
 
         # Test with aggregate=True (weighted=False)
-        non_weighted_aggregated = analyzer.get_top_strategies('win_rate', 0, aggregate=True, weighted=False)
+        non_weighted_aggregated = analyzer.get_top_strategies('win_rate',
+                                                              0,
+                                                              aggregate=True,
+                                                              weighted=False,
+                                                              min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated), 4)  # Aggregated to 4 strategies (each row is a unique strategy)
 
         # Verify that the aggregated results are different between weighted and non-weighted
         self.assertFalse(weighted_aggregated.equals(non_weighted_aggregated))
 
         # Test with interval filter (weighted=True)
-        weighted_interval = analyzer.get_top_strategies('win_rate', 0, interval='1d', weighted=True)
+        weighted_interval = analyzer.get_top_strategies('win_rate',
+                                                        0,
+                                                        interval='1d',
+                                                        weighted=True,
+                                                        min_symbol_count=None)
         self.assertEqual(len(weighted_interval), 2)  # Only 1d interval
         for strategy in weighted_interval['strategy']:
             self.assertTrue(strategy.startswith('RSI'))
 
         # Test with interval filter (weighted=False)
-        non_weighted_interval = analyzer.get_top_strategies('win_rate', 0, interval='1d', weighted=False)
+        non_weighted_interval = analyzer.get_top_strategies('win_rate',
+                                                            0,
+                                                            interval='1d',
+                                                            weighted=False,
+                                                            min_symbol_count=None)
         self.assertEqual(len(non_weighted_interval), 2)  # Only 1d interval
         for strategy in non_weighted_interval['strategy']:
             self.assertTrue(strategy.startswith('RSI'))
 
         # Test with symbol filter (weighted=True)
-        weighted_symbol = analyzer.get_top_strategies('win_rate', 0, symbol='ES', weighted=True)
+        weighted_symbol = analyzer.get_top_strategies('win_rate', 0, symbol='ES', weighted=True, min_symbol_count=None)
         self.assertEqual(len(weighted_symbol), 2)  # Only ES symbol
 
         # Test with symbol filter (weighted=False)
-        non_weighted_symbol = analyzer.get_top_strategies('win_rate', 0, symbol='ES', weighted=False)
+        non_weighted_symbol = analyzer.get_top_strategies('win_rate',
+                                                          0,
+                                                          symbol='ES',
+                                                          weighted=False,
+                                                          min_symbol_count=None)
         self.assertEqual(len(non_weighted_symbol), 2)  # Only ES symbol
 
         # Test with multiple filters (weighted=True)
-        weighted_multiple = analyzer.get_top_strategies('win_rate', 0, interval='4h', symbol='NQ', weighted=True)
+        weighted_multiple = analyzer.get_top_strategies('win_rate',
+                                                        0,
+                                                        interval='4h',
+                                                        symbol='NQ',
+                                                        weighted=True,
+                                                        min_symbol_count=None)
         self.assertEqual(len(weighted_multiple), 1)  # Only 4h interval and NQ symbol
         self.assertTrue(weighted_multiple['strategy'].iloc[0].startswith('EMA'))
 
         # Test with multiple filters (weighted=False)
-        non_weighted_multiple = analyzer.get_top_strategies('win_rate', 0, interval='4h', symbol='NQ', weighted=False)
+        non_weighted_multiple = analyzer.get_top_strategies('win_rate',
+                                                            0,
+                                                            interval='4h',
+                                                            symbol='NQ',
+                                                            weighted=False,
+                                                            min_symbol_count=None)
         self.assertEqual(len(non_weighted_multiple), 1)  # Only 4h interval and NQ symbol
         self.assertTrue(non_weighted_multiple['strategy'].iloc[0].startswith('EMA'))
 
@@ -1184,7 +1305,11 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test with min_slippage filter (weighted=True)
-        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.15, weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                              0,
+                                                              min_slippage=0.15,
+                                                              weighted=True,
+                                                              min_symbol_count=None)
         self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with slippage >= 0.15
         for strategy in weighted_top_strategies['strategy']:
             self.assertTrue('slippage=0.2' in strategy or 'slippage=0.15' in strategy)
@@ -1194,7 +1319,11 @@ class TestStrategyAnalyzer(unittest.TestCase):
         mock_save_results.reset_mock()
 
         # Test with min_slippage filter (weighted=False)
-        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.15, weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                                  0,
+                                                                  min_slippage=0.15,
+                                                                  weighted=False,
+                                                                  min_symbol_count=None)
         self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with slippage >= 0.15
         for strategy in non_weighted_top_strategies['strategy']:
             self.assertTrue('slippage=0.2' in strategy or 'slippage=0.15' in strategy)
@@ -1204,19 +1333,35 @@ class TestStrategyAnalyzer(unittest.TestCase):
         mock_save_results.reset_mock()
 
         # Test with min_slippage=0.1 filter (weighted=True)
-        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.1, weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                              0,
+                                                              min_slippage=0.1,
+                                                              weighted=True,
+                                                              min_symbol_count=None)
         self.assertEqual(len(weighted_top_strategies), 3)  # Rows with slippage >= 0.1
 
         # Test with min_slippage=0.1 filter (weighted=False)
-        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.1, weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                                  0,
+                                                                  min_slippage=0.1,
+                                                                  weighted=False,
+                                                                  min_symbol_count=None)
         self.assertEqual(len(non_weighted_top_strategies), 3)  # Rows with slippage >= 0.1
 
         # Test with min_slippage=0.3 filter (no matches)
-        weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.3, weighted=True)
+        weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                              0,
+                                                              min_slippage=0.3,
+                                                              weighted=True,
+                                                              min_symbol_count=None)
         self.assertEqual(len(weighted_top_strategies), 0)  # No rows with slippage >= 0.3
 
         # Test with min_slippage=0.3 filter (no matches)
-        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate', 0, min_slippage=0.3, weighted=False)
+        non_weighted_top_strategies = analyzer.get_top_strategies('win_rate',
+                                                                  0,
+                                                                  min_slippage=0.3,
+                                                                  weighted=False,
+                                                                  min_symbol_count=None)
         self.assertEqual(len(non_weighted_top_strategies), 0)  # No rows with slippage >= 0.3
 
         # Test with aggregate=True and min_slippage filter (weighted=True)
@@ -1224,7 +1369,8 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                           0,
                                                           aggregate=True,
                                                           min_slippage=0.15,
-                                                          weighted=True)
+                                                          weighted=True,
+                                                          min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 2)  # Only EMA strategies have slippage >= 0.15
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
@@ -1234,13 +1380,19 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                               0,
                                                               aggregate=True,
                                                               min_slippage=0.15,
-                                                              weighted=False)
+                                                              weighted=False,
+                                                              min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA strategies have slippage >= 0.15
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test with multiple filters including min_slippage (weighted=True)
-        weighted_multiple = analyzer.get_top_strategies('win_rate', 0, interval='4h', min_slippage=0.15, weighted=True)
+        weighted_multiple = analyzer.get_top_strategies('win_rate',
+                                                        0,
+                                                        interval='4h',
+                                                        min_slippage=0.15,
+                                                        weighted=True,
+                                                        min_symbol_count=None)
         self.assertEqual(len(weighted_multiple), 2)  # EMA strategies with 4h interval and slippage >= 0.15
         for strategy in weighted_multiple['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
@@ -1250,10 +1402,108 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                             0,
                                                             interval='4h',
                                                             min_slippage=0.15,
-                                                            weighted=False)
+                                                            weighted=False,
+                                                            min_symbol_count=None)
         self.assertEqual(len(non_weighted_multiple), 2)  # EMA strategies with 4h interval and slippage >= 0.15
         for strategy in non_weighted_multiple['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
+
+    @patch('pandas.read_parquet')
+    @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
+    def test_get_top_strategies_with_min_symbol_count(self, mock_save_results, mock_read_parquet):
+        """Test get_top_strategies with min_symbol_count filter for both weighted and non-weighted approaches."""
+        # Create test data with strategies having different symbol counts
+        test_data = pd.DataFrame({
+            'strategy': [
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'EMA(short=9,long=21,rollover=False,trailing=None,slippage=0.2)',
+                'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=0.3)'
+            ],
+            'symbol': ['ES', 'NQ', 'YM', 'ES', 'NQ', 'ES'],
+            'interval': ['1d', '1d', '1d', '4h', '4h', '1h'],
+            'total_trades': [20, 40, 30, 30, 60, 50],
+            # RSI: 3 symbols, EMA: 2 symbols, MACD: 1 symbol
+            'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0, 75.0],
+            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
+            'average_trade_return_percentage_of_margin': [0.25, 0.175, 0.2, 0.133, 0.1, 0.16],
+            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4],
+            'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            'total_wins_percentage_of_margin': [12.0, 25.2, 18.525, 13.2, 27.3, 45.0],
+            'total_losses_percentage_of_margin': [-4.0, -4.8, -4.725, -10.8, -7.875, -5.0],
+            'profit_factor': [3.0, 5.25, 3.92, 1.22, 3.47, 9.0],
+            'maximum_drawdown_percentage': [2.0, 1.5, 1.8, 2.5, 1.8, 1.2],
+            'sharpe_ratio': [1.5, 1.8, 1.65, 1.2, 1.6, 2.0],
+            'sortino_ratio': [2.0, 2.5, 2.25, 1.8, 2.2, 2.8],
+            'calmar_ratio': [2.5, 4.67, 3.33, 1.6, 3.33, 6.67],
+            'value_at_risk': [1.0, 0.8, 0.9, 1.2, 0.9, 0.6],
+            'expected_shortfall': [1.5, 1.2, 1.35, 1.8, 1.4, 0.9],
+            'ulcer_index': [0.5, 0.4, 0.45, 0.6, 0.3, 0.2]
+        })
+
+        # Setup mocks
+        mock_read_parquet.return_value = test_data
+        mock_save_results.reset_mock()
+
+        # Initialize analyzer
+        analyzer = StrategyAnalyzer()
+
+        # Test with min_symbol_count=1 (should keep all strategies)
+        result = analyzer.get_top_strategies('win_rate', 0, min_symbol_count=1, weighted=True)
+        self.assertEqual(len(result), 6)  # All strategies
+        mock_save_results.reset_mock()
+
+        # Test with min_symbol_count=2 (should keep RSI and EMA)
+        result = analyzer.get_top_strategies('win_rate', 0, min_symbol_count=2, weighted=True)
+        self.assertEqual(len(result), 5)  # RSI (3 rows) + EMA (2 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+        mock_save_results.reset_mock()
+
+        # Test with min_symbol_count=3 (should keep only RSI)
+        result = analyzer.get_top_strategies('win_rate', 0, min_symbol_count=3, weighted=True)
+        self.assertEqual(len(result), 3)  # Only RSI (3 rows)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertFalse(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+        mock_save_results.reset_mock()
+
+        # Test with min_symbol_count=4 (should keep no strategies)
+        result = analyzer.get_top_strategies('win_rate', 0, min_symbol_count=4, weighted=True)
+        self.assertEqual(len(result), 0)
+        mock_save_results.reset_mock()
+
+        # Test with aggregate=True and min_symbol_count=2 (weighted=True)
+        result = analyzer.get_top_strategies('win_rate', 0, aggregate=True, min_symbol_count=2, weighted=True)
+        self.assertEqual(len(result), 2)  # RSI and EMA strategies aggregated
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+        mock_save_results.reset_mock()
+
+        # Test with aggregate=True and min_symbol_count=2 (weighted=False)
+        result = analyzer.get_top_strategies('win_rate', 0, aggregate=True, min_symbol_count=2, weighted=False)
+        self.assertEqual(len(result), 2)  # RSI and EMA strategies aggregated
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('RSI' in s for s in strategies))
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
+        mock_save_results.reset_mock()
+
+        # Test with combined filters: min_symbol_count=2 and min_avg_trades_per_combination=35
+        result = analyzer.get_top_strategies('win_rate', 35, min_symbol_count=2, weighted=True)
+        self.assertEqual(len(result), 2)  # Only EMA (2 symbols, 45 avg trades per combination)
+        strategies = result['strategy'].unique()
+        self.assertTrue(any('EMA' in s for s in strategies))
+        self.assertFalse(any('RSI' in s for s in strategies))
+        self.assertFalse(any('MACD' in s for s in strategies))
 
 
 class TestParseStrategyName(unittest.TestCase):
