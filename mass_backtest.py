@@ -97,9 +97,9 @@ def main():
 
     # Ichimoku Cloud is a comprehensive indicator that provides information on support/resistance, trend direction, and momentum
     tester.add_ichimoku_cloud_tests(
-        tenkan_periods=[7, 8, 9, 10, 11, 12, 13, 14, 15],
-        kijun_periods=[18, 22, 26, 30],
-        senkou_span_b_periods=[42, 52, 60, 80],
+        tenkan_periods=[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+        kijun_periods=[18, 19, 20, 21, 22, 26, 27, 28, 29, 30],
+        senkou_span_b_periods=[42, 43, 44, 52, 60, 80],
         displacements=[10, 22, 26, 30],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
