@@ -119,7 +119,7 @@ trading-bot/
 # TODO [LOW]: Add automatic Google Sheets integration
 
 # Backtesting
-# NOTE: I've got a date gap for the 5m interval from 20.05 onward
+# NOTE: I've got a date gap for the 5m interval from 20.05 onward, different for each symbol
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
