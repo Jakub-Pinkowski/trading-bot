@@ -19,7 +19,7 @@ MarkupSafe==3.0.2
 numpy==2.3.0
 openpyxl==3.1.5
 packaging==25.0
-pandas==2.3.0
+pandas==2.3.1
 pip-tools==7.4.1
 pluggy==1.6.0
 pyarrow==20.0.0
