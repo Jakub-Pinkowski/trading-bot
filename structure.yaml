@@ -125,6 +125,7 @@ trading-bot/
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Update margin requirements on a monthly basis as they change over time [last update in 05.2025]
+# TODO [LOW]: Download new historic data on a monthly basis [last update in 05.2025]
 # TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
 # TODO [LOW]: Add strategy performance heatmaps
