@@ -22,7 +22,7 @@ packaging==25.0
 pandas==2.3.3
 pip-tools==7.5.1
 pluggy==1.6.0
-pyarrow==21.0.0
+pyarrow==22.0.0
 Pygments==2.19.2
 pyproject_hooks==1.2.0
 pytest==8.4.2
