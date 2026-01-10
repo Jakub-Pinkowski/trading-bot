@@ -22,6 +22,7 @@ def get_logger(name='app'):
 
     # Add handlers to the logger in the correct order
     if not logger.handlers:
+        logger.propagate = False
         if not is_test_environment:
             # File handler for DEBUG only (logs DEBUG)
             debug_handler = logging.FileHandler(os.path.join(LOGS_DIR, 'debug.log'))
