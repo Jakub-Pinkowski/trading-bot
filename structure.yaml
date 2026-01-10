@@ -115,6 +115,7 @@ trading-bot/
 └── tw_fetching.py                                # TradingView data fetching
 
 # Analysis
+# NOTE: The whole analysis is deprecated, to be rewritten to match backtesting structure
 # TODO [MEDIUM]: Rewrite analysis logic using classes
 # TODO [LOW]: Add automatic Google Sheets integration
 
