@@ -121,13 +121,15 @@ trading-bot/
 
 # Backtesting
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
-# NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
+# NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol\
+# NOTE: Margin requirements change over time so profit estimation is not fully accurate
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [LOW]: Add advanced portfolio-level backtesting
-# TODO [LOW]: Update margin requirements on a monthly basis as they change over time [last update in 05.2025]
-# TODO [LOW]: Download new historic data on a monthly basis [last update in 05.2025]
+# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.01.10]
+# TODO [LOW]: Update margin requirements on a monthly basis [last update on 2026.01.10] ✓
+# TODO [LOW]: Update contract switch dates [last update in 01.2026]
 # TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
 # TODO [LOW]: Add strategy performance heatmaps
