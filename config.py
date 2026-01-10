@@ -104,7 +104,7 @@ CONTRACT_MULTIPLIERS = {
     'ZW': 50,
 }
 
-# NOTE: Short Overnight Initial as it's the highest
+# NOTE: Only used once to calculate the average margin as a percent of the contract value
 MARGIN_REQUIREMENTS = {
     '6A': 2344.58,
     '6B': 2520.64,
