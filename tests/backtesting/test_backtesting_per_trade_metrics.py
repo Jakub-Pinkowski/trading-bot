@@ -26,7 +26,6 @@ class TestCalculateTradeMetrics:
     """Tests for the calculate_trade_metrics function."""
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_long_trade_calculation(self):
         """Test calculation of metrics for a long trade."""
         # Create a sample-long trade
@@ -44,16 +43,18 @@ class TestCalculateTradeMetrics:
         pnl_points = 10.0
         gross_pnl = 500.0  # 10 points * 50 multiplier
         net_pnl = gross_pnl - COMMISSION_PER_TRADE
-        margin_requirement = 16889.88
+
+        # Expected margin: 4200 * 50 * 0.08 = 16800.0
+        expected_margin = 16800.0
 
         # Verify the calculated metrics that are returned
         assert metrics['net_pnl'] == net_pnl
-        assert metrics['return_percentage_of_margin'] == round((net_pnl / margin_requirement) * 100, 2)
+        assert metrics['margin_requirement'] == expected_margin
+        assert metrics['return_percentage_of_margin'] == round((net_pnl / expected_margin) * 100, 2)
         assert metrics['return_percentage_of_contract'] == round((net_pnl / (4200.0 * 50)) * 100, 2)
         assert metrics['duration_hours'] == 24
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'CL': 1000})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'CL': 16250})
     def test_short_trade_calculation(self):
         """Test calculation of metrics for a short trade."""
         # Create a sample short trade
@@ -71,15 +72,17 @@ class TestCalculateTradeMetrics:
         pnl_points = 2.0  # For short: entry_price - exit_price
         gross_pnl = 2000.0  # 2 points * 1000 multiplier
         net_pnl = gross_pnl - COMMISSION_PER_TRADE
-        margin_requirement = 16250
+
+        # Expected margin: 75 * 1000 * 0.25 = 18750.0
+        expected_margin = 18750.0
 
         # Verify the calculated metrics that are returned
         assert metrics['net_pnl'] == net_pnl
-        assert metrics['return_percentage_of_margin'] == round((net_pnl / margin_requirement) * 100, 2)
+        assert metrics['margin_requirement'] == expected_margin
+        assert metrics['return_percentage_of_margin'] == round((net_pnl / expected_margin) * 100, 2)
         assert metrics['return_percentage_of_contract'] == round((net_pnl / (75.0 * 1000)) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'GC': 100})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'GC': 25338.86})
     def test_breakeven_trade(self):
         """Test calculation of metrics for a breakeven trade."""
         # Create a sample breakeven trade (commission will make it slightly negative)
@@ -98,7 +101,6 @@ class TestCalculateTradeMetrics:
         assert metrics['return_percentage_of_margin'] < 0  # Should be negative due to commission
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'NQ': 20})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'NQ': 24458.12})
     def test_losing_trade(self):
         """Test calculation of metrics for a losing trade."""
         # Create a sample losing trade
@@ -117,7 +119,6 @@ class TestCalculateTradeMetrics:
         assert metrics['return_percentage_of_margin'] < 0
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_missing_contract_multiplier(self):
         """Test error handling when contract multiplier is missing."""
         trade = create_sample_trade()
@@ -126,18 +127,8 @@ class TestCalculateTradeMetrics:
         with pytest.raises(ValueError, match="No contract multiplier found for symbol: ES"):
             calculate_trade_metrics(trade, 'ES')
 
-    @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {})
-    def test_missing_margin_requirement(self):
-        """Test error handling when margin requirement is missing."""
-        trade = create_sample_trade()
-
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="No margin requirement found for symbol: ES"):
-            calculate_trade_metrics(trade, 'ES')
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 0})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_zero_contract_multiplier(self):
         """Test error handling when contract multiplier is zero."""
         trade = create_sample_trade()
@@ -146,30 +137,18 @@ class TestCalculateTradeMetrics:
         with pytest.raises(ValueError, match="No contract multiplier found for symbol: ES"):
             calculate_trade_metrics(trade, 'ES')
 
-    @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 0})
-    def test_zero_margin_requirement(self):
-        """Test error handling when margin requirement is zero."""
-        trade = create_sample_trade()
-
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="No margin requirement found for symbol: ES"):
-            calculate_trade_metrics(trade, 'ES')
 
     def test_invalid_trade_side(self):
         """Test error handling when trade side is invalid."""
         # Create a trade with an invalid side
         trade = create_sample_trade(side='invalid')
 
-        # Mock the contract multiplier and margin requirement
         with patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50}):
-            with patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88}):
-                # Verify that ValueError is raised
-                with pytest.raises(ValueError, match="Unknown trade side: invalid"):
-                    calculate_trade_metrics(trade, 'ES')
+            # Verify that ValueError is raised
+            with pytest.raises(ValueError, match="Unknown trade side: invalid"):
+                calculate_trade_metrics(trade, 'ES')
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_trade_duration_calculation(self):
         """Test calculation of trade duration."""
         # Create trades with different durations
@@ -185,7 +164,6 @@ class TestCalculateTradeMetrics:
         assert long_metrics['duration_hours'] == 48
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_trade_copy_not_modified(self):
         """Test that the original trade dictionary is not modified."""
         # Create a sample trade
@@ -199,7 +177,6 @@ class TestCalculateTradeMetrics:
         assert original_trade == original_trade_copy
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_extreme_price_values(self):
         """Test calculation of metrics with extreme price values."""
         # Test with very large prices
@@ -214,12 +191,15 @@ class TestCalculateTradeMetrics:
         large_pnl_points = 100.0
         large_gross_pnl = 5000.0  # 100 points * 50 multiplier
         large_net_pnl = large_gross_pnl - COMMISSION_PER_TRADE
-        large_margin_requirement = 16889.88
+
+        # Expected margin: 100,000 * 50 * 0.08 = 400000.0
+        large_margin_requirement = 400000.0
 
         # Verify calculations with large prices
         assert large_price_metrics['net_pnl'] == large_net_pnl
+        assert large_price_metrics['margin_requirement'] == large_margin_requirement
         assert large_price_metrics['return_percentage_of_margin'] == round((
-                                                                                   large_net_pnl / large_margin_requirement) * 100,
+                                                                                       large_net_pnl / large_margin_requirement) * 100,
                                                                            2)
         assert large_price_metrics['return_percentage_of_contract'] == round((large_net_pnl / (100000.0 * 50)) * 100, 2)
 
@@ -235,17 +215,19 @@ class TestCalculateTradeMetrics:
         small_pnl_points = 0.005
         small_gross_pnl = 0.25  # 0.005 points * 50 multiplier
         small_net_pnl = small_gross_pnl - COMMISSION_PER_TRADE
-        small_margin_requirement = 16889.88
+
+        # Expected margin: 0.01 * 50 * 0.08 = 0.04
+        small_margin_requirement = 0.04
 
         # Verify calculations with small prices
         assert small_price_metrics['net_pnl'] == small_net_pnl
+        assert small_price_metrics['margin_requirement'] == small_margin_requirement
         assert small_price_metrics['return_percentage_of_margin'] == round((
-                                                                                   small_net_pnl / small_margin_requirement) * 100,
+                                                                                       small_net_pnl / small_margin_requirement) * 100,
                                                                            2)
         assert small_price_metrics['return_percentage_of_contract'] == round((small_net_pnl / (0.01 * 50)) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_extreme_duration_trades(self):
         """Test calculation of metrics with extreme duration values."""
         # Test with a very short duration (seconds)
@@ -264,8 +246,6 @@ class TestCalculateTradeMetrics:
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS',
            {'ES': 50, 'NQ': 20, 'CL': 1000, 'GC': 100, 'ZB': 1000})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS',
-           {'ES': 16889.88, 'NQ': 24458.12, 'CL': 16250, 'GC': 25338.86, 'ZB': 5060.0})
     def test_multiple_symbols(self):
         """Test calculation of metrics for different symbols with different multipliers and margin requirements."""
         # Create sample trades for different symbols
@@ -283,35 +263,35 @@ class TestCalculateTradeMetrics:
         zb_metrics = calculate_trade_metrics(zb_trade, 'ZB')
 
         # Calculate expected values for each symbol
-        # ES
+        # ES (Indices: 8%)
         es_pnl_points = 10.0
         es_gross_pnl = 500.0  # 10 points * 50 multiplier
         es_net_pnl = es_gross_pnl - COMMISSION_PER_TRADE
-        es_margin_requirement = 16889.88
+        es_margin_requirement = 4200.0 * 50 * 0.08
 
-        # NQ
+        # NQ (Indices: 8%)
         nq_pnl_points = 50.0
         nq_gross_pnl = 1000.0  # 50 points * 20 multiplier
         nq_net_pnl = nq_gross_pnl - COMMISSION_PER_TRADE
-        nq_margin_requirement = 24458.12
+        nq_margin_requirement = 15000.0 * 20 * 0.08
 
-        # CL
+        # CL (Energies: 25%)
         cl_pnl_points = 2.0
         cl_gross_pnl = 2000.0  # 2 points * 1000 multiplier
         cl_net_pnl = cl_gross_pnl - COMMISSION_PER_TRADE
-        cl_margin_requirement = 16250
+        cl_margin_requirement = 75.0 * 1000 * 0.25
 
-        # GC
+        # GC (Metals: 12%)
         gc_pnl_points = 10.0
         gc_gross_pnl = 1000.0  # 10 points * 100 multiplier
         gc_net_pnl = gc_gross_pnl - COMMISSION_PER_TRADE
-        gc_margin_requirement = 25338.86
+        gc_margin_requirement = 1800.0 * 100 * 0.12
 
-        # ZB
+        # ZB (Indices: 8%)
         zb_pnl_points = 0.5
         zb_gross_pnl = 500.0  # 0.5 points * 1000 multiplier
         zb_net_pnl = zb_gross_pnl - COMMISSION_PER_TRADE
-        zb_margin_requirement = 5060.0
+        zb_margin_requirement = 110.0 * 1000 * 0.08
 
         # Verify the calculated metrics for each symbol
         # ES
@@ -335,7 +315,6 @@ class TestCalculateTradeMetrics:
         assert zb_metrics['return_percentage_of_margin'] == round((zb_net_pnl / zb_margin_requirement) * 100, 2)
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_multiple_trades_analysis(self):
         """Test analysis of multiple trades to calculate aggregate metrics."""
         # Create a series of trades
@@ -355,6 +334,10 @@ class TestCalculateTradeMetrics:
         expected_gross_pnl = [p * 50 for p in expected_pnl_points]  # Multiply by contract multiplier
         expected_net_pnl = [g - COMMISSION_PER_TRADE for g in expected_gross_pnl]
 
+        # Expected margins (8%)
+        # 4200*50*0.08=16800, 4220*50*0.08=16880, 4190*50*0.08=16760, 4170*50*0.08=16680, 4200*50*0.08=16800
+        expected_margins = [4200 * 50 * 0.08, 4220 * 50 * 0.08, 4190 * 50 * 0.08, 4170 * 50 * 0.08, 4200 * 50 * 0.08]
+
         # Calculate aggregate metrics
         total_net_pnl = sum(expected_net_pnl)
         win_count = sum(1 for pnl in expected_gross_pnl if pnl > 0)
@@ -367,6 +350,10 @@ class TestCalculateTradeMetrics:
         assert loss_count == 2
         assert win_rate == 0.6
         assert sum(metric['net_pnl'] for metric in trade_metrics) == total_net_pnl
+
+        # Verify margin requirements
+        for i, metric in enumerate(trade_metrics):
+            assert metric['margin_requirement'] == expected_margins[i]
 
         # Calculate average metrics
         avg_net_pnl = total_net_pnl / len(trades)
@@ -387,7 +374,6 @@ class TestCalculateTradeMetrics:
         assert profit_factor == 1.5
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS', {'ES': 16889.88})
     def test_specific_trade_patterns(self):
         """Test calculation of metrics for specific trade patterns."""
         # Test a trade with a large gap (e.g., overnight gap)
@@ -443,8 +429,6 @@ class TestCalculateTradeMetrics:
         assert large_profit_metrics['net_pnl'] == large_profit_net_pnl
 
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 50, 'NQ': 20, 'CL': 1000, 'GC': 100})
-    @patch('app.backtesting.per_trade_metrics.MARGIN_REQUIREMENTS',
-           {'ES': 16889.88, 'NQ': 24458.12, 'CL': 16250, 'GC': 25338.86})
     def test_real_life_trading_scenarios(self):
         """Test calculation of metrics for real-life trading scenarios."""
 

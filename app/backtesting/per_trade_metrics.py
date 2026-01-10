@@ -1,12 +1,51 @@
 from app.utils.logger import get_logger
 from app.utils.math_utils import calculate_percentage
-from config import CONTRACT_MULTIPLIERS, MARGIN_REQUIREMENTS
+from config import CONTRACT_MULTIPLIERS
 
 logger = get_logger('backtesting/per_trade_metrics')
 
 # Fixed commission per trade in dollars
 COMMISSION_PER_TRADE = 4
 
+# Target margin-to-contract-value ratios based on asset classes
+# These ratios are derived from current market data (01.2026) to provide a realistic historical estimate
+MARGIN_RATIOS = {
+    'energies': 0.25,  # ~25% (CL, NG, MCL, MNG,)
+    'metals': 0.12,  # ~12% (GC, SI, HG, PL, MGC, SIL, MHG)
+    'indices': 0.08,  # ~8%  (ES, NQ, YM, RTY, MES, MNQ, MYM, ZB)
+    'forex': 0.04,  # ~4%  (6E, 6J, 6B, 6A, 6C, 6S, M6E, M6J, M6B, M6A, M6C, M6S)
+    'crypto': 0.40,  # ~40% (BTC, ETH, MBT, MET)
+    'grains': 0.08,  # ~8%  (ZC, ZW, ZS, ZL, XC, XK, XW, MZC, MZL, MZS, MZW)
+    'softs': 0.10,  # ~10% (SB, KC, CC)
+    'default': 0.10  # ~10% Default fallback
+}
+
+
+def get_symbol_category(symbol):
+    """Categorize symbols into asset classes to apply appropriate margin ratios."""
+    categories = {
+        'energies': ['CL', 'NG', 'MCL', 'MNG', 'HO', 'RB'],
+        'metals': ['GC', 'SI', 'HG', 'PL', 'MGC', 'MHG', 'SIL'],
+        'indices': ['ES', 'NQ', 'YM', 'RTY', 'MES', 'MNQ', 'MYM', 'ZB'],
+        'forex': ['6E', '6J', '6B', '6A', '6C', '6S', 'M6E', 'M6J', 'M6B', 'M6A', 'M6C', 'M6S'],
+        'crypto': ['BTC', 'ETH', 'MBT', 'MET'],
+        'grains': ['ZC', 'ZW', 'ZS', 'ZL', 'XC', 'XK', 'XW', 'MZC', 'MZL', 'MZS', 'MZW'],
+        'softs': ['SB', 'KC', 'CC']
+    }
+    for category, symbols in categories.items():
+        if symbol in symbols:
+            return category
+    return 'default'
+
+
+def estimate_margin(symbol, entry_price, contract_multiplier):
+    """
+    Estimate the margin requirement for a symbol at any given time based on its contract value.
+    """
+    category = get_symbol_category(symbol)
+    ratio = MARGIN_RATIOS.get(category, MARGIN_RATIOS['default'])
+    contract_value = entry_price * contract_multiplier
+    return contract_value * ratio
 
 def calculate_trade_metrics(trade, symbol):
     """ Calculate metrics for a single trade. """
@@ -20,11 +59,8 @@ def calculate_trade_metrics(trade, symbol):
         logger.error(f'No contract multiplier found for symbol: {symbol}')
         raise ValueError(f'No contract multiplier found for symbol: {symbol}')
 
-    # Get the margin requirement for the symbol
-    margin_requirement = MARGIN_REQUIREMENTS.get(symbol)
-    if margin_requirement is None or margin_requirement == 0:
-        logger.error(f'No margin requirement found for symbol: {symbol}')
-        raise ValueError(f'No margin requirement found for symbol: {symbol}')
+    # Estimate the margin requirement for the symbol based on the contract at the time of entry
+    margin_requirement = estimate_margin(symbol, trade['entry_price'], contract_multiplier)
 
     # ===== TRADE DETAILS =====
     # Calculate trade duration
