@@ -42,6 +42,10 @@ class SummaryMetrics:
         average_loss_percentage_of_margin = self._calculate_average_loss_percentage_of_margin()
         commission_percentage_of_margin = self._calculate_commission_percentage_of_margin()
 
+        # Contract-based metrics
+        total_return_percentage_of_contract = self.total_return_contract
+        average_trade_return_percentage_of_contract = safe_average([self.total_return_contract], self.total_trades)
+
         # Calculate total wins and losses for aggregation
         total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
         total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
@@ -72,6 +76,10 @@ class SummaryMetrics:
             'commission_percentage_of_margin': round(commission_percentage_of_margin, 2),
             'total_wins_percentage_of_margin': round(total_wins_percentage_of_margin, 2),
             'total_losses_percentage_of_margin': round(total_losses_percentage_of_margin, 2),
+
+            # Contract-based metrics
+            'total_return_percentage_of_contract': round(total_return_percentage_of_contract, 2),
+            'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
 
             # Risk metrics
             'profit_factor': round(profit_factor, 2),
@@ -122,6 +130,11 @@ class SummaryMetrics:
         print(f'Average Loss Percentage of Margin: {RED}{summary["average_loss_percentage_of_margin"]}%{RESET}')
         print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')
 
+        # Contract-based metrics
+        print('\n--- CONTRACT-BASED METRICS ---')
+        print(f'Total Return Percentage of Contract: {color}{summary["total_return_percentage_of_contract"]}%{RESET}')
+        print(f'Average Trade Return Percentage of Contract: {color}{summary["average_trade_return_percentage_of_contract"]}%{RESET}')
+
         # ===== RISK METRICS =====
         print('\n--- RISK METRICS ---')
         print(f'Profit Factor: {summary.get("profit_factor", 0)}')
@@ -159,6 +172,7 @@ class SummaryMetrics:
 
         # Cache commonly used values
         self.total_return = sum(trade['return_percentage_of_margin'] for trade in self.trades)
+        self.total_return_contract = sum(trade['return_percentage_of_contract'] for trade in self.trades)
         self.total_margin_used = sum(trade.get('margin_requirement', 0) for trade in self.trades)
         self.max_drawdown, self.maximum_drawdown_percentage = self._calculate_max_drawdown()
 

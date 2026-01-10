@@ -9,6 +9,7 @@ from app.backtesting.summary_metrics import SummaryMetrics
 def create_sample_trade(
     net_pnl=100.0,
     return_percentage=1.0,
+    return_percentage_contract=0.1,
     duration_hours=24,
     margin_requirement=10000.0,
     commission=4.0
@@ -24,6 +25,7 @@ def create_sample_trade(
         'net_pnl': net_pnl,
         'gross_pnl': net_pnl + commission,
         'return_percentage_of_margin': return_percentage,
+        'return_percentage_of_contract': return_percentage_contract,
         'margin_requirement': margin_requirement,
         'commission': commission
     }
@@ -679,26 +681,31 @@ class TestCalculateMaxConsecutive:
         trades.append({
             'date': base_date,
             'return_percentage_of_margin': 1.0,  # Win
+            'return_percentage_of_contract': 0.1,
             'net_pnl': 100.0
         })
         trades.append({
             'date': base_date + timedelta(days=1),
             'return_percentage_of_margin': 2.0,  # Win
+            'return_percentage_of_contract': 0.2,
             'net_pnl': 200.0
         })
         trades.append({
             'date': base_date + timedelta(days=2),
             'return_percentage_of_margin': -0.5,  # Loss
+            'return_percentage_of_contract': -0.05,
             'net_pnl': -50.0
         })
         trades.append({
             'date': base_date + timedelta(days=3),
             'return_percentage_of_margin': -0.6,  # Loss
+            'return_percentage_of_contract': -0.06,
             'net_pnl': -60.0
         })
         trades.append({
             'date': base_date + timedelta(days=4),
             'return_percentage_of_margin': 3.0,  # Win
+            'return_percentage_of_contract': 0.3,
             'net_pnl': 300.0
         })
 
@@ -1210,6 +1217,10 @@ class TestPrintSummaryMetrics:
             'average_loss_percentage_of_margin': -1.0,
             'commission_percentage_of_margin': 0.04,
 
+            # Contract-based metrics
+            'total_return_percentage_of_contract': 0.0,
+            'average_trade_return_percentage_of_contract': 0.0,
+
             # Risk metrics
             'profit_factor': 1.0,
             'maximum_drawdown_percentage': 1.0,
@@ -1260,6 +1271,10 @@ class TestPrintSummaryMetrics:
             'average_win_percentage_of_margin': 1.0,
             'average_loss_percentage_of_margin': -0.5,
             'commission_percentage_of_margin': 0.04,
+
+            # Contract-based metrics
+            'total_return_percentage_of_contract': 0.5,
+            'average_trade_return_percentage_of_contract': 0.05,
 
             # Risk metrics
             'profit_factor': 3.5,
@@ -1334,6 +1349,10 @@ class TestPrintSummaryMetrics:
             'average_win_percentage_of_margin': 0.5,
             'average_loss_percentage_of_margin': -1.0,
             'commission_percentage_of_margin': 0.04,
+
+            # Contract-based metrics
+            'total_return_percentage_of_contract': -0.5,
+            'average_trade_return_percentage_of_contract': -0.05,
 
             # Risk metrics
             'profit_factor': 0.3,
@@ -1509,18 +1528,21 @@ class TestPrivateHelperMethods:
                 'entry_time': base_date,
                 'exit_time': base_date + timedelta(hours=1),
                 'return_percentage_of_margin': 1.0,
+                'return_percentage_of_contract': 0.1,
                 'net_pnl': 100.0
             },
             {
                 'entry_time': base_date + timedelta(hours=2),
                 'exit_time': base_date + timedelta(hours=3),
                 'return_percentage_of_margin': -0.5,
+                'return_percentage_of_contract': -0.05,
                 'net_pnl': -50.0
             },
             {
                 'entry_time': base_date + timedelta(hours=4),
                 'exit_time': base_date + timedelta(hours=5),
                 'return_percentage_of_margin': 2.0,
+                'return_percentage_of_contract': 0.2,
                 'net_pnl': 200.0
             }
         ]

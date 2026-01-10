@@ -1227,7 +1227,9 @@ class TestMassTester:
             'strategy',
             'total_trades',
             'win_rate',
-
+            # Contract-based metrics
+            'total_return_percentage_of_contract',
+            'average_trade_return_percentage_of_contract',
             # Percentage-based metrics
             'total_return_percentage_of_margin',
             'average_trade_return_percentage_of_margin',
@@ -1236,7 +1238,6 @@ class TestMassTester:
             'commission_percentage_of_margin',
             'total_wins_percentage_of_margin',
             'total_losses_percentage_of_margin',
-
             # Risk metrics
             'profit_factor',
             'maximum_drawdown_percentage',

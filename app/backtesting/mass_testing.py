@@ -429,6 +429,9 @@ class MassTester:
             'strategy',
             'total_trades',
             'win_rate',
+            # Contract-based metrics
+            'total_return_percentage_of_contract',
+            'average_trade_return_percentage_of_contract',
             # Percentage-based metrics
             'total_return_percentage_of_margin',
             'average_trade_return_percentage_of_margin',
