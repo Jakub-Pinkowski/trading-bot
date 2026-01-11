@@ -71,7 +71,7 @@ trading-bot/
 ├── data/
 │   ├── alerts/                                   # Alerts data from TradingView and IBKR
 │   │   ├── ibkr_alerts/                          # IBKR alerts
-│   │   ├── trades/                               # IBKR trades
+│   │   ├── trades/                               # Trades
 │   │   └── tw_alerts/                            # TradingView alerts
 │   ├── analysis/                                 # Performance analysis
 │   │   ├── analysis_ibkr_alerts/                 # Performance analysis based on IBKR alerts
@@ -130,6 +130,7 @@ trading-bot/
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.01.10]
 # TODO [LOW]: Update contract switch dates [last update in 2025.05]
+# TODO [LOW]: Update contracts ids [last update in 2025.05]
 # TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
 # TODO [LOW]: Add strategy performance heatmaps
