@@ -67,24 +67,24 @@ trading-bot/
 │   │   ├── generic_utils.py                      # Generic utilities
 │   │   └── logger.py                             # Logger setup           
 │   └── __init__.py
-├── backtesting_data/                             # Backtesting results data
-│   ├── cache/                                    # Cache storage for backtesting
-│   └── csv_results/                              # CSV results from backtesting
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
-│   ├── analysis/                                 # Performance analysis
+│   ├── analysis/                                 # Performance analysis based on the alerts
 │   │   ├── ibkr_alerts/                          # Performance analysis based on IBKR alerts
 │   │   ├── trades/                               # Performance analysis based on trades
 │   │   └── tw_alerts/                            # Performance analysis based on TradingView alerts
+│   ├── backtesting/                              # Backtesting results data
+│   │   ├── cache/                                # Cache storage for backtesting
+│   │   └── csv_results/                          # CSV results from backtesting
 │   ├── contracts/                                # Contracts ids
-│   └── raw_data/                                 # Raw data from TradingView and IBKR
+│   ├── historical_data/                          # Raw historical data from TradingView
+│   │   ├── 1!/                                   # Front month
+│   │   ├── 2!/                                   # Next month
+│   │   └── contract_switch_dates.yaml            # Configuration for contract switch dates
+│   └── alerts/                                   # Raw alerts data from TradingView and IBKR
 │       ├── ibkr_alerts/                          # Raw IBKR alerts data
 │       ├── trades/                               # Raw trades data
 │       └── tw_alerts/                            # Raw TradingView alerts
-├── historical_data/                              # Raw historical data from TradingView
-│   ├── 1!/                                       # Front month
-│   ├── 2!/                                       # Next month
-│   └── contract_switch_dates.yaml                # Configuration for contract switch dates
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
