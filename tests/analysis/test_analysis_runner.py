@@ -202,7 +202,7 @@ def test_run_analysis_with_all_data(
     mock_clean_tw_alerts.assert_called_once()
     mock_clean_trades.assert_called_once()
 
-    # Verify match_trades was called for ibkr_alerts, tw_alerts, and trades
+    # Verify match_trades was called for ibkr_alerts, TradingView alerts, and trades
     assert mock_match_trades.call_count == 3
     mock_match_trades.assert_any_call(sample_cleaned_alerts, is_ibkr_alerts=True)
     # The actual DataFrame passed might be slightly different due to processing, so we check positional/keyword args
@@ -320,7 +320,7 @@ def test_run_analysis_with_only_tw_alerts(
 
     mock_calculate_dataset_metrics.return_value = sample_dataset_metrics
 
-    # Mock is_nonempty to return True for TW alerts and False for others
+    # Mock is_nonempty to return True for TradingView alerts and False for others
     mock_is_nonempty.side_effect = lambda x: not x.empty if isinstance(x, pd.DataFrame) else bool(x)
 
     # Call the function
@@ -331,14 +331,14 @@ def test_run_analysis_with_only_tw_alerts(
     mock_get_tw_alerts_data.assert_called_once()
     mock_get_trades_data.assert_called_once()
 
-    # Verify clean_tw_alerts_data was called once for TW alerts
+    # Verify clean_tw_alerts_data was called once for TradingView alerts
     mock_clean_tw_alerts.assert_called_once_with(sample_tw_alerts_data)
 
     # Verify other cleaning functions were not called
     mock_clean_trades.assert_not_called()
     mock_clean_ibkr_alerts.assert_not_called()
 
-    # Verify match_trades was called once for TW alerts
+    # Verify match_trades was called once for TradingView alerts
     # mock_match_trades.assert_called_once_with(sample_cleaned_tw_alerts, is_tw_alerts=True)
     assert mock_match_trades.call_count == 1
     assert mock_match_trades.call_args.kwargs.get('is_tw_alerts') is True

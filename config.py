@@ -69,7 +69,7 @@ AGGRESSIVE_TRADING = True
 # Analysis
 TIMEFRAME_TO_ANALYZE = 7  # In days
 
-# NOTE: TW multipliers, might not work properly with actual trades
+# NOTE: TradingView multipliers, might not work properly with actual trades
 CONTRACT_MULTIPLIERS = {
     'CC': 10,
     'CL': 1000,

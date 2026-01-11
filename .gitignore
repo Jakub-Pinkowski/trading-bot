@@ -13,8 +13,7 @@ __pycache__/
 clientportal/
 
 # Data
-/data/analysis
-/data/backtesting
+/data
 tw_fetching.py
 
 # Logs
