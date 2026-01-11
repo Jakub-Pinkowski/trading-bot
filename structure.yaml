@@ -145,6 +145,7 @@ trading-bot/
 # TODO [LOW]: Add docstrings everywhere
 # TODO [LOW]: Set up a database
 # TODO [LOW]: Set up UI
+# TODO [LOW]: Fix all the grammar errors
 
 # Tests
 # TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value

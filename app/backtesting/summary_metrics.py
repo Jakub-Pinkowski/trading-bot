@@ -272,7 +272,7 @@ class SummaryMetrics:
         return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
-        """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
+        """Calculate the Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
         if not self._has_trades() or len(self.returns) < 2:  # Need at least 2 returns for standard deviation
             return 0
 

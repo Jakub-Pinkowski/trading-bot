@@ -397,7 +397,7 @@ class TestRSIStrategy:
         # For example, corn futures might be more volatile in April-May (planting) and September-October (harvest)
         volatility = []
         for i in range(365):
-            month = (dates[i].month)
+            month = dates[i].month
             # Higher volatility in planting season (April-May)
             if month in [4, 5]:
                 vol = 0.03  # 3% daily volatility
