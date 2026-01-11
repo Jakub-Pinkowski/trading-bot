@@ -35,14 +35,14 @@ class TestCalculateMaxDrawdown:
     """Tests for the calculate_max_drawdown function."""
 
     def test_empty_trades_list(self):
-        """Test calculation of max drawdown with an empty trades list."""
+        """Test the calculation of the max drawdown with an empty trades list."""
         metrics = SummaryMetrics([])
         max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
         assert max_drawdown == 0
         assert max_drawdown_pct == 0
 
     def test_single_trade_positive(self):
-        """Test calculation of max drawdown with a single positive trade."""
+        """Test the calculation of the max drawdown with a single positive trade."""
         trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0)
         metrics = SummaryMetrics([trade])
         max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
@@ -50,7 +50,7 @@ class TestCalculateMaxDrawdown:
         assert max_drawdown_pct == 0
 
     def test_single_trade_negative(self):
-        """Test calculation of max drawdown with a single negative trade."""
+        """Test the calculation of the max drawdown with a single negative trade."""
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)
         metrics = SummaryMetrics([trade])
         max_drawdown, max_drawdown_pct = metrics._calculate_max_drawdown()
@@ -60,7 +60,7 @@ class TestCalculateMaxDrawdown:
         assert max_drawdown_pct == 1.0
 
     def test_multiple_trades_no_drawdown(self):
-        """Test calculation of max drawdown with multiple trades but no drawdown."""
+        """Test the calculation of the max drawdown with multiple trades but no drawdown."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),
@@ -72,7 +72,7 @@ class TestCalculateMaxDrawdown:
         assert max_drawdown_pct == 0
 
     def test_multiple_trades_with_drawdown(self):
-        """Test calculation of max drawdown with multiple trades with drawdown."""
+        """Test the calculation of the max drawdown with multiple trades with a drawdown."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=-150.0, return_percentage=-1.5),
@@ -84,7 +84,7 @@ class TestCalculateMaxDrawdown:
         assert max__drawdown_pct == 1.5
 
     def test_complex_drawdown_scenario(self):
-        """Test calculation of max drawdown with a complex sequence of trades."""
+        """Test the calculation of the max drawdown with a complex sequence of trades."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Cumulative: 100, 1%
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),  # Cumulative: 300, 3%
@@ -98,7 +98,7 @@ class TestCalculateMaxDrawdown:
         assert max_drawdown_pct == 3.5  # From peak of 3% to low of -0.5%
 
     def test_drawdown_with_recovery(self):
-        """Test calculation of max drawdown with a drawdown followed by recovery."""
+        """Test the calculation of the max drawdown with a drawdown followed by recovery."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Cumulative: 100, 1%
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Cumulative: 50, 0.5%
@@ -112,7 +112,7 @@ class TestCalculateMaxDrawdown:
         assert max_drawdown_pct == 1.1  # From peak of 1% to low of -0.1%
 
     def test_multiple_drawdowns(self):
-        """Test calculation of max drawdown with multiple drawdowns."""
+        """Test the calculation of the max drawdown with multiple drawdowns."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),  # Cumulative: 100, 1%
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),  # Cumulative: 50, 0.5% (Drawdown 1)
@@ -130,7 +130,7 @@ class TestCalculateSummaryMetrics:
     """Tests for the SummaryMetrics.calculate_all_metrics method."""
 
     def test_empty_trades_list(self):
-        """Test calculation of summary metrics with an empty trades list."""
+        """Test the calculation of the summary metrics with an empty trades list."""
         from unittest.mock import patch
 
         # Mock the logger to verify it's called
@@ -142,7 +142,7 @@ class TestCalculateSummaryMetrics:
             mock_logger.assert_called_once_with('No trades provided to calculate_all_metrics')
 
     def test_single_winning_trade(self):
-        """Test calculation of summary metrics with a single winning trade."""
+        """Test the calculation of the summary metrics with a single winning trade."""
         trade = create_sample_trade(net_pnl=100.0, return_percentage=1.0, margin_requirement=10000.0, commission=4.0)
         metrics = SummaryMetrics([trade])
         summary = metrics.calculate_all_metrics()
@@ -155,7 +155,7 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] == float('inf')  # No losing trades
 
     def test_single_losing_trade(self):
-        """Test calculation of summary metrics with a single losing trade."""
+        """Test the calculation of the summary metrics with a single losing trade."""
         trade = create_sample_trade(net_pnl=-100.0, return_percentage=-1.0, margin_requirement=10000.0, commission=4.0)
         metrics = SummaryMetrics([trade])
         summary = metrics.calculate_all_metrics()
@@ -168,7 +168,7 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] == 0.0  # No winning trades
 
     def test_multiple_trades(self):
-        """Test calculation of summary metrics with multiple trades."""
+        """Test the calculation of the summary metrics with multiple trades."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
@@ -187,7 +187,7 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] == round(300.0 / 50.0, 2)  # (100 + 200) / 50
 
     def test_all_winning_trades(self):
-        """Test calculation of summary metrics with all winning trades."""
+        """Test the calculation of the summary metrics with all winning trades."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),
@@ -204,7 +204,7 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] == float('inf')  # No losing trades
 
     def test_all_losing_trades(self):
-        """Test calculation of summary metrics with all losing trades."""
+        """Test the calculation of the summary metrics with all losing trades."""
         trades = [
             create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
             create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
@@ -221,7 +221,7 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] == 0.0  # No winning trades
 
     def test_commission_metrics(self):
-        """Test calculation of commission metrics."""
+        """Test the calculation of the commission metrics."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0, commission=5.0),
             create_sample_trade(net_pnl=200.0, return_percentage=2.0, commission=5.0),
@@ -233,7 +233,7 @@ class TestCalculateSummaryMetrics:
         assert summary['commission_percentage_of_margin'] == round((15.0 / 30000.0) * 100, 2)  # 3 trades * 10000 margin
 
     def test_duration_metrics(self):
-        """Test calculation of duration metrics."""
+        """Test the calculation of the duration metrics."""
         trades = [
             create_sample_trade(duration_hours=12),
             create_sample_trade(duration_hours=24),
@@ -245,7 +245,7 @@ class TestCalculateSummaryMetrics:
         assert summary['avg_trade_duration_hours'] == 24.0  # (12 + 24 + 36) / 3
 
     def test_risk_metrics(self):
-        """Test calculation of risk metrics."""
+        """Test the calculation of the risk metrics."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
@@ -273,7 +273,7 @@ class TestCalculateSummaryMetrics:
         assert isinstance(summary['ulcer_index'], (int, float))
 
     def test_performance_ratios(self):
-        """Test calculation of performance ratios."""
+        """Test the calculation of the performance ratios."""
         trades = [
             create_sample_trade(net_pnl=100.0, return_percentage=1.0),
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
@@ -801,7 +801,7 @@ class TestCalculateSortinoRatio:
         assert sortino_ratio == float('inf')  # Should return infinity when there are no negative returns
 
     def test_zero_downside_deviation(self):
-        """Test calculation of Sortino ratio when downside deviation is zero."""
+        """Test calculation of thr Sortino ratio when downside deviation is zero."""
 
         # To test the specific condition where downside_deviation is zero,
         # we need to directly test the code path in the function

@@ -32,10 +32,10 @@ class TestMassTester:
             # Call the method under test
             tester._add_strategy_tests('test_strategy', param_grid)
 
-            # Calculate expected number of strategies
+            # Calculate the expected number of strategies
             expected_count = len(param_grid['param1']) * len(param_grid['param2']) * len(param_grid['param3'])
 
-            # Verify the correct number of strategies were added
+            # Verify the correct number of strategies was added
             assert len(tester.strategies) == expected_count
 
             # Verify that the factory methods were called with correct parameters
@@ -143,7 +143,7 @@ class TestMassTester:
 
         tester.add_macd_tests(fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages)
 
-        # Calculate expected number of strategies
+        # Calculate the expected number of strategies
         expected_count = (
                 len(fast_periods) *
                 len(slow_periods) *
@@ -153,7 +153,7 @@ class TestMassTester:
                 len(slippages)
         )
 
-        # Verify the correct number of strategies were added
+        # Verify the correct number of strategies was added
         assert len(tester.strategies) == expected_count
 
         # Verify strategy names and parameters
@@ -183,7 +183,7 @@ class TestMassTester:
         # Test with direct call
         tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
 
-        # Calculate expected number of strategies
+        # Calculate the expected number of strategies
         expected_count = (
                 len(periods) *
                 len(num_stds) *

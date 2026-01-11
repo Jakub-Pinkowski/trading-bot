@@ -735,13 +735,13 @@ class TestWarningDeduplication(unittest.TestCase):
     """Tests for warning deduplication functionality."""
 
     def setUp(self):
-        """Store original warning state, enable warnings, and clear logged warnings before each test."""
+        """Store the original warning state, enable warnings, and clear logged warnings before each test."""
         self.original_warnings_enabled = strategy_factory._log_warnings_enabled
         strategy_factory._log_warnings_enabled = True  # Enable warnings for these tests
         _logged_warnings.clear()
 
     def tearDown(self):
-        """Restore original warning state and clear logged warnings after each test."""
+        """Restore the original warning state and clear logged warnings after each test."""
         strategy_factory._log_warnings_enabled = self.original_warnings_enabled
         _logged_warnings.clear()
 
@@ -781,7 +781,7 @@ class TestWarningDeduplication(unittest.TestCase):
 
     @patch('app.backtesting.strategy_factory.logger')
     def test_log_warnings_once_different_strategy_types(self, mock_logger):
-        """Test that same warning for different strategy types are both logged."""
+        """Test that same warning for different strategy types is both logged."""
         warnings = ["Same warning message"]
 
         # Call with different strategy types
@@ -798,7 +798,7 @@ class TestWarningDeduplication(unittest.TestCase):
 
     @patch('app.backtesting.strategy_factory.logger')
     def test_strategy_creation_warning_deduplication(self, mock_logger):
-        """Test that creating multiple strategies with same parameters only logs warnings once."""
+        """Test that creating multiple strategies with the same parameters only logs warnings once."""
         # Create multiple RSI strategies with the same warning-triggering parameters
         for _ in range(3):
             create_strategy('rsi', rsi_period=7, lower=30, upper=70)
@@ -833,7 +833,7 @@ class TestWarningDeduplication(unittest.TestCase):
         rsi_period_warnings = [call for call in rsi_warnings if 'RSI period 7' in str(call)]
         self.assertEqual(len(rsi_period_warnings), 1)
 
-        # EMA should have warnings about ratio
+        # EMA should have warnings about a ratio
         ema_ratio_warnings = [call for call in ema_warnings if 'ratio' in str(call)]
         self.assertEqual(len(ema_ratio_warnings), 1)
 
@@ -862,12 +862,12 @@ class TestWarningConfiguration(unittest.TestCase):
     """Tests for warning enable/disable functionality."""
 
     def setUp(self):
-        """Store original warning state and clear logged warnings before each test."""
+        """Store the original warning state and clear logged warnings before each test."""
         self.original_warnings_enabled = strategy_factory._log_warnings_enabled
         _logged_warnings.clear()
 
     def tearDown(self):
-        """Restore original warning state and clear logged warnings after each test."""
+        """Restore the original warning state and clear logged warnings after each test."""
         strategy_factory._log_warnings_enabled = self.original_warnings_enabled
         _logged_warnings.clear()
 
@@ -955,7 +955,7 @@ class TestWarningConfiguration(unittest.TestCase):
 
     @patch('app.backtesting.strategy_factory.logger')
     def test_warning_deduplication_with_enabled_disabled_cycle(self, mock_logger):
-        """Test that warning deduplication works correctly when toggling enabled/disabled state."""
+        """Test that warning deduplication works correctly when toggling the enabled / disabled state."""
         # Enable warnings and create a strategy
         strategy_factory._log_warnings_enabled = True
         create_strategy('rsi', rsi_period=7, lower=30, upper=70)
