@@ -4,9 +4,8 @@ import pandas as pd
 import pytest
 
 from app.analysis.data_cleaning import (
-    pre_clean_tw_alerts_data,
-    pre_clean_alerts_data,
-    clean_alerts_data,
+    clean_ibkr_alerts_data,
+    clean_tw_alerts_data,
     clean_trades_data
 )
 
@@ -15,8 +14,8 @@ from app.analysis.data_cleaning import (
 def sample_alerts_data():
     """Sample alerts data for testing."""
     return pd.DataFrame([
-        {"symbol": "ZW1!", "side": "B", "price": "34.20", "dummy": "YES", "timestamp": "23-05-01 10:30:45"},
-        {"symbol": "ZC1!", "side": "S", "price": "423.20", "timestamp": "23-05-01 11:45:30"}
+        {"symbol": "ZW1!", "side": "B", "price": 34.20, "dummy": "YES", "timestamp": "23-05-01 10:30:45"},
+        {"symbol": "ZC1!", "side": "S", "price": 423.20, "timestamp": "23-05-01 11:45:30"}
     ])
 
 
@@ -30,20 +29,6 @@ def sample_tw_alerts_data():
             "Name": "",
             "Description": '{"symbol":"MCL1!","side":"S","price":56.98}',
             "Time": "2025-05-05T14:07:00Z"
-        },
-        {
-            "Alert ID": "2223584382",
-            "Ticker": "NYMEX:MNG1!, 15m",
-            "Name": "",
-            "Description": '{"symbol":"MNG1!","side":"S","price":3.694}',
-            "Time": "2025-05-05T12:06:09Z"
-        },
-        {
-            "Alert ID": "2223584182",
-            "Ticker": "NYMEX:MNG1!, 15m",
-            "Name": "",
-            "Description": '{"symbol":"MNG1!","side":"B","price":3.706}',
-            "Time": "2025-05-05T10:12:34Z"
         }
     ])
 
@@ -84,42 +69,10 @@ def sample_trades_data():
     ])
 
 
-def test_pre_clean_tw_alerts_data(sample_tw_alerts_data):
-    """Test pre-cleaning of TradingView alerts data."""
+def test_clean_ibkr_alerts_data(sample_alerts_data):
+    """Test cleaning of IBKR alerts data."""
 
-    result = pre_clean_tw_alerts_data(sample_tw_alerts_data)
-
-    # Check that the result has the expected columns
-    assert set(result.columns) == {"timestamp", "symbol", "side", "price"}
-
-    # Check that the data was parsed correctly
-    assert result.iloc[0]["symbol"] == "MCL1!"
-    assert result.iloc[0]["side"] == "S"
-    assert result.iloc[0]["price"] == 56.98
-
-    # Check that the timestamp was converted correctly
-    assert isinstance(result.iloc[0]["timestamp"], pd.Timestamp)
-
-
-def test_pre_clean_alerts_data(sample_alerts_data):
-    """Test pre-cleaning of regular alerts data."""
-
-    result = pre_clean_alerts_data(sample_alerts_data)
-
-    # Check that the dummy column was removed
-    assert "dummy" not in result.columns
-
-    # Check that other columns are preserved
-    assert "symbol" in result.columns
-    assert "side" in result.columns
-    assert "price" in result.columns
-    assert "timestamp" in result.columns
-
-
-def test_clean_alerts_data_regular(sample_alerts_data):
-    """Test cleaning of regular alerts data."""
-
-    result = clean_alerts_data(sample_alerts_data)
+    result = clean_ibkr_alerts_data(sample_alerts_data)
 
     # Check that the result has the expected columns
     assert "symbol" in result.columns
@@ -130,11 +83,14 @@ def test_clean_alerts_data_regular(sample_alerts_data):
     # Check that the dummy column was removed
     assert "dummy" not in result.columns
 
+    # Check that the data was processed correctly
+    assert result.iloc[0]["symbol"] == "ZW"
 
-def test_clean_alerts_data_tw(sample_tw_alerts_data):
+
+def test_clean_tw_alerts_data(sample_tw_alerts_data):
     """Test cleaning of TradingView alerts data."""
 
-    result = clean_alerts_data(sample_tw_alerts_data, tw_alerts=True)
+    result = clean_tw_alerts_data(sample_tw_alerts_data)
 
     # Check that the result has the expected columns
     assert "symbol" in result.columns
@@ -147,6 +103,11 @@ def test_clean_alerts_data_tw(sample_tw_alerts_data):
     assert "Ticker" not in result.columns
     assert "Description" not in result.columns
     assert "Time" not in result.columns
+
+    # Check data parsing
+    assert result.iloc[0]["symbol"] == "MCL"
+    assert result.iloc[0]["side"] == "S"
+    assert result.iloc[0]["price"] == 56.98
 
 
 def test_clean_trades_data(sample_trades_data):
@@ -168,12 +129,12 @@ def test_clean_trades_data(sample_trades_data):
     assert isinstance(result.iloc[0]["price"], float)
 
 
-def test_pre_clean_tw_alerts_data_exception(sample_tw_alerts_data):
-    """Test exception handling in pre_clean_tw_alerts_data."""
+def test_clean_tw_alerts_data_exception(sample_tw_alerts_data):
+    """Test exception handling in clean_tw_alerts_data."""
 
     # Mock pd.to_datetime to raise an exception
     with patch('pandas.to_datetime', side_effect=Exception("Test exception")):
-        result = pre_clean_tw_alerts_data(sample_tw_alerts_data)
+        result = clean_tw_alerts_data(sample_tw_alerts_data)
 
         # Check that an empty DataFrame is returned
         assert result.empty

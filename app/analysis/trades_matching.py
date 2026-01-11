@@ -62,7 +62,7 @@ def format_processed_trades(processed_trades):
     return df
 
 
-def match_trades(trades, is_alerts=False):
+def match_trades(trades, is_ibkr_alerts=False, is_tw_alerts=False):
     open_trades = {}
     processed_trades = []
 
@@ -73,9 +73,9 @@ def match_trades(trades, is_alerts=False):
         side = row['side']
         price = row['price']
 
-        # Defaults for ibkr_alerts
-        size = 1 if is_alerts else row['size']
-        commission = 0 if is_alerts else row['commission']
+        # Defaults for ibkr_alerts or tw_alerts
+        size = 1 if (is_ibkr_alerts or is_tw_alerts) else row['size']
+        commission = 0 if (is_ibkr_alerts or is_tw_alerts) else row['commission']
         multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)
         if symbol not in CONTRACT_MULTIPLIERS:
             logger.warning(f'Symbol \'{symbol}\' not in contract_multipliers. Using multiplier=1.')

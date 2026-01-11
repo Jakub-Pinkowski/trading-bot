@@ -8,14 +8,14 @@ from app.utils.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from app.utils.logger import get_logger
-from config import ALERTS_DIR, TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR
+from config import TRADES_DIR, TIMEFRAME_TO_ANALYZE, TW_ALERTS_DIR, IBKR_ALERTS_DIR
 
 logger = get_logger('analysis/data_fetching')
 
 
-def get_alerts_data():
+def get_ibkr_alerts_data():
     alerts_df = load_data_from_json_files(
-        directory=ALERTS_DIR,
+        directory=IBKR_ALERTS_DIR,
         file_prefix='ibkr_alerts',
         date_fields=['timestamp'],
         datetime_format='%y-%m-%d %H:%M:%S',

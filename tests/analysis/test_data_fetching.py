@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from app.analysis.data_fetching import (
-    get_alerts_data,
+    get_ibkr_alerts_data,
     get_tw_alerts_data,
     get_trades_data,
     fetch_trades_data
@@ -73,14 +73,14 @@ def sample_trades_json():
 
 
 @patch('app.analysis.data_fetching.load_data_from_json_files')
-def test_get_alerts_data(mock_load_data, sample_alerts_data):
+def test_get_ibkr_alerts_data(mock_load_data, sample_alerts_data):
     """Test getting ibkr_alerts data."""
 
     # Setup mock
     mock_load_data.return_value = sample_alerts_data
 
     # Call the function
-    result = get_alerts_data()
+    result = get_ibkr_alerts_data()
 
     # Verify the result
     assert not result.empty
@@ -92,14 +92,14 @@ def test_get_alerts_data(mock_load_data, sample_alerts_data):
 
 
 @patch('app.analysis.data_fetching.load_data_from_json_files')
-def test_get_alerts_data_empty(mock_load_data):
+def test_get_ibkr_alerts_data_empty(mock_load_data):
     """Test getting ibkr_alerts data when no data is available."""
 
     # Setup mock to return empty DataFrame
     mock_load_data.return_value = pd.DataFrame()
 
     # Call the function
-    result = get_alerts_data()
+    result = get_ibkr_alerts_data()
 
     # Verify the result is an empty DataFrame with expected columns
     assert result.empty

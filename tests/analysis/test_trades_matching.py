@@ -277,7 +277,7 @@ def test_match_trades(sample_trades_data):
 def test_match_trades_alerts(sample_alerts_data):
     """Test matching ibkr_alerts as trades."""
 
-    result = match_trades(sample_alerts_data, is_alerts=True)
+    result = match_trades(sample_alerts_data, is_ibkr_alerts=True)
 
     # Verify the result is a DataFrame
     assert isinstance(result, pd.DataFrame)

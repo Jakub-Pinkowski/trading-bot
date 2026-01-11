@@ -7,7 +7,29 @@ from app.utils.logger import get_logger
 logger = get_logger('analysis/data_cleaning')
 
 
-def pre_clean_tw_alerts_data(df):
+def clean_ibkr_alerts_data(df):
+    # Remove the dummy column and order columns if they exist
+    df = df.drop(columns=[col for col in ['dummy', 'order'] if col in df.columns])
+
+    # Sort the DataFrame by 'timestamp'
+    df = df.sort_values('timestamp').reset_index(drop=True)
+
+    # Clean the symbol and change the name of the column to match the trade data
+    df['symbol'] = df['symbol'].apply(parse_symbol)
+    if 'timestamp' in df.columns:
+        df = df.rename(columns={'timestamp': 'trade_time'})
+
+    # Drop rows with missing or invalid data
+    df = df.dropna().reset_index(drop=True)
+
+    # Remove consecutive orders on the same side for a given symbol
+    mask = df.groupby('symbol')['side'].transform(lambda x: x != x.shift())
+    df = df[mask]
+
+    return df
+
+
+def clean_tw_alerts_data(df):
     # Extract relevant fields from the 'Description' column
     df['description_parsed'] = df['Description'].apply(parse_description)
     df['symbol'] = df['description_parsed'].apply(lambda x: x.get('symbol'))
@@ -28,22 +50,6 @@ def pre_clean_tw_alerts_data(df):
 
     # Select only relevant columns
     df = df[['timestamp', 'symbol', 'side', 'price']]
-
-    return df
-
-
-def pre_clean_alerts_data(df):
-    # Remove the dummy column and order columns if they exist
-    df = df.drop(columns=[col for col in ['dummy', 'order'] if col in df.columns])
-
-    return df
-
-
-def clean_alerts_data(df, tw_alerts=False):
-    if tw_alerts:
-        df = pre_clean_tw_alerts_data(df)
-    else:
-        df = pre_clean_alerts_data(df)
 
     # Sort the DataFrame by 'timestamp'
     df = df.sort_values('timestamp').reset_index(drop=True)
