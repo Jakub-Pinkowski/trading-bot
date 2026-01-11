@@ -1,0 +1,252 @@
+{
+  "25-04-07 08:21:59": {
+    "symbol": "ZS1!",
+    "order": "BUY",
+    "price": 982.75
+  },
+  "25-04-07 10:04:41": {
+    "symbol": "CL1!",
+    "order": "BUY",
+    "price": 59.84
+  },
+  "25-04-07 10:17:57": {
+    "symbol": "PL1!",
+    "order": "BUY",
+    "price": 911.4
+  },
+  "25-04-07 10:20:10": {
+    "symbol": "HG1!",
+    "order": "BUY",
+    "price": 4.3735
+  },
+  "25-04-07 10:45:26": {
+    "symbol": "ZC1!",
+    "order": "BUY",
+    "price": 459.5
+  },
+  "25-04-07 10:46:54": {
+    "symbol": "ZW1!",
+    "order": "BUY",
+    "price": 533.5
+  },
+  "25-04-07 10:52:53": {
+    "symbol": "GC1!",
+    "order": "BUY",
+    "price": 3050.7
+  },
+  "25-04-07 11:06:16": {
+    "symbol": "ZW1!",
+    "order": "SELL",
+    "price": 530.75
+  },
+  "25-04-07 11:18:30": {
+    "symbol": "HG1!",
+    "order": "SELL",
+    "price": 4.309
+  },
+  "25-04-07 11:25:20": {
+    "symbol": "ZW1!",
+    "order": "SELL",
+    "price": 530.75
+  },
+  "25-04-07 11:26:31": {
+    "symbol": "CL1!",
+    "order": "SELL",
+    "price": 59.16
+  },
+  "25-04-07 11:42:55": {
+    "symbol": "ZC1!",
+    "order": "SELL",
+    "price": 457.75
+  },
+  "25-04-07 12:01:06": {
+    "symbol": "HG1!",
+    "order": "BUY",
+    "price": 4.351
+  },
+  "25-04-07 12:15:14": {
+    "symbol": "ZS1!",
+    "order": "BUY",
+    "price": 974
+  },
+  "25-04-07 13:19:16": {
+    "symbol": "ZC1!",
+    "order": "BUY",
+    "price": 459.25
+  },
+  "25-04-07 13:22:09": {
+    "symbol": "ZC1!",
+    "order": "BUY",
+    "price": 459.25
+  },
+  "25-04-07 13:28:50": {
+    "symbol": "ZC1!",
+    "order": "BUY",
+    "price": 459.25
+  },
+  "25-04-07 13:38:45": {
+    "symbol": "PL1!",
+    "order": "SELL",
+    "price": 911.1
+  },
+  "25-04-07 13:40:06": {
+    "symbol": "PL1!",
+    "order": "SELL",
+    "price": 911.6
+  },
+  "25-04-07 14:00:28": {
+    "symbol": "GC1!",
+    "order": "SELL",
+    "price": 3045.6
+  },
+  "25-04-07 14:01:40": {
+    "symbol": "ZW1!",
+    "order": "BUY",
+    "price": 530.75
+  },
+  "25-04-07 14:08:11": {
+    "symbol": "HG1!",
+    "order": "SELL",
+    "price": 4.3425
+  },
+  "25-04-07 14:35:16": {
+    "symbol": "ZW1!",
+    "order": "BUY",
+    "price": 538.5
+  },
+  "25-04-07 14:49:26": {
+    "symbol": "PL1!",
+    "order": "BUY",
+    "price": 913.3
+  },
+  "25-04-07 14:49:29": {
+    "symbol": "HG1!",
+    "order": "BUY",
+    "price": 4.2665
+  },
+  "25-04-07 14:51:14": {
+    "symbol": "HG1!",
+    "order": "BUY",
+    "price": 4.266
+  },
+  "25-04-07 14:56:13": {
+    "symbol": "HG1!",
+    "order": "BUY",
+    "price": 4.266
+  },
+  "25-04-07 15:00:24": {
+    "symbol": "GC1!",
+    "order": "BUY",
+    "price": 3051.4
+  },
+  "25-04-07 15:31:36": {
+    "symbol": "ZC1!",
+    "order": "SELL",
+    "price": 458.25
+  },
+  "25-04-07 15:32:18": {
+    "symbol": "CL1!",
+    "order": "SELL",
+    "price": 60.22
+  },
+  "25-04-07 15:35:02": {
+    "symbol": "CL1!",
+    "order": "SELL",
+    "price": 60.22
+  },
+  "25-04-07 15:35:09": {
+    "symbol": "ZC1!",
+    "order": "SELL",
+    "price": 458.25
+  },
+  "25-04-07 15:37:20": {
+    "symbol": "PL1!",
+    "order": "SELL",
+    "price": 906.5
+  },
+  "25-04-07 15:38:22": {
+    "symbol": "ZS1!",
+    "order": "SELL",
+    "price": 976
+  },
+  "25-04-07 15:56:27": {
+    "symbol": "CL1!",
+    "order": "BUY",
+    "price": 61.1
+  },
+  "25-04-07 15:58:33": {
+    "symbol": "PL1!",
+    "order": "BUY",
+    "price": 915
+  },
+  "25-04-07 16:00:46": {
+    "symbol": "PL1!",
+    "order": "BUY",
+    "price": 914.9
+  },
+  "25-04-07 16:10:29": {
+    "symbol": "PL1!",
+    "order": "BUY",
+    "price": 914.9
+  },
+  "25-04-07 16:16:34": {
+    "symbol": "GC1!",
+    "order": "BUY",
+    "price": 3047.4
+  },
+  "25-04-07 16:21:21": {
+    "symbol": "CL1!",
+    "order": "BUY",
+    "price": 63.2
+  },
+  "25-04-07 16:24:19": {
+    "symbol": "GC1!",
+    "order": "BUY",
+    "price": 3047.4
+  },
+  "25-04-07 16:29:33": {
+    "symbol": "CL1!",
+    "order": "SELL",
+    "price": 61.56
+  },
+  "25-04-07 16:30:06": {
+    "symbol": "GC1!",
+    "order": "BUY",
+    "price": 3047.4
+  },
+  "25-04-07 16:36:06": {
+    "symbol": "ZC1!",
+    "order": "SELL",
+    "price": 462.5
+  },
+  "25-04-07 16:36:32": {
+    "symbol": "PL1!",
+    "order": "SELL",
+    "price": 909.1
+  },
+  "25-04-07 16:37:59": {
+    "symbol": "HG1!",
+    "order": "SELL",
+    "price": 4.26
+  },
+  "25-04-07 16:41:51": {
+    "symbol": "HG1!",
+    "order": "SELL",
+    "price": 4.2595
+  },
+  "25-04-07 16:43:18": {
+    "symbol": "ZW1!",
+    "order": "SELL",
+    "price": 539.75
+  },
+  "25-04-07 16:45:59": {
+    "symbol": "ZW1!",
+    "order": "SELL",
+    "price": 539.75
+  },
+  "25-04-07 16:46:12": {
+    "symbol": "HG1!",
+    "order": "SELL",
+    "price": 4.26
+  }
+}

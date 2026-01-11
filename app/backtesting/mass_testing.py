@@ -19,7 +19,7 @@ from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.summary_metrics import SummaryMetrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
-from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DATA_DIR,
+from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DIR,
                     INDICATOR_CACHE_LOCK_FILE, DATAFRAME_CACHE_LOCK_FILE)
 
 logger = get_logger('backtesting/mass_testing')
@@ -27,7 +27,7 @@ logger = get_logger('backtesting/mass_testing')
 
 def _load_existing_results():
     """Load existing results from the parquet file."""
-    parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+    parquet_filename = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
     if os.path.exists(parquet_filename):
         try:
             df = pd.read_parquet(parquet_filename)
@@ -488,7 +488,7 @@ class MassTester:
             results_df = self._results_to_dataframe()
             if not results_df.empty:
                 # Save all results to one big parquet file with unique entries
-                parquet_filename = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+                parquet_filename = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
                 save_to_parquet(results_df, parquet_filename)
                 print(f'Results saved to {parquet_filename}')
             else:

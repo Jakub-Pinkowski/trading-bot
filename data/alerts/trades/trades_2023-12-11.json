@@ -1,0 +1,12 @@
+[
+    {
+        "execution_id": "0000e0d5.6576fd38.01.01",
+        "symbol": "AAPL",
+        "side": "S",
+        "trade_time": "20231211-18:00:49",
+        "size": 5,
+        "price": "192.26",
+        "commission": "1.01",
+        "net_amount": 961.3
+    }
+]

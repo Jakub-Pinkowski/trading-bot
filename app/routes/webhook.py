@@ -4,7 +4,7 @@ from app.utils.routes_utils.webhook_utils import (validate_ip,
                                                   parse_request_data,
                                                   save_alert_data_to_file,
                                                   safe_process_trading_data)
-from config import ALERTS_DIR
+from config import IBKR_ALERTS_DIR
 
 webhook_blueprint = Blueprint('webhook', __name__)
 
@@ -13,7 +13,7 @@ webhook_blueprint = Blueprint('webhook', __name__)
 def webhook_route():
     validate_ip(request.remote_addr)
     data = parse_request_data(request)
-    save_alert_data_to_file(data, ALERTS_DIR)
+    save_alert_data_to_file(data, IBKR_ALERTS_DIR)
 
     # Call the safe version that handles exceptions internally
     safe_process_trading_data(data)

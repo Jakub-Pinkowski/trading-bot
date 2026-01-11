@@ -16,7 +16,7 @@ logger = get_logger('analysis/data_fetching')
 def get_alerts_data():
     alerts_df = load_data_from_json_files(
         directory=ALERTS_DIR,
-        file_prefix='alerts',
+        file_prefix='ibkr_alerts',
         date_fields=['timestamp'],
         datetime_format='%y-%m-%d %H:%M:%S',
         index_name='timestamp'
@@ -33,7 +33,7 @@ def get_tw_alerts_data():
 
     if not files:
         logger.warning(f'No files found in \'{TW_ALERTS_DIR}\' with prefix \'TradingView_Alerts_Log_\'.')
-        return pd.DataFrame()  # Return empty DataFrame if missing
+        return pd.DataFrame()  # Return an empty DataFrame if missing
 
     try:
         files.sort(

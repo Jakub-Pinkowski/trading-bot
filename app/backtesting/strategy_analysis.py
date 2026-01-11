@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 
 from app.utils.logger import get_logger
-from config import BACKTESTING_DATA_DIR
+from config import BACKTESTING_DIR
 
 logger = get_logger('backtesting/strategy_analysis')
 
@@ -176,7 +176,7 @@ class StrategyAnalyzer:
     def __init__(self):
         """Initialize the strategy analyzer and load results from the default file."""
         self.results_df = None
-        results_file = f'{BACKTESTING_DATA_DIR}/mass_test_results_all.parquet'
+        results_file = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
         self._load_results(results_file)
 
     def get_top_strategies(
@@ -408,7 +408,7 @@ class StrategyAnalyzer:
             filename = f"{timestamp} top_strategies_by_{metric}{interval_suffix}{symbol_suffix}{agg_suffix}{weighted_suffix}.csv"
 
             # Create the csv_results directory if it doesn't exist
-            csv_dir = os.path.join(BACKTESTING_DATA_DIR, 'csv_results')
+            csv_dir = os.path.join(BACKTESTING_DIR, 'csv_results')
             os.makedirs(csv_dir, exist_ok=True)
 
             # Create the full file path

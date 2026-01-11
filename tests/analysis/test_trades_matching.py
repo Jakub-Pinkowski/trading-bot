@@ -45,7 +45,7 @@ def sample_trades_data():
 
 @pytest.fixture
 def sample_alerts_data():
-    """Sample alerts data for testing."""
+    """Sample ibkr_alerts data for testing."""
     return pd.DataFrame([
         {
             "trade_time": pd.Timestamp("2023-12-11 18:00:49"),
@@ -275,14 +275,14 @@ def test_match_trades(sample_trades_data):
 
 
 def test_match_trades_alerts(sample_alerts_data):
-    """Test matching alerts as trades."""
+    """Test matching ibkr_alerts as trades."""
 
     result = match_trades(sample_alerts_data, is_alerts=True)
 
     # Verify the result is a DataFrame
     assert isinstance(result, pd.DataFrame)
 
-    # Verify alerts were matched correctly
+    # Verify ibkr_alerts were matched correctly
     assert len(result) == 1  # Only one matched trade (MCL B->S)
     assert result.iloc[0]["symbol"] == "MCL"
     assert result.iloc[0]["entry_side"] == "B"

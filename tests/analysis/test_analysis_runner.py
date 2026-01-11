@@ -47,7 +47,7 @@ def sample_trades_data():
 
 @pytest.fixture
 def sample_cleaned_alerts():
-    """Sample cleaned alerts data for testing."""
+    """Sample cleaned ibkr_alerts data for testing."""
     return pd.DataFrame([
         {"trade_time": pd.Timestamp("2023-05-01 10:30:45"), "symbol": "ZW", "side": "B", "price": 34.20}
     ])
@@ -55,7 +55,7 @@ def sample_cleaned_alerts():
 
 @pytest.fixture
 def sample_cleaned_tw_alerts():
-    """Sample cleaned TradingView alerts data for testing."""
+    """Sample cleaned TradingView ibkr_alerts data for testing."""
     return pd.DataFrame([
         {"trade_time": pd.Timestamp("2025-05-05 14:07:00"), "symbol": "MCL", "side": "S", "price": 56.98}
     ])
@@ -201,7 +201,7 @@ def test_run_analysis_with_all_data(
     # Verify clean_trades_data was called once
     mock_clean_trades.assert_called_once_with(sample_trades_data)
 
-    # Verify match_trades was called once for alerts and once for trades
+    # Verify match_trades was called once for ibkr_alerts and once for trades
     assert mock_match_trades.call_count == 2
     mock_match_trades.assert_any_call(sample_cleaned_tw_alerts, is_alerts=True)
 
@@ -291,7 +291,7 @@ def test_run_analysis_with_only_tw_alerts(
     sample_trades_with_metrics,
     sample_dataset_metrics
 ):
-    """Test running analysis with only TradingView alerts data available."""
+    """Test running analysis with only TradingView ibkr_alerts data available."""
 
     # Setup mocks
     mock_get_alerts_data.return_value = pd.DataFrame()
@@ -306,7 +306,7 @@ def test_run_analysis_with_only_tw_alerts(
 
     mock_calculate_dataset_metrics.return_value = sample_dataset_metrics
 
-    # Mock is_nonempty to return True for TW alerts and False for others
+    # Mock is_nonempty to return True for TW ibkr_alerts and False for others
     mock_is_nonempty.side_effect = lambda x: not x.empty if isinstance(x, pd.DataFrame) else bool(x)
 
     # Call the function
@@ -317,13 +317,13 @@ def test_run_analysis_with_only_tw_alerts(
     mock_get_tw_alerts_data.assert_called_once()
     mock_get_trades_data.assert_called_once()
 
-    # Verify clean_alerts_data was called once for TW alerts
+    # Verify clean_alerts_data was called once for TW ibkr_alerts
     mock_clean_alerts.assert_called_once_with(sample_tw_alerts_data, tw_alerts=True)
 
     # Verify clean_trades_data was not called
     mock_clean_trades.assert_not_called()
 
-    # Verify match_trades was called once for TW alerts
+    # Verify match_trades was called once for TW ibkr_alerts
     mock_match_trades.assert_called_once_with(sample_cleaned_tw_alerts, is_alerts=True)
 
     # Verify add_per_trade_metrics was called once

@@ -67,13 +67,13 @@ def match_trades(trades, is_alerts=False):
     processed_trades = []
 
     for _, row in trades.iterrows():
-        # Extract fields with defaults for alerts if necessary
+        # Extract fields with defaults for ibkr_alerts if necessary
         trade_time = row['trade_time']
         symbol = row['symbol']
         side = row['side']
         price = row['price']
 
-        # Defaults for alerts
+        # Defaults for ibkr_alerts
         size = 1 if is_alerts else row['size']
         commission = 0 if is_alerts else row['commission']
         multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)

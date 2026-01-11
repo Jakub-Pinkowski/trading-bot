@@ -69,22 +69,23 @@ trading-bot/
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
-│   ├── analysis/                                 # Performance analysis based on the alerts
-│   │   ├── ibkr_alerts/                          # Performance analysis based on IBKR alerts
-│   │   ├── trades/                               # Performance analysis based on trades
-│   │   └── tw_alerts/                            # Performance analysis based on TradingView alerts
-│   ├── backtesting/                              # Backtesting results data
+│   ├── alerts/                                   # Alerts data from TradingView and IBKR
+│   │   ├── ibkr_alerts/                          # IBKR alerts
+│   │   ├── trades/                               # IBKR trades
+│   │   └── tw_alerts/                            # TradingView alerts
+│   ├── analysis/                                 # Performance analysis
+│   │   ├── analysis_ibkr_alerts/                 # Performance analysis based on IBKR alerts
+│   │   ├── analysis_trades/                      # Performance analysis based on trades
+│   │   └── analysis_tw_alerts/                   # Performance analysis based on TradingView alerts
+│   ├── backtesting/                              # Backtesting 
 │   │   ├── cache/                                # Cache storage for backtesting
-│   │   └── csv_results/                          # CSV results from backtesting
+│   │   ├── csv_results/                          # CSV results from backtesting
+│   │   └── mass_test_results_all.parquet         # Mass backtesting results
 │   ├── contracts/                                # Contracts ids
-│   ├── historical_data/                          # Raw historical data from TradingView
+│   └── historical_data/                          # Historical data from TradingView
 │   │   ├── 1!/                                   # Front month
 │   │   ├── 2!/                                   # Next month
 │   │   └── contract_switch_dates.yaml            # Configuration for contract switch dates
-│   └── alerts/                                   # Raw alerts data from TradingView and IBKR
-│       ├── ibkr_alerts/                          # Raw IBKR alerts data
-│       ├── trades/                               # Raw trades data
-│       └── tw_alerts/                            # Raw TradingView alerts
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
