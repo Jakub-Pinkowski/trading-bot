@@ -69,7 +69,7 @@ trading-bot/
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
-│   ├── alerts/                                   # Alerts data from TradingView and IBKR
+│   ├── alerts/                                   # Alerts from IBKR and TradingView
 │   │   ├── ibkr_alerts/                          # IBKR alerts
 │   │   ├── trades/                               # Trades
 │   │   └── tw_alerts/                            # TradingView alerts
