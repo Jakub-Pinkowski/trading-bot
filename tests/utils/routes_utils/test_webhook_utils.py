@@ -38,7 +38,7 @@ def test_validate_ip_not_allowed():
 def test_parse_request_data_json():
     """Test that parse_request_data correctly parses JSON data"""
 
-    # Create a mock request with JSON content type
+    # Create a mock request with a JSON content type
     mock_request = MagicMock()
     mock_request.content_type = 'application/json'
     mock_request.get_json.return_value = {"key": "value"}
@@ -54,7 +54,7 @@ def test_parse_request_data_json():
 def test_parse_request_data_unsupported():
     """Test that parse_request_data aborts with 400 for unsupported content types"""
 
-    # Create a mock request with unsupported content type
+    # Create a mock request with an unsupported content type
     mock_request = MagicMock()
     mock_request.content_type = 'text/plain'
 

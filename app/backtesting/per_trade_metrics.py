@@ -47,6 +47,7 @@ def estimate_margin(symbol, entry_price, contract_multiplier):
     contract_value = entry_price * contract_multiplier
     return contract_value * ratio
 
+
 def calculate_trade_metrics(trade, symbol):
     """ Calculate metrics for a single trade. """
 

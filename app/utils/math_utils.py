@@ -46,7 +46,7 @@ def calculate_percentage(value, total, decimal_places=2):
         decimal_places: Number of decimal places to round to (default: 2)
 
     Returns:
-        The percentage value rounded to specified decimal places, or 0 if total is zero
+        The percentage value is rounded to specified decimal places, or 0 if total is zero
     """
     percentage = safe_divide(value, total) * 100
     return round(percentage, decimal_places)
