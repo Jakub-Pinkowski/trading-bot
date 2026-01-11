@@ -72,16 +72,16 @@ trading-bot/
 │   └── csv_results/                              # CSV results from backtesting
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
-│   ├── analysis/
-│   │   ├── alerts/                               # Performance analysis based on alerts
+│   ├── analysis/                                 # Performance analysis
+│   │   ├── ibkr_alerts/                          # Performance analysis based on IBKR alerts
 │   │   ├── trades/                               # Performance analysis based on trades
-│   │   └── tw_alerts/                            # Performance analysis based on TW alerts
+│   │   └── tw_alerts/                            # Performance analysis based on TradingView alerts
 │   ├── contracts/                                # Contracts ids
-│   └── raw_data/
-│       ├── alerts/                               # Raw alerts data
+│   └── raw_data/                                 # Raw data from TradingView and IBKR
+│       ├── ibkr_alerts/                          # Raw IBKR alerts data
 │       ├── trades/                               # Raw trades data
-│       └── tw_alerts/                            # Raw TW alerts
-├── historical_data/
+│       └── tw_alerts/                            # Raw TradingView alerts
+├── historical_data/                              # Raw historical data from TradingView
 │   ├── 1!/                                       # Front month
 │   ├── 2!/                                       # Next month
 │   └── contract_switch_dates.yaml                # Configuration for contract switch dates
@@ -93,8 +93,8 @@ trading-bot/
 │   ├── indicators/                               # Indicators
 │   ├── indicators_testing/                       # Testing indicators
 │   ├── strategies/                               # Strategies
-│   └── tw_indicators/                            # TW indicators
-├── tests/                                        # Tests directory
+│   └── tw_indicators/                            # TradingView indicators
+├── tests/
 │   ├── analysis/                                 # Analysis tests
 │   ├── backtesting/                              # Backtesting tests
 │   ├── e2e/                                      # End-to-end tests
