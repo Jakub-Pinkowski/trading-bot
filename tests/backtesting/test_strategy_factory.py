@@ -781,7 +781,7 @@ class TestWarningDeduplication(unittest.TestCase):
 
     @patch('app.backtesting.strategy_factory.logger')
     def test_log_warnings_once_different_strategy_types(self, mock_logger):
-        """Test that same warning for different strategy types is both logged."""
+        """Test that the same warning for different strategy types is logged for both strategies."""
         warnings = ["Same warning message"]
 
         # Call with different strategy types
