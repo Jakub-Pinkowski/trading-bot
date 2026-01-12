@@ -120,18 +120,18 @@ def calculate_trade_metrics(trade, symbol):
 def print_trade_metrics(trade):
     """ Print metrics for a single trade in a formatted way. """
     # Define colors for better visualization
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    RESET = '\033[0m'
+    green = '\033[92m'
+    red = '\033[91m'
+    reset = '\033[0m'
 
     # Determine colors based on return percentage
     return_percentage = trade.get('return_percentage_of_margin', 0.0)
     if return_percentage > 0:
-        color = GREEN
+        color = green
     elif return_percentage < 0:
-        color = RED
+        color = red
     else:
-        color = RESET
+        color = reset
 
     print('\n====== TRADE METRICS ======')
 
@@ -151,7 +151,7 @@ def print_trade_metrics(trade):
 
     # Percentage-based metrics
     print('\n--- PERCENTAGE-BASED METRICS ---')
-    print(f'Net Return % of Margin: {color}{return_percentage}%{RESET}')
-    print(f'Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{RESET}')
+    print(f'Net Return % of Margin: {color}{return_percentage}%{reset}')
+    print(f'Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{reset}')
 
     print('=============================\n')
