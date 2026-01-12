@@ -230,7 +230,6 @@ class StrategyAnalyzer:
         symbol_msg = f" and {symbol} symbol" if symbol else ""
         weighted_msg = " with weighted aggregation" if aggregate and weighted else ""
         weighted_msg = " with simple aggregation" if aggregate and not weighted else weighted_msg
-        print(f"Top strategies by {metric}{interval_msg}{symbol_msg}{weighted_msg} saved")
 
         return sorted_df
 
