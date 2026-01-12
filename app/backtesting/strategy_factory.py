@@ -84,7 +84,7 @@ def _validate_rsi_parameters(rsi_period, lower, upper):
     Enhanced validation for RSI parameters with guidance on reasonable ranges.
 
     Reasonable ranges based on common trading practices:
-    - RSI Period: 10-30 (14 is most common, shorter periods = more sensitive)
+    - RSI Period: 10-30 (14 is the most common, shorter periods = more sensitive)
     - Lower threshold: 20-40 (30 is standard, lower = more aggressive)
     - Upper threshold: 60-80 (70 is standard, higher = more conservative)
     - Threshold gap: Should be at least 20 points to avoid excessive signals
@@ -321,6 +321,11 @@ def _validate_common_parameters(rollover, trailing, slippage):
     - Slippage: 0-0.5% (0.1-0.2% is typical for liquid futures)
     """
     warnings = []
+
+    # Rollover validation: must be a boolean
+    if not isinstance(rollover, bool):
+        logger.error(f"Invalid rollover: {rollover}")
+        raise ValueError("rollover must be a boolean (True or False)")
 
     # Trailing stop validation
     if trailing is not None:
