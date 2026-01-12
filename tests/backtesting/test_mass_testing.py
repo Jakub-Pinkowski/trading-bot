@@ -1866,3 +1866,91 @@ class TestMassTesterPerformanceOptimizations:
 
                     # Verify _reset_counters was called
                     mock_reset.assert_called_once()
+
+    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('concurrent.futures.as_completed')
+    @patch('concurrent.futures.ProcessPoolExecutor')
+    @patch('app.backtesting.mass_testing.logger')
+    @patch('builtins.print')
+    def test_run_tests_worker_exception_handling(
+        self,
+        mock_print,
+        mock_logger,
+        mock_executor,
+        mock_as_completed,
+        mock_test_exists,
+        mock_load_results
+    ):
+        """Test that run_tests handles worker exceptions gracefully and continues processing."""
+        # Setup mocks
+        mock_load_results.return_value = (pd.DataFrame(), set())
+        mock_test_exists.return_value = False
+
+        # Create mock futures - one succeeds, one fails, one more succeeds
+        mock_future_success1 = MagicMock()
+        mock_future_success1.result.return_value = {
+            'month': '2023-01',
+            'symbol': 'ES',
+            'interval': '1h',
+            'strategy': 'Success Strategy 1',
+            'metrics': {'total_trades': 10},
+            'timestamp': '2023-01-01T00:00:00'
+        }
+        
+        mock_future_fail = MagicMock()
+        mock_future_fail.result.side_effect = Exception("Worker process crashed")
+        
+        mock_future_success2 = MagicMock()
+        mock_future_success2.result.return_value = {
+            'month': '2023-01',
+            'symbol': 'NQ',
+            'interval': '1h',
+            'strategy': 'Success Strategy 2',
+            'metrics': {'total_trades': 5},
+            'timestamp': '2023-01-01T00:00:00'
+        }
+
+        # Mock the executor
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.__enter__.return_value.submit.side_effect = [
+            mock_future_success1,
+            mock_future_fail,
+            mock_future_success2
+        ]
+        mock_executor.return_value = mock_executor_instance
+        
+        # Mock as_completed to return futures
+        mock_as_completed.return_value = [mock_future_success1, mock_future_fail, mock_future_success2]
+
+        # Create a tester with strategies
+        tester = MassTester(['2023-01'], ['ES', 'NQ'], ['1h'])
+        # Add 3 strategies to match our 3 futures
+        tester.strategies = [
+            ('Strategy1', MagicMock()),
+            ('Strategy2', MagicMock()),
+            ('Strategy3', MagicMock())
+        ]
+
+        # Run tests
+        results = tester.run_tests(verbose=False)
+
+        # Verify that logger.exception was called for the failed test
+        assert mock_logger.exception.call_count >= 1
+        exception_call = mock_logger.exception.call_args_list[0][0][0]
+        assert 'Worker exception during test execution' in exception_call
+
+        # Verify that logger.warning was called for the failure summary
+        assert mock_logger.warning.call_count >= 1
+        warning_call = mock_logger.warning.call_args_list[0][0][0]
+        assert 'failed test(s)' in warning_call
+
+        # Verify that print was called with the warning message
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        warning_printed = any('failed during execution' in call for call in print_calls)
+        assert warning_printed, "Expected warning message to be printed"
+
+        # Verify that successful results were collected (2 out of 3)
+        assert len(results) == 2
+        assert results[0]['strategy'] == 'Success Strategy 1'
+        assert results[1]['strategy'] == 'Success Strategy 2'
