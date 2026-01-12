@@ -801,7 +801,7 @@ class TestCalculateSortinoRatio:
         assert sortino_ratio == float('inf')  # Should return infinity when there are no negative returns
 
     def test_zero_downside_deviation(self):
-        """Test calculation of thr Sortino ratio when downside deviation is zero."""
+        """Test calculation of the Sortino ratio when downside deviation is zero."""
 
         # To test the specific condition where downside_deviation is zero,
         # we need to directly test the code path in the function
