@@ -136,22 +136,22 @@ def print_trade_metrics(trade):
     print('\n====== TRADE METRICS ======')
 
     # Trade details
-    print(f'Entry Time: {trade.get('entry_time', 'N/A')}')
-    print(f'Exit Time: {trade.get('exit_time', 'N/A')}')
+    print(f"Entry Time: {trade.get('entry_time', 'N/A')}")
+    print(f"Exit Time: {trade.get('exit_time', 'N/A')}")
 
     # Print duration if available
     if 'duration' in trade and 'duration_hours' in trade:
-        print(f'Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)')
+        print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
     elif 'duration_hours' in trade:
-        print(f'Duration: {trade['duration_hours']:.2f} hours')
+        print(f"Duration: {trade['duration_hours']:.2f} hours")
 
-    print(f'Side: {trade.get('side', 'N/A')}')
-    print(f'Entry Price: {trade.get('entry_price', 'N/A')}')
-    print(f'Exit Price: {trade.get('exit_price', 'N/A')}')
+    print(f"Side: {trade.get('side', 'N/A')}")
+    print(f"Entry Price: {trade.get('entry_price', 'N/A')}")
+    print(f"Exit Price: {trade.get('exit_price', 'N/A')}")
 
     # Percentage-based metrics
     print('\n--- PERCENTAGE-BASED METRICS ---')
     print(f'Net Return % of Margin: {color}{return_percentage}%{reset}')
-    print(f'Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{reset}')
+    print(f"Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{reset}")
 
     print('=============================\n')
