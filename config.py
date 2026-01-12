@@ -25,32 +25,39 @@ ALLOWED_IPS = {
 
 # Data directories
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-BACKTESTING_DATA_DIR = os.path.join(BASE_DIR, "backtesting_data")
 DATA_DIR = os.path.join(BASE_DIR, "data")
-HISTORICAL_DATA_DIR = os.path.join(BASE_DIR, "historical_data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
-CACHE_DIR = os.path.join(BACKTESTING_DATA_DIR, "cache")
+# Alerts
+ALERTS_DIR = os.path.join(DATA_DIR, "alerts")
+IBKR_ALERTS_DIR = os.path.join(ALERTS_DIR, "ibkr_alerts")
+TRADES_DIR = os.path.join(ALERTS_DIR, "trades")
+TW_ALERTS_DIR = os.path.join(ALERTS_DIR, "tw_alerts")
+
+# Analysis
+ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
+ANALYSIS_IBKR_ALERTS_DIR = os.path.join(ANALYSIS_DIR, "analysis_ibkr_alerts")
+ANALYSIS_TRADES_DIR = os.path.join(ANALYSIS_DIR, "analysis_trades")
+ANALYSIS_TW_ALERTS_DIR = os.path.join(ANALYSIS_DIR, "analysis_tw_alerts")
+IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(ANALYSIS_IBKR_ALERTS_DIR, "ibkr_alerts_per_trade_metrics.csv")
+IBKR_ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(ANALYSIS_IBKR_ALERTS_DIR, "ibkr_alerts_dataset_metrics.csv")
+TRADES_PER_TRADE_METRICS_FILE_PATH = os.path.join(ANALYSIS_TRADES_DIR, "trades_per_trade_metrics.csv")
+TRADES_DATASET_METRICS_FILE_PATH = os.path.join(ANALYSIS_TRADES_DIR, "trades_dataset_metrics.csv")
+TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(ANALYSIS_TW_ALERTS_DIR, "tw_alerts_per_trade_metrics.csv")
+TW_ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(ANALYSIS_TW_ALERTS_DIR, "tw_alerts_dataset_metrics.csv")
+
+# Backtesting
+BACKTESTING_DIR = os.path.join(DATA_DIR, "backtesting")
+CACHE_DIR = os.path.join(BACKTESTING_DIR, "cache")
 INDICATOR_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "indicator_cache.lock")
 DATAFRAME_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "dataframe_cache.lock")
 
-ANALYSIS_DIR = os.path.join(DATA_DIR, "analysis")
+# Contracts
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
-RAW_DATA_DIR = os.path.join(DATA_DIR, "raw_data")
-
-TRADES_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "trades")
-TW_ALERTS_ANALYSIS_DIR = os.path.join(ANALYSIS_DIR, "tw_alerts")
-
-ALERTS_DIR = os.path.join(RAW_DATA_DIR, "alerts")
-TRADES_DIR = os.path.join(RAW_DATA_DIR, "trades")
-TW_ALERTS_DIR = os.path.join(RAW_DATA_DIR, "tw_alerts")
-
-# File paths
 CONTRACTS_FILE_PATH = os.path.join(CONTRACTS_DIR, "contracts.json")
-TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw_alerts_per_trade_metrics.csv")
-TW_ALERTS_DATASET_METRICS_FILE_PATH = os.path.join(TW_ALERTS_ANALYSIS_DIR, "tw_alerts_dataset_metrics.csv")
-TRADES_PER_TRADE_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_per_trade_metrics.csv")
-TRADES_DATASET_METRICS_FILE_PATH = os.path.join(TRADES_ANALYSIS_DIR, "trades_dataset_metrics.csv")
+
+# Historical data
+HISTORICAL_DATA_DIR = os.path.join(DATA_DIR, "historical_data")
 SWITCH_DATES_FILE_PATH = os.path.join(HISTORICAL_DATA_DIR, "contract_switch_dates.yaml")
 
 # Strategy
@@ -62,7 +69,7 @@ AGGRESSIVE_TRADING = True
 # Analysis
 TIMEFRAME_TO_ANALYZE = 7  # In days
 
-# NOTE: TW multipliers, might not work properly with actual trades
+# NOTE: TradingView multipliers, might not work properly with actual trades
 CONTRACT_MULTIPLIERS = {
     'CC': 10,
     'CL': 1000,

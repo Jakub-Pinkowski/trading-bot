@@ -95,17 +95,17 @@ class SummaryMetrics:
     @staticmethod
     def print_summary_metrics(summary):
         """Print summary metrics in a formatted way."""
-        GREEN = '\033[92m'
-        RED = '\033[91m'
-        RESET = '\033[0m'
+        green = '\033[92m'
+        red = '\033[91m'
+        reset = '\033[0m'
 
         average_trade_return_percentage = summary['average_trade_return_percentage_of_margin']
         if average_trade_return_percentage > 0:
-            color = GREEN
+            color = green
         elif average_trade_return_percentage < 0:
-            color = RED
+            color = red
         else:
-            color = RESET  # default terminal color
+            color = reset  # default terminal color
 
         print('\n====== SUMMARY METRICS ======')
 
@@ -121,19 +121,19 @@ class SummaryMetrics:
         if summary["total_return_percentage_of_margin"] == 0:
             print(f'Total Return Percentage of Margin: 0.0%')
         else:
-            print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{RESET}')
+            print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{reset}')
         if average_trade_return_percentage == 0:
             print(f'Average Trade Return Percentage of Margin: 0.0%')
         else:
-            print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{RESET}')
-        print(f'Average Win Percentage of Margin: {GREEN}{summary["average_win_percentage_of_margin"]}%{RESET}')
-        print(f'Average Loss Percentage of Margin: {RED}{summary["average_loss_percentage_of_margin"]}%{RESET}')
+            print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{reset}')
+        print(f'Average Win Percentage of Margin: {green}{summary["average_win_percentage_of_margin"]}%{reset}')
+        print(f'Average Loss Percentage of Margin: {red}{summary["average_loss_percentage_of_margin"]}%{reset}')
         print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')
 
         # Contract-based metrics
         print('\n--- CONTRACT-BASED METRICS ---')
-        print(f'Total Return Percentage of Contract: {color}{summary["total_return_percentage_of_contract"]}%{RESET}')
-        print(f'Average Trade Return Percentage of Contract: {color}{summary["average_trade_return_percentage_of_contract"]}%{RESET}')
+        print(f'Total Return Percentage of Contract: {color}{summary["total_return_percentage_of_contract"]}%{reset}')
+        print(f'Average Trade Return Percentage of Contract: {color}{summary["average_trade_return_percentage_of_contract"]}%{reset}')
 
         # ===== RISK METRICS =====
         print('\n--- RISK METRICS ---')
@@ -272,7 +272,7 @@ class SummaryMetrics:
         return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
-        """Calculate Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
+        """Calculate the Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
         if not self._has_trades() or len(self.returns) < 2:  # Need at least 2 returns for standard deviation
             return 0
 

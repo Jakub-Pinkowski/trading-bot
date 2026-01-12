@@ -14,7 +14,7 @@ def save_to_parquet(data, file_path):
     # Create a directory if it doesn't exist
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # Load existing data if file exists
+    # Load existing data if a file exists
     if os.path.exists(file_path):
         try:
             existing = pd.read_parquet(file_path)
@@ -83,7 +83,7 @@ def save_file(data, file_path):
 
 
 def save_to_csv(data, file_path, dictionary_columns=None):
-    # Load existing data if file exists
+    # Load existing data if a file exists
     if os.path.exists(file_path):
         try:
             existing = pd.read_csv(file_path)
@@ -101,7 +101,7 @@ def save_to_csv(data, file_path, dictionary_columns=None):
     else:
         raise ValueError('Data must be either a Pandas DataFrame or a dictionary.')
 
-    # Concatenate and deduplicate if file exists; else just save data
+    # Concatenate and deduplicate if a file exists; else just save data
     if existing is not None:
         concat = pd.concat([existing, new_data], ignore_index=True)
         deduped = concat.drop_duplicates()

@@ -1,5 +1,5 @@
-from app.analysis.data_cleaning import clean_alerts_data, clean_trades_data
-from app.analysis.data_fetching import get_alerts_data, get_tw_alerts_data, get_trades_data
+from app.analysis.data_cleaning import clean_ibkr_alerts_data, clean_tw_alerts_data, clean_trades_data
+from app.analysis.data_fetching import get_ibkr_alerts_data, get_tw_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
@@ -8,6 +8,8 @@ from app.utils.file_utils import save_to_csv
 from app.utils.logger import get_logger
 from config import (TW_ALERTS_PER_TRADE_METRICS_FILE_PATH,
                     TW_ALERTS_DATASET_METRICS_FILE_PATH,
+                    IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH,
+                    IBKR_ALERTS_DATASET_METRICS_FILE_PATH,
                     TRADES_PER_TRADE_METRICS_FILE_PATH,
                     TRADES_DATASET_METRICS_FILE_PATH)
 
@@ -17,15 +19,32 @@ logger = get_logger('analysis/runner')
 def run_analysis():
     print('Running analysis...')
     # Fetch raw data
-    alerts_data = get_alerts_data()
+    ibkr_alerts_data = get_ibkr_alerts_data()
     tw_alerts_data = get_tw_alerts_data()
     trades_data = get_trades_data()
 
-    # Process TW Alerts
+    # Process IBKR Alerts
+    if is_nonempty(ibkr_alerts_data):
+        ibkr_alerts = clean_ibkr_alerts_data(ibkr_alerts_data)
+        if is_nonempty(ibkr_alerts):
+            ibkr_alerts_matched = match_trades(ibkr_alerts, is_ibkr_alerts=True)
+            if is_nonempty(ibkr_alerts_matched):
+                ibkr_alerts_with_per_trade_metrics = add_per_trade_metrics(ibkr_alerts_matched)
+                if is_nonempty(ibkr_alerts_with_per_trade_metrics):
+                    ibkr_alerts_dataset_metrics = calculate_dataset_metrics(ibkr_alerts_with_per_trade_metrics)
+                    save_to_csv(ibkr_alerts_with_per_trade_metrics, IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH)
+                    save_to_csv(
+                        ibkr_alerts_dataset_metrics,
+                        IBKR_ALERTS_DATASET_METRICS_FILE_PATH,
+                        dictionary_columns=['Metric', 'Value']
+                    )
+                    logger.info('IBKR Alerts processed successfully.')
+
+    # Process TradingView Alerts
     if is_nonempty(tw_alerts_data):
-        tw_alerts = clean_alerts_data(tw_alerts_data, tw_alerts=True)
+        tw_alerts = clean_tw_alerts_data(tw_alerts_data)
         if is_nonempty(tw_alerts):
-            tw_alerts_matched = match_trades(tw_alerts, is_alerts=True)
+            tw_alerts_matched = match_trades(tw_alerts, is_tw_alerts=True)
             if is_nonempty(tw_alerts_matched):
                 tw_alerts_with_per_trade_metrics = add_per_trade_metrics(tw_alerts_matched)
                 if is_nonempty(tw_alerts_with_per_trade_metrics):

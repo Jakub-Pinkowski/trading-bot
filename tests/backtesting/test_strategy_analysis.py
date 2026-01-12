@@ -143,7 +143,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['interval'] == '4h'))
 
-        # Filter by non-existent interval
+        # Filter by a non-existent interval
         result = _filter_dataframe(self.sample_data, interval='5m')
         self.assertEqual(len(result), 0)
 
@@ -331,7 +331,7 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
         self.assertEqual(result['Strategy_B'], expected_strategy_b)
 
     def test_single_strategy(self):
-        """Test with single strategy."""
+        """Test with a single strategy."""
         single_strategy_data = pd.DataFrame({
             'strategy': ['Strategy_A', 'Strategy_A'],
             'total_trades': [10, 20],
@@ -344,7 +344,7 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
         self.assertEqual(result['Strategy_A'], expected)
 
     def test_equal_trades(self):
-        """Test with equal number of trades (should be simple average)."""
+        """Test with equal number of trades (should be a simple average)."""
         equal_trades_data = pd.DataFrame({
             'strategy': ['Strategy_A', 'Strategy_A'],
             'total_trades': [10, 10],
@@ -386,7 +386,7 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
         self.total_trades_by_strategy = self.sample_data.groupby('strategy')['total_trades'].sum()
 
     def test_trade_weighted_average_sharpe(self):
-        """Test trade-weighted average for Sharpe ratio."""
+        """Test trade-weighted average for the Sharpe ratio."""
         result = _calculate_trade_weighted_average(
             self.sample_data, 'sharpe_ratio', self.total_trades_by_strategy
         )
@@ -414,7 +414,7 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
         self.assertEqual(result['Strategy_B'], expected_b)
 
     def test_single_entry_per_strategy(self):
-        """Test with single entry per strategy."""
+        """Test with a single entry per strategy."""
         single_entry_data = pd.DataFrame({
             'strategy': ['Strategy_A', 'Strategy_B'],
             'total_trades': [10, 20],
@@ -485,7 +485,7 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         self.assertEqual(result['Strategy_B'], 5.0)  # 100/20
 
     def test_single_strategy(self):
-        """Test with single strategy."""
+        """Test with a single strategy."""
         total_return = pd.Series([150.0], index=['Strategy_A'])
         total_trades = pd.Series([30], index=['Strategy_A'])
 
@@ -612,7 +612,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7],
             'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3],
             'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1],
-            # Calculate total wins and losses for new profit factor calculation
+            # Calculate total wins and losses for a new profit factor calculation
             # total_wins = (win_rate/100) * total_trades * average_win_percentage_of_margin
             # total_losses = ((100-win_rate)/100) * total_trades * average_loss_percentage_of_margin
             'total_wins_percentage_of_margin': [6.0, 9.45, 8.8, 11.375],  # [6*1.0, 10.5*0.9, 11*0.8, 16.25*0.7]
@@ -860,7 +860,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('RSI'))
 
-        # Test non-weighted aggregation with interval filter
+        # Test non-weighted aggregation with an interval filter
         non_weighted_aggregated = analyzer._aggregate_strategies(interval='1d', weighted=False)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Only RSI strategies have 1d interval
         for strategy in non_weighted_aggregated['strategy']:
@@ -872,7 +872,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertTrue(any(s.startswith('RSI') for s in weighted_aggregated['strategy']))
         self.assertTrue(any(s.startswith('EMA') for s in weighted_aggregated['strategy']))
 
-        # Test non-weighted aggregation with symbol filter
+        # Test non-weighted aggregation with a symbol filter
         non_weighted_aggregated = analyzer._aggregate_strategies(symbol='ES', weighted=False)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Both RSI and EMA have ES
         self.assertTrue(any(s.startswith('RSI') for s in non_weighted_aggregated['strategy']))
@@ -1180,7 +1180,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
     @patch('os.makedirs')
     @patch('pandas.DataFrame.to_csv')
     def test_save_results_to_csv_with_none_df_to_save(self, mock_to_csv, mock_makedirs, mock_read_parquet):
-        """Test save_results_to_csv when df_to_save is None but results_df is available for both weighted approaches."""
+        """Test save_results_to_csv when df_to_save is None, but results_df is available for both weighted approaches."""
         # Setup mocks
         mock_read_parquet.return_value = self.sample_data
 
@@ -1386,7 +1386,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
-        # Test with multiple filters including min_slippage (weighted=True)
+        # Test with multiple filters, including min_slippage (weighted=True)
         weighted_multiple = analyzer.get_top_strategies('win_rate',
                                                         0,
                                                         interval='4h',
@@ -1397,7 +1397,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         for strategy in weighted_multiple['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
-        # Test with multiple filters including min_slippage (weighted=False)
+        # Test with multiple filters, including min_slippage (weighted=False)
         non_weighted_multiple = analyzer.get_top_strategies('win_rate',
                                                             0,
                                                             interval='4h',

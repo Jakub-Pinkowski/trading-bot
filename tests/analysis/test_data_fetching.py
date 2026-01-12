@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from app.analysis.data_fetching import (
-    get_alerts_data,
+    get_ibkr_alerts_data,
     get_tw_alerts_data,
     get_trades_data,
     fetch_trades_data
@@ -14,7 +14,7 @@ from app.analysis.data_fetching import (
 
 @pytest.fixture
 def sample_alerts_data():
-    """Sample alerts data for testing."""
+    """Sample ibkr_alerts data for testing."""
 
     return pd.DataFrame([
         {"timestamp": "23-05-01 10:30:45", "symbol": "ZW1!", "side": "B", "price": "34.20"},
@@ -24,7 +24,7 @@ def sample_alerts_data():
 
 @pytest.fixture
 def sample_tw_alerts_data():
-    """Sample TradingView alerts data for testing."""
+    """Sample TradingView ibkr_alerts data for testing."""
 
     return pd.DataFrame([
         {
@@ -73,14 +73,14 @@ def sample_trades_json():
 
 
 @patch('app.analysis.data_fetching.load_data_from_json_files')
-def test_get_alerts_data(mock_load_data, sample_alerts_data):
-    """Test getting alerts data."""
+def test_get_ibkr_alerts_data(mock_load_data, sample_alerts_data):
+    """Test getting ibkr_alerts data."""
 
     # Setup mock
     mock_load_data.return_value = sample_alerts_data
 
     # Call the function
-    result = get_alerts_data()
+    result = get_ibkr_alerts_data()
 
     # Verify the result
     assert not result.empty
@@ -92,14 +92,14 @@ def test_get_alerts_data(mock_load_data, sample_alerts_data):
 
 
 @patch('app.analysis.data_fetching.load_data_from_json_files')
-def test_get_alerts_data_empty(mock_load_data):
-    """Test getting alerts data when no data is available."""
+def test_get_ibkr_alerts_data_empty(mock_load_data):
+    """Test getting ibkr_alerts data when no data is available."""
 
     # Setup mock to return empty DataFrame
     mock_load_data.return_value = pd.DataFrame()
 
     # Call the function
-    result = get_alerts_data()
+    result = get_ibkr_alerts_data()
 
     # Verify the result is an empty DataFrame with expected columns
     assert result.empty
@@ -113,7 +113,7 @@ def test_get_alerts_data_empty(mock_load_data):
 @patch('app.analysis.data_fetching.os.path.exists')
 @patch('app.analysis.data_fetching.pd.read_csv')
 def test_get_tw_alerts_data(mock_read_csv, mock_exists, mock_listdir, sample_tw_alerts_data):
-    """Test getting TradingView alerts data."""
+    """Test getting TradingView ibkr_alerts data."""
 
     # Setup mocks
     mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
@@ -136,7 +136,7 @@ def test_get_tw_alerts_data(mock_read_csv, mock_exists, mock_listdir, sample_tw_
 
 @patch('app.analysis.data_fetching.os.listdir')
 def test_get_tw_alerts_data_no_files(mock_listdir):
-    """Test getting TradingView alerts data when no files are available."""
+    """Test getting TradingView ibkr_alerts data when no files are available."""
 
     # Setup mock to return empty list
     mock_listdir.return_value = []
@@ -153,7 +153,7 @@ def test_get_tw_alerts_data_no_files(mock_listdir):
 
 @patch('app.analysis.data_fetching.os.listdir')
 def test_get_tw_alerts_data_invalid_date_format(mock_listdir):
-    """Test getting TradingView alerts data with invalid date format in filename."""
+    """Test getting TradingView ibkr_alerts data with invalid date format in filename."""
 
     # Setup mock to return files with invalid date format
     mock_listdir.return_value = ['TradingView_Alerts_Log_invalid-date.csv']
@@ -171,7 +171,7 @@ def test_get_tw_alerts_data_invalid_date_format(mock_listdir):
 @patch('app.analysis.data_fetching.os.listdir')
 @patch('app.analysis.data_fetching.os.path.exists')
 def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
-    """Test getting TradingView alerts data when file doesn't exist."""
+    """Test getting TradingView ibkr_alerts data when file doesn't exist."""
 
     # Setup mocks
     mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
@@ -192,7 +192,7 @@ def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
 @patch('app.analysis.data_fetching.os.path.exists')
 @patch('app.analysis.data_fetching.pd.read_csv')
 def test_get_tw_alerts_data_read_exception(mock_read_csv, mock_exists, mock_listdir):
-    """Test getting TradingView alerts data when reading file raises exception."""
+    """Test getting TradingView ibkr_alerts data when reading file raises exception."""
 
     # Setup mocks
     mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
@@ -337,7 +337,7 @@ def test_fetch_trades_data_no_data(mock_api_get):
 def test_fetch_trades_data_retry_success(mock_sleep, mock_api_get, sample_trades_json):
     """Test fetching trades data with retry that succeeds."""
 
-    # Setup mock to return None on first call, then data on second call
+    # Setup mock to return None on the first call, then data on the second call
     mock_api_get.side_effect = [None, sample_trades_json]
 
     # Call the function
