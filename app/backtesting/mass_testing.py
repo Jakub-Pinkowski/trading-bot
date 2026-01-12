@@ -286,7 +286,7 @@ class MassTester:
                 except Exception:
                     # Get test details for logging
                     test_params = future_to_test[future]
-                    tested_month, symbol, interval, strategy_name = test_params[0], test_params[1], test_params[2], test_params[3]
+                    tested_month, symbol, interval, strategy_name = test_params[:4]
                     
                     # Log the exception with full traceback
                     logger.exception(
