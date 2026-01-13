@@ -148,6 +148,7 @@ trading-bot/
 # TODO [LOW]: Fix all the grammar errors
 
 # Tests
+# TODO [MEDIUM]: All the tests use different data compared to an actual historical data, rework them to use actual data
 # TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value
 # TODO [LOW]: Add e2e tests
 
