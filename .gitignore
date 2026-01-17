@@ -24,3 +24,7 @@ tw_fetching.py
 # Logs
 logs/
 .coverage
+
+# Test artifacts
+test_dir/
+*.lock
