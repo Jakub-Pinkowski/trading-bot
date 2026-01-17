@@ -3,8 +3,10 @@ import os
 from glob import glob
 
 import pandas as pd
+from filelock import FileLock
 
 from app.utils.logger import get_logger
+from config import PARQUET_FILE_LOCK
 
 logger = get_logger()
 
@@ -14,28 +16,31 @@ def save_to_parquet(data, file_path):
     # Create a directory if it doesn't exist
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # Load existing data if a file exists
-    if os.path.exists(file_path):
-        try:
-            existing = pd.read_parquet(file_path)
-        except Exception as err:
-            logger.error(f'Could not read existing parquet file for deduplication: {err}')
-            existing = None
-    else:
-        existing = None
-
     if not isinstance(data, pd.DataFrame):
         raise ValueError('Data must be a Pandas DataFrame for parquet format.')
 
-    # Concatenate and deduplicate if a file exists; else save data
-    if existing is not None:
-        concat = pd.concat([existing, data], ignore_index=True)
-        deduped = concat.drop_duplicates()
-    else:
-        deduped = data
+    # Use file lock to prevent concurrent access issues
+    lock_path = f"{PARQUET_FILE_LOCK}.{os.path.basename(file_path)}"
+    with FileLock(lock_path, timeout=300):
+        # Load existing data if a file exists
+        if os.path.exists(file_path):
+            try:
+                existing = pd.read_parquet(file_path)
+            except Exception as err:
+                logger.error(f'Could not read existing parquet file for deduplication: {err}')
+                existing = None
+        else:
+            existing = None
 
-    # Save (overwrite) deduped data
-    deduped.to_parquet(file_path, index=False)
+        # Concatenate and deduplicate if a file exists; else save data
+        if existing is not None:
+            concat = pd.concat([existing, data], ignore_index=True)
+            deduped = concat.drop_duplicates()
+        else:
+            deduped = data
+
+        # Save (overwrite) deduped data
+        deduped.to_parquet(file_path, index=False)
 
 
 def load_file(file_path):
