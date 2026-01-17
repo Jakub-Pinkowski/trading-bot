@@ -149,9 +149,6 @@ class MassTester:
         """  Run all tests with the configured parameters in parallel. """
         start_time = time.time()  # Track the start time of the entire process
 
-        # Reset counters to prevent accumulation
-        self._reset_counters()  #
-
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
@@ -309,6 +306,21 @@ class MassTester:
                     else:
                         self.results.append(result)
 
+        # Save caches after all tests complete (only from main process)
+        logger.info('All tests completed, saving caches...')
+        try:
+            with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
+                indicator_cache_size = indicator_cache.size()
+                indicator_cache.save_cache()
+                logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
+            
+            with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
+                dataframe_cache_size = dataframe_cache.size()
+                dataframe_cache.save_cache()
+                logger.info(f"Saved dataframe cache with {dataframe_cache_size} entries")
+        except Exception as e:
+            logger.error(f"Failed to save caches after test completion: {e}")
+
         if self.results:
             self._save_results()
 
@@ -353,10 +365,6 @@ class MassTester:
 
             self.strategies.append((strategy_name, strategy_instance))
 
-    def _reset_counters(self):
-        """Reset class-level counters to prevent accumulation across runs."""
-        self.__class__.tests_completed = 0
-
     def _run_single_test(self, test_params):
         """Run a single test with the given parameters."""
         # Unpack parameters
@@ -373,27 +381,6 @@ class MassTester:
             output_buffer.append(f'\nRunning strategy: {strategy_name} for {symbol} {interval} {tested_month}')
 
         trades_list = strategy_instance.run(df, switch_dates)
-
-        # Save caches only periodically
-        # Add this as a class variable
-        self.__class__.tests_completed = getattr(self.__class__, 'tests_completed', 0) + 1
-        if self.__class__.tests_completed % 500 == 0:  # Adjust frequency as needed
-            # Use separate locks for indicator and dataframe caches to reduce contention
-            try:
-                # Check cache sizes before saving and clear if getting too large
-                if indicator_cache.size() > 400:  # Near max_size
-                    logger.info(f"Indicator cache size ({indicator_cache.size()}) approaching limit, clearing cache")
-                    indicator_cache.clear()
-                if dataframe_cache.size() > 40:  # Near max_size
-                    logger.info(f"Dataframe cache size ({dataframe_cache.size()}) approaching limit, clearing cache")
-                    dataframe_cache.clear()
-
-                with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
-                    indicator_cache.save_cache()
-                with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
-                    dataframe_cache.save_cache()
-            except Exception as e:
-                logger.error(f"Failed to save caches: {e}")
 
         trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
 
