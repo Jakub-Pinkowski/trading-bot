@@ -14,6 +14,11 @@ clientportal/
 
 # Data
 /data
+
+# Prompts
+.github/prompts/*.prompt.md
+
+# Trading View fetching
 tw_fetching.py
 
 # Logs
