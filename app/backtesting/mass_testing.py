@@ -307,15 +307,18 @@ class MassTester:
                         self.results.append(result)
 
         # Save caches after all tests complete (only from main process)
-        print('All tests completed, saving caches...')
+        logger.info('All tests completed, saving caches...')
         try:
+            indicator_cache_size = indicator_cache.size()
+            dataframe_cache_size = dataframe_cache.size()
+            
             with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
                 indicator_cache.save_cache()
-            logger.info(f"Saved indicator cache with {indicator_cache.size()} entries")
+            logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
             
             with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
                 dataframe_cache.save_cache()
-            logger.info(f"Saved dataframe cache with {dataframe_cache.size()} entries")
+            logger.info(f"Saved dataframe cache with {dataframe_cache_size} entries")
         except Exception as e:
             logger.error(f"Failed to save caches after test completion: {e}")
 
