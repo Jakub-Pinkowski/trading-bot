@@ -1904,7 +1904,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_future_success2 = MagicMock()
         mock_future_success2.result.return_value = {
             'month': '2023-01',
-            'symbol': 'NQ',
+            'symbol': 'ES',
             'interval': '1h',
             'strategy': 'Success Strategy 2',
             'metrics': {'total_trades': 5},
@@ -1923,8 +1923,8 @@ class TestMassTesterPerformanceOptimizations:
         # Mock as_completed to return futures
         mock_as_completed.return_value = [mock_future_success1, mock_future_fail, mock_future_success2]
 
-        # Create a tester with strategies
-        tester = MassTester(['2023-01'], ['ES', 'NQ'], ['1h'])
+        # Create a tester with strategies - use only 1 symbol to get exactly 3 combinations
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
         # Add 3 strategies to match our 3 futures
         tester.strategies = [
             ('Strategy1', MagicMock()),
