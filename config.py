@@ -51,7 +51,6 @@ BACKTESTING_DIR = os.path.join(DATA_DIR, "backtesting")
 CACHE_DIR = os.path.join(BACKTESTING_DIR, "cache")
 INDICATOR_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "indicator_cache.lock")
 DATAFRAME_CACHE_LOCK_FILE = os.path.join(CACHE_DIR, "dataframe_cache.lock")
-PARQUET_FILE_LOCK = os.path.join(BACKTESTING_DIR, "parquet_file.lock")
 
 # Contracts
 CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")

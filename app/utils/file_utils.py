@@ -6,7 +6,6 @@ import pandas as pd
 from filelock import FileLock
 
 from app.utils.logger import get_logger
-from config import PARQUET_FILE_LOCK
 
 logger = get_logger()
 
@@ -20,7 +19,9 @@ def save_to_parquet(data, file_path):
         raise ValueError('Data must be a Pandas DataFrame for parquet format.')
 
     # Use file lock to prevent concurrent access issues
-    lock_path = f"{PARQUET_FILE_LOCK}.{os.path.basename(file_path)}"
+    # Use absolute path to avoid conflicts between files with same name in different directories
+    abs_file_path = os.path.abspath(file_path)
+    lock_path = f"{abs_file_path}.lock"
     with FileLock(lock_path, timeout=300):
         # Load existing data if a file exists
         if os.path.exists(file_path):
