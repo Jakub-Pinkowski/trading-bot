@@ -151,7 +151,7 @@ def print_trade_metrics(trade):
 
     # Percentage-based metrics
     print('\n--- PERCENTAGE-BASED METRICS ---')
-    print(f'Net Return % of Margin: {color}{return_percentage}%{reset}')
+    print(f"Net Return % of Margin: {color}{return_percentage}%{reset}")
     print(f"Return % of Contract: {color}{trade.get('return_percentage_of_contract', 0.0)}%{reset}")
 
     print('=============================\n')
