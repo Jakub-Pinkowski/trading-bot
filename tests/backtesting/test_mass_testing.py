@@ -1718,6 +1718,8 @@ class TestMassTesterPerformanceOptimizations:
         assert results[0]['strategy'] == 'Success Strategy 1'
         assert results[1]['strategy'] == 'Success Strategy 2'
 
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
     @patch('app.backtesting.mass_testing._load_existing_results')
     @patch('app.backtesting.mass_testing._test_already_exists')
     @patch('concurrent.futures.as_completed')
@@ -1731,9 +1733,14 @@ class TestMassTesterPerformanceOptimizations:
         mock_executor,
         mock_as_completed,
         mock_test_exists,
-        mock_load_results
+        mock_load_results,
+        mock_file,
+        mock_yaml_load
     ):
         """Test that caches are only saved from main process, not from workers."""
+        # Setup yaml mock for switch dates
+        mock_yaml_load.return_value = {'ES': ['2023-01-15', '2023-02-15']}
+        
         # Setup mocks
         mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = False
