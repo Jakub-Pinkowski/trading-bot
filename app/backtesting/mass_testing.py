@@ -253,6 +253,7 @@ class MassTester:
 
             total_tests = len(test_combinations)
             completed_tests = 0
+            failed_tests = 0
             batch_start_time = time.time()
             overall_start_time = time.time()
 
@@ -279,7 +280,22 @@ class MassTester:
                         self._save_results()
                         self.results.clear()
 
-                result = future.result()
+                # Handle worker exceptions gracefully to prevent crashing the entire mass testing run
+                try:
+                    result = future.result()
+                except Exception:
+                    # Get test details for logging
+                    test_params = future_to_test[future]
+                    tested_month, symbol, interval, strategy_name = test_params[:4]
+                    
+                    # Log the exception with full traceback
+                    logger.exception(
+                        f'Worker exception during test execution: '
+                        f'Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}'
+                    )
+                    failed_tests += 1
+                    continue
+
                 if result:
                     # Print verbose output if available
                     if verbose and 'verbose_output' in result and result['verbose_output']:
@@ -305,6 +321,11 @@ class MassTester:
             print(f'Average time per 100 tests: {average_time_per_100_tests:.4f} seconds')
 
         print(f'Total execution time: {total_time:.2f} seconds')
+
+        # Report failed tests summary
+        if failed_tests > 0:
+            logger.warning(f'Mass testing completed with {failed_tests} failed test(s) out of {total_tests} total tests')
+            print(f'Warning: {failed_tests} test(s) failed during execution. Check logs for details.')
 
         return self.results
 
