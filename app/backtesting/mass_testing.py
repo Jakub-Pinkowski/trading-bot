@@ -284,8 +284,8 @@ class MassTester:
                     # Get test details for logging
                     test_params = future_to_test[future]
                     tested_month, symbol, interval, strategy_name = test_params[:4]
-                    
-                    # Log the exception with full traceback
+
+                    # Log the exception with a full traceback
                     logger.exception(
                         f'Worker exception during test execution: '
                         f'Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}'
@@ -313,7 +313,7 @@ class MassTester:
                 indicator_cache_size = indicator_cache.size()
                 indicator_cache.save_cache()
                 logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
-            
+
             with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
                 dataframe_cache_size = dataframe_cache.size()
                 dataframe_cache.save_cache()
