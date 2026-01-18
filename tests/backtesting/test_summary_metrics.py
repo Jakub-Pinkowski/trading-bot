@@ -372,7 +372,6 @@ class TestCalculateSummaryMetrics:
         assert 'sortino_ratio' in summary
         assert 'calmar_ratio' in summary
 
-
     def test_long_drawdown_with_recovery(self):
         """Test calculation of summary metrics with a long drawdown period followed by recovery.
 

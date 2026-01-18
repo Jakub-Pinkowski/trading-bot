@@ -8,9 +8,9 @@ from app.backtesting.indicators import calculate_macd
 def test_calculate_macd_with_valid_prices():
     """Test MACD calculation with valid price data"""
     prices = pd.Series([
-                           44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-                           102, 105, 108, 110, 112, 115, 118, 120, 122, 125
-                       ])
+        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
+        102, 105, 108, 110, 112, 115, 118, 120, 122, 125
+    ])
     macd = calculate_macd(prices)
 
     # Check that the result is a DataFrame with the expected columns
@@ -50,9 +50,9 @@ def test_calculate_macd_with_custom_parameters():
 def test_calculate_macd_parameter_sensitivity():
     """Test MACD sensitivity to different parameter values"""
     prices = pd.Series([
-                           44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-                           102, 105, 108, 110, 112, 115, 118, 120, 122, 125, 128, 130, 132, 135, 138, 140
-                       ])
+        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
+        102, 105, 108, 110, 112, 115, 118, 120, 122, 125, 128, 130, 132, 135, 138, 140
+    ])
 
     # Calculate MACD with default parameters
     macd_default = calculate_macd(prices)
@@ -158,7 +158,7 @@ def test_calculate_macd_with_trend_reversal():
             # Check that MACD line is decreasing during the downtrend
             downtrend_macd = macd.loc[valid_idx, 'macd_line'].iloc[trend_reversal_idx:]
             assert (
-                               downtrend_macd.diff().dropna() < 0).sum() > len(downtrend_macd) * 0.7  # At least 70% of points should be decreasing
+                           downtrend_macd.diff().dropna() < 0).sum() > len(downtrend_macd) * 0.7  # At least 70% of points should be decreasing
 
         # There should be at least one crossover (MACD line crosses signal line)
         crossovers = ((macd.loc[valid_idx, 'macd_line'] > macd.loc[valid_idx, 'signal_line']) !=
@@ -182,10 +182,10 @@ def test_calculate_macd_calculation_correctness():
     """Test MACD calculation correctness by manually calculating values"""
     # Create a simple price series
     prices = pd.Series([
-                           100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
-                           122, 124, 126, 128, 130, 132, 134, 136, 138, 140,
-                           142, 144, 146, 148, 150, 152, 154, 156, 158, 160
-                       ])
+        100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
+        122, 124, 126, 128, 130, 132, 134, 136, 138, 140,
+        142, 144, 146, 148, 150, 152, 154, 156, 158, 160
+    ])
 
     # Calculate MACD with specific parameters for easier verification
     fast_period = 3
@@ -228,10 +228,10 @@ def test_calculate_macd_with_nan_values():
     """Test MACD calculation with NaN values in the input data"""
     # Create a price series with NaN values
     prices = pd.Series([
-                           100, 102, np.nan, 106, 108, 110, np.nan, np.nan, 116, 118, 120,
-                           122, 124, np.nan, 128, 130, 132, 134, 136, 138, 140,
-                           142, 144, 146, 148, 150, np.nan, 154, 156, 158, 160
-                       ])
+        100, 102, np.nan, 106, 108, 110, np.nan, np.nan, 116, 118, 120,
+        122, 124, np.nan, 128, 130, 132, 134, 136, 138, 140,
+        142, 144, 146, 148, 150, np.nan, 154, 156, 158, 160
+    ])
 
     # Forward fill NaN values to create a clean series for comparison
     clean_prices = prices.ffill()
@@ -382,11 +382,11 @@ def test_calculate_macd_zero_line_crossovers():
     """Test MACD zero line crossovers"""
     # Create a price series that will generate MACD zero line crossovers
     prices = pd.Series([
-                           100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
-                           118, 116, 114, 112, 110, 108, 106, 104, 102, 100,
-                           98, 96, 94, 92, 90, 88, 86, 84, 82, 80,
-                           82, 84, 86, 88, 90, 92, 94, 96, 98, 100
-                       ])
+        100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
+        118, 116, 114, 112, 110, 108, 106, 104, 102, 100,
+        98, 96, 94, 92, 90, 88, 86, 84, 82, 80,
+        82, 84, 86, 88, 90, 92, 94, 96, 98, 100
+    ])
 
     macd = calculate_macd(prices, fast_period=5, slow_period=10, signal_period=3)
 

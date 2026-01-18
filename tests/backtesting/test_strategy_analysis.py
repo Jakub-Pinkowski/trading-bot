@@ -370,8 +370,6 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
         self.assertEqual(result['Strategy_A'], expected)
 
 
-
-
 class TestCalculateTradeWeightedAverage(unittest.TestCase):
     """Tests for the _calculate_trade_weighted_average function."""
 
@@ -817,7 +815,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         for strategy_type in ['RSI', 'EMA']:
             weighted_strategy = weighted_aggregated[weighted_aggregated['strategy'].str.contains(strategy_type)].iloc[0]
             non_weighted_strategy = \
-            non_weighted_aggregated[non_weighted_aggregated['strategy'].str.contains(strategy_type)].iloc[0]
+                non_weighted_aggregated[non_weighted_aggregated['strategy'].str.contains(strategy_type)].iloc[0]
             # Just verify that the win_rate exists in both
             self.assertIn('win_rate', weighted_strategy)
             self.assertIn('win_rate', non_weighted_strategy)
@@ -849,7 +847,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # these values would likely be different.
         ema_weighted = weighted_aggregated[weighted_aggregated['strategy'].str.contains('slippage=0.2')].iloc[0]
         ema_non_weighted = \
-        non_weighted_aggregated[non_weighted_aggregated['strategy'].str.contains('slippage=0.2')].iloc[0]
+            non_weighted_aggregated[non_weighted_aggregated['strategy'].str.contains('slippage=0.2')].iloc[0]
         # Just verify that the win_rate exists in both
         self.assertIn('win_rate', ema_weighted)
         self.assertIn('win_rate', ema_non_weighted)

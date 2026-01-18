@@ -7,9 +7,9 @@ from app.backtesting.indicators import calculate_bollinger_bands
 def test_calculate_bollinger_bands_with_valid_prices():
     """Test Bollinger Bands calculation with valid price data"""
     prices = pd.Series([
-                           44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-                           102, 105, 108, 110, 112, 115, 118, 120, 122, 125
-                       ])
+        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
+        102, 105, 108, 110, 112, 115, 118, 120, 122, 125
+    ])
     bb = calculate_bollinger_bands(prices)
 
     # Check that the result is a DataFrame with the expected columns
@@ -56,9 +56,9 @@ def test_calculate_bollinger_bands_with_custom_period():
 def test_calculate_bollinger_bands_with_different_std_values():
     """Test Bollinger Bands calculation with different standard deviation values"""
     prices = pd.Series([
-                           44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-                           102, 105, 108, 110, 112, 115, 118, 120, 122, 125
-                       ])
+        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
+        102, 105, 108, 110, 112, 115, 118, 120, 122, 125
+    ])
 
     # Calculate Bollinger Bands with different standard deviation values
     bb_1std = calculate_bollinger_bands(prices, num_std=1)
@@ -190,9 +190,9 @@ def test_calculate_bollinger_bands_calculation_correctness():
     """Test Bollinger Bands calculation correctness by manually calculating values"""
     # Create a simple price series
     prices = pd.Series([
-                           100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
-                           122, 124, 126, 128, 130, 132, 134, 136, 138, 140
-                       ])
+        100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
+        122, 124, 126, 128, 130, 132, 134, 136, 138, 140
+    ])
 
     # Calculate Bollinger Bands with specific parameters for easier verification
     period = 5
@@ -255,10 +255,10 @@ def test_calculate_bollinger_bands_with_nan_values():
     """Test Bollinger Bands calculation with NaN values in the input data"""
     # Create a price series with NaN values
     prices = pd.Series([
-                           100, 102, np.nan, 106, 108, 110, np.nan, np.nan, 116, 118, 120,
-                           122, 124, np.nan, 128, 130, 132, 134, 136, 138, 140,
-                           142, 144, 146, 148, 150, np.nan, 154, 156, 158, 160
-                       ])
+        100, 102, np.nan, 106, 108, 110, np.nan, np.nan, 116, 118, 120,
+        122, 124, np.nan, 128, 130, 132, 134, 136, 138, 140,
+        142, 144, 146, 148, 150, np.nan, 154, 156, 158, 160
+    ])
 
     # Forward fill NaN values to create a clean series for comparison
     clean_prices = prices.ffill()

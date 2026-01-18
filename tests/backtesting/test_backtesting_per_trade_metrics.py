@@ -127,7 +127,6 @@ class TestCalculateTradeMetrics:
         with pytest.raises(ValueError, match="No contract multiplier found for symbol: ES"):
             calculate_trade_metrics(trade, 'ES')
 
-
     @patch('app.backtesting.per_trade_metrics.CONTRACT_MULTIPLIERS', {'ES': 0})
     def test_zero_contract_multiplier(self):
         """Test error handling when contract multiplier is zero."""
@@ -136,7 +135,6 @@ class TestCalculateTradeMetrics:
         # Verify that ValueError is raised
         with pytest.raises(ValueError, match="No contract multiplier found for symbol: ES"):
             calculate_trade_metrics(trade, 'ES')
-
 
     def test_invalid_trade_side(self):
         """Test error handling when trade side is invalid."""
@@ -199,7 +197,7 @@ class TestCalculateTradeMetrics:
         assert large_price_metrics['net_pnl'] == large_net_pnl
         assert large_price_metrics['margin_requirement'] == large_margin_requirement
         assert large_price_metrics['return_percentage_of_margin'] == round((
-                                                                                       large_net_pnl / large_margin_requirement) * 100,
+                                                                                   large_net_pnl / large_margin_requirement) * 100,
                                                                            2)
         assert large_price_metrics['return_percentage_of_contract'] == round((large_net_pnl / (100000.0 * 50)) * 100, 2)
 
@@ -223,7 +221,7 @@ class TestCalculateTradeMetrics:
         assert small_price_metrics['net_pnl'] == small_net_pnl
         assert small_price_metrics['margin_requirement'] == small_margin_requirement
         assert small_price_metrics['return_percentage_of_margin'] == round((
-                                                                                       small_net_pnl / small_margin_requirement) * 100,
+                                                                                   small_net_pnl / small_margin_requirement) * 100,
                                                                            2)
         assert small_price_metrics['return_percentage_of_contract'] == round((small_net_pnl / (0.01 * 50)) * 100, 2)
 

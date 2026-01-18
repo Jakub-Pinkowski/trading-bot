@@ -874,15 +874,15 @@ class TestMassTester:
 
         # Run a single test with the new format
         result = tester._run_single_test((
-                                             '2023-01',
-                                             'ES',
-                                             '1h',
-                                             'Test Strategy',
-                                             strategy,
-                                             False,
-                                             switch_dates,
-                                             filepath
-                                         ))
+            '2023-01',
+            'ES',
+            '1h',
+            'Test Strategy',
+            strategy,
+            False,
+            switch_dates,
+            filepath
+        ))
 
         # Verify the result
         assert result is not None
@@ -942,15 +942,15 @@ class TestMassTester:
 
             # Run a single test with verbose=True using the new format
             result = tester._run_single_test((
-                                                 '2023-01',
-                                                 'ES',
-                                                 '1h',
-                                                 'Test Strategy',
-                                                 strategy,
-                                                 True,
-                                                 switch_dates,
-                                                 filepath
-                                             ))
+                '2023-01',
+                'ES',
+                '1h',
+                'Test Strategy',
+                strategy,
+                True,
+                switch_dates,
+                filepath
+            ))
 
             # Verify the result
             assert result is not None
@@ -992,15 +992,15 @@ class TestMassTester:
 
         # Run a single test with the new format
         result = tester._run_single_test((
-                                             '2023-01',
-                                             'ES',
-                                             '1h',
-                                             'Test Strategy',
-                                             strategy,
-                                             False,
-                                             switch_dates,
-                                             filepath
-                                         ))
+            '2023-01',
+            'ES',
+            '1h',
+            'Test Strategy',
+            strategy,
+            False,
+            switch_dates,
+            filepath
+        ))
 
         # Verify the result
         assert result is not None
@@ -1039,15 +1039,15 @@ class TestMassTester:
 
         # Run a single test with verbose=True using the new format
         result = tester._run_single_test((
-                                             '2023-01',
-                                             'ES',
-                                             '1h',
-                                             'Test Strategy',
-                                             strategy,
-                                             True,
-                                             switch_dates,
-                                             filepath
-                                         ))
+            '2023-01',
+            'ES',
+            '1h',
+            'Test Strategy',
+            strategy,
+            True,
+            switch_dates,
+            filepath
+        ))
 
         # Verify the result
         assert result is not None
@@ -1079,15 +1079,15 @@ class TestMassTester:
 
         # Run a single test with the new format
         result = tester._run_single_test((
-                                             '2023-01',
-                                             'ES',
-                                             '1h',
-                                             'Test Strategy',
-                                             MagicMock(),
-                                             False,
-                                             switch_dates,
-                                             filepath
-                                         ))
+            '2023-01',
+            'ES',
+            '1h',
+            'Test Strategy',
+            MagicMock(),
+            False,
+            switch_dates,
+            filepath
+        ))
 
         # Verify the result
         assert result is None
@@ -1672,10 +1672,10 @@ class TestMassTesterPerformanceOptimizations:
             'metrics': {'total_trades': 10},
             'timestamp': '2023-01-01T00:00:00'
         }
-        
+
         mock_future_fail = MagicMock()
         mock_future_fail.result.side_effect = Exception("Worker process crashed")
-        
+
         mock_future_success2 = MagicMock()
         mock_future_success2.result.return_value = {
             'month': '2023-01',
@@ -1694,7 +1694,7 @@ class TestMassTesterPerformanceOptimizations:
             mock_future_success2
         ]
         mock_executor.return_value = mock_executor_instance
-        
+
         # Mock as_completed to return futures
         mock_as_completed.return_value = [mock_future_success1, mock_future_fail, mock_future_success2]
 
@@ -1754,15 +1754,15 @@ class TestMassTesterPerformanceOptimizations:
         """Test that caches are only saved from main process, not from workers."""
         # Setup yaml mock for switch dates
         mock_yaml_load.return_value = {'ES': ['2023-01-15', '2023-02-15']}
-        
+
         # Setup mocks
         mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = False
-        
+
         # Setup cache mocks
         mock_indicator_cache.size.return_value = 10
         mock_dataframe_cache.size.return_value = 5
-        
+
         # Create mock results
         mock_result = {
             'month': '2023-01',
@@ -1772,31 +1772,31 @@ class TestMassTesterPerformanceOptimizations:
             'metrics': {'total_trades': 5},
             'timestamp': '2023-01-01T00:00:00'
         }
-        
+
         # Mock the future
         mock_future = MagicMock()
         mock_future.result.return_value = mock_result
-        
+
         # Mock the executor instance
         mock_executor_instance = MagicMock()
         mock_executor_instance.__enter__.return_value.submit.return_value = mock_future
         mock_executor.return_value = mock_executor_instance
-        
+
         # Mock as_completed to return our mock_future
         mock_as_completed.return_value = [mock_future]
-        
+
         # Create tester and add strategies
         tester = MassTester(['2023-01'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
-        
+
         # Run tests
         results = tester.run_tests(verbose=False)
-        
+
         # Verify save_cache was called exactly once from main process (after all tests complete)
         # It should NOT be called from workers during test execution
         assert mock_indicator_cache.save_cache.call_count == 1
         assert mock_dataframe_cache.save_cache.call_count == 1
-        
+
         # Verify results were collected
         assert len(results) == 1
         assert results[0]['strategy'] == 'RSI_14_30_70_False_None_0'

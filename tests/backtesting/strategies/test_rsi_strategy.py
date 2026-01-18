@@ -10,7 +10,6 @@ from tests.backtesting.strategies.conftest import create_test_df
 # TODO [MEDIUM]: Remove all the printing
 
 
-
 class TestRSIStrategy:
     def test_initialization(self):
         """Test that the RSI strategy initializes with correct default parameters."""
