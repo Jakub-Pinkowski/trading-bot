@@ -1705,8 +1705,10 @@ class TestMassTesterPerformanceOptimizations:
 
         # Verify that logger.warning was called for the failure summary
         assert mock_logger.warning.call_count >= 1
-        warning_call = mock_logger.warning.call_args_list[0][0][0]
-        assert 'failed test(s)' in warning_call
+        # Find the specific warning about failed tests (not DataFrame validation warnings)
+        warning_calls = [call[0][0] for call in mock_logger.warning.call_args_list]
+        failed_tests_warning = any('failed test(s)' in str(call) for call in warning_calls)
+        assert failed_tests_warning, f"Expected 'failed test(s)' warning, got: {warning_calls}"
 
         # Verify that print was called with the warning message
         print_calls = [str(call) for call in mock_print.call_args_list]
@@ -1934,3 +1936,225 @@ class TestDataFrameValidation:
             # Verify error was logged
             mock_logger_error.assert_called_once()
             assert 'Empty or None' in str(mock_logger_error.call_args)
+
+
+class TestDataFrameBuilding:
+    """Tests for DataFrame building validation in _results_to_dataframe."""
+
+    def test_results_to_dataframe_with_missing_critical_metrics(self):
+        """Test that _results_to_dataframe logs warnings when critical metrics are missing."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Create results with missing critical metrics
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    # Missing 'total_trades', 'win_rate', 'total_return_percentage_of_margin'
+                    'sharpe_ratio': 1.5,
+                    'maximum_drawdown_percentage': 10.0
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            }
+        ]
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning:
+            df = tester._results_to_dataframe()
+
+            # Verify DataFrame was created
+            assert not df.empty
+            assert len(df) == 1
+
+            # Verify missing metrics were filled with 0
+            assert df['total_trades'].iloc[0] == 0
+            assert df['win_rate'].iloc[0] == 0
+            assert df['total_return_percentage_of_margin'].iloc[0] == 0
+
+            # Verify warnings were logged for critical metrics
+            assert mock_logger_warning.call_count >= 3
+            warning_messages = [str(call) for call in mock_logger_warning.call_args_list]
+            assert any('total_trades' in msg for msg in warning_messages)
+            assert any('win_rate' in msg or 'summary' in msg for msg in warning_messages)
+
+    def test_results_to_dataframe_with_type_mismatches(self):
+        """Test that _results_to_dataframe logs warnings when metric values have wrong types."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Create results with wrong types
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    'total_trades': 'not_a_number',  # Should be int
+                    'win_rate': [50.0],  # Should be float, not list
+                    'sharpe_ratio': {'value': 1.5},  # Should be float, not dict
+                    'maximum_drawdown_percentage': 10.0  # Correct type
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            }
+        ]
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning:
+            df = tester._results_to_dataframe()
+
+            # Verify DataFrame was created
+            assert not df.empty
+            assert len(df) == 1
+
+            # Verify type mismatches were filled with 0
+            assert df['total_trades'].iloc[0] == 0
+            assert df['win_rate'].iloc[0] == 0
+            assert df['sharpe_ratio'].iloc[0] == 0
+
+            # Verify correct type was preserved
+            assert df['maximum_drawdown_percentage'].iloc[0] == 10.0
+
+            # Verify warnings were logged for type mismatches
+            assert mock_logger_warning.call_count >= 3
+            warning_messages = [str(call) for call in mock_logger_warning.call_args_list]
+            assert any('Type mismatch' in msg for msg in warning_messages)
+
+    def test_results_to_dataframe_with_nan_inf_values(self):
+        """Test that _results_to_dataframe handles NaN and Inf values correctly."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Create results with NaN and Inf values
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    'total_trades': 10,
+                    'win_rate': float('nan'),  # NaN value
+                    'sharpe_ratio': float('inf'),  # Inf value
+                    'sortino_ratio': float('-inf'),  # -Inf value
+                    'maximum_drawdown_percentage': 10.0  # Normal value
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            }
+        ]
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning:
+            df = tester._results_to_dataframe()
+
+            # Verify DataFrame was created
+            assert not df.empty
+            assert len(df) == 1
+
+            # Verify NaN/Inf values were replaced with 0
+            assert df['win_rate'].iloc[0] == 0
+            assert df['sharpe_ratio'].iloc[0] == 0
+            assert df['sortino_ratio'].iloc[0] == 0
+
+            # Verify normal values were preserved
+            assert df['total_trades'].iloc[0] == 10
+            assert df['maximum_drawdown_percentage'].iloc[0] == 10.0
+
+            # Verify warnings were logged
+            assert mock_logger_warning.call_count >= 3
+
+    def test_results_to_dataframe_with_valid_metrics(self):
+        """Test that _results_to_dataframe works correctly with all valid metrics."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Create results with all valid metrics
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    'total_trades': 10,
+                    'win_rate': 60.0,
+                    'total_return_percentage_of_margin': 15.5,
+                    'average_trade_return_percentage_of_margin': 1.55,
+                    'sharpe_ratio': 1.8,
+                    'maximum_drawdown_percentage': 8.5,
+                    'profit_factor': 2.1,
+                    'sortino_ratio': 2.3,
+                    'calmar_ratio': 1.9,
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            }
+        ]
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning:
+            df = tester._results_to_dataframe()
+
+            # Verify DataFrame was created correctly
+            assert not df.empty
+            assert len(df) == 1
+
+            # Verify all values are correct
+            assert df['total_trades'].iloc[0] == 10
+            assert df['win_rate'].iloc[0] == 60.0
+            assert df['total_return_percentage_of_margin'].iloc[0] == 15.5
+            assert df['sharpe_ratio'].iloc[0] == 1.8
+            assert df['maximum_drawdown_percentage'].iloc[0] == 8.5
+
+            # Verify no warnings were logged
+            mock_logger_warning.assert_not_called()
+
+    def test_results_to_dataframe_validation_summary(self):
+        """Test that validation summary is logged when there are multiple issues."""
+        tester = MassTester(['2023-01'], ['ES', 'NQ', 'YM'], ['1h'])
+
+        # Create multiple results with various issues
+        tester.results = [
+            {
+                'month': '2023-01',
+                'symbol': 'ES',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    'total_trades': 'invalid',  # Type mismatch
+                    'sharpe_ratio': 1.5,
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            },
+            {
+                'month': '2023-01',
+                'symbol': 'NQ',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    # Missing total_trades
+                    'win_rate': 50.0,
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            },
+            {
+                'month': '2023-01',
+                'symbol': 'YM',
+                'interval': '1h',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'metrics': {
+                    'total_trades': float('nan'),  # NaN value
+                    'win_rate': float('inf'),  # Inf value
+                },
+                'timestamp': '2023-01-01T00:00:00'
+            },
+        ]
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning:
+            df = tester._results_to_dataframe()
+
+            # Verify DataFrame was created
+            assert not df.empty
+            assert len(df) == 3
+
+            # Verify summary messages were logged
+            warning_messages = [str(call) for call in mock_logger_warning.call_args_list]
+
+            # Should have summary messages about totals
+            assert any('Total missing critical metrics' in msg or 'Total type mismatches' in msg
+                       for msg in warning_messages)

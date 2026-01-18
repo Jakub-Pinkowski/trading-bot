@@ -492,6 +492,10 @@ class MassTester:
         for col in numeric_columns:
             data[col] = np.zeros(n_results)
 
+        # Track validation issues
+        missing_metrics_count = 0
+        type_mismatch_count = 0
+
         # Fill the arrays directly
         for i, result in enumerate(self.results):
             metrics = result['metrics']
@@ -500,9 +504,44 @@ class MassTester:
             data['interval'].append(result['interval'])
             data['strategy'].append(result['strategy'])
 
-            # Fill numeric columns
+            # Fill numeric columns with validation
             for col in numeric_columns:
-                data[col][i] = metrics.get(col, 0)
+                if col not in metrics:
+                    # Log warning for missing critical metrics
+                    if col in ['total_trades', 'win_rate', 'total_return_percentage_of_margin']:
+                        missing_metrics_count += 1
+                        if missing_metrics_count <= 5:  # Only log first 5 to avoid spam
+                            logger.warning(
+                                f"Critical metric '{col}' missing for {result.get('strategy', 'unknown')} "
+                                f"({result.get('symbol', 'unknown')}, {result.get('interval', 'unknown')}, "
+                                f"{result.get('month', 'unknown')}). Using 0."
+                            )
+                    data[col][i] = 0
+                else:
+                    value = metrics[col]
+                    # Validate numeric type
+                    if not isinstance(value, (int, float, np.number)):
+                        type_mismatch_count += 1
+                        if type_mismatch_count <= 5:  # Only log the first 5 to avoid spam
+                            logger.warning(
+                                f"Type mismatch for metric '{col}': expected numeric, got {type(value).__name__} "
+                                f"(value: {value}) for {result.get('strategy', 'unknown')}. Using 0."
+                            )
+                        data[col][i] = 0
+                    # Check for inf/NaN values
+                    elif np.isnan(value) or np.isinf(value):
+                        logger.warning(
+                            f"Invalid value ({value}) for metric '{col}' in {result.get('strategy', 'unknown')}. Using 0."
+                        )
+                        data[col][i] = 0
+                    else:
+                        data[col][i] = value
+
+        # Log summary if there were validation issues
+        if missing_metrics_count > 0:
+            logger.warning(f"Total missing critical metrics: {missing_metrics_count}")
+        if type_mismatch_count > 0:
+            logger.warning(f"Total type mismatches: {type_mismatch_count}")
 
         # Create DataFrame from pre-filled arrays
         return pd.DataFrame(data)
