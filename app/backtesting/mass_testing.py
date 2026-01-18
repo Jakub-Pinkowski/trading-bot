@@ -490,7 +490,7 @@ class MassTester:
         }
 
         for col in numeric_columns:
-            data[col] = np.zeros(n_results)
+            data[col] = [0.0] * n_results
 
         # Track validation issues
         missing_metrics_count = 0
