@@ -34,7 +34,7 @@ def realistic_ohlcv_data_short():
     """
     Generate minimal test data matching actual historical data format.
 
-    Useful for tests that don't need much data (e.g., testing error handling).
+    Useful for tests that need little data (e.g., testing error handling).
     """
     dates = pd.date_range('2023-01-01', periods=50, freq='h')
     df = pd.DataFrame({
