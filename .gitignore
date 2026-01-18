@@ -15,6 +15,9 @@ clientportal/
 # Data
 /data
 
+# Test artifacts
+test_dir/
+
 # Prompts
 .github/prompts/
 

@@ -3,6 +3,7 @@ import os
 from glob import glob
 
 import pandas as pd
+from filelock import FileLock, Timeout as FileLockTimeout
 
 from app.utils.logger import get_logger
 
@@ -10,32 +11,46 @@ logger = get_logger()
 
 
 def save_to_parquet(data, file_path):
-    """ Save data to a parquet file with deduplication. """
-    # Create a directory if it doesn't exist
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-    # Load existing data if a file exists
-    if os.path.exists(file_path):
-        try:
-            existing = pd.read_parquet(file_path)
-        except Exception as err:
-            logger.error(f'Could not read existing parquet file for deduplication: {err}')
-            existing = None
-    else:
-        existing = None
-
+    """Save data to a parquet file with deduplication and file locking."""
+    # Validate data type before acquiring a lock
     if not isinstance(data, pd.DataFrame):
         raise ValueError('Data must be a Pandas DataFrame for parquet format.')
 
-    # Concatenate and deduplicate if a file exists; else save data
-    if existing is not None:
-        concat = pd.concat([existing, data], ignore_index=True)
-        deduped = concat.drop_duplicates()
-    else:
-        deduped = data
+    # Create a directory if needed
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # Save (overwrite) deduped data
-    deduped.to_parquet(file_path, index=False)
+    # Use an absolute path for lock to avoid conflicts
+    abs_file_path = os.path.abspath(file_path)
+    lock_path = f"{abs_file_path}.lock"
+
+    try:
+        with FileLock(lock_path, timeout=120):  # 2-minute timeout
+            # Load existing data if a file exists
+            if os.path.exists(file_path):
+                try:
+                    existing = pd.read_parquet(file_path)
+                except Exception as err:
+                    logger.error(f'Could not read existing parquet file: {err}')
+                    existing = None
+            else:
+                existing = None
+
+            # Concatenate and deduplicate
+            if existing is not None:
+                concat = pd.concat([existing, data], ignore_index=True)
+                deduped = concat.drop_duplicates()
+            else:
+                deduped = data
+
+            # Save deduped data
+            deduped.to_parquet(file_path, index=False)
+
+    except FileLockTimeout:
+        logger.error(f'Failed to acquire lock for {file_path} after 120s')
+        raise
+    except Exception as e:
+        logger.error(f'Error saving parquet file {file_path}: {e}')
+        raise
 
 
 def load_file(file_path):

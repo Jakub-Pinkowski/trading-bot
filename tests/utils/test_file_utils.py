@@ -273,9 +273,11 @@ def test_load_data_from_json_files_no_files(mock_glob):
 def test_save_to_parquet_new_file(sample_dataframe):
     """Test that save_to_parquet correctly saves a DataFrame to a new parquet file"""
 
-    # Mock file existence check to return False (file doesn't exist) and patch DataFrame.to_parquet
+    # Mock file lock and file existence check to return False (file doesn't exist) and patch DataFrame.to_parquet
+    mock_lock = MagicMock()
     with patch("os.path.exists", return_value=False), \
             patch("os.makedirs") as mock_makedirs, \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock), \
             patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet:
         # Call save_to_parquet with sample dataframe and a test filename
         save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
@@ -283,6 +285,9 @@ def test_save_to_parquet_new_file(sample_dataframe):
         # Verify directory was created and to_parquet was called with the correct parameters
         mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
         mock_to_parquet.assert_called_once_with("test_dir/test_file.parquet", index=False)
+        # Verify FileLock was used
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
 
 
 def test_save_to_parquet_existing_file(sample_dataframe):
@@ -293,8 +298,10 @@ def test_save_to_parquet_existing_file(sample_dataframe):
         "name": ["Item 3"],
         "value": [300]
     })
+    mock_lock = MagicMock()
     with patch("os.path.exists", return_value=True), \
             patch("os.makedirs") as mock_makedirs, \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock), \
             patch("pandas.read_parquet", return_value=existing_df), \
             patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet, \
             patch("pandas.concat", return_value=pd.DataFrame()) as mock_concat:
@@ -306,14 +313,19 @@ def test_save_to_parquet_existing_file(sample_dataframe):
         mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
         mock_concat.assert_called_once()
         mock_to_parquet.assert_called_once()
+        # Verify FileLock was used
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
 
 
 def test_save_to_parquet_existing_file_read_error(sample_dataframe):
     """Test that save_to_parquet handles exceptions when reading an existing parquet file"""
 
     # Mock file existence to return True, but read_parquet to raise an exception
+    mock_lock = MagicMock()
     with patch("os.path.exists", return_value=True), \
             patch("os.makedirs") as mock_makedirs, \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock), \
             patch("pandas.read_parquet", side_effect=Exception("Parquet read error")), \
             patch("app.utils.file_utils.logger.error") as mock_logger_error, \
             patch.object(pd.DataFrame, "to_parquet") as mock_to_parquet:
@@ -324,12 +336,70 @@ def test_save_to_parquet_existing_file_read_error(sample_dataframe):
         mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
         mock_logger_error.assert_called_once()
         mock_to_parquet.assert_called_once()
+        # Verify FileLock was used
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
 
 
 def test_save_to_parquet_invalid_data_type():
     """Test that save_to_parquet raises ValueError when given an invalid data type"""
 
     # Call save_to_parquet with a dictionary (invalid data type) and verify it raises the expected ValueError
-    with patch("os.makedirs"), \
-            pytest.raises(ValueError, match="Data must be a Pandas DataFrame for parquet format."):
+    # Note: validation happens before acquiring lock, so we don't need to mock FileLock
+    with pytest.raises(ValueError, match="Data must be a Pandas DataFrame for parquet format."):
         save_to_parquet({"key": "value"}, "test_dir/test_file.parquet")
+
+
+def test_save_to_parquet_lock_timeout(sample_dataframe):
+    """Test that save_to_parquet handles FileLock timeout gracefully"""
+
+    from filelock import Timeout as FileLockTimeout
+
+    # Mock FileLock to raise timeout exception
+    mock_lock = MagicMock()
+    mock_lock.__enter__.side_effect = FileLockTimeout("test_file.parquet.lock")
+
+    with patch("os.makedirs"), \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock), \
+            patch("app.utils.file_utils.logger.error") as mock_logger_error, \
+            pytest.raises(FileLockTimeout):
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        # Verify error was logged
+        mock_logger_error.assert_called_once()
+
+
+def test_save_to_parquet_general_exception(sample_dataframe):
+    """Test that save_to_parquet handles general exceptions during save"""
+
+    mock_lock = MagicMock()
+
+    with patch("os.path.exists", return_value=False), \
+            patch("os.makedirs"), \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock), \
+            patch.object(pd.DataFrame, "to_parquet", side_effect=Exception("Write error")), \
+            patch("app.utils.file_utils.logger.error") as mock_logger_error, \
+            pytest.raises(Exception, match="Write error"):
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        # Verify error was logged
+        assert mock_logger_error.call_count >= 1
+
+
+def test_save_to_parquet_uses_absolute_path(sample_dataframe):
+    """Test that save_to_parquet uses absolute path for lock file"""
+
+    mock_lock = MagicMock()
+
+    with patch("os.path.exists", return_value=False), \
+            patch("os.makedirs"), \
+            patch("os.path.abspath", return_value="/absolute/path/test_file.parquet") as mock_abspath, \
+            patch("app.utils.file_utils.FileLock", return_value=mock_lock) as mock_filelock, \
+            patch.object(pd.DataFrame, "to_parquet"):
+        save_to_parquet(sample_dataframe, "relative/path/test_file.parquet")
+
+        # Verify absolute path was computed
+        mock_abspath.assert_called_once_with("relative/path/test_file.parquet")
+
+        # Verify FileLock was called with absolute path + .lock
+        mock_filelock.assert_called_once_with("/absolute/path/test_file.parquet.lock", timeout=120)
