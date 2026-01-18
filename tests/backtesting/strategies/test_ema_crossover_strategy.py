@@ -3,41 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-
-
-# Helper function to create test dataframe with price patterns suitable for EMA crossover testing
-def create_test_df(length=50):
-    dates = [datetime.now() + timedelta(days=i) for i in range(length)]
-
-    # Create a price series that will generate clear EMA crossover signals
-    close_prices = []
-
-    # Start with an uptrend
-    for i in range(15):
-        close_prices.append(100 + i)
-
-    # Then a downtrend
-    for i in range(15):
-        close_prices.append(115 - i)
-
-    # Then another uptrend
-    for i in range(15):
-        close_prices.append(100 + i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    # Create OHLC data
-    data = {
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-    }
-
-    df = pd.DataFrame(data, index=dates)
-    return df
+from tests.backtesting.strategies.conftest import create_test_df, create_ema_test_df
 
 
 class TestEMACrossoverStrategy:
@@ -56,7 +22,7 @@ class TestEMACrossoverStrategy:
         """Test that the add_indicators method correctly adds EMAs to the dataframe."""
         strategy = EMACrossoverStrategy()
         # Create a larger dataframe to ensure we have valid EMA values
-        df = create_test_df(length=100)
+        df = create_ema_test_df(length=100)
 
         # Apply the strategy's add_indicators method
         df_with_indicators = strategy.add_indicators(df)
@@ -101,16 +67,16 @@ class TestEMACrossoverStrategy:
 
         # Verify the short EMA reacts faster to price changes than the long EMA
         # During uptrend, short EMA should be higher than long EMA
-        # Based on create_test_df, the second uptrend starts at index 30
-        # Use a later index to give EMAs time to catch up to the trend
-        uptrend_idx = 44  # Last index of the second uptrend
+        # Based on create_ema_test_df: uptrend is from index 15-29 (15 bars)
+        # Use index near the end of uptrend to ensure EMAs have caught up
+        uptrend_idx = 28
         assert df_with_indicators['ema_short'].iloc[uptrend_idx] > df_with_indicators['ema_long'].iloc[uptrend_idx], \
             "Short EMA should be higher than long EMA during uptrend"
 
         # During downtrend, short EMA should be lower than long EMA
-        # Based on create_test_df, the downtrend is from index 15 to 29
-        # Use a later index to give EMAs time to catch up to the trend
-        downtrend_idx = 29  # Last index of the downtrend
+        # Based on create_ema_test_df: downtrend is from index 40-49 (10 bars)
+        # Use index near the end of downtrend
+        downtrend_idx = 48
         assert df_with_indicators['ema_short'].iloc[downtrend_idx] < df_with_indicators['ema_long'].iloc[downtrend_idx], \
             "Short EMA should be lower than long EMA during downtrend"
 

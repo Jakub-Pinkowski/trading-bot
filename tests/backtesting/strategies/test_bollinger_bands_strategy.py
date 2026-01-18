@@ -3,49 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-
-
-# Helper function to create a test dataframe with price patterns suitable for Bollinger Bands testing
-def create_test_df(length=50):
-    dates = [datetime.now() + timedelta(days=i) for i in range(length)]
-
-    # Create a price series that will generate clear Bollinger Bands signals
-    close_prices = []
-
-    # Start with a steady uptrend
-    for i in range(20):
-        close_prices.append(100 + i)
-
-    # Then a sharp move above the upper band
-    for i in range(5):
-        close_prices.append(120 + i * 3)
-
-    # Then a reversion to the mean
-    for i in range(10):
-        close_prices.append(135 - i * 2)
-
-    # Then a sharp move below the lower band
-    for i in range(5):
-        close_prices.append(115 - i * 3)
-
-    # Then a reversion to the mean
-    for i in range(10):
-        close_prices.append(100 + i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    # Create OHLC data
-    data = {
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-    }
-
-    df = pd.DataFrame(data, index=dates)
-    return df
+from tests.backtesting.strategies.conftest import create_test_df
 
 
 class TestBollingerBandsStrategy:

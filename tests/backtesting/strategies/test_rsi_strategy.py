@@ -4,44 +4,11 @@ import numpy as np
 import pandas as pd
 
 from app.backtesting.strategies.rsi import RSIStrategy
+from tests.backtesting.strategies.conftest import create_test_df
 
 
 # TODO [MEDIUM]: Remove all the printing
 
-# Helper function to create a test dataframe with price patterns suitable for RSI testing
-def create_test_df(length=50):
-    dates = [datetime.now() + timedelta(days=i) for i in range(length)]
-
-    # Create a price series that will generate clear RSI signals
-    # Start with a downtrend to push RSI low, then uptrend to push it high
-    close_prices = []
-
-    # Downtrend for the first part
-    for i in range(20):
-        close_prices.append(100 - i)
-
-    # Uptrend for the second part
-    for i in range(20):
-        close_prices.append(80 + i)
-
-    # Downtrend again
-    for i in range(10):
-        close_prices.append(100 - i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    # Create OHLC data
-    data = {
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-    }
-
-    df = pd.DataFrame(data, index=dates)
-    return df
 
 
 class TestRSIStrategy:

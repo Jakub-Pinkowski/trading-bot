@@ -6,6 +6,7 @@ import pandas as pd
 from app.backtesting.strategies.base_strategy import BaseStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
+from tests.backtesting.strategies.conftest import create_test_df
 
 
 # Create a concrete implementation of BaseStrategy for testing
@@ -30,19 +31,6 @@ class StrategyForTesting(BaseStrategy):
             else:
                 df.iloc[104, df.columns.get_loc('signal')] = -1  # Sell signal
         return df
-
-
-# Helper function to create test dataframe
-def create_test_df(length=150):
-    dates = [datetime.now() + timedelta(days=i) for i in range(length)]
-    data = {
-        'open': np.random.rand(length) * 100 + 50,
-        'high': np.random.rand(length) * 100 + 60,
-        'low': np.random.rand(length) * 100 + 40,
-        'close': np.random.rand(length) * 100 + 50,
-    }
-    df = pd.DataFrame(data, index=dates)
-    return df
 
 
 class TestSlippageScenarios:

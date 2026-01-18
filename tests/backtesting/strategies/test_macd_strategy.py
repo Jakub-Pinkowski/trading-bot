@@ -4,45 +4,7 @@ import numpy as np
 import pandas as pd
 
 from app.backtesting.strategies.macd import MACDStrategy
-
-
-# Helper function to create a test dataframe with price patterns suitable for MACD testing
-def create_test_df(length=60):
-    dates = [datetime.now() + timedelta(days=i) for i in range(length)]
-
-    # Create a price series that will generate clear MACD signals
-    close_prices = []
-
-    # Start with a downtrend
-    for i in range(15):
-        close_prices.append(100 - i)
-
-    # Then an uptrend to create a bullish crossover
-    for i in range(15):
-        close_prices.append(85 + i * 1.5)
-
-    # Then a downtrend to create a bearish crossover
-    for i in range(15):
-        close_prices.append(107.5 - i * 1.5)
-
-    # Then another uptrend
-    for i in range(15):
-        close_prices.append(85 + i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    # Create OHLC data
-    data = {
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-    }
-
-    df = pd.DataFrame(data, index=dates)
-    return df
+from tests.backtesting.strategies.conftest import create_test_df
 
 
 class TestMACDStrategy:

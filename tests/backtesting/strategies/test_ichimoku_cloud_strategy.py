@@ -1,35 +1,8 @@
-from datetime import datetime, timedelta
-
 import numpy as np
 import pandas as pd
 
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
-
-
-def create_test_df(length=100):
-    """Create a test dataframe with price data."""
-    # Create dates
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=length)
-    dates = pd.date_range(start=start_date, end=end_date, periods=length)
-
-    # Create price data with a trend
-    base_price = 100
-    trend = np.linspace(-20, 20, length)  # Create a V-shaped price movement
-    noise = np.random.normal(0, 5, length)  # Add some noise
-
-    close_prices = base_price + trend + noise
-
-    # Create dataframe
-    data = {
-        'open': close_prices - 1,
-        'high': close_prices + 2,
-        'low': close_prices - 2,
-        'close': close_prices,
-    }
-
-    df = pd.DataFrame(data, index=dates)
-    return df
+from tests.backtesting.strategies.conftest import create_test_df
 
 
 class TestIchimokuCloudStrategy:
