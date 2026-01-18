@@ -377,6 +377,24 @@ class MassTester:
             logger.error(f'Failed to read file: {filepath}\nReason: {error}')
             return None
 
+        # Validate DataFrame before processing
+        if df is None or df.empty:
+            logger.error(f'Empty or None DataFrame loaded from {filepath}')
+            return None
+
+        # Check for required columns
+        required_columns = ['open', 'high', 'low', 'close']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logger.error(f'DataFrame missing required columns: {missing_columns} in {filepath}')
+            return None
+
+        # Check for the minimum row count (100 for warm-up + 50 for indicators)
+        min_rows = 150
+        if len(df) < min_rows:
+            logger.warning(f'DataFrame has only {len(df)} rows, need at least {min_rows} for reliable backtesting in {filepath}')
+            # Continue anyway but log warning - some strategies may still work with fewer rows
+
         if verbose:
             output_buffer.append(f'\nRunning strategy: {strategy_name} for {symbol} {interval} {tested_month}')
 

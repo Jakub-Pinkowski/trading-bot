@@ -1786,3 +1786,151 @@ class TestMassTesterPerformanceOptimizations:
         # Verify results were collected
         assert len(results) == 1
         assert results[0]['strategy'] == 'RSI_14_30_70_False_None_0'
+
+
+class TestDataFrameValidation:
+    """Tests for DataFrame validation in _run_single_test."""
+
+    def test_run_single_test_with_empty_dataframe(self):
+        """Test that _run_single_test returns None when DataFrame is empty."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+
+        # Get the test parameters
+        test_params = (
+            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            tester.strategies[0][1], False, [], 'test_file.parquet'
+        )
+
+        # Mock get_cached_dataframe to return empty DataFrame
+        empty_df = pd.DataFrame()
+
+        with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=empty_df), \
+                patch('app.backtesting.mass_testing.logger.error') as mock_logger_error:
+            result = tester._run_single_test(test_params)
+
+            # Verify None is returned
+            assert result is None
+
+            # Verify error was logged
+            mock_logger_error.assert_called_once()
+            assert 'Empty' in str(mock_logger_error.call_args)
+
+    def test_run_single_test_with_missing_columns(self):
+        """Test that _run_single_test returns None when required columns are missing."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+
+        # Get the test parameters
+        test_params = (
+            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            tester.strategies[0][1], False, [], 'test_file.parquet'
+        )
+
+        # Mock get_cached_dataframe to return DataFrame with missing columns
+        df_missing_columns = pd.DataFrame({
+            'open': [100, 101, 102],
+            'high': [102, 103, 104],
+            # Missing 'low' and 'close'
+        })
+
+        with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=df_missing_columns), \
+                patch('app.backtesting.mass_testing.logger.error') as mock_logger_error:
+            result = tester._run_single_test(test_params)
+
+            # Verify None is returned
+            assert result is None
+
+            # Verify error was logged with missing columns
+            mock_logger_error.assert_called_once()
+            error_message = str(mock_logger_error.call_args)
+            assert 'missing required columns' in error_message
+            assert 'low' in error_message or 'close' in error_message
+
+    def test_run_single_test_with_insufficient_rows(self):
+        """Test that _run_single_test logs warning but continues when rows < 150."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+
+        # Get the test parameters
+        test_params = (
+            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            tester.strategies[0][1], False, [], 'test_file.parquet'
+        )
+
+        # Mock get_cached_dataframe to return DataFrame with insufficient rows (but still has required columns)
+        df_few_rows = pd.DataFrame({
+            'open': [100] * 50,
+            'high': [102] * 50,
+            'low': [98] * 50,
+            'close': [101] * 50,
+        })
+
+        with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=df_few_rows), \
+                patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning, \
+                patch('app.backtesting.mass_testing.calculate_trade_metrics', return_value={}), \
+                patch.object(tester.strategies[0][1], 'run', return_value=[]):
+            result = tester._run_single_test(test_params)
+
+            # Verify warning was logged
+            mock_logger_warning.assert_called_once()
+            warning_message = str(mock_logger_warning.call_args)
+            assert '50 rows' in warning_message
+            assert '150' in warning_message
+
+            # Verify it continues processing (doesn't return None)
+            assert result is not None
+
+    def test_run_single_test_with_valid_dataframe(self):
+        """Test that _run_single_test processes valid DataFrame correctly."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+
+        # Get the test parameters
+        test_params = (
+            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            tester.strategies[0][1], False, [], 'test_file.parquet'
+        )
+
+        # Mock get_cached_dataframe to return valid DataFrame with sufficient rows
+        df_valid = pd.DataFrame({
+            'open': [100] * 200,
+            'high': [102] * 200,
+            'low': [98] * 200,
+            'close': [101] * 200,
+        })
+
+        with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=df_valid), \
+                patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning, \
+                patch('app.backtesting.mass_testing.calculate_trade_metrics', return_value={}), \
+                patch.object(tester.strategies[0][1], 'run', return_value=[]):
+            result = tester._run_single_test(test_params)
+
+            # Verify no warning was logged (DataFrame has enough rows)
+            mock_logger_warning.assert_not_called()
+
+            # Verify result is returned
+            assert result is not None
+
+    def test_run_single_test_with_none_dataframe(self):
+        """Test that _run_single_test returns None when get_cached_dataframe returns None."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+
+        # Get the test parameters
+        test_params = (
+            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            tester.strategies[0][1], False, [], 'test_file.parquet'
+        )
+
+        # Mock get_cached_dataframe to return None
+        with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=None), \
+                patch('app.backtesting.mass_testing.logger.error') as mock_logger_error:
+            result = tester._run_single_test(test_params)
+
+            # Verify None is returned
+            assert result is None
+
+            # Verify error was logged
+            mock_logger_error.assert_called_once()
+            assert 'Empty or None' in str(mock_logger_error.call_args)
