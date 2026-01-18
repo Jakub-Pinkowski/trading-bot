@@ -842,12 +842,15 @@ class TestMassTester:
     def test_run_single_test(self, mock_get_df):
         """Test the _run_single_test method."""
         # Setup mock
+        dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
-            'open': [100, 101, 102],
-            'high': [105, 106, 107],
-            'low': [95, 96, 97],
-            'close': [102, 103, 104]
-        })
+            'symbol': ['CME:ES2!'] * 3,
+            'open': [100.0, 101.0, 102.0],
+            'high': [105.0, 106.0, 107.0],
+            'low': [95.0, 96.0, 97.0],
+            'close': [102.0, 103.0, 104.0],
+            'volume': [1000.0] * 3
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
         mock_get_df.return_value = mock_df
 
         # Create a strategy that will generate a trade
@@ -900,12 +903,15 @@ class TestMassTester:
     def test_run_single_test_verbose(self, mock_get_df):
         """Test the _run_single_test method with verbose output."""
         # Setup mock
+        dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
-            'open': [100, 101, 102],
-            'high': [105, 106, 107],
-            'low': [95, 96, 97],
-            'close': [102, 103, 104]
-        })
+            'symbol': ['CME:ES2!'] * 3,
+            'open': [100.0, 101.0, 102.0],
+            'high': [105.0, 106.0, 107.0],
+            'low': [95.0, 96.0, 97.0],
+            'close': [102.0, 103.0, 104.0],
+            'volume': [1000.0] * 3
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
         mock_get_df.return_value = mock_df
 
         # Create a strategy that will generate a trade
@@ -962,12 +968,15 @@ class TestMassTester:
     def test_run_single_test_no_trades(self, mock_get_df):
         """Test the _run_single_test method when no trades are generated."""
         # Setup mock
+        dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
-            'open': [100, 101, 102],
-            'high': [105, 106, 107],
-            'low': [95, 96, 97],
-            'close': [102, 103, 104]
-        })
+            'symbol': ['CME:ES2!'] * 3,
+            'open': [100.0, 101.0, 102.0],
+            'high': [105.0, 106.0, 107.0],
+            'low': [95.0, 96.0, 97.0],
+            'close': [102.0, 103.0, 104.0],
+            'volume': [1000.0] * 3
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
         mock_get_df.return_value = mock_df
 
         # Create a strategy that will not generate any trades
@@ -1006,12 +1015,15 @@ class TestMassTester:
     def test_run_single_test_no_trades_verbose(self, mock_get_df):
         """Test the _run_single_test method when no trades are generated with verbose=True."""
         # Setup mock
+        dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
-            'open': [100, 101, 102],
-            'high': [105, 106, 107],
-            'low': [95, 96, 97],
-            'close': [102, 103, 104]
-        })
+            'symbol': ['CME:ES2!'] * 3,
+            'open': [100.0, 101.0, 102.0],
+            'high': [105.0, 106.0, 107.0],
+            'low': [95.0, 96.0, 97.0],
+            'close': [102.0, 103.0, 104.0],
+            'volume': [1000.0] * 3
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
         mock_get_df.return_value = mock_df
 
         # Create a strategy that will not generate any trades

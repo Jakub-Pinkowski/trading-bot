@@ -110,20 +110,20 @@ class TestMultiprocessingIntegration:
         data_dir = tmp_path / "data"
         data_dir.mkdir()
 
-        # Create a simple test dataframe with enough data for RSI
+        # Create test dataframe matching actual historical data format
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'timestamp': dates,
-            'open': [100 + i * 0.5 for i in range(200)],
-            'high': [101 + i * 0.5 for i in range(200)],
-            'low': [99 + i * 0.5 for i in range(200)],
-            'close': [100.5 + i * 0.5 for i in range(200)],
-            'volume': [1000] * 200
-        })
+            'symbol': ['CME:ES2!'] * 200,
+            'open': [4500 + i * 0.5 for i in range(200)],
+            'high': [4505 + i * 0.5 for i in range(200)],
+            'low': [4495 + i * 0.5 for i in range(200)],
+            'close': [4502 + i * 0.5 for i in range(200)],
+            'volume': [10000.0] * 200
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
 
         # Save test data
         test_file = data_dir / "ES_1h_2023-01.parquet"
-        test_df.to_parquet(test_file, index=False)
+        test_df.to_parquet(test_file)
 
         # Temporarily patch HISTORICAL_DATA_DIR to use our test directory
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
@@ -183,18 +183,19 @@ class TestMultiprocessingIntegration:
         data_dir = tmp_path / "data"
         data_dir.mkdir()
 
+        # Create test dataframe
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'timestamp': dates,
-            'open': [100 + i * 0.5 for i in range(200)],
-            'high': [101 + i * 0.5 for i in range(200)],
-            'low': [99 + i * 0.5 for i in range(200)],
-            'close': [100.5 + i * 0.5 for i in range(200)],
-            'volume': [1000] * 200
-        })
+            'symbol': ['CME:ES2!'] * 200,
+            'open': [4500 + i * 0.5 for i in range(200)],
+            'high': [4505 + i * 0.5 for i in range(200)],
+            'low': [4495 + i * 0.5 for i in range(200)],
+            'close': [4502 + i * 0.5 for i in range(200)],
+            'volume': [10000.0] * 200
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
 
         test_file = data_dir / "ES_1h_2023-01.parquet"
-        test_df.to_parquet(test_file, index=False)
+        test_df.to_parquet(test_file)
 
         # Mock cache save methods to track calls
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
