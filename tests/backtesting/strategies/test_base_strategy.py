@@ -620,3 +620,58 @@ class TestBaseStrategy:
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
             assert trade[
                        'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+class TestBaseStrategyHelperMethods:
+    """Test the helper methods for signal detection in BaseStrategy."""
+    def test_detect_crossover_above(self):
+        """Test _detect_crossover method for bullish crossover."""
+        strategy = StrategyForTesting()
+        df = pd.DataFrame({
+            'series1': [1.0, 2.0, 3.0, 4.0, 5.0],
+            'series2': [5.0, 4.0, 3.0, 2.0, 1.0],
+        })
+        result = strategy._detect_crossover(df['series1'], df['series2'], 'above')
+        expected = pd.Series([False, False, False, True, False])
+        pd.testing.assert_series_equal(result, expected, check_names=False)
+    def test_detect_crossover_below(self):
+        """Test _detect_crossover method for bearish crossover."""
+        strategy = StrategyForTesting()
+        df = pd.DataFrame({
+            'series1': [5.0, 4.0, 3.0, 2.0, 1.0],
+            'series2': [1.0, 2.0, 3.0, 4.0, 5.0],
+        })
+        result = strategy._detect_crossover(df['series1'], df['series2'], 'below')
+        expected = pd.Series([False, False, False, True, False])
+        pd.testing.assert_series_equal(result, expected, check_names=False)
+    def test_detect_threshold_cross_below(self):
+        """Test _detect_threshold_cross for crossing below a threshold."""
+        strategy = StrategyForTesting()
+        df = pd.DataFrame({'series': [40.0, 35.0, 30.0, 25.0, 20.0]})
+        result = strategy._detect_threshold_cross(df['series'], 30.0, 'below')
+        expected = pd.Series([False, False, True, False, False])
+        pd.testing.assert_series_equal(result, expected, check_names=False)
+    def test_detect_threshold_cross_above(self):
+        """Test _detect_threshold_cross for crossing above a threshold."""
+        strategy = StrategyForTesting()
+        df = pd.DataFrame({'series': [20.0, 25.0, 30.0, 35.0, 40.0]})
+        result = strategy._detect_threshold_cross(df['series'], 30.0, 'above')
+        expected = pd.Series([False, False, True, False, False])
+        pd.testing.assert_series_equal(result, expected, check_names=False)
+    def test_detect_crossover_and_threshold_integration(self):
+        """Test helper methods work correctly with actual strategy patterns."""
+        strategy = StrategyForTesting()
+        # Test RSI-like threshold crossing
+        df = pd.DataFrame({'rsi': [50.0, 40.0, 30.0, 25.0, 35.0, 70.0, 75.0, 65.0]})
+        crosses_below_30 = strategy._detect_threshold_cross(df['rsi'], 30.0, 'below')
+        crosses_above_70 = strategy._detect_threshold_cross(df['rsi'], 70.0, 'above')
+        assert crosses_below_30[2] == True  # Crosses below at index 2
+        assert crosses_above_70[5] == True  # Crosses above at index 5
+        # Test EMA-like crossover
+        df = pd.DataFrame({
+            'ema_fast': [100, 102, 104, 106, 108, 107, 105, 103],
+            'ema_slow': [102, 103, 104, 104, 104, 106, 106, 106],
+        })
+        bullish = strategy._detect_crossover(df['ema_fast'], df['ema_slow'], 'above')
+        bearish = strategy._detect_crossover(df['ema_fast'], df['ema_slow'], 'below')
+        # Verify crossovers are detected
+        assert bullish.sum() >= 1
+        assert bearish.sum() >= 1

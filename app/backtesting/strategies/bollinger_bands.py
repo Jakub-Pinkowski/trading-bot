@@ -26,15 +26,10 @@ class BollingerBandsStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Previous values for crossover detection
-        prev_close = df['close'].shift(1)
-        prev_lower_band = df['lower_band'].shift(1)
-        prev_upper_band = df['upper_band'].shift(1)
+        # Buy signal: Price crosses back above a lower band (bounce back from below)
+        df.loc[self._detect_crossover(df['close'], df['lower_band'], 'above'), 'signal'] = 1
 
-        # Buy signal: Price bounces back from the lower band (crosses back above after being below)
-        df.loc[(prev_close < prev_lower_band) & (df['close'] >= df['lower_band']), 'signal'] = 1
-
-        # Sell signal: Price falls back from the upper band (crosses back below after being above)
-        df.loc[(prev_close > prev_upper_band) & (df['close'] <= df['upper_band']), 'signal'] = -1
+        # Sell signal: Price crosses back below an upper band (fall back from above)
+        df.loc[self._detect_crossover(df['close'], df['upper_band'], 'below'), 'signal'] = -1
 
         return df
