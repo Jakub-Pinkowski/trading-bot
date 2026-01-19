@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import hashlib
 
 import pandas as pd
 import pytest
@@ -183,7 +184,6 @@ def test_atr_caching():
     atr1 = calculate_atr(df, period=7)
 
     # Get the cache key
-    import hashlib
     combined_hash = hashlib.md5(
         f"{hash_series(df['high'])}{hash_series(df['low'])}{hash_series(df['close'])}".encode()
     ).hexdigest()
