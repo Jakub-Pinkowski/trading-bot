@@ -25,8 +25,12 @@ class BaseStrategy:
         self._reset()
 
     def run(self, df, switch_dates):
-        """Run the strategy"""
-        df = df.copy()
+        """
+        Run the strategy.
+
+        Note: df is expected to already be a copy from get_cached_dataframe(),
+        so we don't need to copy it again here.
+        """
         df = self.add_indicators(df)
         df = self.generate_signals(df)
         trades = self._extract_trades(df, switch_dates)
