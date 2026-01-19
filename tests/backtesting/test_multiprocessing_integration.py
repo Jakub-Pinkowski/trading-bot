@@ -113,7 +113,7 @@ class TestMultiprocessingIntegration:
         # Create test dataframe matching actual historical data format
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'symbol': ['CME:ES2!'] * 200,
+            'symbol': ['CBOT:ZS1!'] * 200,
             'open': [4500 + i * 0.5 for i in range(200)],
             'high': [4505 + i * 0.5 for i in range(200)],
             'low': [4495 + i * 0.5 for i in range(200)],
@@ -122,13 +122,13 @@ class TestMultiprocessingIntegration:
         }, index=pd.DatetimeIndex(dates, name='datetime'))
 
         # Save test data
-        test_file = data_dir / "ES_1h_2023-01.parquet"
+        test_file = data_dir / "ZS_1h.parquet"
         test_df.to_parquet(test_file)
 
         # Temporarily patch HISTORICAL_DATA_DIR to use our test directory
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
             # Create tester and add simple RSI test
-            tester = MassTester(['2023-01'], ['ES'], ['1h'])
+            tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests(
                 rsi_periods=[14],
                 lower_thresholds=[30],
@@ -159,7 +159,7 @@ class TestMultiprocessingIntegration:
 
         # Create tester with invalid data path (will cause exceptions)
         with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', str(tmp_path / "nonexistent")):
-            tester = MassTester(['2023-01'], ['ES'], ['1h'])
+            tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
             # This should not raise, even though workers will fail
@@ -186,7 +186,7 @@ class TestMultiprocessingIntegration:
         # Create test dataframe
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'symbol': ['CME:ES2!'] * 200,
+            'symbol': ['CBOT:ZS1!'] * 200,
             'open': [4500 + i * 0.5 for i in range(200)],
             'high': [4505 + i * 0.5 for i in range(200)],
             'low': [4495 + i * 0.5 for i in range(200)],
@@ -194,7 +194,7 @@ class TestMultiprocessingIntegration:
             'volume': [10000.0] * 200
         }, index=pd.DatetimeIndex(dates, name='datetime'))
 
-        test_file = data_dir / "ES_1h_2023-01.parquet"
+        test_file = data_dir / "ZS_1h.parquet"
         test_df.to_parquet(test_file)
 
         # Mock cache save methods to track calls
@@ -205,7 +205,7 @@ class TestMultiprocessingIntegration:
                     mock_ind_cache.size.return_value = 10
                     mock_df_cache.size.return_value = 5
 
-                    tester = MassTester(['2023-01'], ['ES'], ['1h'])
+                    tester = MassTester(['1!'], ['ZS'], ['1h'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     # Run tests with skip_existing=False to ensure tests actually run
@@ -398,7 +398,7 @@ class TestRealDataMultiprocessing:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create month-based structure that MassTester expects
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             # Copy actual data file to expected location (note: NO month suffix in filename)
@@ -410,7 +410,7 @@ class TestRealDataMultiprocessing:
                 # Patch both the module-level import and the config module
                 with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
                     # Test multiple strategies on the same symbol
-                    tester = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester = MassTester(['1!'], ['ZC'], ['1d'])
 
                     # Add multiple different strategies
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
@@ -447,7 +447,7 @@ class TestRealDataMultiprocessing:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create month-based structure for both symbols
             for symbol in ['ZC', '6A']:
-                month_dir = os.path.join(tmpdir, '2023-01', symbol)
+                month_dir = os.path.join(tmpdir, '1!', symbol)
                 os.makedirs(month_dir, exist_ok=True)
 
                 actual_file = f'data/historical_data/2!/{symbol}/{symbol}_1d.parquet'
@@ -457,7 +457,7 @@ class TestRealDataMultiprocessing:
 
             with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
                 # Test multiple symbols
-                tester = MassTester(['2023-01'], ['ZC', '6A'], ['1d'])
+                tester = MassTester(['1!'], ['ZC', '6A'], ['1d'])
                 tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                 # Run with multiprocessing
@@ -490,7 +490,7 @@ class TestRealDataMultiprocessing:
         import shutil
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
@@ -500,7 +500,7 @@ class TestRealDataMultiprocessing:
 
                 with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
                     # First run - should populate cache
-                    tester1 = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester1 = MassTester(['1!'], ['ZC'], ['1d'])
                     tester1.add_rsi_tests([14], [30], [70], [False], [None], [0])
                     results1 = tester1.run_tests(max_workers=2, verbose=False)
 
@@ -510,7 +510,7 @@ class TestRealDataMultiprocessing:
                     assert cache_size_after_first >= 0, "Cache size should be non-negative"
 
                     # Second run - should use cache (faster)
-                    tester2 = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester2 = MassTester(['1!'], ['ZC'], ['1d'])
                     tester2.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     start_time = time.time()
@@ -542,20 +542,20 @@ class TestRealDataMultiprocessing:
         import shutil
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
             if os.path.exists(actual_file):
-                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d_2023-01.parquet'))
+                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
                 with patch('config.HISTORICAL_DATA_DIR', tmpdir):
                     # Serial execution (1 worker)
-                    tester_serial = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester_serial = MassTester(['1!'], ['ZC'], ['1d'])
                     tester_serial.add_rsi_tests([14, 20], [30], [70], [False], [None], [0])
 
                     start_serial = time.time()
-                    results_serial = tester_serial.run_tests(max_workers=1, verbose=False)
+                    results_serial = tester_serial.run_tests(max_workers=1, verbose=False, skip_existing=False)
                     time_serial = time.time() - start_serial
 
                     # Clear caches to ensure fair comparison
@@ -563,11 +563,11 @@ class TestRealDataMultiprocessing:
                     dataframe_cache.clear()
 
                     # Parallel execution (4 workers)
-                    tester_parallel = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester_parallel = MassTester(['1!'], ['ZC'], ['1d'])
                     tester_parallel.add_rsi_tests([14, 20], [30], [70], [False], [None], [0])
 
                     start_parallel = time.time()
-                    results_parallel = tester_parallel.run_tests(max_workers=4, verbose=False)
+                    results_parallel = tester_parallel.run_tests(max_workers=4, verbose=False, skip_existing=False)
                     time_parallel = time.time() - start_parallel
 
                     # Results should be the same
@@ -597,7 +597,7 @@ class TestRealDataMultiprocessing:
         import shutil
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
@@ -606,7 +606,7 @@ class TestRealDataMultiprocessing:
                 shutil.copy(actual_file, target_file)
 
                 with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
-                    tester = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester = MassTester(['1!'], ['ZC'], ['1d'])
 
                     # Add multiple parameter combinations
                     tester.add_rsi_tests(
@@ -648,7 +648,7 @@ class TestRealDataMultiprocessing:
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
@@ -657,7 +657,7 @@ class TestRealDataMultiprocessing:
                 shutil.copy(actual_file, target_file)
 
                 with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
-                    tester = MassTester(['2023-01'], ['ZC'], ['1d'])
+                    tester = MassTester(['1!'], ['ZC'], ['1d'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     results = tester.run_tests(max_workers=4, verbose=False)
@@ -696,19 +696,19 @@ class TestRealDataMultiprocessing:
         import shutil
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
             if os.path.exists(actual_file):
-                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d_2023-01.parquet'))
+                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
                 with patch('config.HISTORICAL_DATA_DIR', tmpdir):
                     # Run same test multiple times
                     results_list = []
 
                     for i in range(3):
-                        tester = MassTester(['2023-01'], ['ZC'], ['1d'])
+                        tester = MassTester(['1!'], ['ZC'], ['1d'])
                         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
                         results = tester.run_tests(max_workers=2, verbose=False)
                         results_list.append(results)
@@ -746,16 +746,16 @@ class TestRealDataMultiprocessing:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create only ZC data, NONEXISTENT won't exist
-            month_dir = os.path.join(tmpdir, '2023-01', 'ZC')
+            month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
             actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
             if os.path.exists(actual_file):
-                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d_2023-01.parquet'))
+                shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
                 with patch('config.HISTORICAL_DATA_DIR', tmpdir):
                     # Mix valid and invalid symbols to cause some worker failures
-                    tester = MassTester(['2023-01'], ['ZC', 'NONEXISTENT'], ['1d'])
+                    tester = MassTester(['1!'], ['ZC', 'NONEXISTENT'], ['1d'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     # Should complete without crashing even if some workers fail
