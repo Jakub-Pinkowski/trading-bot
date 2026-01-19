@@ -113,7 +113,7 @@ def test_cache_concurrency(clean_test_cache):
 
 
 def test_cache_lock_release_on_exception():
-    """Test that the lock is released when an exception occurs."""
+    """Test that the lock is released when an exception occurs, even with retries."""
     # Generate a unique cache name for this test
     cache_name = f"lock_release_test_{int(time.time())}"
 
@@ -135,15 +135,22 @@ def test_cache_lock_release_on_exception():
             mock_lock_instance.__enter__.return_value = mock_lock_instance
             mock_lock_instance.__exit__.return_value = None
 
-            # Try to save the cache, which should handle the exception
-            test_cache.save_cache()
+            # Mock time.sleep to speed up the test
+            with patch('time.sleep'):
+                # Try to save the cache, which should handle the exception
+                result = test_cache.save_cache()
 
-            # Verify FileLock was called
-            mock_filelock.assert_called_once()
-            # Verify the lock's __enter__ method was called (context manager was used)
-            mock_lock_instance.__enter__.assert_called_once()
-            # Verify the lock's __exit__ method was called (lock was released)
-            mock_lock_instance.__exit__.assert_called_once()
+            # Verify save_cache returns False after all retries fail
+            assert result is False
+
+            # Verify FileLock was called 3 times (max_retries default = 3)
+            assert mock_filelock.call_count == 3, f"Expected 3 retry attempts, got {mock_filelock.call_count}"
+
+            # Verify the lock's __enter__ method was called 3 times
+            assert mock_lock_instance.__enter__.call_count == 3
+
+            # Verify the lock's __exit__ method was called 3 times (lock was released each time)
+            assert mock_lock_instance.__exit__.call_count == 3
 
     # Clean up
     cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.pkl")
@@ -153,3 +160,5 @@ def test_cache_lock_release_on_exception():
     lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.lock")
     if os.path.exists(lock_file):
         os.remove(lock_file)
+
+

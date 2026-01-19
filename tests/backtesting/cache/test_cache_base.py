@@ -233,7 +233,7 @@ def test_save_cache(mock_cache_dir):
 
 
 def test_save_cache_exception_handling():
-    """Test handling exceptions when saving the cache."""
+    """Test handling exceptions when saving the cache with retry mechanism."""
     cache = Cache("test", 1)
     cache.set("key1", "value1")
 
@@ -248,16 +248,48 @@ def test_save_cache_exception_handling():
         with patch("builtins.open", mock_open()) as mock_file:
             mock_file.side_effect = Exception("Test exception")
 
-            # This should not raise an exception
-            cache.save_cache()
+            # This should not raise an exception, but should return False after 3 retries
+            with patch('time.sleep'):  # Mock sleep to speed up test
+                result = cache.save_cache()
 
-            # Verify FileLock was called
-            mock_filelock.assert_called_once()
-            # Verify the lock's __enter__ method was called (context manager was used)
-            mock_lock_instance.__enter__.assert_called_once()
+            assert result is False, "save_cache should return False after all retries fail"
+
+            # Verify FileLock was called 3 times (max_retries default = 3)
+            assert mock_filelock.call_count == 3, f"Expected 3 retry attempts, got {mock_filelock.call_count}"
+
+            # Verify the lock's __enter__ method was called 3 times
+            assert mock_lock_instance.__enter__.call_count == 3
 
         # The cache data should still be intact
         assert cache.get("key1") == "value1"
+
+
+def test_save_cache_retry_success():
+    """Test that save_cache succeeds after a retry."""
+    cache = Cache("test", 1)
+    cache.set("key1", "value1")
+
+    # Mock FileLock
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.return_value = mock_lock_instance
+        mock_lock_instance.__exit__.return_value = None
+
+        # Mock open to fail once, then succeed
+        with patch("builtins.open", mock_open()) as mock_file:
+            # First call fails, second call succeeds
+            mock_file.side_effect = [Exception("Temporary failure"), mock_open()()]
+
+            # Mock sleep to speed up test
+            with patch('time.sleep'):
+                result = cache.save_cache()
+
+            # Should succeed on second attempt
+            assert result is True, "save_cache should return True after successful retry"
+
+            # Verify FileLock was called twice (failed once, succeeded on retry)
+            assert mock_filelock.call_count == 2, f"Expected 2 attempts, got {mock_filelock.call_count}"
 
 
 def test_cache_with_complex_data():

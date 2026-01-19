@@ -45,17 +45,48 @@ class Cache:
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
         self._load_cache()
 
-    def save_cache(self):
-        """Save the cache to disk with file locking."""
-        # Create a lock for the file
-        lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
-        try:
-            # Acquire the lock before writing
-            with lock:
-                with open(self.cache_file, 'wb') as f:
-                    pickle.dump(self.cache_data, f)
-        except Exception as save_err:
-            logger.error(f"Failed to save {self.cache_name} cache to {self.cache_file}: {save_err}")
+    def save_cache(self, max_retries=3):
+        """Save the cache to disk with file locking and retry mechanism.
+
+        Args:
+            max_retries (int): Maximum number of retry attempts (default: 3)
+
+        Returns:
+            bool: True if save was successful, False otherwise
+        """
+        for attempt in range(max_retries):
+            try:
+                # Create a lock for the file
+                lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
+
+                # Acquire the lock before writing
+                with lock:
+                    with open(self.cache_file, 'wb') as f:
+                        pickle.dump(self.cache_data, f)
+
+                # Success - log only on retry (not first attempt)
+                if attempt > 0:
+                    logger.info(f"Successfully saved {self.cache_name} cache on attempt {attempt + 1}")
+
+                return True
+
+            except Exception as save_err:
+                # If this was the last attempt, log the error and return False
+                if attempt == max_retries - 1:
+                    logger.error(
+                        f"Failed to save {self.cache_name} cache to {self.cache_file} "
+                        f"after {max_retries} attempts: {save_err}"
+                    )
+                    return False
+
+                # Log warning and retry
+                logger.warning(
+                    f"Failed to save {self.cache_name} cache (attempt {attempt + 1}/{max_retries}): {save_err}. "
+                    f"Retrying in 1 second..."
+                )
+                time.sleep(1)  # Wait before retry
+
+        return False
 
     def get(self, key, default=None):
         """ Get a value from the cache. """
