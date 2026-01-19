@@ -24,6 +24,9 @@ from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DIR
 
 logger = get_logger('backtesting/mass_testing')
 
+# DataFrame Validation Constants
+MIN_ROWS_FOR_BACKTEST = 150  # Minimum rows required for reliable backtesting (100 warm-up + 50 for indicators)
+
 
 def _load_existing_results():
     """Load existing results from the parquet file."""
@@ -430,10 +433,12 @@ class MassTester:
         if not self._validate_dataframe(df, filepath):
             return None
 
-        # Check for the minimum row count (100 for warm-up + 50 for indicators)
-        min_rows = 150
-        if len(df) < min_rows:
-            logger.warning(f'DataFrame has only {len(df)} rows, need at least {min_rows} for reliable backtesting in {filepath}')
+        # Check for the minimum row count required for reliable backtesting
+        if len(df) < MIN_ROWS_FOR_BACKTEST:
+            logger.warning(
+                f'DataFrame has only {len(df)} rows, need at least {MIN_ROWS_FOR_BACKTEST} '
+                f'for reliable backtesting in {filepath}'
+            )
             # Continue anyway but log warning - some strategies may still work with fewer rows
 
         if verbose:

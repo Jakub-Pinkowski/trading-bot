@@ -1,5 +1,8 @@
 import pandas as pd
 
+# Strategy Execution Constants
+INDICATOR_WARMUP_PERIOD = 100  # Number of candles to skip for indicator stability
+
 
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None, slippage=0):
@@ -78,7 +81,7 @@ class BaseStrategy:
         self._reset()
         self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
 
-        # Counter to skip the first 100 candles for indicator warm-up
+        # Counter to skip the first candles for indicator warm-up
         candle_count = 0
 
         for idx, row in df.iterrows():
@@ -91,8 +94,8 @@ class BaseStrategy:
             # Increment candle counter
             candle_count += 1
 
-            # Skip signal processing for the first 100 candles to allow indicators to warm up
-            if candle_count <= 100:
+            # Skip signal processing for the first candles to allow indicators to warm up
+            if candle_count <= INDICATOR_WARMUP_PERIOD:
                 self.prev_time = current_time
                 self.prev_row = row
                 continue

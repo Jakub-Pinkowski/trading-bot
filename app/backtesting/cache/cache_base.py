@@ -13,6 +13,13 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 logger = get_logger('backtesting/cache/base')
 
+# Cache Configuration Constants
+DEFAULT_CACHE_MAX_SIZE = 1000  # Default maximum number of items in the cache before LRU eviction
+DEFAULT_CACHE_MAX_AGE = 86400  # Default cache expiration time in seconds (24 hours)
+DEFAULT_CACHE_LOCK_TIMEOUT = 60  # File lock timeout in seconds
+DEFAULT_CACHE_RETRY_ATTEMPTS = 3  # Number of retry attempts for cache save operations
+DEFAULT_CACHE_RETRY_DELAY = 1  # Delay between retry attempts in seconds
+
 
 def _convert_cache_format(loaded_cache):
     """ Convert the loaded cache to the new format with timestamps. """
@@ -34,7 +41,7 @@ class Cache:
     This class provides common caching operations that can be extended for specific cache types.
     """
 
-    def __init__(self, cache_name, cache_version=1, max_size=1000, max_age=86400):
+    def __init__(self, cache_name, cache_version=1, max_size=DEFAULT_CACHE_MAX_SIZE, max_age=DEFAULT_CACHE_MAX_AGE):
         """ Initialize a cache instance. """
         self.cache_name = cache_name
         self.cache_version = cache_version
@@ -45,7 +52,7 @@ class Cache:
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
         self._load_cache()
 
-    def save_cache(self, max_retries=3):
+    def save_cache(self, max_retries=DEFAULT_CACHE_RETRY_ATTEMPTS):
         """Save the cache to disk with file locking and retry mechanism.
 
         Args:
@@ -57,7 +64,7 @@ class Cache:
         for attempt in range(max_retries):
             try:
                 # Create a lock for the file
-                lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
+                lock = FileLock(self.lock_file, timeout=DEFAULT_CACHE_LOCK_TIMEOUT)
 
                 # Acquire the lock before writing
                 with lock:
@@ -82,9 +89,9 @@ class Cache:
                 # Log warning and retry
                 logger.warning(
                     f"Failed to save {self.cache_name} cache (attempt {attempt + 1}/{max_retries}): {save_err}. "
-                    f"Retrying in 1 second..."
+                    f"Retrying in {DEFAULT_CACHE_RETRY_DELAY} second..."
                 )
-                time.sleep(1)  # Wait before retry
+                time.sleep(DEFAULT_CACHE_RETRY_DELAY)  # Wait before retry
 
         return False
 
@@ -137,7 +144,7 @@ class Cache:
         """Load the cache from the disk with file locking."""
         if os.path.exists(self.cache_file):
             # Create a lock for the file
-            lock = FileLock(self.lock_file, timeout=60)  # 60 seconds timeout
+            lock = FileLock(self.lock_file, timeout=DEFAULT_CACHE_LOCK_TIMEOUT)
             try:
                 # Acquire the lock before reading
                 with lock:
