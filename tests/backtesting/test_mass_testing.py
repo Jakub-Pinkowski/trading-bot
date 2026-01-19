@@ -12,7 +12,7 @@ class TestMassTester:
 
     def test_add_strategy_tests(self):
         """Test that add_strategy_tests correctly adds strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['2!'], ['ES'], ['1h'])
 
         # Add generic strategy tests with various parameters
         param_grid = {
@@ -44,7 +44,7 @@ class TestMassTester:
 
     def test_add_strategy_tests_empty_params(self):
         """Test that add_strategy_tests handles empty parameter lists correctly."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['2!'], ['ES'], ['1h'])
 
         # Add generic strategy tests with some empty parameters
         param_grid = {
@@ -75,7 +75,7 @@ class TestMassTester:
 
     def test_add_rsi_tests(self):
         """Test that add_rsi_tests correctly adds RSI strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add RSI tests with various parameters
         rsi_periods = [14, 21]
@@ -104,7 +104,7 @@ class TestMassTester:
 
     def test_add_ema_crossover_tests(self):
         """Test that add_ema_crossover_tests correctly adds EMA strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add EMA tests with various parameters
         ema_shorts = [9, 12]
@@ -131,7 +131,7 @@ class TestMassTester:
 
     def test_add_macd_tests(self):
         """Test that add_macd_tests correctly adds MACD strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add MACD tests with various parameters
         fast_periods = [8, 12]
@@ -171,7 +171,7 @@ class TestMassTester:
 
     def test_add_bollinger_bands_tests(self):
         """Test that add_bollinger_bands_tests correctly adds Bollinger Bands strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add Bollinger Bands tests with various parameters
         periods = [20, 50]
@@ -209,7 +209,7 @@ class TestMassTester:
 
     def test_add_bollinger_bands_tests_with_mock(self):
         """Test that add_bollinger_bands_tests correctly calls add_strategy_tests with the right parameters."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add Bollinger Bands tests with various parameters
         periods = [20, 50]
@@ -236,7 +236,7 @@ class TestMassTester:
 
     def test_add_ichimoku_cloud_tests(self):
         """Test that add_ichimoku_cloud_tests correctly adds Ichimoku strategies with all parameter combinations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add Ichimoku tests with various parameters
         tenkan_periods = [7, 9]
@@ -281,7 +281,7 @@ class TestMassTester:
 
     def test_add_ichimoku_cloud_tests_with_mock(self):
         """Test that add_ichimoku_cloud_tests correctly calls add_strategy_tests with the right parameters."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Add Ichimoku tests with various parameters
         tenkan_periods = [7, 9]
@@ -314,7 +314,7 @@ class TestMassTester:
     def test_initialization(self):
         """Test that the MassTester initializes correctly with the provided parameters."""
         # Test with minimal parameters
-        tested_months = ['2023-01']
+        tested_months = ['1!']
         symbols = ['ES']
         intervals = ['1h']
 
@@ -328,7 +328,7 @@ class TestMassTester:
         assert hasattr(tester, 'switch_dates_dict')
 
         # Test with multiple values
-        tested_months = ['2023-01', '2023-02', '2023-03']
+        tested_months = ['1!', '1!', '1!']
         symbols = ['ES', 'NQ', 'YM']
         intervals = ['1h', '4h', '1d']
 
@@ -346,7 +346,7 @@ class TestMassTester:
         """Test that the MassTester loads switch dates correctly."""
         mock_yaml_load.return_value = {'ES': ['2023-01-15', '2023-02-15']}
 
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         mock_file.assert_called_once()
         mock_yaml_load.assert_called_once()
@@ -366,7 +366,7 @@ class TestMassTester:
             }
         }
 
-        tester = MassTester(['2023-01'], ['MCL', 'MGC', 'MNG'], ['1h'])
+        tester = MassTester(['1!'], ['MCL', 'MGC', 'MNG'], ['1h'])
 
         mock_file.assert_called_once()
         mock_yaml_load.assert_called_once()
@@ -414,7 +414,7 @@ class TestMassTester:
         # Mock the future and executor
         mock_future = MagicMock()
         mock_future.result.return_value = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'MCL',
             'interval': '1h',
             'strategy': 'Test Strategy',
@@ -428,7 +428,7 @@ class TestMassTester:
         mock_as_completed.return_value = [mock_future]
 
         # Create tester with micro symbols
-        tester = MassTester(['2023-01'], ['MCL', 'MGC', 'MNG'], ['1h'])
+        tester = MassTester(['1!'], ['MCL', 'MGC', 'MNG'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -507,7 +507,7 @@ class TestMassTester:
         # Mock the future and executor
         mock_future = MagicMock()
         mock_future.result.return_value = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'CL',
             'interval': '1h',
             'strategy': 'Test Strategy',
@@ -521,7 +521,7 @@ class TestMassTester:
         mock_as_completed.return_value = [mock_future]
 
         # Create tester with main symbols
-        tester = MassTester(['2023-01'], ['CL', 'GC'], ['1h'])
+        tester = MassTester(['1!'], ['CL', 'GC'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -586,7 +586,7 @@ class TestMassTester:
         # Mock the future and executor
         mock_future = MagicMock()
         mock_future.result.return_value = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'UNKNOWN',
             'interval': '1h',
             'strategy': 'Test Strategy',
@@ -600,7 +600,7 @@ class TestMassTester:
         mock_as_completed.return_value = [mock_future]
 
         # Create tester with unknown symbol
-        tester = MassTester(['2023-01'], ['UNKNOWN'], ['1h'])
+        tester = MassTester(['1!'], ['UNKNOWN'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -633,7 +633,7 @@ class TestMassTester:
         }
 
         # Create tester with micro symbol (should not find mapping)
-        tester = MassTester(['2023-01'], ['MCL'], ['1h'])
+        tester = MassTester(['1!'], ['MCL'], ['1h'])
 
         # Verify that the tester was created successfully
         assert tester.switch_dates_dict == {
@@ -656,7 +656,7 @@ class TestMassTester:
 
         # Create a mock result that will be returned by the future
         mock_result = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'ES',
             'interval': '1h',
             'strategy': 'Test Strategy',
@@ -677,7 +677,7 @@ class TestMassTester:
         mock_as_completed.return_value = [mock_future]
 
         # Create a tester with a strategy
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -688,7 +688,7 @@ class TestMassTester:
 
         # Verify the results
         assert len(results) == 1
-        assert results[0]['month'] == '2023-01'
+        assert results[0]['month'] == '1!'
         assert results[0]['symbol'] == 'ES'
         assert results[0]['interval'] == '1h'
         assert results[0]['strategy'] == 'Test Strategy'
@@ -713,7 +713,7 @@ class TestMassTester:
 
         # Create a mock result that will be returned by the future
         mock_result = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'ES',
             'interval': '1h',
             'strategy': 'Test Strategy',
@@ -735,7 +735,7 @@ class TestMassTester:
         mock_as_completed.return_value = [mock_future]
 
         # Create a tester with a strategy
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -748,7 +748,7 @@ class TestMassTester:
         assert len(results) == 1
 
         # Verify that print was called with the verbose output
-        mock_print.assert_any_call('Preparing: Month=2023-01, Symbol=ES, Interval=1h')
+        mock_print.assert_any_call('Preparing: Month=1!, Symbol=ES, Interval=1h')
         mock_print.assert_any_call('Verbose test output')
 
         # Verify that the timing information was printed
@@ -763,7 +763,7 @@ class TestMassTester:
         """Test that run_tests raises an error when no strategies are added."""
         mock_load_results.return_value = (pd.DataFrame(), set())
 
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         with pytest.raises(ValueError, match='No strategies added for testing'):
             tester.run_tests()
@@ -775,7 +775,7 @@ class TestMassTester:
         mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = True  # All tests already exist
 
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -799,7 +799,7 @@ class TestMassTester:
         strategy_name = "EMA_9_21_True_None_None"
         mock_get_name.return_value = strategy_name
 
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
@@ -812,10 +812,10 @@ class TestMassTester:
         mock_get_name.assert_called()
 
         # Verify that print was called with the skipped test message
-        mock_print.assert_any_call('Preparing: Month=2023-01, Symbol=ES, Interval=1h')
+        mock_print.assert_any_call('Preparing: Month=1!, Symbol=ES, Interval=1h')
 
         # Use the mocked strategy name in the assertion
-        expected_message = f'Skipping already run test: Month=2023-01, Symbol=ES, Interval=1h, Strategy={strategy_name}'
+        expected_message = f'Skipping already run test: Month=1!, Symbol=ES, Interval=1h, Strategy={strategy_name}'
 
         # Check if any call to print contains the expected message
         found = False
@@ -866,15 +866,15 @@ class TestMassTester:
         ]
 
         # Create a tester
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create preprocessed switch dates and filepath
         switch_dates = []
-        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+        filepath = f'{HISTORICAL_DATA_DIR}/1!/ES/ES_1h.parquet'
 
         # Run a single test with the new format
         result = tester._run_single_test((
-            '2023-01',
+            '1!',
             'ES',
             '1h',
             'Test Strategy',
@@ -886,7 +886,7 @@ class TestMassTester:
 
         # Verify the result
         assert result is not None
-        assert result['month'] == '2023-01'
+        assert result['month'] == '1!'
         assert result['symbol'] == 'ES'
         assert result['interval'] == '1h'
         assert result['strategy'] == 'Test Strategy'
@@ -927,7 +927,7 @@ class TestMassTester:
         ]
 
         # Create a tester
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Mock sys.stdout to capture print output
         with patch('sys.stdout'), patch('io.StringIO') as mock_string_io:
@@ -938,11 +938,11 @@ class TestMassTester:
 
             # Create preprocessed switch dates and filepath
             switch_dates = []
-            filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+            filepath = f'{HISTORICAL_DATA_DIR}/1!/ES/ES_1h.parquet'
 
             # Run a single test with verbose=True using the new format
             result = tester._run_single_test((
-                '2023-01',
+                '1!',
                 'ES',
                 '1h',
                 'Test Strategy',
@@ -954,7 +954,7 @@ class TestMassTester:
 
             # Verify the result
             assert result is not None
-            assert result['month'] == '2023-01'
+            assert result['month'] == '1!'
             assert result['symbol'] == 'ES'
             assert result['interval'] == '1h'
             assert result['strategy'] == 'Test Strategy'
@@ -984,15 +984,15 @@ class TestMassTester:
         strategy.run.return_value = []
 
         # Create a tester
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create preprocessed switch dates and filepath
         switch_dates = []
-        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+        filepath = f'{HISTORICAL_DATA_DIR}/1!/ES/ES_1h.parquet'
 
         # Run a single test with the new format
         result = tester._run_single_test((
-            '2023-01',
+            '1!',
             'ES',
             '1h',
             'Test Strategy',
@@ -1004,7 +1004,7 @@ class TestMassTester:
 
         # Verify the result
         assert result is not None
-        assert result['month'] == '2023-01'
+        assert result['month'] == '1!'
         assert result['symbol'] == 'ES'
         assert result['interval'] == '1h'
         assert result['strategy'] == 'Test Strategy'
@@ -1031,15 +1031,15 @@ class TestMassTester:
         strategy.run.return_value = []
 
         # Create a tester
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create preprocessed switch dates and filepath
         switch_dates = []
-        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+        filepath = f'{HISTORICAL_DATA_DIR}/1!/ES/ES_1h.parquet'
 
         # Run a single test with verbose=True using the new format
         result = tester._run_single_test((
-            '2023-01',
+            '1!',
             'ES',
             '1h',
             'Test Strategy',
@@ -1051,7 +1051,7 @@ class TestMassTester:
 
         # Verify the result
         assert result is not None
-        assert result['month'] == '2023-01'
+        assert result['month'] == '1!'
         assert result['symbol'] == 'ES'
         assert result['interval'] == '1h'
         assert result['strategy'] == 'Test Strategy'
@@ -1061,7 +1061,7 @@ class TestMassTester:
         assert result['verbose_output'] is not None
 
         # Verify that the verbose output contains the no trades message
-        expected_message = 'No trades generated by strategy Test Strategy for ES 1h 2023-01'
+        expected_message = 'No trades generated by strategy Test Strategy for ES 1h 1!'
         assert expected_message in result['verbose_output']
 
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
@@ -1071,15 +1071,15 @@ class TestMassTester:
         mock_get_df.side_effect = Exception("File not found")
 
         # Create a tester
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create preprocessed switch dates and filepath
         switch_dates = []
-        filepath = f'{HISTORICAL_DATA_DIR}/2023-01/ES/ES_1h.parquet'
+        filepath = f'{HISTORICAL_DATA_DIR}/1!/ES/ES_1h.parquet'
 
         # Run a single test with the new format
         result = tester._run_single_test((
-            '2023-01',
+            '1!',
             'ES',
             '1h',
             'Test Strategy',
@@ -1095,10 +1095,10 @@ class TestMassTester:
     def test_results_to_dataframe(self):
         """Test the _results_to_dataframe method."""
         # Create a tester with some results
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'Strategy 1',
@@ -1128,7 +1128,7 @@ class TestMassTester:
                 'timestamp': '2023-01-01T00:00:00'
             },
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'Strategy 2',
@@ -1232,7 +1232,7 @@ class TestMassTester:
 
     def test_results_to_dataframe_empty(self):
         """Test the _results_to_dataframe method with empty results."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.results = []
 
         df = tester._results_to_dataframe()
@@ -1244,10 +1244,10 @@ class TestMassTester:
     def test_save_results(self, mock_save_to_parquet):
         """Test the _save_results method."""
         # Create a tester with some results
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'Strategy 1',
@@ -1271,7 +1271,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing.save_to_parquet')
     def test_save_results_empty(self, mock_save_to_parquet):
         """Test the _save_results method with empty results."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.results = []
 
         tester._save_results()
@@ -1287,10 +1287,10 @@ class TestMassTester:
         mock_save_to_parquet.side_effect = Exception("Test error")
 
         # Create a tester with some results
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'Strategy 1',
@@ -1315,7 +1315,7 @@ class TestHelperFunctions:
         """Test _load_existing_results when the file exists."""
         mock_exists.return_value = True
         mock_df = pd.DataFrame({
-            'month': ['2023-01'],
+            'month': ['1!'],
             'symbol': ['ES'],
             'interval': ['1h'],
             'strategy': ['Test']
@@ -1331,7 +1331,7 @@ class TestHelperFunctions:
 
         # Check the set of combinations
         assert isinstance(existing_combinations, set)
-        assert ('2023-01', 'ES', '1h', 'Test') in existing_combinations
+        assert ('1!', 'ES', '1h', 'Test') in existing_combinations
 
         mock_exists.assert_called_once()
         mock_read_parquet.assert_called_once()
@@ -1378,7 +1378,7 @@ class TestHelperFunctions:
     def test_test_already_exists_match(self):
         """Test _test_already_exists when there's a match."""
         existing_df = pd.DataFrame({
-            'month': ['2023-01', '2023-02'],
+            'month': ['1!', '1!'],
             'symbol': ['ES', 'NQ'],
             'interval': ['1h', '4h'],
             'strategy': ['Strategy 1', 'Strategy 2']
@@ -1394,14 +1394,14 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 1')
+        result = _test_already_exists(existing_data, '1!', 'ES', '1h', 'Strategy 1')
 
         assert result == True
 
     def test_test_already_exists_no_match(self):
         """Test _test_already_exists when there's no match."""
         existing_df = pd.DataFrame({
-            'month': ['2023-01', '2023-02'],
+            'month': ['1!', '1!'],
             'symbol': ['ES', 'NQ'],
             'interval': ['1h', '4h'],
             'strategy': ['Strategy 1', 'Strategy 2']
@@ -1417,7 +1417,7 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 3')
+        result = _test_already_exists(existing_data, '1!', 'ES', '1h', 'Strategy 3')
 
         assert result == False
 
@@ -1427,7 +1427,7 @@ class TestHelperFunctions:
         existing_combinations = set()
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '2023-01', 'ES', '1h', 'Strategy 1')
+        result = _test_already_exists(existing_data, '1!', 'ES', '1h', 'Strategy 1')
 
         assert result is False
 
@@ -1475,7 +1475,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_results = []
         for i in range(200):  # 200 tests to trigger progress reporting twice
             mock_results.append({
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': f'Test Strategy {i}',
@@ -1499,7 +1499,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_as_completed.return_value = mock_futures
 
         # Create a tester with strategies
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
@@ -1543,7 +1543,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_results = []
         for i in range(200):
             mock_results.append({
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': f'Test Strategy {i}',
@@ -1567,7 +1567,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_as_completed.return_value = mock_futures
 
         # Create a tester with strategies
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
@@ -1599,7 +1599,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_results = []
         for i in range(1500):
             mock_results.append({
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': f'Test Strategy {i}',
@@ -1623,7 +1623,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_as_completed.return_value = mock_futures
 
         # Create a tester with strategies
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'ema_short': list(range(1, 1501)), 'ema_long': [1600], 'rollover': [True], 'trailing': [None]}
@@ -1665,7 +1665,7 @@ class TestMassTesterPerformanceOptimizations:
         # Create mock futures - one succeeds, one fails, one more succeeds
         mock_future_success1 = MagicMock()
         mock_future_success1.result.return_value = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'ES',
             'interval': '1h',
             'strategy': 'Success Strategy 1',
@@ -1678,7 +1678,7 @@ class TestMassTesterPerformanceOptimizations:
 
         mock_future_success2 = MagicMock()
         mock_future_success2.result.return_value = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'ES',
             'interval': '1h',
             'strategy': 'Success Strategy 2',
@@ -1699,7 +1699,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_as_completed.return_value = [mock_future_success1, mock_future_fail, mock_future_success2]
 
         # Create a tester with strategies - use only 1 symbol to get exactly 3 combinations
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         # Add 3 strategies to match our 3 futures
         tester.strategies = [
             ('Strategy1', MagicMock()),
@@ -1765,7 +1765,7 @@ class TestMassTesterPerformanceOptimizations:
 
         # Create mock results
         mock_result = {
-            'month': '2023-01',
+            'month': '1!',
             'symbol': 'ES',
             'interval': '1h',
             'strategy': 'RSI_14_30_70_False_None_0',
@@ -1786,7 +1786,7 @@ class TestMassTesterPerformanceOptimizations:
         mock_as_completed.return_value = [mock_future]
 
         # Create tester and add strategies
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Run tests
@@ -1807,12 +1807,12 @@ class TestDataFrameValidation:
 
     def test_run_single_test_with_empty_dataframe(self):
         """Test that _run_single_test returns None when DataFrame is empty."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Get the test parameters
         test_params = (
-            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1832,12 +1832,12 @@ class TestDataFrameValidation:
 
     def test_run_single_test_with_missing_columns(self):
         """Test that _run_single_test returns None when required columns are missing."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Get the test parameters
         test_params = (
-            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1863,12 +1863,12 @@ class TestDataFrameValidation:
 
     def test_run_single_test_with_insufficient_rows(self):
         """Test that _run_single_test logs warning but continues when rows < 150."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Get the test parameters
         test_params = (
-            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1897,12 +1897,12 @@ class TestDataFrameValidation:
 
     def test_run_single_test_with_valid_dataframe(self):
         """Test that _run_single_test processes valid DataFrame correctly."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Get the test parameters
         test_params = (
-            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1928,12 +1928,12 @@ class TestDataFrameValidation:
 
     def test_run_single_test_with_none_dataframe(self):
         """Test that _run_single_test returns None when get_cached_dataframe returns None."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Get the test parameters
         test_params = (
-            '2023-01', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ES', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1955,12 +1955,12 @@ class TestDataFrameBuilding:
 
     def test_results_to_dataframe_with_missing_critical_metrics(self):
         """Test that _results_to_dataframe logs warnings when critical metrics are missing."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create results with missing critical metrics
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -1993,12 +1993,12 @@ class TestDataFrameBuilding:
 
     def test_results_to_dataframe_with_type_mismatches(self):
         """Test that _results_to_dataframe logs warnings when metric values have wrong types."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create results with wrong types
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2034,12 +2034,12 @@ class TestDataFrameBuilding:
 
     def test_results_to_dataframe_with_nan_inf_values(self):
         """Test that _results_to_dataframe handles NaN and Inf values correctly."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create results with NaN and Inf values
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2075,12 +2075,12 @@ class TestDataFrameBuilding:
 
     def test_results_to_dataframe_with_valid_metrics(self):
         """Test that _results_to_dataframe works correctly with all valid metrics."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create results with all valid metrics
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2118,12 +2118,12 @@ class TestDataFrameBuilding:
 
     def test_results_to_dataframe_validation_summary(self):
         """Test that validation summary is logged when there are multiple issues."""
-        tester = MassTester(['2023-01'], ['ES', 'NQ', 'YM'], ['1h'])
+        tester = MassTester(['1!'], ['ES', 'NQ', 'YM'], ['1h'])
 
         # Create multiple results with various issues
         tester.results = [
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'ES',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2134,7 +2134,7 @@ class TestDataFrameBuilding:
                 'timestamp': '2023-01-01T00:00:00'
             },
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'NQ',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2145,7 +2145,7 @@ class TestDataFrameBuilding:
                 'timestamp': '2023-01-01T00:00:00'
             },
             {
-                'month': '2023-01',
+                'month': '1!',
                 'symbol': 'YM',
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
@@ -2177,7 +2177,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_valid_data(self):
         """Test that valid DataFrame passes all validations."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # Create a valid DataFrame
         df = pd.DataFrame({
@@ -2193,7 +2193,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_none(self):
         """Test that None DataFrame fails validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         with patch('app.backtesting.mass_testing.logger.error') as mock_error:
             result = tester._validate_dataframe(None, 'test.parquet')
@@ -2204,7 +2204,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_empty_dataframe(self):
         """Test that empty DataFrame fails validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         df = pd.DataFrame()
 
@@ -2217,7 +2217,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_missing_columns(self):
         """Test that DataFrame with missing required columns fails validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame missing 'low' and 'close' columns
         df = pd.DataFrame({
@@ -2237,7 +2237,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_non_numeric_columns(self):
         """Test that DataFrame with non-numeric OHLC columns fails validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with string values in 'close' column
         df = pd.DataFrame({
@@ -2258,7 +2258,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_excessive_nan_values(self):
         """Test that DataFrame with >10% NaN values logs warning but passes."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with 20% NaN values in 'close' column
         close_values = [100.0] * 80 + [None] * 20
@@ -2282,7 +2282,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_acceptable_nan_values(self):
         """Test that DataFrame with <10% NaN values passes without warning."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with 5% NaN values in 'close' column
         close_values = [100.0] * 95 + [None] * 5
@@ -2302,7 +2302,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_unsorted_index(self):
         """Test that DataFrame with unsorted index fails validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with unsorted timestamp index
         df = pd.DataFrame({
@@ -2323,7 +2323,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_duplicate_timestamps(self):
         """Test that DataFrame with duplicate timestamps logs warning but passes."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with duplicate timestamps
         df = pd.DataFrame({
@@ -2344,7 +2344,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_multiple_issues(self):
         """Test DataFrame with multiple validation issues."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with both excessive NaN and duplicate timestamps (but still sorted)
         close_values = [100.0] * 80 + [None] * 20
@@ -2374,7 +2374,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_with_all_valid_data_types(self):
         """Test that various valid numeric types pass validation."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         # DataFrame with different numeric types (int, float)
         df = pd.DataFrame({
@@ -2390,7 +2390,7 @@ class TestValidateDataFrame:
 
     def test_validate_dataframe_error_message_includes_filepath(self):
         """Test that error messages include the filepath for debugging."""
-        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+        tester = MassTester(['1!'], ['ES'], ['1h'])
 
         df = pd.DataFrame()
         test_filepath = '/path/to/test_data.parquet'

@@ -149,7 +149,6 @@ trading-bot/
 # TODO [LOW]: Fix all the grammar errors
 
 # Tests
-# BUG [HIGH]: Tested months are 1! or 2! but in all the tests those are actual months instead
 # TODO [HIGH]: Verify all tests in a separate file to look for any tests testing themselves rather than testing the app's logic'
 # TODO [MEDIUM]: Add more real data tests in general
 # TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value
