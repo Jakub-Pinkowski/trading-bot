@@ -44,7 +44,7 @@ class TestMassTester:
 
     def test_add_strategy_tests_empty_params(self):
         """Test that add_strategy_tests handles empty parameter lists correctly."""
-        tester = MassTester(['2!'], ['ZS'], ['1h'])
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add generic strategy tests with some empty parameters
         param_grid = {
