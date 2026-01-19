@@ -47,20 +47,18 @@ class IchimokuCloudStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Previous values for crossover detection
-        prev_tenkan = df['tenkan_sen'].shift(1)
-        prev_kijun = df['kijun_sen'].shift(1)
+        # Detect Tenkan-Kijun crossovers
+        tenkan_crosses_above = self._detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'above')
+        tenkan_crosses_below = self._detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'below')
 
         # Determine if the price is above or below the cloud
         above_cloud = (df['close'] > df['senkou_span_a']) & (df['close'] > df['senkou_span_b'])
         below_cloud = (df['close'] < df['senkou_span_a']) & (df['close'] < df['senkou_span_b'])
 
         # Buy signal: Tenkan-sen crosses above Kijun-sen AND price is above the cloud
-        buy_condition = (prev_tenkan <= prev_kijun) & (df['tenkan_sen'] > df['kijun_sen']) & above_cloud
-        df.loc[buy_condition, 'signal'] = 1
+        df.loc[tenkan_crosses_above & above_cloud, 'signal'] = 1
 
         # Sell signal: Tenkan-sen crosses below Kijun-sen AND price is below the cloud
-        sell_condition = (prev_tenkan >= prev_kijun) & (df['tenkan_sen'] < df['kijun_sen']) & below_cloud
-        df.loc[sell_condition, 'signal'] = -1
+        df.loc[tenkan_crosses_below & below_cloud, 'signal'] = -1
 
         return df

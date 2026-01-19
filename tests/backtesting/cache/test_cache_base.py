@@ -12,7 +12,7 @@ from config import CACHE_DIR
 @pytest.fixture
 def temp_cache_file(tmp_path):
     """Create a temporary cache file for testing."""
-    cache_file = tmp_path / "test_cache_v1.pkl"
+    cache_file = tmp_path / "test_cache.pkl"
     return str(cache_file)
 
 
@@ -31,11 +31,10 @@ def mock_cache_dir(monkeypatch):
 
 def test_cache_initialization():
     """Test that the cache initializes correctly."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
     assert cache.cache_name == "test"
-    assert cache.cache_version == 1
-    assert cache.cache_file == os.path.join(CACHE_DIR, "test_cache_v1.pkl")
-    assert cache.lock_file == os.path.join(CACHE_DIR, "test_cache_v1.lock")
+    assert cache.cache_file == os.path.join(CACHE_DIR, "test_cache.pkl")
+    assert cache.lock_file == os.path.join(CACHE_DIR, "test_cache.lock")
     assert isinstance(cache.cache_data, dict)
     assert len(cache.cache_data) == 0
     assert cache.max_size == 1000
@@ -44,7 +43,7 @@ def test_cache_initialization():
 
 def test_cache_set_and_get():
     """Test setting and getting values from the cache."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Test setting and getting a value
     cache.set("key1", "value1")
@@ -59,7 +58,7 @@ def test_cache_set_and_get():
 
 def test_cache_contains():
     """Test checking if a key exists in the cache."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Key doesn't exist initially
     assert not cache.contains("key1")
@@ -71,7 +70,7 @@ def test_cache_contains():
 
 def test_cache_clear():
     """Test clearing the cache."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Add some items to the cache
     cache.set("key1", "value1")
@@ -87,7 +86,7 @@ def test_cache_clear():
 
 def test_cache_size():
     """Test getting the size of the cache."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Empty cache
     assert cache.size() == 0
@@ -108,7 +107,7 @@ def test_load_cache_file_exists(mock_cache_dir):
     """Test loading a cache file that exists."""
     # Create a cache file with some data
     cache_data = {"key1": "value1", "key2": "value2"}
-    cache_file = os.path.join(mock_cache_dir, "test_cache_v1.pkl")
+    cache_file = os.path.join(mock_cache_dir, "test_cache.pkl")
 
     with open(cache_file, 'wb') as f:
         pickle.dump(cache_data, f)
@@ -122,10 +121,10 @@ def test_load_cache_file_exists(mock_cache_dir):
         mock_lock_instance.__exit__.return_value = None
 
         # Initialize cache, which should load the file
-        cache = Cache("test", 1)
+        cache = Cache("test")
 
         # Verify FileLock was called with the correct lock file
-        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache_v1.lock"), timeout=60)
+        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache.lock"), timeout=60)
         # Verify the lock's __enter__ method was called (context manager was used)
         mock_lock_instance.__enter__.assert_called_once()
 
@@ -139,7 +138,7 @@ def test_load_cache_file_exists(mock_cache_dir):
 def test_load_cache_file_does_not_exist():
     """Test loading a cache file that doesn't exist."""
     # Use a unique name to ensure the file doesn't exist
-    cache = Cache("nonexistent_test", 999)
+    cache = Cache("nonexistent_test")
 
     # Verify the cache is empty
     assert cache.cache_data == {}
@@ -149,13 +148,13 @@ def test_load_cache_file_does_not_exist():
 def test_load_cache_invalid_data(mock_cache_dir):
     """Test loading a cache file with invalid data."""
     # Create a cache file with invalid data (not a dictionary)
-    cache_file = os.path.join(mock_cache_dir, "test_cache_v1.pkl")
+    cache_file = os.path.join(mock_cache_dir, "test_cache.pkl")
 
     with open(cache_file, 'wb') as f:
         pickle.dump("not a dictionary", f)
 
     # Initialize cache, which should handle the invalid data
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Verify the cache is empty
     assert cache.cache_data == {}
@@ -178,7 +177,7 @@ def test_load_cache_exception_handling():
                 mock_file.side_effect = Exception("Test exception")
 
                 # Initialize cache, which should handle the exception
-                cache = Cache("test", 1)
+                cache = Cache("test")
 
                 # Verify FileLock was called
                 mock_filelock.assert_called_once()
@@ -192,7 +191,7 @@ def test_load_cache_exception_handling():
 
 def test_save_cache(mock_cache_dir):
     """Test saving the cache to disk."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Add some data to the cache
     cache.set("key1", "value1")
@@ -210,12 +209,12 @@ def test_save_cache(mock_cache_dir):
         cache.save_cache()
 
         # Verify FileLock was called with the correct lock file
-        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache_v1.lock"), timeout=60)
+        mock_filelock.assert_called_once_with(os.path.join(mock_cache_dir, "test_cache.lock"), timeout=60)
         # Verify the lock's __enter__ method was called (context manager was used)
         mock_lock_instance.__enter__.assert_called_once()
 
     # Verify the file was created
-    cache_file = os.path.join(mock_cache_dir, "test_cache_v1.pkl")
+    cache_file = os.path.join(mock_cache_dir, "test_cache.pkl")
     assert os.path.exists(cache_file)
 
     # Load the file and verify the data
@@ -233,8 +232,8 @@ def test_save_cache(mock_cache_dir):
 
 
 def test_save_cache_exception_handling():
-    """Test handling exceptions when saving the cache."""
-    cache = Cache("test", 1)
+    """Test handling exceptions when saving the cache with retry mechanism."""
+    cache = Cache("test")
     cache.set("key1", "value1")
 
     # Mock the FileLock to verify it's used even when there's an exception
@@ -248,21 +247,53 @@ def test_save_cache_exception_handling():
         with patch("builtins.open", mock_open()) as mock_file:
             mock_file.side_effect = Exception("Test exception")
 
-            # This should not raise an exception
-            cache.save_cache()
+            # This should not raise an exception, but should return False after 3 retries
+            with patch('time.sleep'):  # Mock sleep to speed up test
+                result = cache.save_cache()
 
-            # Verify FileLock was called
-            mock_filelock.assert_called_once()
-            # Verify the lock's __enter__ method was called (context manager was used)
-            mock_lock_instance.__enter__.assert_called_once()
+            assert result is False, "save_cache should return False after all retries fail"
+
+            # Verify FileLock was called 3 times (max_retries default = 3)
+            assert mock_filelock.call_count == 3, f"Expected 3 retry attempts, got {mock_filelock.call_count}"
+
+            # Verify the lock's __enter__ method was called 3 times
+            assert mock_lock_instance.__enter__.call_count == 3
 
         # The cache data should still be intact
         assert cache.get("key1") == "value1"
 
 
+def test_save_cache_retry_success():
+    """Test that save_cache succeeds after a retry."""
+    cache = Cache("test")
+    cache.set("key1", "value1")
+
+    # Mock FileLock
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.return_value = mock_lock_instance
+        mock_lock_instance.__exit__.return_value = None
+
+        # Mock open to fail once, then succeed
+        with patch("builtins.open", mock_open()) as mock_file:
+            # First call fails, second call succeeds
+            mock_file.side_effect = [Exception("Temporary failure"), mock_open()()]
+
+            # Mock sleep to speed up test
+            with patch('time.sleep'):
+                result = cache.save_cache()
+
+            # Should succeed on second attempt
+            assert result is True, "save_cache should return True after successful retry"
+
+            # Verify FileLock was called twice (failed once, succeeded on retry)
+            assert mock_filelock.call_count == 2, f"Expected 2 attempts, got {mock_filelock.call_count}"
+
+
 def test_cache_with_complex_data():
     """Test the cache with complex data types."""
-    cache = Cache("test", 1)
+    cache = Cache("test")
 
     # Test with a list
     cache.set("list", [1, 2, 3])
@@ -285,46 +316,9 @@ def test_cache_with_complex_data():
     assert cache.get("complex") == complex_data
 
 
-def test_cache_versioning(mock_cache_dir):
-    """Test that cache versioning works correctly."""
-    # Create a cache file with version 1
-    cache_v1 = Cache("test_version", 1)
-    cache_v1.set("key1", "value1")
-    cache_v1.save_cache()
-
-    # Verify the file was created
-    cache_file_v1 = os.path.join(mock_cache_dir, "test_version_cache_v1.pkl")
-    assert os.path.exists(cache_file_v1)
-
-    # Create a new cache with version 2
-    cache_v2 = Cache("test_version", 2)
-
-    # Verify that the v2 cache is empty (doesn't load data from v1)
-    assert cache_v2.size() == 0
-    assert not cache_v2.contains("key1")
-
-    # Add data to v2 cache
-    cache_v2.set("key2", "value2")
-    cache_v2.save_cache()
-
-    # Verify the v2 file was created
-    cache_file_v2 = os.path.join(mock_cache_dir, "test_version_cache_v2.pkl")
-    assert os.path.exists(cache_file_v2)
-
-    # Load v1 cache again and verify it still has its data
-    cache_v1_reload = Cache("test_version", 1)
-    assert cache_v1_reload.size() == 1
-    assert cache_v1_reload.get("key1") == "value1"
-
-    # Load v2 cache again and verify it has its own data
-    cache_v2_reload = Cache("test_version", 2)
-    assert cache_v2_reload.size() == 1
-    assert cache_v2_reload.get("key2") == "value2"
-
-
 def test_cache_performance_with_large_dataset():
     """Test cache performance with a large number of items."""
-    cache = Cache("test_performance", 1, max_size=20000)  # Use a larger max_size for this test
+    cache = Cache("test_performance", max_size=20000)  # Use a larger max_size for this test
 
     # Add a large number of items to the cache
     num_items = 10000
@@ -369,14 +363,14 @@ def test_cache_performance_with_large_dataset():
 def test_cache_file_corruption(mock_cache_dir):
     """Test handling of corrupted cache files."""
     # Create a cache file path
-    cache_file = os.path.join(mock_cache_dir, "corrupted_cache_v1.pkl")
+    cache_file = os.path.join(mock_cache_dir, "corrupted_cache.pkl")
 
     # Write corrupted data to the file
     with open(cache_file, 'wb') as f:
         f.write(b'This is not a valid pickle file')
 
     # Initialize cache, which should handle the corrupted file
-    cache = Cache("corrupted", 1)
+    cache = Cache("corrupted")
 
     # Verify the cache is empty
     assert cache.cache_data == {}
@@ -389,7 +383,7 @@ def test_cache_file_corruption(mock_cache_dir):
         f.truncate(10)  # Truncate to first 10 bytes
 
     # Initialize cache again, which should handle the corrupted file
-    cache = Cache("corrupted", 1)
+    cache = Cache("corrupted")
 
     # Verify the cache is empty
     assert cache.cache_data == {}
@@ -398,7 +392,7 @@ def test_cache_file_corruption(mock_cache_dir):
 
 def test_cache_with_different_key_types():
     """Test the cache with different types of keys."""
-    cache = Cache("test_keys", 1)
+    cache = Cache("test_keys")
 
     # Test with string keys
     cache.set("string_key", "string_value")
@@ -446,7 +440,7 @@ def test_cache_with_different_key_types():
 def test_cache_no_size_limit():
     """Test that the cache doesn't limit size when max_size is None."""
     # Create a cache with no size limit
-    cache = Cache("test_no_size_limit", 1, max_size=None)
+    cache = Cache("test_no_size_limit", max_size=None)
 
     # Add a large number of items to the cache
     num_items = 100
@@ -472,7 +466,7 @@ def test_cache_no_size_limit():
 def test_cache_no_expiration():
     """Test that the cache doesn't expire items when max_age is None."""
     # Create a cache with no expiration
-    cache = Cache("test_no_expiration", 1, max_age=None)
+    cache = Cache("test_no_expiration", max_age=None)
 
     # Add items to the cache
     cache.set("key1", "value1")
@@ -503,7 +497,7 @@ def test_cache_no_expiration():
 def test_cache_max_age_and_expiration():
     """Test that the cache enforces the max_age limit and expires old items."""
     # Create a cache with a small max_age (1 second)
-    cache = Cache("test_max_age", 1, max_age=1)
+    cache = Cache("test_max_age", max_age=1)
 
     # Add items to the cache
     cache.set("key1", "value1")
@@ -543,7 +537,7 @@ def test_cache_max_age_and_expiration():
 def test_cache_max_size_and_lru():
     """Test that the cache enforces the max_size limit and uses LRU eviction."""
     # Create a cache with a small max_size
-    cache = Cache("test_max_size", 1, max_size=3)
+    cache = Cache("test_max_size", max_size=3)
 
     # Add items to the cache
     cache.set("key1", "value1")
@@ -593,7 +587,7 @@ def test_cache_max_size_and_lru():
 
 def test_cache_update_operations():
     """Test updating existing values in the cache."""
-    cache = Cache("test_updates", 1)
+    cache = Cache("test_updates")
 
     # Add initial values
     cache.set("key1", "value1")

@@ -2170,3 +2170,233 @@ class TestDataFrameBuilding:
             # Should have summary messages about totals
             assert any('Total missing critical metrics' in msg or 'Total type mismatches' in msg
                        for msg in warning_messages)
+
+
+class TestValidateDataFrame:
+    """Direct unit tests for the _validate_dataframe method."""
+
+    def test_validate_dataframe_with_valid_data(self):
+        """Test that valid DataFrame passes all validations."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # Create a valid DataFrame
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0] * 100,
+            'high': [102.0, 103.0, 104.0] * 100,
+            'low': [98.0, 99.0, 100.0] * 100,
+            'close': [101.0, 102.0, 103.0] * 100,
+        }, index=pd.date_range('2023-01-01', periods=300, freq='1h'))
+
+        result = tester._validate_dataframe(df, 'test.parquet')
+
+        assert result is True
+
+    def test_validate_dataframe_with_none(self):
+        """Test that None DataFrame fails validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(None, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            assert 'Empty or None DataFrame' in str(mock_error.call_args)
+
+    def test_validate_dataframe_with_empty_dataframe(self):
+        """Test that empty DataFrame fails validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        df = pd.DataFrame()
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            assert 'Empty or None DataFrame' in str(mock_error.call_args)
+
+    def test_validate_dataframe_with_missing_columns(self):
+        """Test that DataFrame with missing required columns fails validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame missing 'low' and 'close' columns
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+        })
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            error_msg = str(mock_error.call_args)
+            assert 'missing required columns' in error_msg
+            assert 'low' in error_msg
+            assert 'close' in error_msg
+
+    def test_validate_dataframe_with_non_numeric_columns(self):
+        """Test that DataFrame with non-numeric OHLC columns fails validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with string values in 'close' column
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+            'low': [98.0, 99.0, 100.0],
+            'close': ['100', '101', '102'],  # String instead of numeric
+        })
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            error_msg = str(mock_error.call_args)
+            assert 'Non-numeric column' in error_msg
+            assert 'close' in error_msg
+
+    def test_validate_dataframe_with_excessive_nan_values(self):
+        """Test that DataFrame with >10% NaN values logs warning but passes."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with 20% NaN values in 'close' column
+        close_values = [100.0] * 80 + [None] * 20
+        df = pd.DataFrame({
+            'open': [100.0] * 100,
+            'high': [102.0] * 100,
+            'low': [98.0] * 100,
+            'close': close_values,
+        })
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            # Should pass validation but log warning
+            assert result is True
+            mock_warning.assert_called_once()
+            warning_msg = str(mock_warning.call_args)
+            assert 'close' in warning_msg
+            assert '20.0%' in warning_msg
+            assert 'NaN values' in warning_msg
+
+    def test_validate_dataframe_with_acceptable_nan_values(self):
+        """Test that DataFrame with <10% NaN values passes without warning."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with 5% NaN values in 'close' column
+        close_values = [100.0] * 95 + [None] * 5
+        df = pd.DataFrame({
+            'open': [100.0] * 100,
+            'high': [102.0] * 100,
+            'low': [98.0] * 100,
+            'close': close_values,
+        })
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            # Should pass validation without warning (< 10% threshold)
+            assert result is True
+            mock_warning.assert_not_called()
+
+    def test_validate_dataframe_with_unsorted_index(self):
+        """Test that DataFrame with unsorted index fails validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with unsorted timestamp index
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+            'low': [98.0, 99.0, 100.0],
+            'close': [101.0, 102.0, 103.0],
+        }, index=pd.to_datetime(['2023-01-03', '2023-01-01', '2023-01-02']))  # Out of order
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            error_msg = str(mock_error.call_args)
+            assert 'not sorted' in error_msg
+            assert 'ascending order' in error_msg
+
+    def test_validate_dataframe_with_duplicate_timestamps(self):
+        """Test that DataFrame with duplicate timestamps logs warning but passes."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with duplicate timestamps
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+            'low': [98.0, 99.0, 100.0],
+            'close': [101.0, 102.0, 103.0],
+        }, index=pd.to_datetime(['2023-01-01 10:00', '2023-01-01 10:00', '2023-01-01 11:00']))  # Duplicate
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            # Should pass validation but log warning
+            assert result is True
+            mock_warning.assert_called_once()
+            warning_msg = str(mock_warning.call_args)
+            assert '1 duplicate timestamp' in warning_msg
+
+    def test_validate_dataframe_with_multiple_issues(self):
+        """Test DataFrame with multiple validation issues."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with both excessive NaN and duplicate timestamps (but still sorted)
+        close_values = [100.0] * 80 + [None] * 20
+        # Create a sorted index with one duplicate in the middle
+        dates = (pd.date_range('2023-01-01 00:00', periods=50, freq='1h').tolist() +
+                 [pd.to_datetime('2023-01-01 10:00')] +  # Duplicate timestamp
+                 pd.date_range('2023-01-01 11:00', periods=49, freq='1h').tolist())
+        dates.sort()  # Ensure sorted
+
+        df = pd.DataFrame({
+            'open': [100.0] * 100,
+            'high': [102.0] * 100,
+            'low': [98.0] * 100,
+            'close': close_values,
+        }, index=pd.DatetimeIndex(dates))
+
+        with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            # Should pass but log warnings for both issues
+            assert result is True
+            assert mock_warning.call_count == 2  # NaN warning + duplicate warning
+
+            warning_messages = [str(call) for call in mock_warning.call_args_list]
+            assert any('NaN values' in msg for msg in warning_messages)
+            assert any('duplicate timestamp' in msg for msg in warning_messages)
+
+    def test_validate_dataframe_with_all_valid_data_types(self):
+        """Test that various valid numeric types pass validation."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        # DataFrame with different numeric types (int, float)
+        df = pd.DataFrame({
+            'open': [100, 101, 102],  # int
+            'high': [102.5, 103.5, 104.5],  # float
+            'low': [98.0, 99.0, 100.0],  # float
+            'close': pd.Series([101, 102, 103], dtype='int64'),  # explicit int64
+        }, index=pd.date_range('2023-01-01', periods=3, freq='1h'))
+
+        result = tester._validate_dataframe(df, 'test.parquet')
+
+        assert result is True
+
+    def test_validate_dataframe_error_message_includes_filepath(self):
+        """Test that error messages include the filepath for debugging."""
+        tester = MassTester(['2023-01'], ['ES'], ['1h'])
+
+        df = pd.DataFrame()
+        test_filepath = '/path/to/test_data.parquet'
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            tester._validate_dataframe(df, test_filepath)
+
+            error_msg = str(mock_error.call_args)
+            assert test_filepath in error_msg

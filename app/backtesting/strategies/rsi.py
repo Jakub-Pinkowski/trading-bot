@@ -16,17 +16,16 @@ class RSIStrategy(BaseStrategy):
     def generate_signals(self, df):
         """
         Signals:
-            1: Long entry
-           -1: Short entry
+            1: Long entry (RSI crosses below a lower threshold)
+           -1: Short entry (RSI crosses above an upper threshold)
             0: No action
         """
         df['signal'] = 0
-        prev_rsi = df['rsi'].shift(1)
 
         # Buy signal: RSI crosses below a lower threshold
-        df.loc[(prev_rsi > self.lower) & (df['rsi'] <= self.lower), 'signal'] = 1
+        df.loc[self._detect_threshold_cross(df['rsi'], self.lower, 'below'), 'signal'] = 1
 
         # Sell signal: RSI crosses above an upper threshold
-        df.loc[(prev_rsi < self.upper) & (df['rsi'] >= self.upper), 'signal'] = -1
+        df.loc[self._detect_threshold_cross(df['rsi'], self.upper, 'above'), 'signal'] = -1
 
         return df

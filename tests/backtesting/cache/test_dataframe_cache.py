@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.cache.cache_base import Cache
-from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe, CACHE_VERSION
+from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 
 
 @pytest.fixture
@@ -26,7 +26,6 @@ def sample_dataframe():
 def test_dataframe_cache_instance():
     """Test that the dataframe_cache is properly initialized."""
     assert dataframe_cache.cache_name == "dataframe"
-    assert dataframe_cache.cache_version == CACHE_VERSION
     assert dataframe_cache.max_size == 50
     assert dataframe_cache.max_age == 604800  # 7 days in seconds
 
@@ -447,28 +446,6 @@ def test_dataframe_cache_with_non_existent_files():
     assert dataframe_cache.size() == 0
 
 
-def test_dataframe_cache_version_change():
-    """Test that cache is invalidated when the version changes."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.clear()
-
-    # Add a dataframe to the cache
-    test_key = "test_file.parquet"
-    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-    dataframe_cache.set(test_key, test_value)
-
-    # Verify the dataframe is in the cache
-    assert dataframe_cache.contains(test_key)
-
-    # Simulate a version change by creating a new cache instance with a different version
-    with patch('app.backtesting.cache.dataframe_cache.CACHE_VERSION', 999):
-        # Create a new cache instance with the new version
-        new_cache = Cache("dataframe", 999)
-
-        # Verify the new cache is empty (doesn't contain the old data)
-        assert not new_cache.contains(test_key)
-        assert new_cache.size() == 0
-
 
 def test_dataframe_cache_corrupted_file():
     """Test handling of corrupted cache files."""
@@ -486,7 +463,7 @@ def test_dataframe_cache_corrupted_file():
     # Simulate a corrupted cache file by mocking pickle.load to raise an exception
     with patch('pickle.load', side_effect=Exception("Corrupted file")):
         # Create a new cache instance, which will try to load the corrupted file
-        new_cache = Cache("dataframe", CACHE_VERSION)
+        new_cache = Cache("dataframe")
 
         # Verify the new cache is empty (couldn't load the corrupted data)
         assert not new_cache.contains(test_key)

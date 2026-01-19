@@ -378,16 +378,21 @@ class StrategyAnalyzer:
                 formatted_df['trailing'] = [data[2] for data in strategy_data]  # Trailing parameter
                 formatted_df['slippage'] = [data[3] for data in strategy_data]  # Slippage parameter
 
-                # Reorder columns to put common parameters after strategy
+                # Reorder columns to place rollover, trailing, and slippage after strategy
                 cols = list(formatted_df.columns)
-                strategy_idx = cols.index('strategy')
-                # Remove the new columns from their current positions
-                cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
-                # Insert them after strategy
-                cols.insert(strategy_idx + 1, 'rollover')
-                cols.insert(strategy_idx + 2, 'trailing')
-                cols.insert(strategy_idx + 3, 'slippage')
-                formatted_df = formatted_df[cols]
+                if 'strategy' in cols:
+                    try:
+                        strategy_idx = cols.index('strategy')
+                        # Remove parameter columns from their current positions
+                        cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
+                        # Insert parameter columns immediately after the strategy column
+                        cols.insert(strategy_idx + 1, 'rollover')
+                        cols.insert(strategy_idx + 2, 'trailing')
+                        cols.insert(strategy_idx + 3, 'slippage')
+                        formatted_df = formatted_df[cols]
+                    except (ValueError, IndexError) as e:
+                        # Log warning if column reordering fails and continue with the original order
+                        logger.warning(f"Could not reorder columns: {e}. Using original column order.")
 
             # Format all numeric columns to 2 decimal places
             numeric_cols = formatted_df.select_dtypes(include='number').columns

@@ -19,7 +19,7 @@ from config import CACHE_DIR
 def worker_process(worker_id, cache_name, iterations=10):
     """Worker process that reads and writes to the cache."""
     # Create a test cache instance
-    test_cache = Cache(cache_name, cache_version=1, max_size=100, max_age=3600)
+    test_cache = Cache(cache_name, max_size=100, max_age=3600)
 
     for i in range(iterations):
         # Add some randomness to increase the chance of collision
@@ -39,7 +39,7 @@ def worker_process(worker_id, cache_name, iterations=10):
 
 def check_cache_integrity(cache_name):
     """Check if the cache file is valid by trying to load it."""
-    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.pkl")
+    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
     try:
         with open(cache_file, 'rb') as f:
             cache_data = pickle.load(f)
@@ -61,7 +61,7 @@ def clean_test_cache():
     cache_name = f"concurrency_test_{int(time.time())}"
 
     # Remove any existing test cache file
-    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.pkl")
+    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
     if os.path.exists(cache_file):
         os.remove(cache_file)
 
@@ -71,7 +71,7 @@ def clean_test_cache():
     if os.path.exists(cache_file):
         os.remove(cache_file)
 
-    lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.lock")
+    lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")
     if os.path.exists(lock_file):
         os.remove(lock_file)
 
@@ -99,7 +99,7 @@ def test_cache_concurrency(clean_test_cache):
     assert num_items <= 5, f"Cache should have at most 5 items, but has {num_items}"
 
     # Load the cache and verify its contents
-    test_cache = Cache(cache_name, cache_version=1)
+    test_cache = Cache(cache_name)
     assert test_cache.size() > 0, "Cache is empty"
     assert test_cache.size() <= 5, f"Cache should have at most 5 items, but has {test_cache.size()}"
 
@@ -113,12 +113,12 @@ def test_cache_concurrency(clean_test_cache):
 
 
 def test_cache_lock_release_on_exception():
-    """Test that the lock is released when an exception occurs."""
+    """Test that the lock is released when an exception occurs, even with retries."""
     # Generate a unique cache name for this test
     cache_name = f"lock_release_test_{int(time.time())}"
 
     # Create a cache instance
-    test_cache = Cache(cache_name, cache_version=1, max_size=100, max_age=3600)
+    test_cache = Cache(cache_name, max_size=100, max_age=3600)
 
     # Add some data to the cache
     test_cache.set("key1", "value1")
@@ -135,21 +135,28 @@ def test_cache_lock_release_on_exception():
             mock_lock_instance.__enter__.return_value = mock_lock_instance
             mock_lock_instance.__exit__.return_value = None
 
-            # Try to save the cache, which should handle the exception
-            test_cache.save_cache()
+            # Mock time.sleep to speed up the test
+            with patch('time.sleep'):
+                # Try to save the cache, which should handle the exception
+                result = test_cache.save_cache()
 
-            # Verify FileLock was called
-            mock_filelock.assert_called_once()
-            # Verify the lock's __enter__ method was called (context manager was used)
-            mock_lock_instance.__enter__.assert_called_once()
-            # Verify the lock's __exit__ method was called (lock was released)
-            mock_lock_instance.__exit__.assert_called_once()
+            # Verify save_cache returns False after all retries fail
+            assert result is False
+
+            # Verify FileLock was called 3 times (max_retries default = 3)
+            assert mock_filelock.call_count == 3, f"Expected 3 retry attempts, got {mock_filelock.call_count}"
+
+            # Verify the lock's __enter__ method was called 3 times
+            assert mock_lock_instance.__enter__.call_count == 3
+
+            # Verify the lock's __exit__ method was called 3 times (lock was released each time)
+            assert mock_lock_instance.__exit__.call_count == 3
 
     # Clean up
-    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.pkl")
+    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
     if os.path.exists(cache_file):
         os.remove(cache_file)
 
-    lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.lock")
+    lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")
     if os.path.exists(lock_file):
         os.remove(lock_file)

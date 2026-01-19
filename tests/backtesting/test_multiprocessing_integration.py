@@ -208,8 +208,8 @@ class TestMultiprocessingIntegration:
                     tester = MassTester(['2023-01'], ['ES'], ['1h'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
-                    # Run tests
-                    tester.run_tests(max_workers=2, verbose=False)
+                    # Run tests with skip_existing=False to ensure tests actually run
+                    tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
                     # Verify cache.save_cache() was called exactly once (from main process)
                     assert mock_ind_cache.save_cache.call_count == 1, \

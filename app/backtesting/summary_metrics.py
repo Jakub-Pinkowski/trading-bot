@@ -5,6 +5,10 @@ from app.utils.math_utils import safe_average, safe_divide
 
 logger = get_logger('backtesting/summary_metrics')
 
+# Metrics Calculation Constants
+MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
+MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
+
 
 class SummaryMetrics:
     """Class for calculating summary metrics for a list of trades."""
@@ -273,7 +277,7 @@ class SummaryMetrics:
 
     def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
         """Calculate the Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
-        if not self._has_trades() or len(self.returns) < 2:  # Need at least 2 returns for standard deviation
+        if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_SHARPE:
             return 0
 
         avg_return = safe_average(self.returns)
@@ -319,7 +323,7 @@ class SummaryMetrics:
 
     def _calculate_value_at_risk(self, confidence=0.95):
         """ Returns the loss that won't be exceeded with the given confidence level. """
-        if not self._has_trades() or len(self.returns) < 5:
+        if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_VAR:
             return 0
 
         # Sort returns in ascending order (worst to best)
@@ -333,7 +337,7 @@ class SummaryMetrics:
 
     def _calculate_expected_shortfall(self, confidence=0.95):
         """ Returns the average loss in the worst (1-confidence)% of cases."""
-        if not self._has_trades() or len(self.returns) < 5:
+        if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_VAR:
             return 0
 
         # Sort returns in ascending order (worst to best)

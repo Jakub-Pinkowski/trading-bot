@@ -1,5 +1,8 @@
 import pandas as pd
 
+# Strategy Execution Constants
+INDICATOR_WARMUP_PERIOD = 100  # Number of candles to skip for indicator stability
+
 
 class BaseStrategy:
     def __init__(self, rollover=False, trailing=None, slippage=0):
@@ -25,8 +28,9 @@ class BaseStrategy:
         self._reset()
 
     def run(self, df, switch_dates):
-        """Run the strategy"""
-        df = df.copy()
+        """
+        Run the strategy.
+        """
         df = self.add_indicators(df)
         df = self.generate_signals(df)
         trades = self._extract_trades(df, switch_dates)
@@ -46,6 +50,51 @@ class BaseStrategy:
             0: No action
         """
         raise NotImplementedError('Subclasses must implement generate_signals method')
+
+    # --- Helper methods for signal detection ---
+
+    def _detect_crossover(self, series1, series2, direction='above'):
+        """
+        Detect when series1 crosses series2.
+
+        Args:
+            series1 (pd.Series): First series (e.g., fast EMA, MACD line)
+            series2 (pd.Series): Second series (e.g., slow EMA, signal line)
+            direction (str): 'above' for bullish crossover, 'below' for bearish crossover
+
+        Returns:
+            pd.Series: Boolean series indicating crossover points
+        """
+        prev_series1 = series1.shift(1)
+        prev_series2 = series2.shift(1)
+
+        if direction == 'above':
+            # Series1 crosses above series2 (bullish)
+            return (prev_series1 <= prev_series2) & (series1 > series2)
+        else:  # direction == 'below'
+            # Series1 crosses below series2 (bearish)
+            return (prev_series1 >= prev_series2) & (series1 < series2)
+
+    def _detect_threshold_cross(self, series, threshold, direction='below'):
+        """
+        Detect when a series crosses a threshold value.
+
+        Args:
+            series (pd.Series): The series to check (e.g., RSI, price)
+            threshold (float): The threshold value to cross
+            direction (str): 'below' for crossing downward, 'above' for crossing upward
+
+        Returns:
+            pd.Series: Boolean series indicating threshold cross-points
+        """
+        prev_series = series.shift(1)
+
+        if direction == 'below':
+            # Series crosses below a threshold (bearish)
+            return (prev_series > threshold) & (series <= threshold)
+        else:  # direction == 'above'
+            # Series crosses above a threshold (bullish)
+            return (prev_series < threshold) & (series >= threshold)
 
     # --- Private methods ---
 
@@ -77,7 +126,7 @@ class BaseStrategy:
         self._reset()
         self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
 
-        # Counter to skip the first 100 candles for indicator warm-up
+        # Counter to skip the first candles for indicator warm-up
         candle_count = 0
 
         for idx, row in df.iterrows():
@@ -90,8 +139,8 @@ class BaseStrategy:
             # Increment candle counter
             candle_count += 1
 
-            # Skip signal processing for the first 100 candles to allow indicators to warm up
-            if candle_count <= 100:
+            # Skip signal processing for the first candles to allow indicators to warm up
+            if candle_count <= INDICATOR_WARMUP_PERIOD:
                 self.prev_time = current_time
                 self.prev_row = row
                 continue

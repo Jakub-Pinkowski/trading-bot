@@ -142,14 +142,16 @@ trading-bot/
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Developer
+# TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add docstrings everywhere
 # TODO [LOW]: Set up a database
 # TODO [LOW]: Set up UI
 # TODO [LOW]: Fix all the grammar errors
 
 # Tests
+# BUG [HIGH]: Tested months are 1! or 2! but in all the tests those are actual months instead
+# TODO [HIGH]: Verify all tests in a separate file to look for any tests testing themselves rather than testing the app's logic'
 # TODO [MEDIUM]: Add more real data tests in general
-# TODO [MEDIUM]: Verify that the tests are not verifying themselves but rather testing the app's logic'
 # TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value
 # TODO [LOW]: Add e2e tests
 

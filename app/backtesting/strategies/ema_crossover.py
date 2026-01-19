@@ -22,14 +22,10 @@ class EMACrossoverStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Previous values for crossover detection
-        prev_ema_short = df['ema_short'].shift(1)
-        prev_ema_long = df['ema_long'].shift(1)
-
         # Buy signal: Short EMA crosses above Long EMA
-        df.loc[(prev_ema_short <= prev_ema_long) & (df['ema_short'] > df['ema_long']), 'signal'] = 1
+        df.loc[self._detect_crossover(df['ema_short'], df['ema_long'], 'above'), 'signal'] = 1
 
         # Sell signal: Short EMA crosses below Long EMA
-        df.loc[(prev_ema_short >= prev_ema_long) & (df['ema_short'] < df['ema_long']), 'signal'] = -1
+        df.loc[self._detect_crossover(df['ema_short'], df['ema_long'], 'below'), 'signal'] = -1
 
         return df
