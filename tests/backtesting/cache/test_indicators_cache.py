@@ -183,8 +183,11 @@ def test_atr_caching():
     atr1 = calculate_atr(df, period=7)
 
     # Get the cache key
-    df_hash = hash_series(df['high']) + hash_series(df['low']) + hash_series(df['close'])
-    cache_key = ('atr', df_hash, 7)
+    import hashlib
+    combined_hash = hashlib.md5(
+        f"{hash_series(df['high'])}{hash_series(df['low'])}{hash_series(df['close'])}".encode()
+    ).hexdigest()
+    cache_key = ('atr', combined_hash, 7)
 
     # Verify the result is in the cache
     assert indicator_cache.contains(cache_key)
