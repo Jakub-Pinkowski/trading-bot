@@ -142,6 +142,7 @@ trading-bot/
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Developer
+# TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add docstrings everywhere
 # TODO [LOW]: Set up a database
 # TODO [LOW]: Set up UI
