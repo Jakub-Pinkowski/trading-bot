@@ -12,7 +12,7 @@ class TestMassTester:
 
     def test_add_strategy_tests(self):
         """Test that add_strategy_tests correctly adds strategies with all parameter combinations."""
-        tester = MassTester(['2!'], ['ZS'], ['1h'])
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add generic strategy tests with various parameters
         param_grid = {
