@@ -477,16 +477,18 @@ class MassTester:
             'ulcer_index'
         ]
 
-        # Pre-allocate numpy arrays for each column
+        # Pre-allocate arrays for each column
         n_results = len(self.results)
 
         # Create arrays for numeric columns
         numeric_columns = columns[4:]  # All columns except month, symbol, interval, strategy
+
+        # Pre-allocate arrays for all columns including string columns
         data = {
-            'month': [],
-            'symbol': [],
-            'interval': [],
-            'strategy': [],
+            'month': [None] * n_results,
+            'symbol': [None] * n_results,
+            'interval': [None] * n_results,
+            'strategy': [None] * n_results,
         }
 
         for col in numeric_columns:
@@ -499,10 +501,10 @@ class MassTester:
         # Fill the arrays directly
         for i, result in enumerate(self.results):
             metrics = result['metrics']
-            data['month'].append(result['month'])
-            data['symbol'].append(result['symbol'])
-            data['interval'].append(result['interval'])
-            data['strategy'].append(result['strategy'])
+            data['month'][i] = result['month']
+            data['symbol'][i] = result['symbol']
+            data['interval'][i] = result['interval']
+            data['strategy'][i] = result['strategy']
 
             # Fill numeric columns with validation
             for col in numeric_columns:

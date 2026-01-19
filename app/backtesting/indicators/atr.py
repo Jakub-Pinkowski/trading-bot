@@ -1,3 +1,5 @@
+import hashlib
+
 import numpy as np
 import pandas as pd
 
@@ -6,11 +8,13 @@ from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def calculate_atr(df, period=14):
-    # Create a hashable key for the cache
-    df_hash = hash_series(df['high']) + hash_series(df['low']) + hash_series(df['close'])
+    # Create a combined hash for all price series
+    combined_hash = hashlib.md5(
+        f"{hash_series(df['high'])}{hash_series(df['low'])}{hash_series(df['close'])}".encode()
+    ).hexdigest()
 
     # Check if we have this calculation cached in the global cache
-    cache_key = ('atr', df_hash, period)
+    cache_key = ('atr', combined_hash, period)
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 

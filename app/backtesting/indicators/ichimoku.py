@@ -1,19 +1,19 @@
+import hashlib
+
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def calculate_ichimoku(high, low, close, tenkan_period=9, kijun_period=26, senkou_span_b_period=52, displacement=26):
-    # Create a hashable key for the cache
-    high_hash = hash_series(high)
-    low_hash = hash_series(low)
-    close_hash = hash_series(close)
+    # Create a combined hash for all price series
+    combined_hash = hashlib.md5(
+        f"{hash_series(high)}{hash_series(low)}{hash_series(close)}".encode()
+    ).hexdigest()
 
     # Check if we have this calculation cached in the global cache
     cache_key = (
         'ichimoku',
-        high_hash,
-        low_hash,
-        close_hash,
+        combined_hash,
         tenkan_period,
         kijun_period,
         senkou_span_b_period,
