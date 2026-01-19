@@ -113,7 +113,7 @@ class TestMultiprocessingIntegration:
         # Create test dataframe matching actual historical data format
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'symbol': ['CME:ES2!'] * 200,
+            'symbol': ['CBOT:ZS1!'] * 200,
             'open': [4500 + i * 0.5 for i in range(200)],
             'high': [4505 + i * 0.5 for i in range(200)],
             'low': [4495 + i * 0.5 for i in range(200)],
@@ -122,13 +122,13 @@ class TestMultiprocessingIntegration:
         }, index=pd.DatetimeIndex(dates, name='datetime'))
 
         # Save test data
-        test_file = data_dir / "ES_1h.parquet"
+        test_file = data_dir / "ZS_1h.parquet"
         test_df.to_parquet(test_file)
 
         # Temporarily patch HISTORICAL_DATA_DIR to use our test directory
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
             # Create tester and add simple RSI test
-            tester = MassTester(['1!'], ['ES'], ['1h'])
+            tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests(
                 rsi_periods=[14],
                 lower_thresholds=[30],
@@ -159,7 +159,7 @@ class TestMultiprocessingIntegration:
 
         # Create tester with invalid data path (will cause exceptions)
         with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', str(tmp_path / "nonexistent")):
-            tester = MassTester(['1!'], ['ES'], ['1h'])
+            tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
             # This should not raise, even though workers will fail
@@ -186,7 +186,7 @@ class TestMultiprocessingIntegration:
         # Create test dataframe
         dates = pd.date_range('2023-01-01', periods=200, freq='h')
         test_df = pd.DataFrame({
-            'symbol': ['CME:ES2!'] * 200,
+            'symbol': ['CBOT:ZS1!'] * 200,
             'open': [4500 + i * 0.5 for i in range(200)],
             'high': [4505 + i * 0.5 for i in range(200)],
             'low': [4495 + i * 0.5 for i in range(200)],
@@ -194,7 +194,7 @@ class TestMultiprocessingIntegration:
             'volume': [10000.0] * 200
         }, index=pd.DatetimeIndex(dates, name='datetime'))
 
-        test_file = data_dir / "ES_1h.parquet"
+        test_file = data_dir / "ZS_1h.parquet"
         test_df.to_parquet(test_file)
 
         # Mock cache save methods to track calls
@@ -205,7 +205,7 @@ class TestMultiprocessingIntegration:
                     mock_ind_cache.size.return_value = 10
                     mock_df_cache.size.return_value = 5
 
-                    tester = MassTester(['1!'], ['ES'], ['1h'])
+                    tester = MassTester(['1!'], ['ZS'], ['1h'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     # Run tests with skip_existing=False to ensure tests actually run
