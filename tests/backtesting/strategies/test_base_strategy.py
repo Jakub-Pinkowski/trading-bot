@@ -620,8 +620,11 @@ class TestBaseStrategy:
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
             assert trade[
                        'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+
+
 class TestBaseStrategyHelperMethods:
     """Test the helper methods for signal detection in BaseStrategy."""
+
     def test_detect_crossover_above(self):
         """Test _detect_crossover method for bullish crossover."""
         strategy = StrategyForTesting()
@@ -632,6 +635,7 @@ class TestBaseStrategyHelperMethods:
         result = strategy._detect_crossover(df['series1'], df['series2'], 'above')
         expected = pd.Series([False, False, False, True, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
+
     def test_detect_crossover_below(self):
         """Test _detect_crossover method for bearish crossover."""
         strategy = StrategyForTesting()
@@ -642,6 +646,7 @@ class TestBaseStrategyHelperMethods:
         result = strategy._detect_crossover(df['series1'], df['series2'], 'below')
         expected = pd.Series([False, False, False, True, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
+
     def test_detect_threshold_cross_below(self):
         """Test _detect_threshold_cross for crossing below a threshold."""
         strategy = StrategyForTesting()
@@ -649,6 +654,7 @@ class TestBaseStrategyHelperMethods:
         result = strategy._detect_threshold_cross(df['series'], 30.0, 'below')
         expected = pd.Series([False, False, True, False, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
+
     def test_detect_threshold_cross_above(self):
         """Test _detect_threshold_cross for crossing above a threshold."""
         strategy = StrategyForTesting()
@@ -656,6 +662,7 @@ class TestBaseStrategyHelperMethods:
         result = strategy._detect_threshold_cross(df['series'], 30.0, 'above')
         expected = pd.Series([False, False, True, False, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
+
     def test_detect_crossover_and_threshold_integration(self):
         """Test helper methods work correctly with actual strategy patterns."""
         strategy = StrategyForTesting()

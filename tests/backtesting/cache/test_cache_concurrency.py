@@ -160,5 +160,3 @@ def test_cache_lock_release_on_exception():
     lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v1.lock")
     if os.path.exists(lock_file):
         os.remove(lock_file)
-
-
