@@ -41,12 +41,11 @@ class Cache:
     This class provides common caching operations that can be extended for specific cache types.
     """
 
-    def __init__(self, cache_name, cache_version=1, max_size=DEFAULT_CACHE_MAX_SIZE, max_age=DEFAULT_CACHE_MAX_AGE):
+    def __init__(self, cache_name, max_size=DEFAULT_CACHE_MAX_SIZE, max_age=DEFAULT_CACHE_MAX_AGE):
         """ Initialize a cache instance. """
         self.cache_name = cache_name
-        self.cache_version = cache_version
-        self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.pkl")
-        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache_v{cache_version}.lock")  # Add a lockfile path
+        self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
+        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")  # Add a lockfile path
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality

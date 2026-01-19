@@ -5,12 +5,9 @@ from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/cache/dataframe')
 
-# Cache version - increment this when preprocessing algorithms change
-CACHE_VERSION = 1
-
 # Create the dataframe cache instance
 # Set max_age to 7 days (7 * 24 * 60 * 60 = 604,800 seconds)
-dataframe_cache = Cache("dataframe", CACHE_VERSION, max_size=50, max_age=604800)
+dataframe_cache = Cache("dataframe", max_size=50, max_age=604800)
 
 
 def get_cached_dataframe(filepath):

@@ -10,7 +10,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yaml
-from filelock import FileLock
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -19,8 +18,7 @@ from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.summary_metrics import SummaryMetrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
-from config import (HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DIR,
-                    INDICATOR_CACHE_LOCK_FILE, DATAFRAME_CACHE_LOCK_FILE)
+from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DIR
 
 logger = get_logger('backtesting/mass_testing')
 
@@ -310,17 +308,16 @@ class MassTester:
                         self.results.append(result)
 
         # Save caches after all tests complete (only from main process)
+        # Note: save_cache() already handles file locking internally, no need to wrap it
         logger.info('All tests completed, saving caches...')
         try:
-            with FileLock(INDICATOR_CACHE_LOCK_FILE, timeout=60):
-                indicator_cache_size = indicator_cache.size()
-                indicator_cache.save_cache()
-                logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
+            indicator_cache_size = indicator_cache.size()
+            indicator_cache.save_cache()
+            logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
 
-            with FileLock(DATAFRAME_CACHE_LOCK_FILE, timeout=60):
-                dataframe_cache_size = dataframe_cache.size()
-                dataframe_cache.save_cache()
-                logger.info(f"Saved dataframe cache with {dataframe_cache_size} entries")
+            dataframe_cache_size = dataframe_cache.size()
+            dataframe_cache.save_cache()
+            logger.info(f"Saved dataframe cache with {dataframe_cache_size} entries")
         except Exception as e:
             logger.error(f"Failed to save caches after test completion: {e}")
 

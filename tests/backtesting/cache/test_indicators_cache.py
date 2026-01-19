@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from app.backtesting.cache.indicators_cache import indicator_cache, CACHE_VERSION
+from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import (
     calculate_rsi, calculate_ema, calculate_atr,
     calculate_macd, calculate_bollinger_bands,
@@ -15,7 +15,6 @@ from app.utils.backtesting_utils.indicators_utils import hash_series
 def test_indicator_cache_instance():
     """Test that the indicator_cache is properly initialized."""
     assert indicator_cache.cache_name == "indicator"
-    assert indicator_cache.cache_version == CACHE_VERSION
     assert indicator_cache.max_size == 500
     assert indicator_cache.max_age == 2592000  # 30 days in seconds
 
@@ -74,7 +73,6 @@ def test_indicator_cache_load():
     # Since indicator_cache is a singleton that's already initialized,
     # we'll test that it has the expected properties after loading
     assert indicator_cache.cache_name == "indicator"
-    assert indicator_cache.cache_version == CACHE_VERSION
     assert hasattr(indicator_cache, 'cache_data')
     assert isinstance(indicator_cache.cache_data, dict)
 
@@ -371,34 +369,6 @@ def test_integration_with_real_calculations():
     pd.testing.assert_frame_equal(bb, bb_again)
 
 
-def test_indicator_cache_version_change():
-    """Test that cache is invalidated when the version changes."""
-    # Clear the cache to start with a clean state
-    indicator_cache.clear()
-
-    # Create sample price data
-    prices = pd.Series([100, 101, 102, 103, 104, 105])
-
-    # Calculate an indicator to add to the cache
-    rsi = calculate_rsi(prices)
-
-    # Get the cache key
-    prices_hash = hash_series(prices)
-    cache_key = ('rsi', prices_hash, 14)  # Default period is 14
-
-    # Verify the result is in the cache
-    assert indicator_cache.contains(cache_key)
-
-    # Simulate a version change by creating a new cache instance with a different version
-    with patch('app.backtesting.cache.indicators_cache.CACHE_VERSION', 999):
-        # Create a new cache instance with the new version
-        from app.backtesting.cache.cache_base import Cache
-        new_cache = Cache("indicator", 999)
-
-        # Verify the new cache is empty (doesn't contain the old data)
-        assert not new_cache.contains(cache_key)
-        assert new_cache.size() == 0
-
 
 def test_indicator_cache_corrupted_file():
     """Test handling of corrupted cache files."""
@@ -425,7 +395,7 @@ def test_indicator_cache_corrupted_file():
     with patch('pickle.load', side_effect=Exception("Corrupted file")):
         # Create a new cache instance, which will try to load the corrupted file
         from app.backtesting.cache.cache_base import Cache
-        new_cache = Cache("indicator", CACHE_VERSION)
+        new_cache = Cache("indicator")
 
         # Verify the new cache is empty (couldn't load the corrupted data)
         assert not new_cache.contains(cache_key)
