@@ -97,6 +97,9 @@ The mass_backtest.py script provides a powerful way to test many combinations of
 - Strategy-specific parameters (e.g., RSI periods, EMA lengths)
 - Common parameters (rollover, trailing stops)
 
+**For a detailed explanation of the backtesting system architecture,
+see [BACKTESTING_ARCHITECTURE.md](app/backtesting/BACKTESTING_ARCHITECTURE.md)**
+
 #### Configuration
 
 Instead of using command-line options, all settings are configured directly in the `mass_backtest.py` file. To customize your backtesting:
