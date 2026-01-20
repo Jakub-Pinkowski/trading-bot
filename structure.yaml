@@ -125,6 +125,7 @@ trading-bot/
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# TODO [MEDIUM]: Backtesting_architecture should use real-life data for examples instead of synthetic data
 # TODO [MEDIUM]: Make the whole module lighter, remove unnecessary logic
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Implement out-of-sample data testing
