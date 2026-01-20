@@ -121,7 +121,41 @@ class BaseStrategy:
         self.trailing_stop = None
 
     def _extract_trades(self, df, switch_dates):
-        """Extract trades based on signals"""
+        """Extract trades based on signals.
+
+        SIGNAL EXECUTION TIMING:
+        ----------------------
+        Signals are generated based on indicator values calculated from each bar's close.
+        The signal is queued and executed at the OPEN of the NEXT bar, creating a 1-bar delay.
+
+        Example Timeline (15-minute bars):
+            10:15:00 - Bar N closes at 1074.25
+                     → RSI = 29.8 (crosses below 30)
+                     → Signal = 1 (BUY) - Generated and queued
+
+            10:30:00 - Bar N+1 opens at 1074.25
+                     → Queued signal executed
+                     → Position opened at 1074.25 + slippage
+        This is standard backtesting practice because:
+        1. You can only see the signal AFTER the bar closes
+        2. Execution happens at the next available opportunity (next bar's open)
+        3. Slippage is applied to account for:
+           - Execution delay between signal and fill
+           - Bid-ask spread
+           - Market movement during order placement
+
+        This approach is:
+        - Industry standard (used by TradingView, Backtrader, etc.)
+        - Realistic and conservative
+        - Not actual look-ahead bias (proper time sequencing)
+
+        Args:
+            df: DataFrame with OHLCV data and signals
+            switch_dates: List of contract rollover dates
+
+        Returns:
+            List of trade dictionaries with entry/exit details
+        """
         self.switch_dates = switch_dates
         self._reset()
         self.next_switch = switch_dates[self.next_switch_idx] if switch_dates else None
@@ -223,6 +257,8 @@ class BaseStrategy:
         self._reset_position()
 
     def _close_position_at_switch(self):
+        # Exit at OPEN of last bar before switch (conservative assumption)
+        # This assumes we exit early rather than waiting until close
         exit_price = self.prev_row['open']
         prev_position = self.position
 
