@@ -151,7 +151,7 @@ The following configuration options are available in the `mass_backtest.py` file
 You can also use the MassTester class directly in your Python code:
 
 ```python
-from app.backtesting.mass_testing import MassTester
+from app.backtesting import MassTester
 
 # Initialize the tester
 tester = MassTester(

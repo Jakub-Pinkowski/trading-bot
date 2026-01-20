@@ -1,4 +1,4 @@
-from app.backtesting.strategy_analysis import StrategyAnalyzer
+from app.backtesting import StrategyAnalyzer
 
 
 def main():

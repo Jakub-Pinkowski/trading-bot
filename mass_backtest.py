@@ -1,4 +1,4 @@
-from app.backtesting.mass_testing import MassTester
+from app.backtesting import MassTester
 
 # Classification of futures
 grains = [

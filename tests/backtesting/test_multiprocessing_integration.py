@@ -17,9 +17,9 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
+from app.backtesting import MassTester
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.backtesting.mass_testing import MassTester
 from app.utils.file_utils import save_to_parquet
 
 
@@ -323,7 +323,7 @@ class TestPicklingValidation:
         Test that all strategy types can be pickled and executed in worker processes.
         """
         import pickle
-        from app.backtesting.strategy_factory import create_strategy
+        from app.backtesting import create_strategy
 
         strategy_configs = [
             ('rsi', {'rsi_period': 14, 'lower': 30, 'upper': 70, 'rollover': False, 'trailing': None, 'slippage': 0}),

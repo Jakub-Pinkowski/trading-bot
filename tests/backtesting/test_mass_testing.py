@@ -3,7 +3,8 @@ from unittest.mock import patch, MagicMock, mock_open, ANY
 import pandas as pd
 import pytest
 
-from app.backtesting.mass_testing import MassTester, _load_existing_results, _test_already_exists
+from app.backtesting import MassTester
+from app.backtesting.mass_testing import _load_existing_results, _test_already_exists
 from config import HISTORICAL_DATA_DIR
 
 

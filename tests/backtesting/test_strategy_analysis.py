@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
+from app.backtesting import StrategyAnalyzer
 from app.backtesting.strategy_analysis import (
-    StrategyAnalyzer,
     _format_column_name,
     _filter_dataframe,
     _calculate_weighted_win_rate,
