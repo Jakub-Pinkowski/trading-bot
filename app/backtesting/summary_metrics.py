@@ -194,18 +194,8 @@ class SummaryMetrics:
 
     def _calculate_cumulative_pnl(self):
         """Calculate cumulative PnL for drawdown calculations."""
-
-        # Sort trades by entry_time or date if entry_time is not available
-        def get_trade_time(trade):
-            if 'entry_time' in trade:
-                return trade['entry_time']
-            elif 'date' in trade:
-                return trade['date']
-            return None  # Default case if neither field exists
-
-        sorted_trades = sorted(self.trades, key=get_trade_time)
-        net_pnls = [trade['net_pnl'] for trade in sorted_trades]
-        return_pcts = [trade['return_percentage_of_margin'] for trade in sorted_trades]
+        net_pnls = [trade['net_pnl'] for trade in self.trades]
+        return_pcts = [trade['return_percentage_of_margin'] for trade in self.trades]
         self.cumulative_pnl_dollars = np.cumsum(net_pnls).tolist()
         self.cumulative_pnl_pct = np.cumsum(return_pcts).tolist()
 
