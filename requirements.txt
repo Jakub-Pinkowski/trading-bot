@@ -47,4 +47,4 @@ tzlocal==5.3.1
 urllib3==2.6.3
 websocket-client==1.9.0
 Werkzeug==3.1.5
-wheel==0.46.1
+wheel==0.46.2
