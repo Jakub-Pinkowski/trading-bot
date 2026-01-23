@@ -271,7 +271,8 @@ class SummaryMetrics:
         total_loss_percentage = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
 
         if total_loss_percentage == 0:
-            return float('inf')  # No losses
+            # Return very high finite number instead of infinity for better aggregation/comparison handling
+            return 9999.99
 
         return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
@@ -301,7 +302,8 @@ class SummaryMetrics:
         negative_returns = [r - risk_free_rate for r in self.returns if r < risk_free_rate]
 
         if not negative_returns:
-            return float('inf')  # No negative returns
+            # Return very high finite number instead of infinity for better aggregation/comparison handling
+            return 9999.99
 
         downside_variance = safe_average([r ** 2 for r in negative_returns])
         downside_deviation = downside_variance ** 0.5
@@ -317,7 +319,8 @@ class SummaryMetrics:
             return 0
 
         if self.maximum_drawdown_percentage == 0:
-            return float('inf')  # No drawdown
+            # Return very high finite number instead of infinity for better aggregation/comparison handling
+            return 9999.99
 
         return safe_divide(self.total_return, self.maximum_drawdown_percentage)
 

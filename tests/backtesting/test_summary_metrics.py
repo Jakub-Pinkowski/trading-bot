@@ -152,7 +152,7 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
         assert summary['total_return_percentage_of_margin'] == 1.0
-        assert summary['profit_factor'] == float('inf')  # No losing trades
+        assert summary['profit_factor'] == 9999.99  # No losing trades (returns very high finite number)
 
     def test_single_losing_trade(self):
         """Test the calculation of the summary metrics with a single losing trade."""
@@ -201,7 +201,7 @@ class TestCalculateSummaryMetrics:
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
         assert summary['total_return_percentage_of_margin'] == 6.0
-        assert summary['profit_factor'] == float('inf')  # No losing trades
+        assert summary['profit_factor'] == 9999.99  # No losing trades (returns very high finite number)
 
     def test_all_losing_trades(self):
         """Test the calculation of the summary metrics with all losing trades."""
@@ -305,7 +305,7 @@ class TestCalculateSummaryMetrics:
         summary = metrics.calculate_all_metrics()
 
         assert summary['maximum_drawdown_percentage'] == 0
-        assert summary['calmar_ratio'] == float('inf')  # Division by zero
+        assert summary['calmar_ratio'] == 9999.99  # No drawdown (returns very high finite number)
 
     def test_margin_metrics(self):
         """Test calculation of margin metrics."""
@@ -699,7 +699,7 @@ class TestCalculateSortinoRatio:
         ]
         metrics = SummaryMetrics(trades)
         sortino_ratio = metrics._calculate_sortino_ratio()
-        assert sortino_ratio == float('inf')  # Should return infinity when there are no negative returns
+        assert sortino_ratio == 9999.99  # Should return very high finite number when there are no negative returns
 
     def test_zero_downside_deviation(self):
         """Test calculation of the Sortino ratio when downside deviation is zero."""
@@ -865,7 +865,7 @@ class TestCalculateCalmarRatio:
         ]
         metrics = SummaryMetrics(trades)
         calmar_ratio = metrics._calculate_calmar_ratio()
-        assert calmar_ratio == float('inf')  # Should return infinity when there is no drawdown
+        assert calmar_ratio == 9999.99  # Should return very high finite number when there is no drawdown
 
     def test_with_drawdown(self):
         """Test calculation of a Calmar ratio with a drawdown."""
@@ -880,7 +880,7 @@ class TestCalculateCalmarRatio:
         # Calculate expected value manually
         total_return = 1.0 + (-0.5) + 2.0
         _, max_drawdown_pct = metrics._calculate_max_drawdown()
-        expected_calmar = total_return / max_drawdown_pct if max_drawdown_pct > 0 else float('inf')
+        expected_calmar = total_return / max_drawdown_pct if max_drawdown_pct > 0 else 9999.99
 
         assert calmar_ratio == expected_calmar
 
@@ -1525,7 +1525,7 @@ class TestPrivateHelperMethods:
         metrics.total_trades = len(trades)
         metrics._calculate_win_loss_trades()
         profit_factor = metrics._calculate_profit_factor()
-        assert profit_factor == float('inf')
+        assert profit_factor == 9999.99  # No losses (returns very high finite number)
 
         # Test with only losses
         trades = [create_sample_trade(net_pnl=-100.0, return_percentage=-1.0)]
