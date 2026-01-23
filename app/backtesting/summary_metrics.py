@@ -371,28 +371,3 @@ class SummaryMetrics:
         # Calculate Ulcer Index
         return np.sqrt(np.mean(np.array(drawdowns) ** 2))
 
-    # NOTE: Not used for now
-    def _calculate_max_consecutive(self, win=True):
-        """Calculate maximum consecutive wins or losses."""
-        if not self._has_trades():
-            return 0
-
-        # Sort trades by date if available
-        sorted_trades = self.trades.copy()  # Create a copy to avoid modifying the original list
-        if 'date' in sorted_trades[0]:
-            sorted_trades = sorted(sorted_trades, key=lambda x: x['date'])
-
-        # Track consecutive wins/losses
-        current_streak = 0
-        max_streak = 0
-
-        for trade in sorted_trades:
-            is_win = trade['return_percentage_of_margin'] > 0
-
-            if (win and is_win) or (not win and not is_win):
-                current_streak += 1
-                max_streak = max(max_streak, current_streak)
-            else:
-                current_streak = 0  # Reset streak when we encounter a non-matching trade
-
-        return max_streak
