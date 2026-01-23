@@ -20,6 +20,10 @@ class IchimokuCloudStrategy(BaseStrategy):
         self.displacement = displacement
 
     def add_indicators(self, df):
+        # Pre-compute all hashes once (Ichimoku uses 3 price series)
+        hashes = self._precompute_hashes(df)
+
+        # Pass all pre-computed hashes (avoids 3 redundant hash operations!)
         ichimoku_data = calculate_ichimoku(
             df['high'],
             df['low'],
@@ -27,7 +31,10 @@ class IchimokuCloudStrategy(BaseStrategy):
             tenkan_period=self.tenkan_period,
             kijun_period=self.kijun_period,
             senkou_span_b_period=self.senkou_span_b_period,
-            displacement=self.displacement
+            displacement=self.displacement,
+            high_hash=hashes['high'],
+            low_hash=hashes['low'],
+            close_hash=hashes['close']
         )
 
         df['tenkan_sen'] = ichimoku_data['tenkan_sen']

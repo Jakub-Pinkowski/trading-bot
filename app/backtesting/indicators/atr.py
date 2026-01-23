@@ -7,10 +7,42 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-def calculate_atr(df, period=14):
+def calculate_atr(df, period=14, high_hash=None, low_hash=None, close_hash=None):
+    """
+    Calculate ATR (Average True Range) indicator.
+
+    Args:
+        df: DataFrame with 'high', 'low', 'close' columns
+        period: ATR period (default: 14)
+        high_hash: Optional pre-computed hash of df['high']
+        low_hash: Optional pre-computed hash of df['low']
+        close_hash: Optional pre-computed hash of df['close']
+                   Pass these to avoid redundant hashing when calling multiple indicators.
+
+    Returns:
+        pandas Series with ATR values
+
+    Example:
+        # Without pre-computed hashes (simple usage)
+        atr = calculate_atr(df, period=14)
+
+        # With pre-computed hashes (optimized for multiple indicators)
+        high_hash = hash_series(df['high'])
+        low_hash = hash_series(df['low'])
+        close_hash = hash_series(df['close'])
+        atr = calculate_atr(df, period=14, high_hash=high_hash,
+                           low_hash=low_hash, close_hash=close_hash)
+    """
     # Create a combined hash for all price series
+    if high_hash is None:
+        high_hash = hash_series(df['high'])
+    if low_hash is None:
+        low_hash = hash_series(df['low'])
+    if close_hash is None:
+        close_hash = hash_series(df['close'])
+
     combined_hash = hashlib.md5(
-        f"{hash_series(df['high'])}{hash_series(df['low'])}{hash_series(df['close'])}".encode()
+        f"{high_hash}{low_hash}{close_hash}".encode()
     ).hexdigest()
 
     # Check if we have this calculation cached in the global cache

@@ -4,10 +4,52 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-def calculate_ichimoku(high, low, close, tenkan_period=9, kijun_period=26, senkou_span_b_period=52, displacement=26):
+def calculate_ichimoku(
+    high, low, close, tenkan_period=9, kijun_period=26,
+    senkou_span_b_period=52, displacement=26,
+    high_hash=None, low_hash=None, close_hash=None
+):
+    """
+    Calculate Ichimoku Cloud indicator.
+
+    Args:
+        high: pandas Series of high prices
+        low: pandas Series of low prices
+        close: pandas Series of close prices
+        tenkan_period: Conversion line period (default: 9)
+        kijun_period: Base line period (default: 26)
+        senkou_span_b_period: Leading span B period (default: 52)
+        displacement: Displacement for cloud (default: 26)
+        high_hash: Optional pre-computed hash of high series
+        low_hash: Optional pre-computed hash of low series
+        close_hash: Optional pre-computed hash of close series
+                   Pass these to avoid redundant hashing when calling multiple indicators.
+
+    Returns:
+        Dictionary with keys: tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
+
+    Example:
+        # Without pre-computed hashes (simple usage)
+        ichimoku = calculate_ichimoku(df['high'], df['low'], df['close'])
+
+        # With pre-computed hashes (optimized for multiple indicators)
+        high_hash = hash_series(df['high'])
+        low_hash = hash_series(df['low'])
+        close_hash = hash_series(df['close'])
+        ichimoku = calculate_ichimoku(df['high'], df['low'], df['close'],
+                                      high_hash=high_hash, low_hash=low_hash,
+                                      close_hash=close_hash)
+    """
     # Create a combined hash for all price series
+    if high_hash is None:
+        high_hash = hash_series(high)
+    if low_hash is None:
+        low_hash = hash_series(low)
+    if close_hash is None:
+        close_hash = hash_series(close)
+
     combined_hash = hashlib.md5(
-        f"{hash_series(high)}{hash_series(low)}{hash_series(close)}".encode()
+        f"{high_hash}{low_hash}{close_hash}".encode()
     ).hexdigest()
 
     # Check if we have this calculation cached in the global cache

@@ -3,14 +3,34 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 class RSIStrategy(BaseStrategy):
-    def __init__(self, rsi_period=14, lower=30, upper=70, rollover=False, trailing=None, slippage=0):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+    def __init__(
+        self,
+        rsi_period=14,
+        lower=30,
+        upper=70,
+        rollover=False,
+        trailing=None,
+        slippage=0,
+        slippage_type='percentage',
+        symbol=None
+    ):
+        super().__init__(rollover=rollover,
+                         trailing=trailing,
+                         slippage=slippage,
+                         slippage_type=slippage_type,
+                         symbol=symbol)
         self.rsi_period = rsi_period
         self.lower = lower
         self.upper = upper
 
     def add_indicators(self, df):
-        df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period)
+        # Pre-compute hash once to avoid redundant hashing
+        # This is especially beneficial if you add more indicators later
+        hashes = self._precompute_hashes(df)
+
+        # Pass pre-computed hash to indicator function
+        df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period,
+                                  prices_hash=hashes['close'])
         return df
 
     def generate_signals(self, df):

@@ -1,15 +1,51 @@
 import pandas as pd
 
+from app.utils.backtesting_utils.indicators_utils import hash_series
+
 # Strategy Execution Constants
-INDICATOR_WARMUP_PERIOD = 100  # Number of candles to skip for indicator stability
+# INDICATOR_WARMUP_PERIOD: Number of initial candles to skip before generating signals
+# Rationale:
+#   - Technical indicators (MA, EMA, RSI, etc.) need historical data to stabilize
+#   - Example: A 100-period moving average needs 100 bars before it's valid
+#   - Prevents generating signals based on incomplete/unstable indicator values
+#   - 100 is chosen as a safe default that covers most common indicator periods:
+#     * RSI (typically 14 periods)
+#     * MACD (26 slow period)
+#     * Bollinger Bands (typically 20 periods)
+#     * Longer EMAs (up to 100 periods)
+# Usage: Strategy execution starts from index INDICATOR_WARMUP_PERIOD in the DataFrame
+INDICATOR_WARMUP_PERIOD = 100
 
 
 class BaseStrategy:
-    def __init__(self, rollover=False, trailing=None, slippage=0):
+    def __init__(self, rollover=False, trailing=None, slippage=0, slippage_type='percentage', symbol=None):
+        """
+        Initialize the base strategy.
+
+        Args:
+            rollover: Whether to handle contract rollovers
+            trailing: Trailing stop percentage (if used)
+            slippage: Slippage value (interpretation depends on slippage_type)
+            slippage_type: Either 'percentage' or 'ticks'
+                - 'percentage': slippage is a percentage (e.g., 0.05 = 0.05%)
+                - 'ticks': slippage is number of ticks (e.g., 2 = 2 ticks)
+            symbol: The futures symbol (e.g., 'ZC', 'GC') - required for tick-based slippage
+        """
         self.switch_dates = None
         self.rollover = rollover
         self.trailing = trailing
         self.slippage = slippage
+        self.slippage_type = slippage_type
+        self.symbol = symbol
+
+        # Get tick size for tick-based slippage
+        if slippage_type == 'ticks' and symbol:
+            from app.backtesting.tick_sizes import get_tick_size, get_decimal_places
+            self.tick_size = get_tick_size(symbol)
+            self.decimal_places = get_decimal_places(self.tick_size)
+        else:
+            self.tick_size = None
+            self.decimal_places = 2
 
         # Initialize attributes that are reset in _reset()
         self.position = None
@@ -36,6 +72,51 @@ class BaseStrategy:
         trades = self._extract_trades(df, switch_dates)
 
         return trades
+
+    def _precompute_hashes(self, df):
+        """
+        Pre-compute hashes for commonly used price series.
+
+        This method calculates hashes once for price series that are typically
+        passed to multiple indicator functions. This eliminates redundant hash
+        computations and significantly improves performance when using multiple
+        indicators.
+
+        Args:
+            df: DataFrame with OHLCV data
+
+        Returns:
+            Dictionary with pre-computed hashes for common price series:
+            {
+                'close': hash of df['close'],
+                'high': hash of df['high'],
+                'low': hash of df['low'],
+                'open': hash of df['open'],
+                'volume': hash of df['volume']
+            }
+
+        Example:
+            def add_indicators(self, df):
+                # Pre-compute all hashes once
+                hashes = self._precompute_hashes(df)
+
+                # Pass pre-computed hashes to indicators (no redundant hashing!)
+                df['rsi'] = calculate_rsi(df['close'], period=14,
+                                         prices_hash=hashes['close'])
+                df['rsi_long'] = calculate_rsi(df['close'], period=21,
+                                              prices_hash=hashes['close'])
+                df['ema'] = calculate_ema(df['close'], period=9,
+                                         prices_hash=hashes['close'])
+                return df
+        """
+        hashes = {}
+
+        # Pre-compute hashes for OHLCV columns that exist in the DataFrame
+        for col in ['close', 'high', 'low', 'open', 'volume']:
+            if col in df.columns:
+                hashes[col] = hash_series(df[col])
+
+        return hashes
 
     def add_indicators(self, df):
         """Add indicators to the dataframe. To be implemented by subclasses."""

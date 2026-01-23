@@ -3,13 +3,32 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 class BollingerBandsStrategy(BaseStrategy):
-    def __init__(self, period=20, num_std=2, rollover=False, trailing=None, slippage=0):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+    def __init__(
+        self,
+        period=20,
+        num_std=2,
+        rollover=False,
+        trailing=None,
+        slippage=0,
+        slippage_type='percentage',
+        symbol=None
+    ):
+        super().__init__(rollover=rollover,
+                         trailing=trailing,
+                         slippage=slippage,
+                         slippage_type=slippage_type,
+                         symbol=symbol)
         self.period = period
         self.num_std = num_std
 
     def add_indicators(self, df):
-        bb_data = calculate_bollinger_bands(df['close'], period=self.period, num_std=self.num_std)
+        # Pre-compute hash once
+        hashes = self._precompute_hashes(df)
+
+        # Pass pre-computed hash to Bollinger Bands calculation
+        bb_data = calculate_bollinger_bands(df['close'], period=self.period,
+                                            num_std=self.num_std,
+                                            prices_hash=hashes['close'])
 
         df['middle_band'] = bb_data['middle_band']
         df['upper_band'] = bb_data['upper_band']

@@ -3,14 +3,33 @@ from app.backtesting.strategies.base_strategy import BaseStrategy
 
 
 class EMACrossoverStrategy(BaseStrategy):
-    def __init__(self, ema_short=9, ema_long=21, rollover=False, trailing=None, slippage=0):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+    def __init__(
+        self,
+        ema_short=9,
+        ema_long=21,
+        rollover=False,
+        trailing=None,
+        slippage=0,
+        slippage_type='percentage',
+        symbol=None
+    ):
+        super().__init__(rollover=rollover,
+                         trailing=trailing,
+                         slippage=slippage,
+                         slippage_type=slippage_type,
+                         symbol=symbol)
         self.ema_short = ema_short
         self.ema_long = ema_long
 
     def add_indicators(self, df):
-        df['ema_short'] = calculate_ema(df['close'], period=self.ema_short)
-        df['ema_long'] = calculate_ema(df['close'], period=self.ema_long)
+        # Pre-compute hash once (used for both EMA calculations)
+        hashes = self._precompute_hashes(df)
+
+        # Both EMAs use the same hash - no redundant hashing!
+        df['ema_short'] = calculate_ema(df['close'], period=self.ema_short,
+                                        prices_hash=hashes['close'])
+        df['ema_long'] = calculate_ema(df['close'], period=self.ema_long,
+                                       prices_hash=hashes['close'])
         return df
 
     def generate_signals(self, df):

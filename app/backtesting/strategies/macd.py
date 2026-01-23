@@ -18,11 +18,16 @@ class MACDStrategy(BaseStrategy):
         self.signal_period = signal_period
 
     def add_indicators(self, df):
+        # Pre-compute hash once
+        hashes = self._precompute_hashes(df)
+
+        # Pass pre-computed hash to MACD calculation
         macd_data = calculate_macd(
             df['close'],
             fast_period=self.fast_period,
             slow_period=self.slow_period,
-            signal_period=self.signal_period
+            signal_period=self.signal_period,
+            prices_hash=hashes['close']
         )
 
         df['macd_line'] = macd_data['macd_line']

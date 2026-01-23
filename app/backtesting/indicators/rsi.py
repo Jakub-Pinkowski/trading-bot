@@ -2,14 +2,37 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.backtesting_utils.indicators_utils import hash_series, logger
 
 
-def calculate_rsi(prices, period=14):
+def calculate_rsi(prices, period=14, prices_hash=None):
+    """
+    Calculate RSI (Relative Strength Index) indicator.
+
+    Args:
+        prices: pandas Series of prices
+        period: RSI period (default: 14)
+        prices_hash: Optional pre-computed hash of prices series for cache optimization.
+                    If None, will be computed. Pass this to avoid redundant hashing
+                    when calling multiple indicators on the same data.
+
+    Returns:
+        pandas Series with RSI values
+
+    Example:
+        # Without pre-computed hash (simple usage)
+        rsi = calculate_rsi(df['close'], period=14)
+
+        # With pre-computed hash (optimized for multiple indicators)
+        close_hash = hash_series(df['close'])
+        rsi = calculate_rsi(df['close'], period=14, prices_hash=close_hash)
+        rsi_long = calculate_rsi(df['close'], period=21, prices_hash=close_hash)
+    """
     # Validate period
     if period <= 0:
         logger.error(f"Invalid period value for RSI: {period}. Period must be a positive integer.")
         raise ValueError("Period must be a positive integer")
 
     # Create a hashable key for the cache
-    prices_hash = hash_series(prices)
+    if prices_hash is None:
+        prices_hash = hash_series(prices)
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('rsi', prices_hash, period)
