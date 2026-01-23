@@ -4,6 +4,7 @@ import time
 from unittest.mock import patch, mock_open, MagicMock
 
 import pytest
+from filelock import Timeout
 
 from app.backtesting.cache.cache_base import Cache
 from config import CACHE_DIR
@@ -187,6 +188,84 @@ def test_load_cache_exception_handling():
             # Verify the cache is empty
             assert cache.cache_data == {}
             assert cache.size() == 0
+
+
+def test_load_cache_timeout_handling():
+    """Test handling Timeout exception when loading the cache."""
+    # Mock os.path.exists to return True so that the code will try to acquire the lock
+    with patch('os.path.exists', return_value=True):
+        # Mock the FileLock to raise Timeout exception
+        with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+            # Set up the mock to raise Timeout when entering the context manager
+            mock_lock_instance = MagicMock()
+            mock_filelock.return_value = mock_lock_instance
+            mock_lock_instance.__enter__.side_effect = Timeout("Lock acquisition timeout")
+
+            # Initialize cache, which should handle the Timeout exception gracefully
+            cache = Cache("test_timeout")
+
+            # Verify FileLock was called
+            mock_filelock.assert_called_once()
+            # Verify the lock's __enter__ method was called (context manager was attempted)
+            mock_lock_instance.__enter__.assert_called_once()
+
+        # Verify the cache is empty (should proceed without cache after timeout)
+        assert cache.cache_data == {}
+        assert cache.size() == 0
+
+
+def test_load_cache_timeout_vs_general_exception():
+    """Test that Timeout exceptions are handled differently from general exceptions."""
+    # Test Timeout exception
+    with patch('os.path.exists', return_value=True):
+        with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+            mock_lock_instance = MagicMock()
+            mock_filelock.return_value = mock_lock_instance
+            mock_lock_instance.__enter__.side_effect = Timeout("Lock timeout")
+
+            # This should log a warning (not an error) for Timeout
+            cache_timeout = Cache("test_timeout")
+            assert cache_timeout.size() == 0
+
+    # Test general exception
+    with patch('os.path.exists', return_value=True):
+        with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+            mock_lock_instance = MagicMock()
+            mock_filelock.return_value = mock_lock_instance
+            mock_lock_instance.__enter__.return_value = mock_lock_instance
+            mock_lock_instance.__exit__.return_value = None
+
+            with patch("builtins.open", mock_open()) as mock_file:
+                mock_file.side_effect = IOError("File read error")
+
+                # This should log an error for general exceptions
+                cache_error = Cache("test_error")
+                assert cache_error.size() == 0
+
+
+def test_save_cache_timeout_handling():
+    """Test handling Timeout exception when saving the cache."""
+    cache = Cache("test_save_timeout")
+    cache.set("key1", "value1")
+
+    # Mock FileLock to raise Timeout on save
+    with patch('app.backtesting.cache.cache_base.FileLock', autospec=True) as mock_filelock:
+        mock_lock_instance = MagicMock()
+        mock_filelock.return_value = mock_lock_instance
+        mock_lock_instance.__enter__.side_effect = Timeout("Lock acquisition timeout")
+
+        # Mock sleep to speed up test
+        with patch('time.sleep'):
+            result = cache.save_cache()
+
+        # Should return False after all retries fail
+        assert result is False
+
+        # Verify FileLock was called 3 times (default retry attempts)
+        assert mock_filelock.call_count == 3
+
+    # Verify cache data is still intact
+    assert cache.get("key1") == "value1"
 
 
 def test_save_cache(mock_cache_dir):

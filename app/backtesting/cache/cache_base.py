@@ -3,7 +3,7 @@ import pickle
 import time
 from collections import OrderedDict
 
-from filelock import FileLock
+from filelock import FileLock, Timeout
 
 from app.utils.logger import get_logger
 from config import CACHE_DIR
@@ -158,6 +158,8 @@ class Cache:
                             self._remove_expired_items()
                         else:
                             logger.error(f"Cache file {self.cache_file} contains invalid data. Using empty cache.")
+            except Timeout:
+                logger.warning(f"Cache lock timeout for {self.cache_file} after {DEFAULT_CACHE_LOCK_TIMEOUT}s, proceeding without cache")
             except Exception as load_err:
                 logger.error(f"Failed to load cache from {self.cache_file}: {load_err}. Using empty cache.")
 
