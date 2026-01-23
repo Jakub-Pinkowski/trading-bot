@@ -188,7 +188,6 @@ Bar N+1 (Signal Executed):
 - Next bar, signal executed at open price
 - This simulates realistic order execution delay
 
-
 ## Data Flow Diagram
 
 ```

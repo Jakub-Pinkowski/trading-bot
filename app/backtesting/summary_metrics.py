@@ -363,4 +363,3 @@ class SummaryMetrics:
 
         # Calculate Ulcer Index
         return np.sqrt(np.mean(np.array(drawdowns) ** 2))
-

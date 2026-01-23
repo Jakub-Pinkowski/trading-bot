@@ -28,7 +28,6 @@ def calculate_ema(prices, period, prices_hash):
         logger.error(f"Invalid period value for EMA: {period}. Period must be a positive integer.")
         raise ValueError("Period must be a positive integer")
 
-
     # Check if we have this calculation cached in the global cache
     cache_key = ('ema', prices_hash, period)
     if indicator_cache.contains(cache_key):
