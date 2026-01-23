@@ -401,6 +401,11 @@ class MassTester:
                 if nan_pct > 10:  # More than 10% NaN is concerning
                     logger.warning(f'Column "{col}" has {nan_pct:.1f}% NaN values ({nan_count}/{len(df)} rows): {filepath}')
 
+        # Check index is DatetimeIndex (required for time-series operations)
+        if not isinstance(df.index, pd.DatetimeIndex):
+            logger.error(f'DataFrame index is not a DatetimeIndex (type: {type(df.index).__name__}): {filepath}')
+            return False
+
         # Check index is sorted (critical for time-series data)
         if not df.index.is_monotonic_increasing:
             logger.error(f'DataFrame index is not sorted in ascending order: {filepath}')

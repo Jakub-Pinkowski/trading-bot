@@ -1873,13 +1873,13 @@ class TestDataFrameValidation:
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
-        # Mock get_cached_dataframe to return DataFrame with insufficient rows (but still has required columns)
+        # Mock get_cached_dataframe to return DataFrame with insufficient rows (but still has required columns and DatetimeIndex)
         df_few_rows = pd.DataFrame({
             'open': [100] * 50,
             'high': [102] * 50,
             'low': [98] * 50,
             'close': [101] * 50,
-        })
+        }, index=pd.date_range('2023-01-01', periods=50, freq='1h'))
 
         with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=df_few_rows), \
                 patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning, \
@@ -1907,13 +1907,13 @@ class TestDataFrameValidation:
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
-        # Mock get_cached_dataframe to return valid DataFrame with sufficient rows
+        # Mock get_cached_dataframe to return valid DataFrame with sufficient rows and DatetimeIndex
         df_valid = pd.DataFrame({
             'open': [100] * 200,
             'high': [102] * 200,
             'low': [98] * 200,
             'close': [101] * 200,
-        })
+        }, index=pd.date_range('2023-01-01', periods=200, freq='1h'))
 
         with patch('app.backtesting.mass_testing.get_cached_dataframe', return_value=df_valid), \
                 patch('app.backtesting.mass_testing.logger.warning') as mock_logger_warning, \
@@ -2268,7 +2268,7 @@ class TestValidateDataFrame:
             'high': [102.0] * 100,
             'low': [98.0] * 100,
             'close': close_values,
-        })
+        }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
         with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
             result = tester._validate_dataframe(df, 'test.parquet')
@@ -2292,7 +2292,7 @@ class TestValidateDataFrame:
             'high': [102.0] * 100,
             'low': [98.0] * 100,
             'close': close_values,
-        })
+        }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
         with patch('app.backtesting.mass_testing.logger.warning') as mock_warning:
             result = tester._validate_dataframe(df, 'test.parquet')
@@ -2300,6 +2300,48 @@ class TestValidateDataFrame:
             # Should pass validation without warning (< 10% threshold)
             assert result is True
             mock_warning.assert_not_called()
+
+    def test_validate_dataframe_with_non_datetime_index(self):
+        """Test that DataFrame with non-DatetimeIndex fails validation."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        # DataFrame with regular integer index instead of DatetimeIndex
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+            'low': [98.0, 99.0, 100.0],
+            'close': [101.0, 102.0, 103.0],
+        })  # Default integer index
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            error_msg = str(mock_error.call_args)
+            assert 'not a DatetimeIndex' in error_msg
+            assert 'RangeIndex' in error_msg or 'Int64Index' in error_msg
+
+    def test_validate_dataframe_with_string_index(self):
+        """Test that DataFrame with string index fails validation."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        # DataFrame with string index
+        df = pd.DataFrame({
+            'open': [100.0, 101.0, 102.0],
+            'high': [102.0, 103.0, 104.0],
+            'low': [98.0, 99.0, 100.0],
+            'close': [101.0, 102.0, 103.0],
+        }, index=['2023-01-01', '2023-01-02', '2023-01-03'])  # String index, not DatetimeIndex
+
+        with patch('app.backtesting.mass_testing.logger.error') as mock_error:
+            result = tester._validate_dataframe(df, 'test.parquet')
+
+            assert result is False
+            mock_error.assert_called_once()
+            error_msg = str(mock_error.call_args)
+            assert 'not a DatetimeIndex' in error_msg
+            assert 'Index' in error_msg
 
     def test_validate_dataframe_with_unsorted_index(self):
         """Test that DataFrame with unsorted index fails validation."""

@@ -127,6 +127,7 @@ trading-bot/
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Backtesting_architecture should use real-life data for examples instead of synthetic data
 # TODO [MEDIUM]: Make the whole module lighter, remove unnecessary logic
+# TODO [MEDIUM]: Revise whether I'm not overengineering anything
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
