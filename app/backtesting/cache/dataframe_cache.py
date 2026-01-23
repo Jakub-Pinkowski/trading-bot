@@ -5,11 +5,6 @@ from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/cache/dataframe')
 
-# Enable copy-on-write mode for pandas (available in pandas 1.5.0+)
-# This makes DataFrame copies much cheaper by only copying when data is actually modified
-# See: https://pandas.pydata.org/docs/user_guide/copy_on_write.html
-pd.options.mode.copy_on_write = True
-
 # Create the dataframe cache instance
 # Set max_age to 7 days (7 * 24 * 60 * 60 = 604,800 seconds)
 dataframe_cache = Cache("dataframe", max_size=50, max_age=604800)
@@ -27,7 +22,7 @@ def get_cached_dataframe(filepath):
     - Without copies, modifications would corrupt the cached data
 
     Performance optimization:
-    - Copy-on-write mode is enabled (pd.options.mode.copy_on_write = True)
+    - Copy-on-write mode is enabled globally in app/__init__.py
     - This makes copies nearly free until actual modification occurs
     - Memory is shared between copies until one is modified
     - Reduces memory overhead from ~100% to <5% for read-only access
