@@ -403,7 +403,6 @@ def test_integration_with_real_calculations():
     pd.testing.assert_frame_equal(bb, bb_again)
 
 
-
 def test_indicator_cache_corrupted_file():
     """Test handling of corrupted cache files."""
     # Clear the cache to start with a clean state

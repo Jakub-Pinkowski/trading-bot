@@ -619,7 +619,6 @@ class TestCalculateSummaryMetrics:
         assert summary['profit_factor'] > 1.0
 
 
-
 class TestCalculateSharpeRatio:
     """Tests for the calculate_sharpe_ratio function."""
 

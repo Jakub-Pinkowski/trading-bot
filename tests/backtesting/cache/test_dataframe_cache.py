@@ -446,7 +446,6 @@ def test_dataframe_cache_with_non_existent_files():
     assert dataframe_cache.size() == 0
 
 
-
 def test_dataframe_cache_corrupted_file():
     """Test handling of corrupted cache files."""
     # Clear the cache to start with a clean state
