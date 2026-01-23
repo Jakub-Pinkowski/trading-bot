@@ -3,13 +3,15 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_ema
+from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def test_calculate_ema_basic_case():
     """Test EMA calculation on a sample data"""
     prices = pd.Series([10, 12, 14, 16, 18, 20])
     period = 3
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
     expected = prices.ewm(span=period, adjust=False).mean()
     pd.testing.assert_series_equal(ema, expected)
 
@@ -17,7 +19,8 @@ def test_calculate_ema_basic_case():
 def test_calculate_ema_empty_series():
     """Test EMA calculation with an empty Series"""
     prices = pd.Series(dtype=float)
-    ema = calculate_ema(prices)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=9, prices_hash=prices_hash)
     expected = pd.Series(dtype=float)
     pd.testing.assert_series_equal(ema, expected)
 
@@ -25,7 +28,8 @@ def test_calculate_ema_empty_series():
 def test_calculate_ema_single_value():
     """Test EMA calculation on a single value"""
     prices = pd.Series([10])
-    ema = calculate_ema(prices, period=3)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=3, prices_hash=prices_hash)
     expected = prices.ewm(span=3, adjust=False).mean()
     pd.testing.assert_series_equal(ema, expected)
 
@@ -34,14 +38,16 @@ def test_calculate_ema_invalid_period():
     """Test EMA calculation with an invalid period"""
     prices = pd.Series([10, 12, 14])
     with pytest.raises(ValueError):
-        calculate_ema(prices, period=0)
+        prices_hash = hash_series(prices)
+        calculate_ema(prices, period=0, prices_hash=prices_hash)
 
 
 def test_calculate_ema_non_numeric_data():
     """Test EMA calculation with non-numeric data"""
     prices = pd.Series(["a", "b", "c"])
     with pytest.raises(pd.errors.DataError):
-        calculate_ema(prices)
+        prices_hash = hash_series(prices)
+        calculate_ema(prices, period=9, prices_hash=prices_hash)
 
 
 def test_calculate_ema_with_custom_period():
@@ -49,12 +55,14 @@ def test_calculate_ema_with_custom_period():
     prices = pd.Series([10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30])
 
     # Test with period=5
-    ema5 = calculate_ema(prices, period=5)
+    prices_hash = hash_series(prices)
+    ema5 = calculate_ema(prices, period=5, prices_hash=prices_hash)
     expected5 = prices.ewm(span=5, adjust=False).mean()
     pd.testing.assert_series_equal(ema5, expected5)
 
     # Test with period=7
-    ema7 = calculate_ema(prices, period=7)
+    prices_hash = hash_series(prices)
+    ema7 = calculate_ema(prices, period=7, prices_hash=prices_hash)
     expected7 = prices.ewm(span=7, adjust=False).mean()
     pd.testing.assert_series_equal(ema7, expected7)
 
@@ -63,7 +71,8 @@ def test_calculate_ema_with_increasing_prices():
     """Test EMA calculation with consistently increasing prices"""
     prices = pd.Series([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
     period = 5
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
 
     # With consistently increasing prices, EMA should lag behind the actual price
     # For increasing prices, EMA should be less than the current price after the initial period
@@ -75,7 +84,8 @@ def test_calculate_ema_with_decreasing_prices():
     """Test EMA calculation with consistently decreasing prices"""
     prices = pd.Series([20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10])
     period = 5
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
 
     # With consistently decreasing prices, EMA should lag behind the actual price
     # For decreasing prices, EMA should be greater than the current price after the initial period
@@ -87,7 +97,8 @@ def test_calculate_ema_with_alternating_prices():
     """Test EMA calculation with alternating increasing and decreasing prices"""
     prices = pd.Series([10, 12, 10, 12, 10, 12, 10, 12, 10, 12])
     period = 3
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
 
     # EMA should smooth out the alternating prices
     expected = prices.ewm(span=period, adjust=False).mean()
@@ -98,7 +109,8 @@ def test_calculate_ema_with_negative_prices():
     """Test EMA calculation with negative price values"""
     prices = pd.Series([-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10])
     period = 4
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
 
     # EMA should work correctly with negative values
     expected = prices.ewm(span=period, adjust=False).mean()
@@ -110,7 +122,8 @@ def test_calculate_ema_with_known_values():
     # Example from a financial calculation
     prices = pd.Series([22.27, 22.19, 22.08, 22.17, 22.18, 22.13, 22.23, 22.43, 22.24, 22.29])
     period = 3
-    ema = calculate_ema(prices, period=period)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=period, prices_hash=prices_hash)
 
     # Get the actual values from the pandas ewm implementation
     expected = prices.ewm(span=period, adjust=False).mean()
@@ -130,8 +143,10 @@ def test_calculate_ema_crossover_signal():
     ])
 
     # Calculate fast and slow EMAs
-    fast_ema = calculate_ema(prices, period=5)  # Short-term EMA
-    slow_ema = calculate_ema(prices, period=10)  # Long-term EMA
+    prices_hash = hash_series(prices)
+    fast_ema = calculate_ema(prices, period=5, prices_hash=prices_hash)  # Short-term EMA
+    prices_hash = hash_series(prices)
+    slow_ema = calculate_ema(prices, period=10, prices_hash=prices_hash)  # Long-term EMA
 
     # Find crossover points
     # A buy signal occurs when fast EMA crosses above slow EMA
@@ -163,7 +178,8 @@ def test_calculate_ema_with_price_gaps():
     filled_prices = prices.ffill()
 
     # Calculate EMA on the filled prices
-    ema = calculate_ema(filled_prices, period=5)
+    filled_prices_hash = hash_series(filled_prices)
+    ema = calculate_ema(filled_prices, period=5, prices_hash=filled_prices_hash)
 
     # Check that the EMA calculation completes successfully
     assert not ema.isna().all()
@@ -178,7 +194,8 @@ def test_calculate_ema_with_price_gaps():
         assert ema.iloc[-1] > ema.iloc[first_valid_idx]
 
     # Calculate another EMA with a different period for comparison
-    ema_longer = calculate_ema(filled_prices, period=10)
+    filled_prices_hash = hash_series(filled_prices)
+    ema_longer = calculate_ema(filled_prices, period=10, prices_hash=filled_prices_hash)
 
     # The shorter period EMA should be more responsive to recent price changes
     # In an uptrend, the shorter period EMA should be higher at the end
@@ -195,8 +212,10 @@ def test_calculate_ema_with_market_crash():
     ])
 
     # Calculate EMAs with different periods
-    short_ema = calculate_ema(prices, period=5)
-    long_ema = calculate_ema(prices, period=10)
+    prices_hash = hash_series(prices)
+    short_ema = calculate_ema(prices, period=5, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    long_ema = calculate_ema(prices, period=10, prices_hash=prices_hash)
 
     # During a crash, shorter-period EMAs should fall faster than longer-period EMAs
     # Check the rate of decline in the crash period
@@ -219,9 +238,12 @@ def test_calculate_ema_with_multiple_periods():
     ])
 
     # Calculate EMAs with different periods commonly used in trading
-    ema9 = calculate_ema(prices, period=9)
-    ema21 = calculate_ema(prices, period=21)
-    ema50 = calculate_ema(prices, period=50)
+    prices_hash = hash_series(prices)
+    ema9 = calculate_ema(prices, period=9, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    ema21 = calculate_ema(prices, period=21, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    ema50 = calculate_ema(prices, period=50, prices_hash=prices_hash)
 
     # In an uptrend, shorter EMAs should be above longer EMAs
     # But we don't have enough data for EMA50, so we'll just check EMA9 vs EMA21
@@ -249,8 +271,10 @@ def test_calculate_ema_with_sideways_market():
     ])
 
     # Calculate EMAs with different periods
-    short_ema = calculate_ema(prices, period=5)
-    long_ema = calculate_ema(prices, period=10)
+    prices_hash = hash_series(prices)
+    short_ema = calculate_ema(prices, period=5, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    long_ema = calculate_ema(prices, period=10, prices_hash=prices_hash)
 
     # In a sideways market, EMAs should converge and stay close to the middle of the range
     # Calculate the average price

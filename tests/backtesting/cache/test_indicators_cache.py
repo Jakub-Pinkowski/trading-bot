@@ -114,7 +114,8 @@ def test_rsi_caching():
     prices = pd.Series([500, 505, 510, 515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580])
 
     # Calculate RSI
-    rsi1 = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi1 = calculate_rsi(prices, period=14, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -127,7 +128,8 @@ def test_rsi_caching():
 
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.rolling') as mock_rolling:
-        rsi2 = calculate_rsi(prices)
+        prices_hash = hash_series(prices)
+        rsi2 = calculate_rsi(prices, period=14, prices_hash=prices_hash)
         # The rolling function should not be called again
         mock_rolling.assert_not_called()
 
@@ -144,7 +146,8 @@ def test_ema_caching():
     prices = pd.Series([1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235, 1240, 1245, 1250])
 
     # Calculate EMA
-    ema1 = calculate_ema(prices, period=5)
+    prices_hash = hash_series(prices)
+    ema1 = calculate_ema(prices, period=5, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -157,7 +160,8 @@ def test_ema_caching():
 
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.ewm') as mock_ewm:
-        ema2 = calculate_ema(prices, period=5)
+        prices_hash = hash_series(prices)
+        ema2 = calculate_ema(prices, period=5, prices_hash=prices_hash)
         # The ewm function should not be called again
         mock_ewm.assert_not_called()
 
@@ -179,7 +183,10 @@ def test_atr_caching():
     })
 
     # Calculate ATR
-    atr1 = calculate_atr(df, period=7)
+    high_hash = hash_series(df['high'])
+    low_hash = hash_series(df['low'])
+    close_hash = hash_series(df['close'])
+    atr1 = calculate_atr(df, period=7, high_hash=high_hash, low_hash=low_hash, close_hash=close_hash)
 
     # Get the cache key
     combined_hash = hashlib.md5(
@@ -194,7 +201,10 @@ def test_atr_caching():
 
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.ewm') as mock_ewm:
-        atr2 = calculate_atr(df, period=7)
+        high_hash = hash_series(df['high'])
+        low_hash = hash_series(df['low'])
+        close_hash = hash_series(df['close'])
+        atr2 = calculate_atr(df, period=7, high_hash=high_hash, low_hash=low_hash, close_hash=close_hash)
         # The ewm function should not be called again
         mock_ewm.assert_not_called()
 
@@ -215,7 +225,8 @@ def test_macd_caching():
     ])
 
     # Calculate MACD
-    macd1 = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
+    prices_hash = hash_series(prices)
+    macd1 = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -228,7 +239,8 @@ def test_macd_caching():
 
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.ewm') as mock_ewm:
-        macd2 = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
+        prices_hash = hash_series(prices)
+        macd2 = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9, prices_hash=prices_hash)
         # The ewm function should not be called again
         mock_ewm.assert_not_called()
 
@@ -249,7 +261,8 @@ def test_bollinger_bands_caching():
     ])
 
     # Calculate Bollinger Bands
-    bb1 = calculate_bollinger_bands(prices, period=20, num_std=2)
+    prices_hash = hash_series(prices)
+    bb1 = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -262,7 +275,8 @@ def test_bollinger_bands_caching():
 
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.rolling') as mock_rolling:
-        bb2 = calculate_bollinger_bands(prices, period=20, num_std=2)
+        prices_hash = hash_series(prices)
+        bb2 = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
         # The rolling function should not be called again
         mock_rolling.assert_not_called()
 
@@ -282,12 +296,16 @@ def test_cache_persistence_across_calculations():
     ])
 
     # Calculate RSI with different periods
-    rsi_14 = calculate_rsi(prices, period=14)
-    rsi_7 = calculate_rsi(prices, period=7)
+    prices_hash = hash_series(prices)
+    rsi_14 = calculate_rsi(prices, period=14, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    rsi_7 = calculate_rsi(prices, period=7, prices_hash=prices_hash)
 
     # Calculate EMA with different periods
-    ema_9 = calculate_ema(prices, period=9)
-    ema_21 = calculate_ema(prices, period=21)
+    prices_hash = hash_series(prices)
+    ema_9 = calculate_ema(prices, period=9, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    ema_21 = calculate_ema(prices, period=21, prices_hash=prices_hash)
 
     # Verify all calculations are in the cache
     prices_hash = hash_series(prices)
@@ -303,10 +321,14 @@ def test_cache_persistence_across_calculations():
     # Calculate again and verify it uses the cached values
     with patch('pandas.Series.rolling') as mock_rolling:
         with patch('pandas.Series.ewm') as mock_ewm:
-            rsi_14_again = calculate_rsi(prices, period=14)
-            rsi_7_again = calculate_rsi(prices, period=7)
-            ema_9_again = calculate_ema(prices, period=9)
-            ema_21_again = calculate_ema(prices, period=21)
+            prices_hash = hash_series(prices)
+            rsi_14_again = calculate_rsi(prices, period=14, prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            rsi_7_again = calculate_rsi(prices, period=7, prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            ema_9_again = calculate_ema(prices, period=9, prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            ema_21_again = calculate_ema(prices, period=21, prices_hash=prices_hash)
 
             # The rolling and ewm functions should not be called again
             mock_rolling.assert_not_called()
@@ -332,10 +354,14 @@ def test_integration_with_real_calculations():
     ])
 
     # Calculate multiple indicators
-    rsi = calculate_rsi(prices)
-    ema = calculate_ema(prices)
-    macd = calculate_macd(prices)
-    bb = calculate_bollinger_bands(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    ema = calculate_ema(prices, period=9, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    macd = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9, prices_hash=prices_hash)
+    prices_hash = hash_series(prices)
+    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
 
     # Verify all calculations are in the cache
     prices_hash = hash_series(prices)
@@ -353,10 +379,18 @@ def test_integration_with_real_calculations():
     # Calculate again and verify it uses the cached values
     with patch('pandas.Series.rolling') as mock_rolling:
         with patch('pandas.Series.ewm') as mock_ewm:
-            rsi_again = calculate_rsi(prices)
-            ema_again = calculate_ema(prices)
-            macd_again = calculate_macd(prices)
-            bb_again = calculate_bollinger_bands(prices)
+            prices_hash = hash_series(prices)
+            rsi_again = calculate_rsi(prices, period=14, prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            ema_again = calculate_ema(prices, period=9, prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            macd_again = calculate_macd(prices,
+                                        fast_period=12,
+                                        slow_period=26,
+                                        signal_period=9,
+                                        prices_hash=prices_hash)
+            prices_hash = hash_series(prices)
+            bb_again = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
 
             # The rolling and ewm functions should not be called again
             mock_rolling.assert_not_called()
@@ -379,7 +413,8 @@ def test_indicator_cache_corrupted_file():
     prices = pd.Series([100, 101, 102, 103, 104, 105])
 
     # Calculate an indicator to add to the cache
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -411,7 +446,8 @@ def test_indicator_cache_interrupted_save():
     prices = pd.Series([100, 101, 102, 103, 104, 105])
 
     # Calculate an indicator to add to the cache
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -440,7 +476,8 @@ def test_indicator_cache_large_objects():
     large_prices = pd.Series(range(100_000))
 
     # Calculate RSI on the large series
-    large_rsi = calculate_rsi(large_prices)
+    large_prices_hash = hash_series(large_prices)
+    large_rsi = calculate_rsi(large_prices, period=14, prices_hash=large_prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(large_prices)
@@ -499,7 +536,8 @@ def test_indicator_cache_concurrent_access():
     def add_to_cache(start_idx, end_idx):
         for i in range(start_idx, end_idx):
             prices = pd.Series(range(i, i + 10))
-            indicator_cache.set(f'key_{i}', calculate_rsi(prices))
+            prices_hash = hash_series(prices)
+            indicator_cache.set(f'key_{i}', calculate_rsi(prices, period=14, prices_hash=prices_hash))
 
     # Create threads to add items to the cache concurrently
     threads = []

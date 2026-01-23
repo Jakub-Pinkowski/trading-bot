@@ -1,38 +1,32 @@
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.utils.backtesting_utils.indicators_utils import hash_series, logger
+from app.utils.backtesting_utils.indicators_utils import logger
 
 
-def calculate_rsi(prices, period=14, prices_hash=None):
+def calculate_rsi(prices, period, prices_hash):
     """
     Calculate RSI (Relative Strength Index) indicator.
 
     Args:
         prices: pandas Series of prices
-        period: RSI period (default: 14)
-        prices_hash: Optional pre-computed hash of prices series for cache optimization.
-                    If None, will be computed. Pass this to avoid redundant hashing
-                    when calling multiple indicators on the same data.
+        period: RSI period (e.g., 14)
+        prices_hash: Pre-computed hash of prices series (use hash_series() or
+                    BaseStrategy._precompute_hashes())
 
     Returns:
         pandas Series with RSI values
 
     Example:
-        # Without pre-computed hash (simple usage)
-        rsi = calculate_rsi(df['close'], period=14)
+        # Pre-compute hash once
+        hashes = strategy._precompute_hashes(df)
 
-        # With pre-computed hash (optimized for multiple indicators)
-        close_hash = hash_series(df['close'])
-        rsi = calculate_rsi(df['close'], period=14, prices_hash=close_hash)
-        rsi_long = calculate_rsi(df['close'], period=21, prices_hash=close_hash)
+        # Pass to multiple indicators
+        rsi = calculate_rsi(df['close'], period=14, prices_hash=hashes['close'])
+        rsi_long = calculate_rsi(df['close'], period=21, prices_hash=hashes['close'])
     """
     # Validate period
     if period <= 0:
         logger.error(f"Invalid period value for RSI: {period}. Period must be a positive integer.")
         raise ValueError("Period must be a positive integer")
-
-    # Create a hashable key for the cache
-    if prices_hash is None:
-        prices_hash = hash_series(prices)
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('rsi', prices_hash, period)

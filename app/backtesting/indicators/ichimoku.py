@@ -1,13 +1,12 @@
 import hashlib
 
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def calculate_ichimoku(
-    high, low, close, tenkan_period=9, kijun_period=26,
-    senkou_span_b_period=52, displacement=26,
-    high_hash=None, low_hash=None, close_hash=None
+    high, low, close, tenkan_period, kijun_period,
+    senkou_span_b_period, displacement,
+    high_hash, low_hash, close_hash
 ):
     """
     Calculate Ichimoku Cloud indicator.
@@ -16,37 +15,33 @@ def calculate_ichimoku(
         high: pandas Series of high prices
         low: pandas Series of low prices
         close: pandas Series of close prices
-        tenkan_period: Conversion line period (default: 9)
-        kijun_period: Base line period (default: 26)
-        senkou_span_b_period: Leading span B period (default: 52)
-        displacement: Displacement for cloud (default: 26)
-        high_hash: Optional pre-computed hash of high series
-        low_hash: Optional pre-computed hash of low series
-        close_hash: Optional pre-computed hash of close series
-                   Pass these to avoid redundant hashing when calling multiple indicators.
+        tenkan_period: Conversion line period (e.g., 9)
+        kijun_period: Base line period (e.g., 26)
+        senkou_span_b_period: Leading span B period (e.g., 52)
+        displacement: Displacement for cloud (e.g., 26)
+        high_hash: Pre-computed hash of high series
+        low_hash: Pre-computed hash of low series
+        close_hash: Pre-computed hash of close series
+                   Use BaseStrategy._precompute_hashes() to get all hashes at once.
 
     Returns:
         Dictionary with keys: tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
 
     Example:
-        # Without pre-computed hashes (simple usage)
-        ichimoku = calculate_ichimoku(df['high'], df['low'], df['close'])
+        # Pre-compute all hashes once
+        hashes = strategy._precompute_hashes(df)
 
-        # With pre-computed hashes (optimized for multiple indicators)
-        high_hash = hash_series(df['high'])
-        low_hash = hash_series(df['low'])
-        close_hash = hash_series(df['close'])
+        # Pass to Ichimoku
         ichimoku = calculate_ichimoku(df['high'], df['low'], df['close'],
-                                      high_hash=high_hash, low_hash=low_hash,
-                                      close_hash=close_hash)
+                                      tenkan_period=9, kijun_period=26,
+                                      senkou_span_b_period=52, displacement=26,
+                                      high_hash=hashes['high'], low_hash=hashes['low'],
+                                      close_hash=hashes['close'])
     """
     # Create a combined hash for all price series
-    if high_hash is None:
-        high_hash = hash_series(high)
-    if low_hash is None:
-        low_hash = hash_series(low)
-    if close_hash is None:
-        close_hash = hash_series(close)
+    combined_hash = hashlib.md5(
+        f"{high_hash}{low_hash}{close_hash}".encode()
+    ).hexdigest()
 
     combined_hash = hashlib.md5(
         f"{high_hash}{low_hash}{close_hash}".encode()

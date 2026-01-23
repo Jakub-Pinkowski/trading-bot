@@ -2,37 +2,31 @@ import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9, prices_hash=None):
+def calculate_macd(prices, fast_period, slow_period, signal_period, prices_hash):
     """
     Calculate MACD (Moving Average Convergence Divergence) indicator.
 
     Args:
         prices: pandas Series of prices
-        fast_period: Fast EMA period (default: 12)
-        slow_period: Slow EMA period (default: 26)
-        signal_period: Signal line period (default: 9)
-        prices_hash: Optional pre-computed hash of prices series for cache optimization.
-                    If None, will be computed. Pass this to avoid redundant hashing
-                    when calling multiple indicators on the same data.
+        fast_period: Fast EMA period (e.g., 12)
+        slow_period: Slow EMA period (e.g., 26)
+        signal_period: Signal line period (e.g., 9)
+        prices_hash: Pre-computed hash of prices series (use hash_series() or
+                    BaseStrategy._precompute_hashes())
 
     Returns:
         DataFrame with columns: macd_line, signal_line, histogram
 
     Example:
-        # Without pre-computed hash (simple usage)
-        macd = calculate_macd(df['close'])
+        # Pre-compute hash once
+        hashes = strategy._precompute_hashes(df)
 
-        # With pre-computed hash (optimized for multiple indicators)
-        close_hash = hash_series(df['close'])
-        macd = calculate_macd(df['close'], prices_hash=close_hash)
-        rsi = calculate_rsi(df['close'], prices_hash=close_hash)
+        # Pass to indicator
+        macd = calculate_macd(df['close'], fast_period=12, slow_period=26,
+                            signal_period=9, prices_hash=hashes['close'])
     """
-    # Create a hashable key for the cache
-    if prices_hash is None:
-        prices_hash = hash_series(prices)
 
     # Check if we have this calculation cached in the global cache
     cache_key = ('macd', prices_hash, fast_period, slow_period, signal_period)

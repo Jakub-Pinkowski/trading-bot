@@ -3,6 +3,16 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_atr
+from app.utils.backtesting_utils.indicators_utils import hash_series
+
+
+def compute_hashes(df):
+    """Helper function to compute hashes for ATR testing"""
+    return {
+        'high_hash': hash_series(df['high']),
+        'low_hash': hash_series(df['low']),
+        'close_hash': hash_series(df['close'])
+    }
 
 
 def create_test_df(length=30, trend='up', volatility=1.0):
@@ -41,7 +51,8 @@ def create_test_df(length=30, trend='up', volatility=1.0):
 def test_calculate_atr_with_valid_data():
     """Test ATR calculation with valid price data"""
     df = create_test_df(length=30)
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # Check that the result is a Series
     assert isinstance(atr, pd.Series)
@@ -59,7 +70,8 @@ def test_calculate_atr_with_valid_data():
 def test_calculate_atr_with_not_enough_data():
     """Test ATR calculation with price data less than the default period"""
     df = create_test_df(length=5)
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # All values should be NaN
     assert atr.isna().all()
@@ -70,7 +82,8 @@ def test_calculate_atr_with_custom_period():
     df = create_test_df(length=30)
 
     # Test with a custom period
-    atr = calculate_atr(df, period=7)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=7, **hashes)
 
     # Check that the first period-1 values are NaN
     assert atr.iloc[:6].isna().all()
@@ -88,9 +101,12 @@ def test_calculate_atr_across_different_timeframes():
 
     # Calculate ATR with the same period for all timeframes
     period = 14
-    atr_short = calculate_atr(df_short, period=period)
-    atr_medium = calculate_atr(df_medium, period=period)
-    atr_long = calculate_atr(df_long, period=period)
+    hashes = compute_hashes(df_short)
+    atr_short = calculate_atr(df_short, period=period, **hashes)
+    hashes = compute_hashes(df_medium)
+    atr_medium = calculate_atr(df_medium, period=period, **hashes)
+    hashes = compute_hashes(df_long)
+    atr_long = calculate_atr(df_long, period=period, **hashes)
 
     # Check that all ATRs have the expected number of NaN values
     assert atr_short.iloc[:period - 1].isna().all()
@@ -116,9 +132,12 @@ def test_calculate_atr_with_different_volatilities():
     df_high_vol = create_test_df(length=60, volatility=2.0)  # High volatility
 
     # Calculate ATR for each volatility level
-    atr_low_vol = calculate_atr(df_low_vol)
-    atr_med_vol = calculate_atr(df_med_vol)
-    atr_high_vol = calculate_atr(df_high_vol)
+    hashes = compute_hashes(df_low_vol)
+    atr_low_vol = calculate_atr(df_low_vol, period=14, **hashes)
+    hashes = compute_hashes(df_med_vol)
+    atr_med_vol = calculate_atr(df_med_vol, period=14, **hashes)
+    hashes = compute_hashes(df_high_vol)
+    atr_high_vol = calculate_atr(df_high_vol, period=14, **hashes)
 
     # Higher volatility should result in higher ATR values
     assert atr_low_vol.iloc[-1] < atr_med_vol.iloc[-1]
@@ -137,9 +156,12 @@ def test_calculate_atr_with_different_trends():
     df_sideways = create_test_df(length=60, trend='sideways', volatility=1.0)
 
     # Calculate ATR for each trend
-    atr_uptrend = calculate_atr(df_uptrend)
-    atr_downtrend = calculate_atr(df_downtrend)
-    atr_sideways = calculate_atr(df_sideways)
+    hashes = compute_hashes(df_uptrend)
+    atr_uptrend = calculate_atr(df_uptrend, period=14, **hashes)
+    hashes = compute_hashes(df_downtrend)
+    atr_downtrend = calculate_atr(df_downtrend, period=14, **hashes)
+    hashes = compute_hashes(df_sideways)
+    atr_sideways = calculate_atr(df_sideways, period=14, **hashes)
 
     # ATR should be positive for all trends
     assert (atr_uptrend.dropna() > 0).all()
@@ -169,7 +191,8 @@ def test_calculate_atr_with_price_gaps():
             df.loc[i, 'close'] = df.loc[i - 1, 'close'] * 0.9  # 10% gap down
             df.loc[i, 'low'] = min(df.loc[i, 'low'], df.loc[i, 'close'] * 0.95)
 
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # ATR should increase after gaps due to higher true range values
     for i in range(6, 26, 5):
@@ -189,7 +212,8 @@ def test_calculate_atr_calculation_correctness():
 
     # Calculate ATR with a specific period for easier verification
     period = 5
-    atr = calculate_atr(df, period=period)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=period, **hashes)
 
     # Manually calculate the expected values
     # First, calculate true range
@@ -220,7 +244,8 @@ def test_calculate_atr_calculation_correctness():
 def test_calculate_atr_with_empty_dataframe():
     """Test ATR calculation with an empty dataframe"""
     df = pd.DataFrame(columns=['high', 'low', 'close'])
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # Result should be an empty Series
     assert isinstance(atr, pd.Series)
@@ -237,7 +262,8 @@ def test_calculate_atr_with_missing_columns():
 
     # Should raise a KeyError
     with pytest.raises(KeyError):
-        calculate_atr(df_missing_high)
+        hashes = compute_hashes(df_missing_high)
+        calculate_atr(df_missing_high, period=14, **hashes)
 
     # Create a dataframe missing the 'low' column
     df_missing_low = pd.DataFrame({
@@ -247,7 +273,8 @@ def test_calculate_atr_with_missing_columns():
 
     # Should raise a KeyError
     with pytest.raises(KeyError):
-        calculate_atr(df_missing_low)
+        hashes = compute_hashes(df_missing_low)
+        calculate_atr(df_missing_low, period=14, **hashes)
 
     # Create a dataframe missing the 'close' column
     df_missing_close = pd.DataFrame({
@@ -257,7 +284,8 @@ def test_calculate_atr_with_missing_columns():
 
     # Should raise a KeyError
     with pytest.raises(KeyError):
-        calculate_atr(df_missing_close)
+        hashes = compute_hashes(df_missing_close)
+        calculate_atr(df_missing_close, period=14, **hashes)
 
 
 def test_calculate_atr_with_constant_prices():
@@ -269,7 +297,8 @@ def test_calculate_atr_with_constant_prices():
         'close': [100] * 30
     })
 
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # With constant prices, true range is 0, so ATR should be 0 after the initial period
     assert (atr.iloc[14:] == 0).all()
@@ -344,7 +373,8 @@ def test_calculate_atr_with_market_crash():
     df = pd.concat([df_stable, df_crash]).reset_index(drop=True)
 
     # Calculate ATR
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # During a crash, ATR should increase due to higher volatility
 
@@ -374,7 +404,8 @@ def test_calculate_atr_with_market_bubble():
     df = pd.concat([df_normal, df_bubble]).reset_index(drop=True)
 
     # Calculate ATR
-    atr = calculate_atr(df)
+    hashes = compute_hashes(df)
+    atr = calculate_atr(df, period=14, **hashes)
 
     # During a bubble, ATR should increase due to higher volatility
 
@@ -402,8 +433,10 @@ def test_calculate_atr_as_trend_strength_indicator():
     df_strong['low'] = df_strong['close'] - (close_values - df_strong['low'])
 
     # Calculate ATR for both trends
-    atr_weak = calculate_atr(df_weak)
-    atr_strong = calculate_atr(df_strong)
+    hashes = compute_hashes(df_weak)
+    atr_weak = calculate_atr(df_weak, period=14, **hashes)
+    hashes = compute_hashes(df_strong)
+    atr_strong = calculate_atr(df_strong, period=14, **hashes)
 
     # Calculate the average ATR as a percentage of price for both trends
     # This normalizes ATR to make it comparable across different price levels
@@ -428,8 +461,10 @@ def test_calculate_atr_percentage():
     df_high_price['low'] = df_high_price['low'] * 10
 
     # Calculate ATR for both price levels
-    atr_low_price = calculate_atr(df_low_price)
-    atr_high_price = calculate_atr(df_high_price)
+    hashes = compute_hashes(df_low_price)
+    atr_low_price = calculate_atr(df_low_price, period=14, **hashes)
+    hashes = compute_hashes(df_high_price)
+    atr_high_price = calculate_atr(df_high_price, period=14, **hashes)
 
     # Calculate ATR as a percentage of price
     atr_pct_low_price = (atr_low_price / df_low_price['close']).iloc[14:].mean() * 100  # As percentage

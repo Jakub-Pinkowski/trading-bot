@@ -3,12 +3,14 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_rsi
+from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
 def test_calculate_rsi_with_valid_prices():
     """Test RSI calculation with valid price data"""
     prices = pd.Series([44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     assert rsi.isna().sum() == 14  # Initial undefined values
     assert all(rsi[14:].between(0, 100))  # RSI should be between 0-100 after the period
 
@@ -16,14 +18,16 @@ def test_calculate_rsi_with_valid_prices():
 def test_calculate_rsi_with_not_enough_data():
     """Test RSI calculation with price data less than the default period"""
     prices = pd.Series([44, 47, 45])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     assert rsi.isna().all()  # All values should be NaN
 
 
 def test_calculate_rsi_with_custom_period():
     """Test RSI calculation with a custom period"""
     prices = pd.Series([44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80])
-    rsi = calculate_rsi(prices, period=10)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=10, prices_hash=prices_hash)
     assert rsi.isna().sum() == 10  # Undefined values equal to the custom period
     assert all(rsi[10:].between(0, 100))  # RSI should be between 0-100 after the period
 
@@ -31,7 +35,8 @@ def test_calculate_rsi_with_custom_period():
 def test_calculate_rsi_with_constant_prices():
     """Test RSI calculation when prices remain constant"""
     prices = pd.Series([50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     # The entire array is NaN because we have fewer prices than a period
     assert rsi.isna().sum() == 13  # Initial undefined values
 
@@ -39,14 +44,16 @@ def test_calculate_rsi_with_constant_prices():
 def test_calculate_rsi_handles_empty_prices():
     """Test RSI calculation with empty price data"""
     prices = pd.Series(dtype='float64')
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     assert rsi.empty  # RSI should be empty as well
 
 
 def test_calculate_rsi_with_increasing_prices():
     """Test RSI calculation with consistently increasing prices"""
     prices = pd.Series([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     # With consistently increasing, prices, RSI should be high (close to 100)
     assert rsi.isna().sum() == 14  # Initial undefined values
     assert all(rsi[14:] > 70)  # RSI should be high for consistently increasing prices
@@ -55,7 +62,8 @@ def test_calculate_rsi_with_increasing_prices():
 def test_calculate_rsi_with_decreasing_prices():
     """Test RSI calculation with consistently decreasing prices"""
     prices = pd.Series([30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     # With consistently decreasing prices, RSI should be low (close to 0)
     assert rsi.isna().sum() == 14  # Initial undefined values
     assert all(rsi[14:] < 30)  # RSI should be low for consistently decreasing prices
@@ -64,7 +72,8 @@ def test_calculate_rsi_with_decreasing_prices():
 def test_calculate_rsi_with_alternating_prices():
     """Test RSI calculation with alternating increasing and decreasing prices"""
     prices = pd.Series([10, 12, 10, 12, 10, 12, 10, 12, 10, 12, 10, 12, 10, 12, 10, 12, 10, 12, 10, 12])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     assert rsi.isna().sum() == 14  # Initial undefined values
     # With alternating prices, RSI should be around 50
     assert all(rsi[14:].between(40, 60))
@@ -73,7 +82,8 @@ def test_calculate_rsi_with_alternating_prices():
 def test_calculate_rsi_with_negative_prices():
     """Test RSI calculation with negative price values"""
     prices = pd.Series([-10, -8, -9, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    rsi = calculate_rsi(prices)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=14, prices_hash=prices_hash)
     assert rsi.isna().sum() == 14  # Initial undefined values
     assert all(rsi[14:].between(0, 100))  # RSI should still be between 0-100
 
@@ -83,11 +93,13 @@ def test_calculate_rsi_with_invalid_period():
     prices = pd.Series([10, 12, 14, 16, 18, 20])
     # Test with zero periods
     with pytest.raises(ValueError):
-        calculate_rsi(prices, period=0)
+        prices_hash = hash_series(prices)
+        calculate_rsi(prices, period=0, prices_hash=prices_hash)
 
     # Test with a negative period
     with pytest.raises(ValueError):
-        calculate_rsi(prices, period=-5)
+        prices_hash = hash_series(prices)
+        calculate_rsi(prices, period=-5, prices_hash=prices_hash)
 
 
 def test_calculate_rsi_with_market_crash():
@@ -98,7 +110,8 @@ def test_calculate_rsi_with_market_crash():
         # The sharp decline starts here
         95, 90, 85, 80, 75, 70, 65, 60, 55, 50
     ])
-    rsi = calculate_rsi(prices, period=7)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=7, prices_hash=prices_hash)
 
     # RSI should drop significantly during the crash
     # Check that RSI is below the oversold threshold (30) after the crash
@@ -117,7 +130,8 @@ def test_calculate_rsi_with_market_recovery():
         # Recovery starts here
         45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95
     ])
-    rsi = calculate_rsi(prices, period=7)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=7, prices_hash=prices_hash)
 
     # RSI should rise significantly during recovery
     # Check that RSI is above a high threshold after recovery
@@ -140,7 +154,8 @@ def test_calculate_rsi_with_price_gaps():
     filled_prices = prices.ffill()  # Forward fill NaN values
 
     # Calculate RSI on the filled prices
-    rsi = calculate_rsi(filled_prices, period=7)
+    filled_prices_hash = hash_series(filled_prices)
+    rsi = calculate_rsi(filled_prices, period=7, prices_hash=filled_prices_hash)
 
     # Verify that RSI is calculated after the period
     assert rsi.iloc[7:].notna().any()
@@ -153,7 +168,8 @@ def test_calculate_rsi_with_high_volatility():
     """Test RSI calculation in a highly volatile market"""
     # Simulate a highly volatile market with large price swings
     prices = pd.Series([100, 110, 95, 115, 90, 120, 85, 125, 80, 130, 75, 135, 70, 140])
-    rsi = calculate_rsi(prices, period=7)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=7, prices_hash=prices_hash)
 
     # In a volatile market with alternating up/down moves, RSI should oscillate
     # but with large price movements, it can show significant variation
@@ -193,7 +209,8 @@ def test_calculate_rsi_with_flat_then_trend():
         # Uptrend starts here
         102, 104, 106, 108, 110, 112, 114, 116, 118, 120
     ])
-    rsi = calculate_rsi(prices, period=7)
+    prices_hash = hash_series(prices)
+    rsi = calculate_rsi(prices, period=7, prices_hash=prices_hash)
 
     # During flat period, RSI should be around 50
     # After trend starts, RSI should increase

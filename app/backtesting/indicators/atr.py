@@ -4,43 +4,32 @@ import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
-def calculate_atr(df, period=14, high_hash=None, low_hash=None, close_hash=None):
+def calculate_atr(df, period, high_hash, low_hash, close_hash):
     """
     Calculate ATR (Average True Range) indicator.
 
     Args:
         df: DataFrame with 'high', 'low', 'close' columns
-        period: ATR period (default: 14)
-        high_hash: Optional pre-computed hash of df['high']
-        low_hash: Optional pre-computed hash of df['low']
-        close_hash: Optional pre-computed hash of df['close']
-                   Pass these to avoid redundant hashing when calling multiple indicators.
+        period: ATR period (e.g., 14)
+        high_hash: Pre-computed hash of df['high']
+        low_hash: Pre-computed hash of df['low']
+        close_hash: Pre-computed hash of df['close']
+                   Use BaseStrategy._precompute_hashes() to get all hashes at once.
 
     Returns:
         pandas Series with ATR values
 
     Example:
-        # Without pre-computed hashes (simple usage)
-        atr = calculate_atr(df, period=14)
+        # Pre-compute all hashes once
+        hashes = strategy._precompute_hashes(df)
 
-        # With pre-computed hashes (optimized for multiple indicators)
-        high_hash = hash_series(df['high'])
-        low_hash = hash_series(df['low'])
-        close_hash = hash_series(df['close'])
-        atr = calculate_atr(df, period=14, high_hash=high_hash,
-                           low_hash=low_hash, close_hash=close_hash)
+        # Pass to ATR
+        atr = calculate_atr(df, period=14, high_hash=hashes['high'],
+                           low_hash=hashes['low'], close_hash=hashes['close'])
     """
     # Create a combined hash for all price series
-    if high_hash is None:
-        high_hash = hash_series(df['high'])
-    if low_hash is None:
-        low_hash = hash_series(df['low'])
-    if close_hash is None:
-        close_hash = hash_series(df['close'])
-
     combined_hash = hashlib.md5(
         f"{high_hash}{low_hash}{close_hash}".encode()
     ).hexdigest()
