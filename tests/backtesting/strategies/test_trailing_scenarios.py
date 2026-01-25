@@ -484,10 +484,10 @@ class TestTrailingScenarios:
             def __init__(self, trailing=None):
                 # Initialize counter before calling super().__init__
                 self.trailing_stops_triggered = 0
-                
+
                 # Call parent init
                 super().__init__(trailing=trailing)
-                
+
                 # Set callback on trailing_stop_manager to count triggers
                 if self.trailing_stop_manager:
                     self.trailing_stop_manager.on_stop_triggered = self._count_trailing_stop

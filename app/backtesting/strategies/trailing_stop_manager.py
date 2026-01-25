@@ -142,11 +142,11 @@ class TrailingStopManager:
             if should_trigger_stop(position, trailing_stop, price_high, price_low):
                 # Stop triggered - close at stop level (not at low/high price)
                 position_manager.close_position(idx, trailing_stop, switch=False)
-                
+
                 # Call callback if provided
                 if self.on_stop_triggered is not None:
                     self.on_stop_triggered(position, trailing_stop)
-                
+
                 return True  # Exit early - no stop update after position closed (prevents look-ahead bias)
 
         # STEP 2: Update trailing stop based on favorable price movement

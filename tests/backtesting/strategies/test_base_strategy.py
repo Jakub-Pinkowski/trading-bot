@@ -332,7 +332,8 @@ class TestBaseStrategy:
             # Advance the switch index
             strategy.switch_handler.next_switch_idx += 1
             if strategy.switch_handler.next_switch_idx < len(strategy.switch_handler.switch_dates):
-                strategy.switch_handler.next_switch = strategy.switch_handler.switch_dates[strategy.switch_handler.next_switch_idx]
+                strategy.switch_handler.next_switch = strategy.switch_handler.switch_dates[
+                    strategy.switch_handler.next_switch_idx]
             else:
                 strategy.switch_handler.next_switch = None
 

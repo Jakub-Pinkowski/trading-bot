@@ -7,8 +7,6 @@ reopening positions on the new contract.
 """
 
 
-# ==================== Helper Functions ====================
-
 class ContractSwitchHandler:
     """Manages contract rollover logic for futures backtesting."""
 
@@ -76,7 +74,7 @@ class ContractSwitchHandler:
             # Close position at the previous bar's data when switching contracts
             if position_manager.has_open_position() and prev_row is not None:
                 prev_position = position_manager.close_position_at_switch(prev_time, prev_row)
-                
+
                 # Mark for reopening if rollover is enabled
                 if self.rollover:
                     self.must_reopen = prev_position
