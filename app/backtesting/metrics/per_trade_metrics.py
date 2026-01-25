@@ -12,7 +12,7 @@ COMMISSION_PER_TRADE = 4
 # Target margin-to-contract-value ratios based on asset classes
 # These ratios are derived from current market data (01.2026) to provide a realistic historical estimate
 MARGIN_RATIOS = {
-    'energies': 0.25,  # ~25% (CL, NG, MCL, MNG,)
+    'energies': 0.25,  # ~25% (CL, NG, MCL, MNG)
     'metals': 0.12,  # ~12% (GC, SI, HG, PL, MGC, SIL, MHG)
     'indices': 0.08,  # ~8%  (ES, NQ, YM, RTY, MES, MNQ, MYM, ZB)
     'forex': 0.04,  # ~4%  (6E, 6J, 6B, 6A, 6C, 6S, M6E, M6J, M6B, M6A, M6C, M6S)
@@ -68,6 +68,11 @@ def calculate_trade_metrics(trade, symbol):
 
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
     margin_requirement = estimate_margin(symbol, trade['entry_price'], contract_multiplier)
+
+    # Validate margin requirement
+    if margin_requirement <= 0:
+        logger.error(f'Invalid margin requirement: {margin_requirement} for symbol: {symbol}')
+        raise ValueError(f'Margin requirement must be positive, got {margin_requirement} for {symbol}')
 
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']

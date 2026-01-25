@@ -240,7 +240,7 @@ class TestCalculateSummaryMetrics:
         metrics = SummaryMetrics(trades)
         summary = metrics.calculate_all_metrics()
 
-        assert summary['avg_trade_duration_hours'] == 24.0  # (12 + 24 + 36) / 3
+        assert summary['average_trade_duration_hours'] == 24.0  # (12 + 24 + 36) / 3
 
     def test_risk_metrics(self):
         """Test the calculation of the risk metrics."""
@@ -358,7 +358,7 @@ class TestCalculateSummaryMetrics:
         assert summary['average_loss_percentage_of_margin'] < 0
 
         # Duration metrics
-        assert summary['avg_trade_duration_hours'] == 6.8  # (4+6+12+3+5+8+10+7+4+9)/10
+        assert summary['average_trade_duration_hours'] == 6.8  # (4+6+12+3+5+8+10+7+4+9)/10
 
         # Risk metrics
         assert summary['profit_factor'] > 1.0
@@ -445,7 +445,7 @@ class TestCalculateSummaryMetrics:
 
         # Duration metrics
         total_duration = 0.5 + 0.25 + 0.75 + 4 + 6 + 48 + 72 + 240 + 168
-        assert summary['avg_trade_duration_hours'] == round(total_duration / 9, 2)
+        assert summary['average_trade_duration_hours'] == round(total_duration / 9, 2)
 
         # Percentage-based metrics
         total_expected_return_percentage = 0.5 - 0.3 + 0.4 + 1.0 - 0.7 + 2.0 - 1.5 + 5.0 - 3.0
@@ -531,7 +531,7 @@ class TestCalculateSummaryMetrics:
 
         # Duration metrics
         total_duration = 2 + 1 + 3 + 2 + 4 + 3 + 5 + 4 + 6 + 5
-        assert summary['avg_trade_duration_hours'] == round(total_duration / 10, 2)
+        assert summary['average_trade_duration_hours'] == round(total_duration / 10, 2)
 
         # Risk metrics
         # Volatility should be reflected in the drawdown metrics

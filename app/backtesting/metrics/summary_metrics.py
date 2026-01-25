@@ -47,7 +47,7 @@ class SummaryMetrics:
         win_rate = self.win_rate
         win_count = self.win_count
         loss_count = self.loss_count
-        avg_duration_hours = safe_average(self.durations, self.total_trades)
+        average_duration_hours = safe_average(self.durations, self.total_trades)
 
         # --- Normalized Metrics (Percentages) ---
         total_return_percentage_of_margin = self.total_return
@@ -80,7 +80,7 @@ class SummaryMetrics:
             'winning_trades': win_count,
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
-            'avg_trade_duration_hours': round(avg_duration_hours, 2),
+            'average_trade_duration_hours': round(average_duration_hours, 2),
 
             # Percentage-based metrics
             'total_return_percentage_of_margin': round(total_return_percentage_of_margin, 2),
