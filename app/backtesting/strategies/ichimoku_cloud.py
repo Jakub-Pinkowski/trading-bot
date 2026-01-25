@@ -22,10 +22,10 @@ class IchimokuCloudStrategy(BaseStrategy):
         self.displacement = displacement
 
     def add_indicators(self, df):
-        # Pre-compute all hashes once (Ichimoku uses 3 price series)
+        # Pre-compute all hashes once
         hashes = precompute_hashes(df)
 
-        # Pass all pre-computed hashes (avoids 3 redundant hash operations!)
+        # Calculate Ichimoku using pre-computed hashes
         ichimoku_data = calculate_ichimoku(
             df['high'],
             df['low'],

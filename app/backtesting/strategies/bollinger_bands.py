@@ -25,7 +25,7 @@ class BollingerBandsStrategy(BaseStrategy):
         # Pre-compute hash once
         hashes = precompute_hashes(df)
 
-        # Pass pre-computed hash to Bollinger Bands calculation
+        # Calculate Bollinger Bands using pre-computed hash
         bb_data = calculate_bollinger_bands(df['close'], period=self.period,
                                             num_std=self.num_std,
                                             prices_hash=hashes['close'])
@@ -45,10 +45,10 @@ class BollingerBandsStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Buy signal: Price crosses back above a lower band (bounce back from below)
+        # Buy signal: Price crosses back above lower band
         df.loc[detect_crossover(df['close'], df['lower_band'], 'above'), 'signal'] = 1
 
-        # Sell signal: Price crosses back below an upper band (fall back from above)
+        # Sell signal: Price crosses back below upper band
         df.loc[detect_crossover(df['close'], df['upper_band'], 'below'), 'signal'] = -1
 
         return df

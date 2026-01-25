@@ -5,6 +5,8 @@ from app.utils.math_utils import safe_average, safe_divide
 
 logger = get_logger('backtesting/summary_metrics')
 
+# ==================== Constants ====================
+
 # Metrics Calculation Constants
 MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
 MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
@@ -12,6 +14,8 @@ MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected
 
 class SummaryMetrics:
     """Class for calculating summary metrics for a list of trades."""
+
+    # ==================== Initialization ====================
 
     def __init__(self, trades):
         """Initialize with a list of trades and perform initial calculations."""
@@ -26,6 +30,8 @@ class SummaryMetrics:
         # Initialize common calculations if trades exist
         if self._has_trades():
             self._initialize_calculations()
+
+    # ==================== Public Methods ====================
 
     def calculate_all_metrics(self):
         """Calculate all summary metrics and return as a dictionary."""
@@ -95,7 +101,6 @@ class SummaryMetrics:
             'expected_shortfall': round(expected_shortfall, 2),
             'ulcer_index': round(ulcer_index, 2),
         }
-
 
     # ==================== Private Methods ====================
 

@@ -23,7 +23,7 @@ class MACDStrategy(BaseStrategy):
         # Pre-compute hash once
         hashes = precompute_hashes(df)
 
-        # Pass pre-computed hash to MACD calculation
+        # Calculate MACD using pre-computed hash
         macd_data = calculate_macd(
             df['close'],
             fast_period=self.fast_period,
@@ -47,10 +47,10 @@ class MACDStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Buy signal: MACD line crosses the above signal line
+        # Buy signal: MACD line crosses above signal line
         df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'above'), 'signal'] = 1
 
-        # Sell signal: MACD line crosses the below signal line
+        # Sell signal: MACD line crosses below signal line
         df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'below'), 'signal'] = -1
 
         return df

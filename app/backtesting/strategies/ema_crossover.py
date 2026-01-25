@@ -22,10 +22,10 @@ class EMACrossoverStrategy(BaseStrategy):
         self.ema_long = ema_long
 
     def add_indicators(self, df):
-        # Pre-compute hash once (used for both EMA calculations)
+        # Pre-compute hash once
         hashes = precompute_hashes(df)
 
-        # Both EMAs use the same hash - no redundant hashing!
+        # Calculate both EMAs using pre-computed hash
         df['ema_short'] = calculate_ema(df['close'], period=self.ema_short,
                                         prices_hash=hashes['close'])
         df['ema_long'] = calculate_ema(df['close'], period=self.ema_long,

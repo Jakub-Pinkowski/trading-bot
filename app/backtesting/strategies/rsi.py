@@ -24,11 +24,10 @@ class RSIStrategy(BaseStrategy):
         self.upper = upper
 
     def add_indicators(self, df):
-        # Pre-compute hash once to avoid redundant hashing
-        # This is especially beneficial if you add more indicators later
+        # Pre-compute hash once
         hashes = precompute_hashes(df)
 
-        # Pass pre-computed hash to indicator function
+        # Calculate RSI using pre-computed hash
         df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period,
                                   prices_hash=hashes['close'])
         return df

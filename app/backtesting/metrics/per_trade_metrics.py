@@ -55,7 +55,7 @@ def estimate_margin(symbol, entry_price, contract_multiplier):
 # ==================== Public API ====================
 
 def calculate_trade_metrics(trade, symbol):
-    """ Calculate metrics for a single trade. """
+    """Calculate metrics for a single trade"""
 
     # Create a copy of the trade to avoid modifying the original
     trade = trade.copy()
@@ -124,7 +124,7 @@ def calculate_trade_metrics(trade, symbol):
 
 
 def print_trade_metrics(trade):
-    """ Print metrics for a single trade in a formatted way. """
+    """Print metrics for a single trade in a formatted way"""
     # Define colors for better visualization
     green = '\033[92m'
     red = '\033[91m'
