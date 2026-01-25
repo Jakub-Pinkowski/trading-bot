@@ -97,7 +97,7 @@ class SummaryMetrics:
 
             # Risk metrics
             'profit_factor': round(profit_factor, 2),
-            'maximum_drawdown_percentage': maximum_drawdown_percentage,
+            'maximum_drawdown_percentage': round(maximum_drawdown_percentage, 2),
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
@@ -178,7 +178,7 @@ class SummaryMetrics:
             if drawdown_percentage > maximum_drawdown_percentage:
                 maximum_drawdown_percentage = drawdown_percentage
 
-        return round(max_drawdown, 2), round(maximum_drawdown_percentage, 2)
+        return max_drawdown, maximum_drawdown_percentage
 
     def _calculate_average_win_percentage_of_margin(self):
         """Calculate average win percentage of margin."""
