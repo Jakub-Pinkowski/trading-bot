@@ -232,8 +232,8 @@ class TestCalculateTradeMetrics:
         very_short_trade = create_sample_trade(hours_duration=0.01)  # 36 seconds
         very_short_metrics = calculate_trade_metrics(very_short_trade, 'ES')
 
-        # Verify the calculated duration
-        assert very_short_metrics['duration_hours'] == 0
+        # Verify the calculated duration (should be 0.01 with 2 decimal precision)
+        assert very_short_metrics['duration_hours'] == 0.01
 
         # Test with a very long duration (months)
         very_long_trade = create_sample_trade(hours_duration=24 * 30 * 3)  # ~3 months

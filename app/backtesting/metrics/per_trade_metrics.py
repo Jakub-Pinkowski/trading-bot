@@ -76,7 +76,7 @@ def calculate_trade_metrics(trade, symbol):
 
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
-    trade_duration_hours = round(trade_duration.total_seconds() / 3600)
+    trade_duration_hours = round(trade_duration.total_seconds() / 3600, 2)
 
     # Apply fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
