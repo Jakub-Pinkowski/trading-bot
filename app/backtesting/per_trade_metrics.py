@@ -69,12 +69,12 @@ def calculate_trade_metrics(trade, symbol):
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
     margin_requirement = estimate_margin(symbol, trade['entry_price'], contract_multiplier)
 
-    # ===== TRADE DETAILS =====
+    # --- Trade Details ---
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
     trade_duration_hours = round(trade_duration.total_seconds() / 3600)
 
-    # ===== NORMALIZED METRICS (PERCENTAGES) =====
+    # --- Normalized Metrics (Percentages) ---
     # Fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
 

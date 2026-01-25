@@ -33,13 +33,13 @@ class SummaryMetrics:
             logger.error('No trades provided to calculate_all_metrics')
             return {}
 
-        # ===== BASIC TRADE STATISTICS =====
+        # --- Basic Trade Statistics ---
         win_rate = self.win_rate
         win_count = self.win_count
         loss_count = self.loss_count
         avg_duration_hours = safe_average(self.durations, self.total_trades)
 
-        # ===== NORMALIZED METRICS (PERCENTAGES) =====
+        # --- Normalized Metrics (Percentages) ---
         total_return_percentage_of_margin = self.total_return
         average_trade_return_percentage_of_margin = safe_average([self.total_return], self.total_trades)
         average_win_percentage_of_margin = self._calculate_average_win_percentage_of_margin()
@@ -54,7 +54,7 @@ class SummaryMetrics:
         total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
         total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
 
-        # ===== RISK METRICS =====
+        # --- Risk Metrics ---
         profit_factor = self._calculate_profit_factor()
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
         sharpe_ratio = self._calculate_sharpe_ratio()
@@ -113,14 +113,14 @@ class SummaryMetrics:
 
         print('\n====== SUMMARY METRICS ======')
 
-        # ===== BASIC TRADE STATISTICS =====
+        # --- Basic Trade Statistics ---
         print('\n--- BASIC TRADE STATISTICS ---')
         print(f'Total Trades: {summary["total_trades"]}')
         print(f'Winning Trades: {summary["winning_trades"]} ({summary["win_rate"]}%)')
         print(f'Losing Trades: {summary["losing_trades"]}')
         print(f'Avg Trade Duration: {summary["avg_trade_duration_hours"]} hours')
 
-        # ===== PERCENTAGE-BASED METRICS =====
+        # --- Percentage-Based Metrics ---
         print('\n--- PERCENTAGE-BASED METRICS ---')
         if summary["total_return_percentage_of_margin"] == 0:
             print(f'Total Return Percentage of Margin: 0.0%')
@@ -139,7 +139,7 @@ class SummaryMetrics:
         print(f'Total Return Percentage of Contract: {color}{summary["total_return_percentage_of_contract"]}%{reset}')
         print(f'Average Trade Return Percentage of Contract: {color}{summary["average_trade_return_percentage_of_contract"]}%{reset}')
 
-        # ===== RISK METRICS =====
+        # --- Risk Metrics ---
         print('\n--- RISK METRICS ---')
         print(f'Profit Factor: {summary.get("profit_factor", 0)}')
         print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
