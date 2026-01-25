@@ -29,7 +29,7 @@ class TestMACDStrategy:
         assert strategy.signal_period == 5
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
-        assert strategy.position_mgr.slippage == 1.0
+        assert strategy.position_manager.slippage == 1.0
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds MACD indicators to the dataframe."""
@@ -276,8 +276,8 @@ class TestMACDStrategy:
                 # For long positions:
                 # - Entry price should be higher than the original price (pay more on entry)
                 # - Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price * (1 + strategy.position_mgr.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 - strategy.position_mgr.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
+                expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price
@@ -294,8 +294,8 @@ class TestMACDStrategy:
                 # For short positions:
                 # - Entry price should be lower than the original price (receive less on entry)
                 # - Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price * (1 - strategy.position_mgr.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 + strategy.position_mgr.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
+                expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price

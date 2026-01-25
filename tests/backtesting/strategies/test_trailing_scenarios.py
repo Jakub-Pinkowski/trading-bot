@@ -511,7 +511,7 @@ class TestTrailingScenarios:
                 # Call parent method
                 self.switch_handler.set_switch_dates(switch_dates)
                 self.switch_handler.reset()
-                self.position_mgr.reset()
+                self.position_manager.reset()
                 
                 # Reset state variables
                 self.prev_row = None
@@ -539,48 +539,48 @@ class TestTrailingScenarios:
                         continue
 
                     # Handle trailing stop logic if enabled - custom version to count triggers
-                    if self.trailing_stop_mgr:
+                    if self.trailing_stop_manager:
                         # Check if trailing stop was triggered
-                        if self.position_mgr.has_open_position() and self.position_mgr.trailing_stop is not None:
-                            position = self.position_mgr.position
-                            trailing_stop = self.position_mgr.trailing_stop
+                        if self.position_manager.has_open_position() and self.position_manager.trailing_stop is not None:
+                            position = self.position_manager.position
+                            trailing_stop = self.position_manager.trailing_stop
                             
                             if position == 1 and price_low <= trailing_stop:
                                 # Long stop triggered - count it
                                 self.trailing_stops_triggered += 1
-                                self.position_mgr.close_position(idx, trailing_stop, switch=False)
+                                self.position_manager.close_position(idx, trailing_stop, switch=False)
                                 self.prev_time = current_time
                                 self.prev_row = row
                                 continue
                             elif position == -1 and price_high >= trailing_stop:
                                 # Short stop triggered - count it
                                 self.trailing_stops_triggered += 1
-                                self.position_mgr.close_position(idx, trailing_stop, switch=False)
+                                self.position_manager.close_position(idx, trailing_stop, switch=False)
                                 self.prev_time = current_time
                                 self.prev_row = row
                                 continue
                         
                         # Update trailing stop if not triggered
-                        if self.position_mgr.has_open_position() and self.position_mgr.trailing_stop is not None:
-                            position = self.position_mgr.position
-                            trailing_stop = self.position_mgr.trailing_stop
-                            new_stop = self.trailing_stop_mgr.calculate_new_trailing_stop(position, price_high, price_low)
+                        if self.position_manager.has_open_position() and self.position_manager.trailing_stop is not None:
+                            position = self.position_manager.position
+                            trailing_stop = self.position_manager.trailing_stop
+                            new_stop = self.trailing_stop_manager.calculate_new_trailing_stop(position, price_high, price_low)
                             
                             if new_stop is not None:
                                 if position == 1 and new_stop > trailing_stop:
-                                    self.position_mgr.trailing_stop = new_stop
+                                    self.position_manager.trailing_stop = new_stop
                                 elif position == -1 and new_stop < trailing_stop:
-                                    self.position_mgr.trailing_stop = new_stop
+                                    self.position_manager.trailing_stop = new_stop
 
                     # Handle contract switches
                     if self.switch_handler.should_switch(current_time):
-                        if self.position_mgr.has_open_position() and self.prev_row is not None:
-                            prev_position = self.position_mgr.close_position_at_switch(self.prev_time, self.prev_row)
+                        if self.position_manager.has_open_position() and self.prev_row is not None:
+                            prev_position = self.position_manager.close_position_at_switch(self.prev_time, self.prev_row)
                             if self.rollover:
                                 self.switch_handler.must_reopen = prev_position
                                 self.switch_handler.skip_signal_this_bar = True
 
-                    skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_mgr, idx, price_open)
+                    skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_manager, idx, price_open)
 
                     # Skip signal for this bar if we are in a rollover position
                     if skip_signal:
@@ -591,17 +591,17 @@ class TestTrailingScenarios:
                     # Execute queued signal from the previous bar
                     if self.queued_signal is not None:
                         flip = None
-                        if self.queued_signal == 1 and self.position_mgr.position != 1:
+                        if self.queued_signal == 1 and self.position_manager.position != 1:
                             flip = 1
-                        elif self.queued_signal == -1 and self.position_mgr.position != -1:
+                        elif self.queued_signal == -1 and self.position_manager.position != -1:
                             flip = -1
 
                         if flip is not None:
                             # Close if currently in position
-                            if self.position_mgr.has_open_position():
-                                self.position_mgr.close_position(idx, price_open, switch=False)
+                            if self.position_manager.has_open_position():
+                                self.position_manager.close_position(idx, price_open, switch=False)
                             # Open a new position at this (current) bar
-                            self.position_mgr.open_position(flip, idx, price_open)
+                            self.position_manager.open_position(flip, idx, price_open)
 
                         # Reset after using
                         self.queued_signal = None
@@ -613,7 +613,7 @@ class TestTrailingScenarios:
                     self.prev_time = current_time
                     self.prev_row = row
 
-                return self.position_mgr.get_trades()
+                return self.position_manager.get_trades()
 
         strategies = [TrailingImpactStrategy(trailing=t) for t in trailing_values]
 

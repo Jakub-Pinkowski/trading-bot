@@ -48,10 +48,10 @@ class TestBaseStrategy:
     def test_initialization(self):
         """Test that the strategy initializes correctly."""
         strategy = StrategyForTesting()
-        assert strategy.position_mgr.position is None
-        assert strategy.position_mgr.entry_time is None
-        assert strategy.position_mgr.entry_price is None
-        assert strategy.position_mgr.trailing_stop is None
+        assert strategy.position_manager.position is None
+        assert strategy.position_manager.entry_time is None
+        assert strategy.position_manager.entry_price is None
+        assert strategy.position_manager.trailing_stop is None
         assert strategy.rollover is False
         assert strategy.trailing is None
 
@@ -301,11 +301,11 @@ class TestBaseStrategy:
         df = create_test_df(length=150)
 
         # Set up the strategy state to simulate a short position before switch
-        strategy.position_mgr.reset()
+        strategy.position_manager.reset()
         strategy.switch_handler.reset()
-        strategy.position_mgr.position = -1  # Short position
-        strategy.position_mgr.entry_time = df.index[101]
-        strategy.position_mgr.entry_price = df.iloc[101]['open']
+        strategy.position_manager.position = -1  # Short position
+        strategy.position_manager.entry_time = df.index[101]
+        strategy.position_manager.entry_price = df.iloc[101]['open']
         strategy.prev_row = df.iloc[101]  # Set prev_row to avoid None
 
         # Set up switch dates
@@ -315,11 +315,11 @@ class TestBaseStrategy:
         strategy.switch_handler.next_switch_idx = 0
 
         # First, close the position at switch
-        prev_position = strategy.position_mgr.close_position_at_switch(strategy.prev_time, strategy.prev_row)
+        prev_position = strategy.position_manager.close_position_at_switch(strategy.prev_time, strategy.prev_row)
         strategy.switch_handler.must_reopen = prev_position
 
         # Verify position is closed and must_reopen is set
-        assert strategy.position_mgr.position is None, "Position should be closed after close_position_at_switch"
+        assert strategy.position_manager.position is None, "Position should be closed after close_position_at_switch"
         assert strategy.switch_handler.must_reopen == -1, "must_reopen should be set to -1 for short position"
 
         # Now test the reopening with slippage
@@ -327,7 +327,7 @@ class TestBaseStrategy:
 
         # Manually reopen the position (simulating what handle_contract_switch does)
         if strategy.switch_handler.must_reopen is not None:
-            strategy.position_mgr.open_position(strategy.switch_handler.must_reopen, df.index[103], price_open)
+            strategy.position_manager.open_position(strategy.switch_handler.must_reopen, df.index[103], price_open)
             strategy.switch_handler.must_reopen = None
             # Advance the switch index
             strategy.switch_handler.next_switch_idx += 1
@@ -337,18 +337,18 @@ class TestBaseStrategy:
                 strategy.switch_handler.next_switch = None
 
         # Verify position is reopened
-        assert strategy.position_mgr.position == -1, "Position should be reopened as short"
+        assert strategy.position_manager.position == -1, "Position should be reopened as short"
 
         # Verify slippage was applied correctly
-        expected_price = round(price_open * (1 - strategy.position_mgr.slippage / 100), 2)
-        assert strategy.position_mgr.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.position_mgr.entry_price}"
+        expected_price = round(price_open * (1 - strategy.position_manager.slippage / 100), 2)
+        assert strategy.position_manager.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.position_manager.entry_price}"
 
         # Close the position to create a trade
-        strategy.position_mgr.close_position(df.index[104], df.iloc[104]['close'])
+        strategy.position_manager.close_position(df.index[104], df.iloc[104]['close'])
 
         # Verify we have a trade with the correct entry price
-        assert len(strategy.position_mgr.trades) > 0, "Should have at least one trade"
-        trade = strategy.position_mgr.trades[-1]
+        assert len(strategy.position_manager.trades) > 0, "Should have at least one trade"
+        trade = strategy.position_manager.trades[-1]
         assert trade['side'] == 'short', "Trade should be a short position"
         assert trade[
                    'entry_price'] == expected_price, f"Trade entry price should be {expected_price}, got {trade['entry_price']}"
@@ -382,25 +382,25 @@ class TestBaseStrategy:
         # Manually set up the state to test the specific code path
         # This simulates the state after a position has been closed due to a switch
         # and we're about to reopen it in the next contract
-        strategy.position_mgr.reset()
+        strategy.position_manager.reset()
         strategy.switch_handler.reset()
         strategy.switch_handler.must_reopen = 1  # Indicate we want to reopen a long position
-        strategy.position_mgr.position = None  # No current position
+        strategy.position_manager.position = None  # No current position
 
-        # Now call position_mgr and switch_handler methods directly to test the reopening logic
+        # Now call position_manager and switch_handler methods directly to test the reopening logic
         # This tests the code path where must_reopen is not None and position is None
         current_time = df.index[103]  # After the switch
         idx = df.index[103]
         price_open = df.iloc[103]['open']
 
         if strategy.switch_handler.must_reopen is not None:
-            strategy.position_mgr.open_position(strategy.switch_handler.must_reopen, idx, price_open)
+            strategy.position_manager.open_position(strategy.switch_handler.must_reopen, idx, price_open)
             strategy.switch_handler.must_reopen = None
 
         # Verify that the position was reopened
-        assert strategy.position_mgr.position == 1  # Long position
-        assert strategy.position_mgr.entry_time == idx
-        assert strategy.position_mgr.entry_price is not None
+        assert strategy.position_manager.position == 1  # Long position
+        assert strategy.position_manager.entry_time == idx
+        assert strategy.position_manager.entry_price is not None
         assert strategy.switch_handler.must_reopen is None  # must_reopen should be reset
 
     def test_close_position_at_switch(self):
@@ -422,31 +422,31 @@ class TestBaseStrategy:
         strategy = SwitchTestStrategy()
 
         # Set up the state to simulate an open position
-        strategy.position_mgr.reset()
+        strategy.position_manager.reset()
         strategy.switch_handler.reset()
-        strategy.position_mgr.position = 1  # Long position
-        strategy.position_mgr.entry_time = df.index[101]
-        strategy.position_mgr.entry_price = 100.0
+        strategy.position_manager.position = 1  # Long position
+        strategy.position_manager.entry_time = df.index[101]
+        strategy.position_manager.entry_price = 100.0
         strategy.prev_row = {'open': 110.0}  # Exit price for the switch
         strategy.prev_time = df.index[101]  # Previous candle time (should be used for exit time)
 
         # Call close_position_at_switch directly
         current_switch_time = df.index[102]
-        strategy.position_mgr.close_position_at_switch(strategy.prev_time, strategy.prev_row)
+        strategy.position_manager.close_position_at_switch(strategy.prev_time, strategy.prev_row)
 
         # Verify the position was closed
-        assert strategy.position_mgr.position is None
-        assert strategy.position_mgr.entry_time is None
-        assert strategy.position_mgr.entry_price is None
+        assert strategy.position_manager.position is None
+        assert strategy.position_manager.entry_time is None
+        assert strategy.position_manager.entry_price is None
 
         # Verify a trade was recorded with the switch flag
-        assert len(strategy.position_mgr.trades) == 1
-        assert strategy.position_mgr.trades[0]['switch'] is True
-        assert strategy.position_mgr.trades[0]['exit_price'] == 110.0
+        assert len(strategy.position_manager.trades) == 1
+        assert strategy.position_manager.trades[0]['switch'] is True
+        assert strategy.position_manager.trades[0]['exit_price'] == 110.0
 
         # Key test: Verify that exit_time uses prev_time, not the current switch time
-        assert strategy.position_mgr.trades[0]['exit_time'] == df.index[101]  # Should be prev_time
-        assert strategy.position_mgr.trades[0]['exit_time'] != current_switch_time  # Should NOT be switch time
+        assert strategy.position_manager.trades[0]['exit_time'] == df.index[101]  # Should be prev_time
+        assert strategy.position_manager.trades[0]['exit_time'] != current_switch_time  # Should NOT be switch time
 
     def test_contract_switch_exit_timing_integration(self):
         """Integration test to verify that contract switch exit timing uses previous candle time."""
@@ -607,8 +607,8 @@ class TestBaseStrategy:
             # For long positions:
             # - Entry price should be higher than the original price (pay more on entry)
             # - Exit price should be lower than the original price (receive less on exit)
-            expected_entry_price = round(original_entry_price * (1 + strategy.position_mgr.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 - strategy.position_mgr.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -627,8 +627,8 @@ class TestBaseStrategy:
             # For short positions:
             # - Entry price should be lower than the original price (receive less on entry)
             # - Exit price should be higher than the original price (pay more on exit)
-            expected_entry_price = round(original_entry_price * (1 - strategy.position_mgr.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 + strategy.position_mgr.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -966,7 +966,7 @@ class TestTrailingStopEdgeCases:
         strategy = StrategyForTesting(trailing=5.0)
 
         # Test long position
-        new_stop_long = strategy.trailing_stop_mgr.calculate_new_trailing_stop(
+        new_stop_long = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=1,
             price_high=110.0,
             price_low=105.0
@@ -976,7 +976,7 @@ class TestTrailingStopEdgeCases:
             f"Long stop calculation incorrect. Expected {expected_long}, got {new_stop_long}"
 
         # Test short position
-        new_stop_short = strategy.trailing_stop_mgr.calculate_new_trailing_stop(
+        new_stop_short = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=-1,
             price_high=95.0,
             price_low=90.0
@@ -986,7 +986,7 @@ class TestTrailingStopEdgeCases:
             f"Short stop calculation incorrect. Expected {expected_short}, got {new_stop_short}"
 
         # Test invalid position
-        new_stop_invalid = strategy.trailing_stop_mgr.calculate_new_trailing_stop(
+        new_stop_invalid = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=0,
             price_high=100.0,
             price_low=100.0

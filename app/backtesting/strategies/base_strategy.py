@@ -38,8 +38,8 @@ class BaseStrategy:
         self.trailing = trailing
 
         # Delegate to managers
-        self.position_mgr = PositionManager(slippage, slippage_type, symbol, trailing)
-        self.trailing_stop_mgr = TrailingStopManager(trailing) if trailing else None
+        self.position_manager = PositionManager(slippage, slippage_type, symbol, trailing)
+        self.trailing_stop_manager = TrailingStopManager(trailing) if trailing else None
         self.switch_handler = ContractSwitchHandler(None, rollover)
 
         # State variables for strategy execution
@@ -208,7 +208,7 @@ class BaseStrategy:
         # Initialize managers
         self.switch_handler.set_switch_dates(switch_dates)
         self.switch_handler.reset()
-        self.position_mgr.reset()
+        self.position_manager.reset()
         
         # Reset state variables
         self.prev_row = None
@@ -235,19 +235,19 @@ class BaseStrategy:
                 continue
 
             # Handle trailing stop logic if enabled
-            if self.trailing_stop_mgr:
-                self.trailing_stop_mgr.handle_trailing_stop(self.position_mgr, idx, price_high, price_low)
+            if self.trailing_stop_manager:
+                self.trailing_stop_manager.handle_trailing_stop(self.position_manager, idx, price_high, price_low)
 
             # Handle contract switches. Close an old position and potentially open a new one
             # Also need to close position using prev_row data when switching
             if self.switch_handler.should_switch(current_time):
-                if self.position_mgr.has_open_position() and self.prev_row is not None:
-                    prev_position = self.position_mgr.close_position_at_switch(self.prev_time, self.prev_row)
+                if self.position_manager.has_open_position() and self.prev_row is not None:
+                    prev_position = self.position_manager.close_position_at_switch(self.prev_time, self.prev_row)
                     if self.rollover:
                         self.switch_handler.must_reopen = prev_position
                         self.switch_handler.skip_signal_this_bar = True
 
-            skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_mgr, idx, price_open)
+            skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_manager, idx, price_open)
 
             # Skip signal for this bar if we are in a rollover position, and we are about to switch
             if skip_signal:
@@ -265,24 +265,24 @@ class BaseStrategy:
             self.prev_time = current_time
             self.prev_row = row
 
-        return self.position_mgr.get_trades()
+        return self.position_manager.get_trades()
 
     def _execute_queued_signal(self, idx, price_open):
         """Execute queued signal from the previous bar"""
 
         if self.queued_signal is not None:
             flip = None
-            if self.queued_signal == 1 and self.position_mgr.position != 1:
+            if self.queued_signal == 1 and self.position_manager.position != 1:
                 flip = 1
-            elif self.queued_signal == -1 and self.position_mgr.position != -1:
+            elif self.queued_signal == -1 and self.position_manager.position != -1:
                 flip = -1
 
             if flip is not None:
                 # Close if currently in position
-                if self.position_mgr.has_open_position():
-                    self.position_mgr.close_position(idx, price_open, switch=False)
+                if self.position_manager.has_open_position():
+                    self.position_manager.close_position(idx, price_open, switch=False)
                 # Open a new position at this (current) bar
-                self.position_mgr.open_position(flip, idx, price_open)
+                self.position_manager.open_position(flip, idx, price_open)
 
             # Reset after using
             self.queued_signal = None
