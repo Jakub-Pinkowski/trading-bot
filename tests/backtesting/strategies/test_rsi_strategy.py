@@ -856,8 +856,8 @@ class TestRSIStrategy:
             # For long positions:
             # - Entry price should be higher than the original price (pay more on entry)
             # - Exit price should be lower than the original price (receive less on exit)
-            expected_entry_price = round(original_entry_price * (1 + strategy.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 - strategy.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 + strategy.position_mgr.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.position_mgr.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -876,8 +876,8 @@ class TestRSIStrategy:
             # For short positions:
             # - Entry price should be lower than the original price (receive less on entry)
             # - Exit price should be higher than the original price (pay more on exit)
-            expected_entry_price = round(original_entry_price * (1 - strategy.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 + strategy.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 - strategy.position_mgr.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.position_mgr.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
