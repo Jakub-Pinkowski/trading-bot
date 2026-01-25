@@ -96,61 +96,6 @@ class SummaryMetrics:
             'ulcer_index': round(ulcer_index, 2),
         }
 
-    @staticmethod
-    def print_summary_metrics(summary):
-        """Print summary metrics in a formatted way."""
-        green = '\033[92m'
-        red = '\033[91m'
-        reset = '\033[0m'
-
-        average_trade_return_percentage = summary['average_trade_return_percentage_of_margin']
-        if average_trade_return_percentage > 0:
-            color = green
-        elif average_trade_return_percentage < 0:
-            color = red
-        else:
-            color = reset  # default terminal color
-
-        print('\n====== SUMMARY METRICS ======')
-
-        # --- Basic Trade Statistics ---
-        print('\n--- BASIC TRADE STATISTICS ---')
-        print(f'Total Trades: {summary["total_trades"]}')
-        print(f'Winning Trades: {summary["winning_trades"]} ({summary["win_rate"]}%)')
-        print(f'Losing Trades: {summary["losing_trades"]}')
-        print(f'Avg Trade Duration: {summary["avg_trade_duration_hours"]} hours')
-
-        # --- Percentage-Based Metrics ---
-        print('\n--- PERCENTAGE-BASED METRICS ---')
-        if summary["total_return_percentage_of_margin"] == 0:
-            print(f'Total Return Percentage of Margin: 0.0%')
-        else:
-            print(f'Total Return Percentage of Margin: {color}{summary["total_return_percentage_of_margin"]}%{reset}')
-        if average_trade_return_percentage == 0:
-            print(f'Average Trade Return Percentage of Margin: 0.0%')
-        else:
-            print(f'Average Trade Return Percentage of Margin: {color}{average_trade_return_percentage}%{reset}')
-        print(f'Average Win Percentage of Margin: {green}{summary["average_win_percentage_of_margin"]}%{reset}')
-        print(f'Average Loss Percentage of Margin: {red}{summary["average_loss_percentage_of_margin"]}%{reset}')
-        print(f'Commission Percentage of Margin: {summary["commission_percentage_of_margin"]}%')
-
-        # Contract-based metrics
-        print('\n--- CONTRACT-BASED METRICS ---')
-        print(f'Total Return Percentage of Contract: {color}{summary["total_return_percentage_of_contract"]}%{reset}')
-        print(f'Average Trade Return Percentage of Contract: {color}{summary["average_trade_return_percentage_of_contract"]}%{reset}')
-
-        # --- Risk Metrics ---
-        print('\n--- RISK METRICS ---')
-        print(f'Profit Factor: {summary.get("profit_factor", 0)}')
-        print(f'Maximum Drawdown Percentage: {summary.get("maximum_drawdown_percentage", 0)}%')
-        print(f'Calmar Ratio: {summary.get("calmar_ratio", 0)}')
-        print(f'Sharpe Ratio: {summary.get("sharpe_ratio", 0)}')
-        print(f'Sortino Ratio: {summary.get("sortino_ratio", 0)}')
-        print(f'Value at Risk (95%): {summary.get("value_at_risk", 0)}%')
-        print(f'Expected Shortfall (95%): {summary.get("expected_shortfall", 0)}%')
-        print(f'Ulcer Index: {summary.get("ulcer_index", 0)}')
-
-        print('=============================\n')
 
     # ==================== Private Methods ====================
 

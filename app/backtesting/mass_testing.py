@@ -2,7 +2,6 @@ import concurrent.futures
 import gc
 import itertools
 import os
-import sys
 import time
 from datetime import datetime
 
@@ -619,9 +618,7 @@ def _run_single_test(test_params):
     if trades_with_metrics_list:
         metrics = SummaryMetrics(trades_with_metrics_list)
         summary_metrics = metrics.calculate_all_metrics()
-        if verbose:
-            SummaryMetrics.print_summary_metrics(summary_metrics)
-            sys.stdout.flush()
+        # Note: Verbose printing removed - use logger or return metrics for display
 
         # Calculate cache stats for this test
         ind_hits_delta = indicator_cache.hits - ind_hits_before
