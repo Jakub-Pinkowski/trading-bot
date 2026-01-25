@@ -11,6 +11,10 @@ logger = get_logger('backtesting/summary_metrics')
 MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
 MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
 
+# Used when ratio calculations would result in infinity
+# Rationale: Large but finite number that won't break aggregations
+INFINITY_REPLACEMENT = 9999.99
+
 
 class SummaryMetrics:
     """Class for calculating summary metrics for a list of trades."""
@@ -212,7 +216,7 @@ class SummaryMetrics:
 
         if total_loss_percentage == 0:
             # Return very high finite number instead of infinity for better aggregation/comparison handling
-            return 9999.99
+            return INFINITY_REPLACEMENT
 
         return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
@@ -243,7 +247,7 @@ class SummaryMetrics:
 
         if not negative_returns:
             # Return very high finite number instead of infinity for better aggregation/comparison handling
-            return 9999.99
+            return INFINITY_REPLACEMENT
 
         downside_variance = safe_average([r ** 2 for r in negative_returns])
         downside_deviation = downside_variance ** 0.5
@@ -260,7 +264,7 @@ class SummaryMetrics:
 
         if self.maximum_drawdown_percentage == 0:
             # Return very high finite number instead of infinity for better aggregation/comparison handling
-            return 9999.99
+            return INFINITY_REPLACEMENT
 
         return safe_divide(self.total_return, self.maximum_drawdown_percentage)
 
