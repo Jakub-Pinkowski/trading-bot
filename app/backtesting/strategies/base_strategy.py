@@ -1,9 +1,9 @@
 import pandas as pd
 
-from app.utils.backtesting_utils.indicators_utils import hash_series
+from app.backtesting.strategies.contract_switch_handler import ContractSwitchHandler
 from app.backtesting.strategies.position_manager import PositionManager
 from app.backtesting.strategies.trailing_stop_manager import TrailingStopManager
-from app.backtesting.strategies.contract_switch_handler import ContractSwitchHandler
+from app.utils.backtesting_utils.indicators_utils import hash_series
 
 # Strategy Execution Constants
 # INDICATOR_WARMUP_PERIOD: Number of initial candles to skip before generating signals
@@ -166,12 +166,6 @@ class BaseStrategy:
         """
         raise NotImplementedError('Subclasses must implement generate_signals method')
 
-    # ==================== Helper Methods for Subclasses ====================
-    # Helper methods are now available as module-level functions:
-    # - precompute_hashes(df)
-    # - detect_crossover(series1, series2, direction='above')
-    # - detect_threshold_cross(series, threshold, direction='below')
-
     # ==================== Private Methods ====================
 
     # --- Trade Extraction & Execution ---
@@ -216,7 +210,7 @@ class BaseStrategy:
         self.switch_handler.set_switch_dates(switch_dates)
         self.switch_handler.reset()
         self.position_manager.reset()
-        
+
         # Reset state variables
         self.prev_row = None
         self.prev_time = None
@@ -254,7 +248,10 @@ class BaseStrategy:
                         self.switch_handler.must_reopen = prev_position
                         self.switch_handler.skip_signal_this_bar = True
 
-            skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_manager, idx, price_open)
+            skip_signal = self.switch_handler.handle_contract_switch(current_time,
+                                                                     self.position_manager,
+                                                                     idx,
+                                                                     price_open)
 
             # Skip signal for this bar if we are in a rollover position, and we are about to switch
             if skip_signal:

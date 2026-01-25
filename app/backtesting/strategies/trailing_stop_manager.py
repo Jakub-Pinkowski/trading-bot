@@ -204,6 +204,6 @@ class TrailingStopManager:
             trailing_stop = round(entry_price * (1 - self.trailing_percentage / 100), 2)
         else:  # Short position
             trailing_stop = round(entry_price * (1 + self.trailing_percentage / 100), 2)
-        
+
         position_manager.trailing_stop = trailing_stop
         return trailing_stop

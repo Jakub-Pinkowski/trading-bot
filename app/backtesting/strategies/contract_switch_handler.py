@@ -6,8 +6,6 @@ Handles closing positions at contract expiration and optionally
 reopening positions on the new contract.
 """
 
-import pandas as pd
-
 
 # ==================== Helper Functions ====================
 
@@ -122,12 +120,12 @@ class ContractSwitchHandler:
             # On rollover date close at the price of *last bar before switch*
             if position_manager.has_open_position():
                 prev_position = prepare_reopen(position_manager)
-                
+
                 # If rollover is enabled, mark for reopening
                 if self.rollover:
                     self.must_reopen = prev_position
                     self.skip_signal_this_bar = True
-            
+
             # Move to next switch date
             self.next_switch_idx += 1
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(

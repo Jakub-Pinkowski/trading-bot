@@ -1,5 +1,7 @@
 from app.backtesting.indicators import calculate_ichimoku
-from app.backtesting.strategies.base_strategy import BaseStrategy, precompute_hashes, detect_crossover, detect_threshold_cross
+from app.backtesting.strategies.base_strategy import (BaseStrategy,
+                                                      precompute_hashes,
+                                                      detect_crossover)
 
 
 class IchimokuCloudStrategy(BaseStrategy):
