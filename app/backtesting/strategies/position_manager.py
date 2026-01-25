@@ -112,9 +112,8 @@ class PositionManager:
 
         # Set initial trailing stop if trailing is enabled
         if self.trailing is not None:
-            # Delegate trailing stop initialization to TrailingStopManager
-            trailing_manager = TrailingStopManager(self.trailing)
-            self.trailing_stop = trailing_manager.initialize_trailing_stop(
+            # Use static initialization method directly
+            self.trailing_stop = TrailingStopManager.initialize_trailing_stop(
                 self, price_open, direction
             )
 
