@@ -9,6 +9,52 @@ reopening positions on the new contract.
 import pandas as pd
 
 
+def prepare_reopen(position_manager):
+    """
+    Prepare for contract switch by closing position.
+
+    Args:
+        position_manager: PositionManager instance
+
+    Returns:
+        Previous position direction (for potential reopening)
+    """
+    # This function is called before the actual switch handling
+    # It returns the position direction for potential reopening
+    return position_manager.position
+
+
+def execute_queued_signal(queued_signal, position_manager, idx, price_open):
+    """
+    Execute a queued signal from the previous bar.
+
+    Args:
+        queued_signal: Signal to execute (1 for long, -1 for short, None for no signal)
+        position_manager: PositionManager instance
+        idx: Current bar index
+        price_open: Opening price of current bar
+
+    Returns:
+        bool: True if signal was executed
+    """
+    if queued_signal is not None:
+        flip = None
+        if queued_signal == 1 and position_manager.position != 1:
+            flip = 1
+        elif queued_signal == -1 and position_manager.position != -1:
+            flip = -1
+
+        if flip is not None:
+            # Close if currently in position
+            if position_manager.has_open_position():
+                position_manager.close_position(idx, price_open, switch=False)
+            # Open a new position at this (current) bar
+            position_manager.open_position(flip, idx, price_open)
+            return True
+
+    return False
+
+
 class ContractSwitchHandler:
     """Manages contract rollover logic for futures backtesting."""
 
@@ -69,7 +115,7 @@ class ContractSwitchHandler:
         while self.should_switch(current_time):
             # On rollover date close at the price of *last bar before switch*
             if position_manager.has_open_position():
-                prev_position = self.prepare_reopen(position_manager)
+                prev_position = prepare_reopen(position_manager)
                 
                 # If rollover is enabled, mark for reopening
                 if self.rollover:
@@ -94,48 +140,3 @@ class ContractSwitchHandler:
         if self.skip_signal_this_bar:
             self.skip_signal_this_bar = False  # skip *this* bar only
         return should_skip
-
-    def prepare_reopen(self, position_manager):
-        """
-        Prepare for contract switch by closing position.
-
-        Args:
-            position_manager: PositionManager instance
-
-        Returns:
-            Previous position direction (for potential reopening)
-        """
-        # This method is called before the actual switch handling
-        # It should be called with prev_time and prev_row from the main loop
-        # For now, we'll return just the position direction
-        return position_manager.position
-
-    def execute_queued_signal(self, queued_signal, position_manager, idx, price_open):
-        """
-        Execute a queued signal from the previous bar.
-
-        Args:
-            queued_signal: Signal to execute (1 for long, -1 for short, None for no signal)
-            position_manager: PositionManager instance
-            idx: Current bar index
-            price_open: Opening price of current bar
-
-        Returns:
-            bool: True if signal was executed
-        """
-        if queued_signal is not None:
-            flip = None
-            if queued_signal == 1 and position_manager.position != 1:
-                flip = 1
-            elif queued_signal == -1 and position_manager.position != -1:
-                flip = -1
-
-            if flip is not None:
-                # Close if currently in position
-                if position_manager.has_open_position():
-                    position_manager.close_position(idx, price_open, switch=False)
-                # Open a new position at this (current) bar
-                position_manager.open_position(flip, idx, price_open)
-                return True
-
-        return False
