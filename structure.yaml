@@ -126,6 +126,7 @@ trading-bot/
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Backtesting_architecture should use real-life data for examples instead of synthetic data
+# TODO [MEDIUM]: Completely rewrite cache implementation
 # TODO [MEDIUM]: Strategy and indicator names should match
 # TODO [MEDIUM]: Make the whole module lighter, remove unnecessary logic
 # TODO [MEDIUM]: Add tick-based slippage instead of percentage
