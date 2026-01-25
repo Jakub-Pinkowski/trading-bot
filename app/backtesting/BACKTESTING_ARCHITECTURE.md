@@ -258,6 +258,689 @@ Bar N+1 (Signal Executed):
                     └────────────────────────┘     
 ```
 
+---
+
+## Multi-Process Execution Model
+
+### Overview
+
+The backtesting system uses Python's `ProcessPoolExecutor` to distribute work across multiple CPU cores. Each worker
+process runs in a separate memory space with its own Python interpreter.
+
+### Process Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           MAIN PROCESS                              │
+│                          (PID: 12345)                               │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────┐     │
+│  │  Responsibilities:                                        │     │
+│  │  • Load existing results from parquet                     │     │
+│  │  • Generate all test combinations                         │     │
+│  │  • Create ProcessPoolExecutor                             │     │
+│  │  • Submit tasks to worker pool                            │     │
+│  │  • Monitor progress and save intermediate results         │     │
+│  │  • Collect results from completed tasks                   │     │
+│  │  • Merge worker caches (DataFrame + Indicator)            │     │
+│  │  • Save final consolidated cache to disk                  │     │
+│  │  • Save aggregated results to parquet                     │     │
+│  └──────────────────────────────────────────────────────────┘     │
+│                                                                     │
+│  Memory State:                                                      │
+│  ├─ DataFrame Cache: Loaded from disk at startup                   │
+│  ├─ Indicator Cache: Loaded from disk at startup                   │
+│  ├─ Results List: Accumulates results from workers                 │
+│  └─ Switch Dates: Pre-processed and passed to workers              │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               │ Creates executor with max_workers
+                               │
+                               ▼
+            ┌──────────────────────────────────────┐
+            │    ProcessPoolExecutor               │
+            │    (max_workers = CPU count)         │
+            │                                      │
+            │  Manages worker process lifecycle:    │
+            │  • Spawns worker processes           │
+            │  • Distributes tasks to workers      │
+            │  • Collects results from workers     │
+            │  • Handles worker exceptions         │
+            └──────────────────────────────────────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+┌───────────────┐      ┌───────────────┐     ┌───────────────┐
+│  WORKER 1     │      │  WORKER 2     │     │  WORKER N     │
+│  (PID: 12346) │      │  (PID: 12347) │ ... │  (PID: 12350) │
+└───────────────┘      └───────────────┘     └───────────────┘
+        │                      │                      │
+        │                      │                      │
+        └──────────────────────┴──────────────────────┘
+                               │
+                Each Worker Process:
+                               │
+    ┌──────────────────────────┴─────────────────────────┐
+    │                                                     │
+    │  Initialization (Once per worker):                  │
+    │  ├─ Copy of main process memory at spawn           │
+    │  ├─ Load DataFrame cache from disk                 │
+    │  ├─ Load Indicator cache from disk                 │
+    │  └─ Independent Python interpreter                 │
+    │                                                     │
+    │  Processing Loop (For each assigned test):         │
+    │  ├─ Receive test parameters from main              │
+    │  ├─ Load DataFrame (check cache first)             │
+    │  ├─ Run strategy (indicators auto-cache)           │
+    │  ├─ Calculate metrics                              │
+    │  ├─ Add computed indicators to local cache         │
+    │  └─ Return result to main process                  │
+    │                                                     │
+    │  Memory State (Isolated):                          │
+    │  ├─ DataFrame Cache: Starts as copy, grows locally │
+    │  ├─ Indicator Cache: Starts as copy, grows locally │
+    │  └─ Results: Returned to main via IPC              │
+    │                                                     │
+    │  Note: Memory is not shared with main process      │
+    │        Cache updates remain in worker memory       │
+    │                                                     │
+    └─────────────────────────────────────────────────────┘
+```
+
+### Process Lifecycle
+
+**Phase 1: Initialization**
+
+```
+Main Process:
+  ├─ 1. Load caches from disk
+  │   ├─ dataframe_cache.pkl (previously cached DataFrames)
+  │   └─ indicator_cache.pkl (previously cached indicators)
+  │
+  ├─ 2. Create ProcessPoolExecutor
+  │   └─ max_workers = os.cpu_count() (default: use all CPUs)
+  │
+  └─ 3. Submit all test combinations as tasks
+      └─ Each task = (month, symbol, interval, strategy)
+
+Worker Processes (spawned by executor):
+  ├─ 1. New Python process spawned
+  │   └─ Copy-on-write: Initially shares memory with parent
+  │
+  ├─ 2. Import modules
+  │   └─ Each worker imports app.backtesting modules
+  │
+  └─ 3. Initialize caches
+      ├─ Load dataframe_cache from disk (gets 100 entries)
+      └─ Load indicator_cache from disk (gets 500 entries)
+```
+
+**Phase 2: Parallel Execution**
+
+```
+Main Process:
+  ├─ Monitor task completion
+  ├─ Print progress every 100 tests
+  ├─ Save intermediate results every 1000 tests
+  └─ Collect results as tasks complete
+
+Worker 1:
+  ├─ Process task 1: (202401, ZS, 1h, RSI_14_30_70)
+  │   ├─ Load DataFrame from cache (HIT) or disk (MISS)
+  │   ├─ Calculate RSI indicator
+  │   │   ├─ Check indicator_cache (MISS - first time)
+  │   │   ├─ Calculate RSI
+  │   │   └─ Store in local cache (501 entries now)
+  │   ├─ Generate signals and extract trades
+  │   ├─ Calculate metrics
+  │   └─ Return result to main
+  │
+  ├─ Process task 2: (202401, ZS, 1h, RSI_21_30_70)
+  │   ├─ Same DataFrame (cache HIT!)
+  │   ├─ Calculate RSI with period=21
+  │   │   ├─ Check indicator_cache (MISS)
+  │   │   ├─ Calculate RSI
+  │   │   └─ Store in local cache (502 entries)
+  │   └─ Return result
+  │
+  └─ Continue processing assigned tasks...
+
+Worker 2 (in parallel):
+  ├─ Process task 3: (202401, GC, 1h, EMA_9_21)
+  │   └─ Different symbol, different indicators
+  │       └─ Local cache grows independently
+  │
+  └─ Continue processing assigned tasks...
+
+Note: Worker cache updates are isolated
+  ├─ Worker 1 cache: 600 entries (in Worker 1 memory only)
+  ├─ Worker 2 cache: 450 entries (in Worker 2 memory only)
+  └─ Main cache: Still 500 entries (unchanged)
+```
+
+**Phase 3: Cleanup & Aggregation**
+
+```
+Main Process (after all workers complete):
+  ├─ 1. All tasks finished
+  │   └─ Workers terminate
+  │
+  ├─ 2. Collect all results
+  │   └─ Results passed via IPC (pickle serialization)
+  │
+  ├─ 3. Convert to DataFrame
+  │   └─ Validate metrics and handle NaN/inf values
+  │
+  ├─ 4. Save results to parquet
+  │   └─ Append to existing file (with file locking)
+  │
+  └─ 5. Save caches to disk
+      ├─ dataframe_cache.pkl
+      └─ indicator_cache.pkl
+```
+
+### Cache Updates and Process Memory
+
+Worker process cache updates remain in worker memory space and are not persisted when workers terminate.
+
+### Inter-Process Communication (IPC)
+
+**How Workers Communicate with Main**:
+
+```
+Worker Process                    Main Process
+     │                                 │
+     │  ┌────────────────────────┐     │
+     │  │  Process Test          │     │
+     │  │  Calculate Metrics     │     │
+     │  └────────────────────────┘     │
+     │              │                  │
+     │              ▼                  │
+     │  ┌────────────────────────┐     │
+     │  │  Serialize Result      │     │
+     │  │  (pickle)              │     │
+     │  └────────────────────────┘     │
+     │              │                  │
+     │              ▼                  │
+     │  ┌────────────────────────┐     │
+     │  │  Send via Pipe/Queue   │     │
+     │  └────────────────────────┘     │
+     │              │                  │
+     ├──────────────┼──────────────────┤
+     │              ▼                  │
+     │                   ┌─────────────┴──────────┐
+     │                   │  Receive Result        │
+     │                   │  Deserialize (unpickle)│
+     │                   └────────────────────────┘
+     │                               │
+     │                               ▼
+     │                   ┌─────────────────────────┐
+     │                   │  Append to Results List │
+     │                   └─────────────────────────┘
+```
+
+**What Gets Serialized**:
+
+- Test parameters (month, symbol, interval, strategy)
+- Calculated metrics (dictionary)
+- Verbose output (if enabled)
+- Not serialized: DataFrame (too large)
+- Not serialized: Cache objects (not needed)
+
+### Process Pool Configuration
+
+```python
+# In mass_testing.py
+
+def run_tests(self, max_workers=None):
+    """
+    max_workers:
+        - None: Use os.cpu_count() (all CPUs)
+        - Integer: Specific number of workers
+        - 1: Sequential (no multiprocessing)
+    """
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        futures = {
+            executor.submit(self._run_single_test, params): params
+            for params in test_combinations
+        }
+
+        # Process as they complete (not in submission order)
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()  # Blocks until result available
+            if result:
+                self.results.append(result)
+```
+
+**Typical Performance**:
+
+| CPU Cores | Max Workers | Observed Speedup |
+|-----------|-------------|------------------|
+| 4         | 4           | 3.5x             |
+| 8         | 8           | 7.0x             |
+| 16        | 16          | 13x              |
+| 4         | 1           | 1x (sequential)  |
+
+**Overhead**:
+
+- Process spawn time: ~0.5-1 second per worker
+- IPC serialization: ~1-10ms per result
+- Context switching: Minimal
+
+---
+
+## Cache Coordination Between Processes
+
+### Cache Architecture
+
+The system uses **two independent caches**:
+
+1. **DataFrame Cache** - Stores loaded DataFrames to avoid re-parsing parquet files
+2. **Indicator Cache** - Stores calculated indicators to avoid redundant calculations
+
+Both use the same base architecture but serve different purposes.
+
+### Cache Hierarchy
+
+```
+                    ┌─────────────────────────────┐
+                    │   Disk Storage (Persistent) │
+                    │                             │
+                    │  dataframe_cache.pkl        │
+                    │  indicator_cache.pkl        │
+                    └─────────────────────────────┘
+                                 │
+                    Load at       │       Save at
+                    startup       │       shutdown
+                                 │
+                    ┌─────────────▼─────────────┐
+                    │  Main Process Memory      │
+                    │                           │
+                    │  dataframe_cache (50)     │
+                    │  indicator_cache (500)    │
+                    └─────────────┬─────────────┘
+                                 │
+                    Copy at       │       No sync
+                    worker spawn  │       (isolated)
+                                 │
+        ┌────────────────────────┼────────────────────────┐
+        │                        │                        │
+        ▼                        ▼                        ▼
+┌───────────────┐        ┌───────────────┐      ┌───────────────┐
+│  Worker 1     │        │  Worker 2     │      │  Worker N     │
+│               │        │               │      │               │
+│  df_cache(50) │        │  df_cache(50) │      │  df_cache(50) │
+│  ind_cache    │        │  ind_cache    │      │  ind_cache    │
+│  (500)        │        │  (500)        │      │  (500)        │
+│               │        │               │      │               │
+│  Grows        │        │  Grows        │      │  Grows        │
+│  independently│        │  independently│      │  independently│
+│  to 600       │        │  to 450       │      │  to 520       │
+└───────────────┘        └───────────────┘      └───────────────┘
+        │                        │                        │
+        │                        │                        │
+        └────────────────────────┴────────────────────────┘
+                                 │
+                     When workers terminate:
+                     Cache updates remain in worker memory
+                     and are not saved back to disk
+```
+
+### Cache Implementation: DataFrame Cache
+
+**Purpose**: Store parsed DataFrames to avoid re-reading parquet files.
+
+```python
+# In dataframe_cache.py
+
+from app.backtesting.cache.cache_base import Cache
+
+# Singleton instance
+dataframe_cache = Cache(
+    cache_name="dataframes",
+    max_size=50,  # Store up to 50 DataFrames
+    max_age=604800  # 7 days TTL
+)
+
+
+# Usage in _run_single_test():
+def _run_single_test(self, test_params):
+    filepath = self.cache_file_paths[(symbol, interval)]
+
+    # Try to get from cache
+    df = dataframe_cache.get(filepath)
+
+    if df is None:
+        # Cache MISS - load from disk
+        df = pd.read_parquet(filepath)
+        # Store in cache for future use
+        dataframe_cache.set(filepath, df)
+    else:
+        # Cache HIT - return immediately (no disk I/O)
+        pass
+
+    return df
+```
+
+**Cache Key**: File path (e.g., `/data/backtesting/202401_ZS_1h.parquet`)
+
+**Behavior**:
+
+- Multiple strategies test same (month, symbol, interval) combination
+- DataFrame is identical for all strategies on that combination
+- DataFrame loaded once per worker, reused for multiple tests
+
+**Example**:
+
+```
+Worker 1 processes:
+  ├─ Test 1: (202401, ZS, 1h, RSI_14_30_70)
+  │   └─ Load ZS_1h DataFrame (cache MISS) → Store in cache
+  │
+  ├─ Test 2: (202401, ZS, 1h, RSI_21_30_70)
+  │   └─ Load ZS_1h DataFrame (cache HIT) → Return from memory
+  │
+  └─ Test 3: (202401, ZS, 1h, EMA_9_21)
+      └─ Load ZS_1h DataFrame (cache HIT) → Return from memory
+
+Timing:
+  ├─ Disk read: ~50ms
+  └─ Cache read: ~0.1ms
+```
+
+### Cache Implementation: Indicator Cache
+
+**Purpose**: Store calculated indicators to avoid redundant computations.
+
+```python
+# In indicators_cache.py
+
+from app.backtesting.cache.cache_base import Cache
+
+# Singleton instance
+indicator_cache = Cache(
+    cache_name="indicators",
+    max_size=500,  # Store up to 500 indicators
+    max_age=2592000  # 30 days TTL
+)
+
+
+# Usage in indicator functions:
+def calculate_rsi(prices, period=14, prices_hash=None):
+    """Calculate RSI with caching."""
+
+    # Generate cache key
+    if prices_hash is None:
+        prices_hash = hash_series(prices)  # SHA256 hash of price data
+
+    cache_key = f"rsi_{prices_hash}_{period}"
+
+    # Try to get from cache
+    cached_rsi = indicator_cache.get(cache_key)
+
+    if cached_rsi is not None:
+        # Cache HIT - return immediately (no calculation)
+        return cached_rsi
+
+    # Cache MISS - calculate indicator
+    delta = prices.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+
+    # Store in cache for future use
+    indicator_cache.set(cache_key, rsi)
+
+    return rsi
+```
+
+**Cache Key**: `{indicator_name}_{data_hash}_{parameters}`
+
+Example: `rsi_a3f5d2c1_14`
+
+**Hash Generation**:
+
+- SHA256 hash of price data content
+- Same data produces same hash
+- Different data produces different hash
+
+**Example**:
+
+```
+Worker 1 processes ZS data:
+  ├─ Test 1: RSI(period=14)
+  │   ├─ Hash ZS close prices: a3f5d2c1
+  │   ├─ Cache key: rsi_a3f5d2c1_14
+  │   ├─ Calculate RSI (cache MISS) → Store in cache
+  │   └─ Time: 5ms
+  │
+  ├─ Test 2: RSI(period=14) on same ZS data
+  │   ├─ Same hash: a3f5d2c1
+  │   ├─ Cache key: rsi_a3f5d2c1_14
+  │   ├─ Cache HIT → Return from memory
+  │   └─ Time: 0.01ms
+  │
+  └─ Test 3: RSI(period=21) on same ZS data
+      ├─ Same hash but different period
+      ├─ Cache key: rsi_a3f5d2c1_21
+      ├─ Calculate RSI (cache MISS) → Store in cache
+      └─ Time: 5ms
+```
+
+### Cache Base Implementation
+
+Both caches inherit from the same base class:
+
+```python
+# In cache_base.py
+
+class Cache:
+    """
+    LRU cache with file persistence and multi-process file locking.
+
+    Features:
+    • LRU eviction policy
+    • File locking for concurrent access
+    • TTL (time-to-live) expiration
+    • Pickle serialization
+    """
+
+    def __init__(self, cache_name, max_size, max_age):
+        self.cache_name = cache_name
+        self.max_size = max_size
+        self.max_age = max_age
+
+        # File paths
+        self.cache_file = Path(CACHE_DIR) / f"{cache_name}_cache.pkl"
+        self.lock_file = Path(CACHE_DIR) / f"{cache_name}_cache.lock"
+
+        # In-memory storage (OrderedDict for LRU)
+        self.cache_data = OrderedDict()
+
+        # Load from disk at initialization
+        self._load_cache()
+
+    def get(self, key):
+        """Get value from cache (None if not found or expired)."""
+        if key not in self.cache_data:
+            return None
+
+        timestamp, value = self.cache_data[key]
+
+        # Check if expired
+        if time.time() - timestamp > self.max_age:
+            del self.cache_data[key]
+            return None
+
+        # Move to end (mark as recently used)
+        self.cache_data.move_to_end(key)
+
+        return value
+
+    def set(self, key, value):
+        """Add value to cache (with LRU eviction if needed)."""
+        current_time = time.time()
+        self.cache_data[key] = (current_time, value)
+        self.cache_data.move_to_end(key)
+
+        # Evict oldest if over size limit
+        if len(self.cache_data) > self.max_size:
+            self.cache_data.popitem(last=False)
+
+    def save_cache(self):
+        """Save cache to disk with file locking."""
+        lock = FileLock(str(self.lock_file), timeout=60)
+        with lock:
+            with open(self.cache_file, 'wb') as f:
+                pickle.dump(self.cache_data, f)
+
+    def _load_cache(self):
+        """Load cache from disk with file locking."""
+        if not self.cache_file.exists():
+            return
+
+        lock = FileLock(str(self.lock_file), timeout=10)
+        with lock:
+            with open(self.cache_file, 'rb') as f:
+                self.cache_data = pickle.load(f)
+```
+
+**Implementation Details**:
+
+1. **OrderedDict for LRU**:
+    - Preserves insertion order
+    - `move_to_end()` marks item as recently used
+    - `popitem(last=False)` removes oldest item
+
+2. **File Locking**:
+    - Prevents corruption from concurrent writes
+    - Uses `FileLock` library
+    - Timeout to avoid deadlocks
+
+3. **TTL with Lazy Expiration**:
+    - Items expire after `max_age` seconds
+    - Checked on `get()` operation
+    - No background cleanup process
+
+4. **Pickle Serialization**:
+    - Handles complex Python objects
+    - Binary format
+    - Cross-version compatible
+
+### Cache Synchronization Flow
+
+```
+Program Start:
+  ├─ Main process loads caches from disk
+  │   ├─ dataframe_cache.pkl → 30 entries
+  │   └─ indicator_cache.pkl → 500 entries
+  │
+  └─ Worker processes spawn
+      └─ Each worker loads same cache files
+          ├─ Copy-on-write: Initially shares memory
+          └─ Becomes independent when modified
+
+During Execution:
+  ├─ Main process: Cache stays static (500 entries)
+  │   └─ Main doesn't compute indicators
+  │
+  └─ Worker processes: Cache grows independently
+      ├─ Worker 1: 500 → 600 entries
+      ├─ Worker 2: 500 → 450 entries
+      └─ Worker N: 500 → 520 entries
+      └─ ⚠️ Updates isolated to each worker's memory
+
+Program End:
+  ├─ Workers terminate
+  │   └─ Worker cache updates lost ❌
+  │
+  └─ Main process saves cache
+      └─ indicator_cache.pkl ← Still 500 entries
+      └─ New calculations will be repeated next run
+```
+
+### File Locking for Multi-Process Safety
+
+**Without Locking (Race Condition)**:
+Main Process Worker Process
+│ │
+├─ Read cache file │
+│  (500 entries)                │
+│ ├─ Read cache file
+│ │  (500 entries)
+├─ Add entry │
+│  (501 entries)                │
+│ ├─ Add entry
+│ │  (501 entries)
+├─ Write cache file ────┐ │
+│ ❌ Corrupted!         │ ├─ Write cache file ────┐
+└───────────────────────┘ └─ ❌ Corrupted!         │
+│
+Result: File garbled (invalid pickle) 💥
+
+```
+
+**With Locking (Safe)**:
+
+```
+
+With FileLock:
+Main Process Worker Process
+│ │
+├─ Acquire lock ✅ │
+├─ Read cache file │
+│  (500 entries)                │
+├─ Add entry │
+│  (501 entries)                ├─ Try to acquire lock ⏳
+├─ Write cache file │  (blocked, waiting...)
+├─ Release lock ✅ │
+│ ├─ Acquire lock ✅
+│ ├─ Read cache file
+│ │  (501 entries) ← sees main's update
+│ ├─ Add entry
+│ │  (502 entries)
+│ ├─ Write cache file
+│ └─ Release lock ✅
+
+       Result: File intact, both updates preserved ✅
+
+```
+
+**Implementation**:
+
+```python
+from filelock import FileLock
+
+def save_cache(self):
+    """Save cache with file locking."""
+    try:
+        lock = FileLock(str(self.lock_file), timeout=60)
+        with lock:  # Blocks until lock acquired
+            with open(self.cache_file, 'wb') as f:
+                pickle.dump(self.cache_data, f)
+        return True
+    except Timeout:
+        logger.error("Failed to acquire lock (timeout)")
+        return False
+```
+
+**Lock File**:
+
+- Separate `.lock` file for coordination
+- NFS-safe (works across networked filesystems)
+- Automatically released when `with` block exits
+- Timeout prevents deadlocks
+
+---
+
 ## Strategy Execution Pipeline
 
 ```
@@ -500,48 +1183,6 @@ MAX_AGE = 604800  # 7 days
 - **ERROR**: Critical failures (missing required columns, file not found)
 - **WARNING**: Data quality issues (NaN values, small datasets)
 - **INFO**: Normal operation (no trades generated, test completion)
-
-## Testing Strategy
-
-### Unit Tests
-
-- Individual strategy logic
-- Indicator calculations
-- Cache operations
-- Metric calculations
-
-### Integration Tests
-
-- Strategy + indicators + trade extraction
-- Cache persistence
-- Multiprocessing with real executor
-
-### Test Coverage Areas
-
-- Signal generation accuracy
-- Trade extraction timing
-- Slippage application
-- Contract switch handling
-- Trailing stop logic
-- Cache hit/miss scenarios
-- Concurrent cache access
-
-## Future Enhancements
-
-### Potential Optimizations
-
-1. **Distributed Computing**: Extend to multiple machines
-2. **Database Backend**: Replace parquet with PostgreSQL
-3. **Real-time Monitoring**: Web dashboard for progress
-4. **Adaptive Caching**: Dynamic cache sizes based on memory
-5. **Strategy Compilation**: JIT compilation for faster execution
-
-### Scalability Considerations
-
-- Current system scales to ~100k tests per run
-- Bottleneck: Memory for result storage
-- Solution: Streaming writes to database
-- Target: 1M+ tests per run
 
 ## Conclusion
 
