@@ -195,23 +195,3 @@ class TrailingStopManager:
             # Use bar low to calculate stop (most favorable price for short)
             return round(price_low * (1 + self.trailing_percentage / 100), 2)
         return None
-
-    def initialize_trailing_stop(self, position_manager, entry_price, direction):
-        """
-        Initialize trailing stop when opening a position.
-
-        Args:
-            position_manager: PositionManager instance
-            entry_price: Entry price of the position
-            direction: 1 for long, -1 for short
-
-        Returns:
-            Initial trailing stop level
-        """
-        if direction == 1:  # Long position
-            trailing_stop = round(entry_price * (1 - self.trailing_percentage / 100), 2)
-        else:  # Short position
-            trailing_stop = round(entry_price * (1 + self.trailing_percentage / 100), 2)
-
-        position_manager.trailing_stop = trailing_stop
-        return trailing_stop
