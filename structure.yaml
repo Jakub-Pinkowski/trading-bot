@@ -34,12 +34,14 @@ trading-bot/
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
+│   │   ├── metrics/                              # Metrics calculation modules
+│   │   │   ├── __init__.py
+│   │   │   ├── per_trade_metrics.py              # Per trade metrics
+│   │   │   └── summary_metrics.py                # Summary metrics
 │   │   ├── __init__.py
 │   │   ├── mass_testing.py                       # Mass testing framework
-│   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   ├── strategy_analysis.py                  # Strategy analysis utilities
-│   │   ├── strategy_factory.py                   # Strategy creation factory
-│   │   └── summary_metrics.py                    # Summary metrics
+│   │   └── strategy_factory.py                   # Strategy creation factory
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView

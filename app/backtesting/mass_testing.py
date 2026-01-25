@@ -12,9 +12,9 @@ import yaml
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.backtesting.per_trade_metrics import calculate_trade_metrics
+from app.backtesting.metrics.per_trade_metrics import calculate_trade_metrics
+from app.backtesting.metrics.summary_metrics import SummaryMetrics
 from app.backtesting.strategy_factory import create_strategy, get_strategy_name
-from app.backtesting.summary_metrics import SummaryMetrics
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, BACKTESTING_DIR

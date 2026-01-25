@@ -2,7 +2,7 @@ import io
 import sys
 from datetime import datetime, timedelta
 
-from app.backtesting.summary_metrics import SummaryMetrics
+from app.backtesting.metrics.summary_metrics import SummaryMetrics
 
 
 # Helper function to create a sample trade
@@ -134,7 +134,7 @@ class TestCalculateSummaryMetrics:
         from unittest.mock import patch
 
         # Mock the logger to verify it's called
-        with patch('app.backtesting.summary_metrics.logger.error') as mock_logger:
+        with patch('app.backtesting.metrics.summary_metrics.logger.error') as mock_logger:
             metrics = SummaryMetrics([])
             summary = metrics.calculate_all_metrics()
             assert summary == {}
