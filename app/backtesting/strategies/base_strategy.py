@@ -94,6 +94,61 @@ class BaseStrategy:
         """Access trades from position manager"""
         return self.position_mgr.trades
 
+    @property
+    def slippage(self):
+        """Access slippage from position manager"""
+        return self.position_mgr.slippage
+
+    @property
+    def slippage_type(self):
+        """Access slippage_type from position manager"""
+        return self.position_mgr.slippage_type
+
+    @property
+    def symbol(self):
+        """Access symbol from position manager"""
+        return self.position_mgr.symbol
+
+    @property
+    def must_reopen(self):
+        """Access must_reopen from switch handler"""
+        return self.switch_handler.must_reopen
+
+    @must_reopen.setter
+    def must_reopen(self, value):
+        """Set must_reopen in switch handler"""
+        self.switch_handler.must_reopen = value
+
+    @property
+    def switch_dates(self):
+        """Access switch_dates from switch handler"""
+        return self.switch_handler.switch_dates
+
+    @switch_dates.setter
+    def switch_dates(self, value):
+        """Set switch_dates in switch handler"""
+        self.switch_handler.switch_dates = value
+
+    @property
+    def next_switch(self):
+        """Access next_switch from switch handler"""
+        return self.switch_handler.next_switch
+
+    @next_switch.setter
+    def next_switch(self, value):
+        """Set next_switch in switch handler"""
+        self.switch_handler.next_switch = value
+
+    @property
+    def next_switch_idx(self):
+        """Access next_switch_idx from switch handler"""
+        return self.switch_handler.next_switch_idx
+
+    @next_switch_idx.setter
+    def next_switch_idx(self, value):
+        """Set next_switch_idx in switch handler"""
+        self.switch_handler.next_switch_idx = value
+
     def _reset(self):
         """Reset all state variables (backward compatibility)"""
         self.position_mgr.reset()
@@ -101,6 +156,55 @@ class BaseStrategy:
         self.prev_row = None
         self.prev_time = None
         self.queued_signal = None
+
+    def _close_position_at_switch(self):
+        """Close position at contract switch (backward compatibility)"""
+        exit_price = self.prev_row['open']
+        prev_position = self.position_mgr.position
+        self.position_mgr.close_position(self.prev_time, exit_price, switch=True)
+        
+        if self.rollover:
+            self.switch_handler.must_reopen = prev_position
+            self.switch_handler.skip_signal_this_bar = True
+        else:
+            self.switch_handler.must_reopen = None
+
+    def _handle_contract_switch(self, current_time, idx, price_open):
+        """Handle contract switch (backward compatibility)"""
+        # Check and process all switch dates that have been reached
+        while self.switch_handler.should_switch(current_time):
+            # On rollover date close at the price of *last bar before switch*
+            if self.position_mgr.has_open_position() and self.prev_row is not None:
+                self._close_position_at_switch()
+            
+            # Move to next switch date
+            self.switch_handler.next_switch_idx += 1
+            if self.switch_handler.next_switch_idx < len(self.switch_handler.switch_dates):
+                self.switch_handler.next_switch = self.switch_handler.switch_dates[self.switch_handler.next_switch_idx]
+            else:
+                self.switch_handler.next_switch = None
+
+        # Reopen on the following contract if rollover is enabled
+        if self.switch_handler.must_reopen is not None and not self.position_mgr.has_open_position():
+            if self.rollover:
+                direction = self.switch_handler.must_reopen
+                self.position_mgr.open_position(direction, idx, price_open)
+            self.switch_handler.must_reopen = None
+
+    def _calculate_new_trailing_stop(self, position, price_high, price_low):
+        """Calculate new trailing stop (backward compatibility)"""
+        if self.trailing_stop_mgr:
+            return self.trailing_stop_mgr.calculate_new_trailing_stop(position, price_high, price_low)
+        return None
+
+    def _close_position(self, exit_time, exit_price, switch=False):
+        """Close position (backward compatibility)"""
+        self.position_mgr.close_position(exit_time, exit_price, switch)
+
+    def _handle_trailing_stop(self, idx, price_high, price_low):
+        """Handle trailing stop (backward compatibility - can be overridden by subclasses)"""
+        if self.trailing_stop_mgr:
+            self.trailing_stop_mgr.handle_trailing_stop(self.position_mgr, idx, price_high, price_low)
 
     # ==================== Public API ====================
 
@@ -290,8 +394,8 @@ class BaseStrategy:
                 continue
 
             # Handle trailing stop logic if enabled
-            if self.trailing_stop_mgr:
-                self.trailing_stop_mgr.handle_trailing_stop(self.position_mgr, idx, price_high, price_low)
+            if self.trailing:
+                self._handle_trailing_stop(idx, price_high, price_low)
 
             # Handle contract switches. Close an old position and potentially open a new one
             # Also need to close position using prev_row data when switching
