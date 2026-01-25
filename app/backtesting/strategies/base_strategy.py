@@ -366,27 +366,116 @@ class BaseStrategy:
     # --- Event Handlers ---
 
     def _handle_trailing_stop(self, idx, price_high, price_low):
-        """Manage trailing stop trigger and update logic."""
+        """
+        Manage trailing stop trigger and update logic.
 
-        # First, check if a trailing stop has been triggered
+        CRITICAL: Order of operations prevents look-ahead bias.
+
+        Step 1: Check if stop was triggered using worst-case intra-bar price
+        Step 2: If triggered, close position and return early (no stop update)
+        Step 3: If NOT triggered, update stop level using best-case intra-bar price
+
+        This ensures we never benefit from BOTH stopping out AND favorable price
+        movement within the same bar, which would create unrealistic backtest results.
+
+        Rationale:
+        - In real trading, once a stop is triggered, the position is closed immediately
+        - We cannot also update the stop level after the position is already closed
+        - By checking trigger FIRST, we prevent "free" stop updates after exit
+
+        Price Selection Logic:
+        - LONG positions:
+          * Trigger check uses price_low (worst case - if we hit stop, we hit it)
+          * Stop update uses price_high (best case - tighten stop based on upward movement)
+        - SHORT positions:
+          * Trigger check uses price_high (worst case - if we hit stop, we hit it)
+          * Stop update uses price_low (best case - tighten stop based on downward movement)
+
+        Edge Cases Handled:
+        - Gap through stop: Position closed at stop level (not at gap price)
+        - Bar touches stop exactly: Position closed (no stop update occurs)
+        - Volatile bar: Stop only updated if NOT triggered during the bar
+
+        Args:
+            idx: Current bar index in the dataframe
+            price_high: Highest price during the bar
+            price_low: Lowest price during the bar
+
+        Example Scenarios:
+
+        Scenario 1: Stop triggered at bar low, bar high would calculate better stop
+        - Entry: $100, Current stop: $95, Trailing: 5%
+        - Bar: Low=$95 (at stop), High=$110 (would calculate new stop of $104.50)
+        - Result: Close at $95, NO stop update (prevents look-ahead bias)
+
+        Scenario 2: Stop NOT triggered, normal update
+        - Entry: $100, Current stop: $95, Trailing: 5%
+        - Bar: Low=$98 (above stop), High=$105 (favorable movement)
+        - Result: Stop updated from $95 to $99.75 ($105 * 0.95)
+
+        Scenario 3: Gap down through stop
+        - Current stop: $95
+        - Bar: Open=$90, Low=$88, High=$92
+        - Result: Close at $95 (not at $88 - assume stop filled at stop level)
+        """
+        # STEP 1: Check if trailing stop was triggered (conservative assumption)
+        # For longs: Use low price (if we hit stop, assume it happened before the high)
+        # For shorts: Use high price (if we hit stop, assume it happened before the low)
         if self.position is not None and self.trailing_stop is not None:
             if self.position == 1 and price_low <= self.trailing_stop:
+                # Long stop triggered - close at stop level (not at low price)
                 self._close_position(idx, self.trailing_stop, switch=False)
-                return  # Exit early if the position is closed
+                return  # Exit early - no stop update after position closed (prevents look-ahead bias)
             elif self.position == -1 and price_high >= self.trailing_stop:
+                # Short stop triggered - close at stop level (not at high price)
                 self._close_position(idx, self.trailing_stop, switch=False)
-                return  # Exit early if the position is closed
+                return  # Exit early - no stop update after position closed (prevents look-ahead bias)
 
-        # Only update trailing stop if position wasn't closed
+        # STEP 2: Update trailing stop based on favorable price movement
+        # Only reached if stop was NOT triggered in STEP 1
         if self.position is not None and self.trailing_stop is not None:
-            if self.position == 1:  # Long position
-                new_stop = round(price_high * (1 - self.trailing / 100), 2)
-                if new_stop > self.trailing_stop:
+            # Calculate new stop level based on position direction
+            new_stop = self._calculate_new_trailing_stop(self.position, price_high, price_low)
+
+            if new_stop is not None:
+                # Only tighten stop (never loosen for trailing stops)
+                if self.position == 1 and new_stop > self.trailing_stop:
+                    # Long: Only move stop UP
                     self.trailing_stop = new_stop
-            elif self.position == -1:  # Short position
-                new_stop = round(price_low * (1 + self.trailing / 100), 2)
-                if new_stop < self.trailing_stop:
+                elif self.position == -1 and new_stop < self.trailing_stop:
+                    # Short: Only move stop DOWN
                     self.trailing_stop = new_stop
+
+    def _calculate_new_trailing_stop(self, position, price_high, price_low):
+        """
+        Calculate new trailing stop level based on position direction and favorable price movement.
+
+        This is extracted as a helper method for clarity and testability.
+
+        Args:
+            position: 1 for long, -1 for short
+            price_high: Highest price during the bar (used for long positions)
+            price_low: Lowest price during the bar (used for short positions)
+
+        Returns:
+            New stop level (float) or None if position type is invalid
+
+        Logic:
+        - LONG positions: Calculate stop below the HIGH (benefit from upward movement)
+          Formula: high * (1 - trailing_percentage)
+          Example: $110 high with 5% trailing = $110 * 0.95 = $104.50 stop
+
+        - SHORT positions: Calculate stop above the LOW (benefit from downward movement)
+          Formula: low * (1 + trailing_percentage)
+          Example: $90 low with 5% trailing = $90 * 1.05 = $94.50 stop
+        """
+        if position == 1:  # Long position
+            # Use bar high to calculate stop (most favorable price for long)
+            return round(price_high * (1 - self.trailing / 100), 2)
+        elif position == -1:  # Short position
+            # Use bar low to calculate stop (most favorable price for short)
+            return round(price_low * (1 + self.trailing / 100), 2)
+        return None
 
     def _handle_contract_switch(self, current_time, idx, price_open):
         while self.next_switch and current_time >= self.next_switch:
