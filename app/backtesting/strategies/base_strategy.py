@@ -239,19 +239,15 @@ class BaseStrategy:
             if self.trailing_stop_manager:
                 self.trailing_stop_manager.handle_trailing_stop(self.position_manager, idx, price_high, price_low)
 
-            # Handle contract switches. Close an old position and potentially open a new one
-            # Also need to close position using prev_row data when switching
-            if self.switch_handler.should_switch(current_time):
-                if self.position_manager.has_open_position() and self.prev_row is not None:
-                    prev_position = self.position_manager.close_position_at_switch(self.prev_time, self.prev_row)
-                    if self.rollover:
-                        self.switch_handler.must_reopen = prev_position
-                        self.switch_handler.skip_signal_this_bar = True
-
-            skip_signal = self.switch_handler.handle_contract_switch(current_time,
-                                                                     self.position_manager,
-                                                                     idx,
-                                                                     price_open)
+            # Handle contract switches - all switch logic is now in ContractSwitchHandler
+            skip_signal = self.switch_handler.handle_contract_switch(
+                current_time,
+                self.position_manager,
+                idx,
+                price_open,
+                self.prev_time,
+                self.prev_row
+            )
 
             # Skip signal for this bar if we are in a rollover position, and we are about to switch
             if skip_signal:

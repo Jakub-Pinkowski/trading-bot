@@ -56,25 +56,31 @@ class ContractSwitchHandler:
         """
         return self.next_switch is not None and current_time >= self.next_switch
 
-    def handle_contract_switch(self, current_time, position_manager, idx, price_open):
+    def handle_contract_switch(self, current_time, position_manager, idx, price_open, prev_time=None, prev_row=None):
         """
-        Handle contract switch logic.
+        Handle contract switch logic including closing positions at switch and reopening.
 
         Args:
             current_time: Current datetime
             position_manager: PositionManager instance
             idx: Current bar index
             price_open: Opening price of current bar
+            prev_time: Previous bar datetime (needed for closing at switch)
+            prev_row: Previous bar data (needed for closing at switch)
 
         Returns:
             bool: True if signal should be skipped this bar
         """
         # Check and process all switch dates that have been reached
         while self.next_switch and current_time >= self.next_switch:
-            # On rollover date, mark position for reopening if rollover is enabled
-            if position_manager.has_open_position() and self.rollover:
-                self.must_reopen = position_manager.position
-                self.skip_signal_this_bar = True
+            # Close position at the previous bar's data when switching contracts
+            if position_manager.has_open_position() and prev_row is not None:
+                prev_position = position_manager.close_position_at_switch(prev_time, prev_row)
+                
+                # Mark for reopening if rollover is enabled
+                if self.rollover:
+                    self.must_reopen = prev_position
+                    self.skip_signal_this_bar = True
 
             # Move to next switch date
             self.next_switch_idx += 1
