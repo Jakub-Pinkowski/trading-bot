@@ -110,10 +110,12 @@ class PositionManager:
 
         # Set initial trailing stop if trailing is enabled
         if self.trailing is not None:
-            if direction == 1:  # Long position
-                self.trailing_stop = round(price_open * (1 - self.trailing / 100), 2)
-            else:  # Short position
-                self.trailing_stop = round(price_open * (1 + self.trailing / 100), 2)
+            # Delegate trailing stop initialization to TrailingStopManager
+            self.trailing_stop = TrailingStopManager.initialize_trailing_stop(
+                price_open=price_open,
+                direction=direction,
+                trailing=self.trailing,
+            )
 
     def close_position(self, exit_time, exit_price, switch=False):
         """
