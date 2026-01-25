@@ -9,37 +9,6 @@ reopening positions on the new contract.
 
 # ==================== Helper Functions ====================
 
-def execute_queued_signal(queued_signal, position_manager, idx, price_open):
-    """
-    Execute a queued signal from the previous bar.
-
-    Args:
-        queued_signal: Signal to execute (1 for long, -1 for short, None for no signal)
-        position_manager: PositionManager instance
-        idx: Current bar index
-        price_open: Opening price of current bar
-
-    Returns:
-        bool: True if signal was executed
-    """
-    if queued_signal is not None:
-        flip = None
-        if queued_signal == 1 and position_manager.position != 1:
-            flip = 1
-        elif queued_signal == -1 and position_manager.position != -1:
-            flip = -1
-
-        if flip is not None:
-            # Close if currently in position
-            if position_manager.has_open_position():
-                position_manager.close_position(idx, price_open, switch=False)
-            # Open a new position at this (current) bar
-            position_manager.open_position(flip, idx, price_open)
-            return True
-
-    return False
-
-
 class ContractSwitchHandler:
     """Manages contract rollover logic for futures backtesting."""
 
