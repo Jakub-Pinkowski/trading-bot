@@ -145,11 +145,12 @@ def _format_column_name(column_name):
 
     # Special cases for very long column names
     column_name_mapping = {
-        'average_trade_return_percentage_of_margin': 'avg_return_%',
-        'average_win_percentage_of_margin': 'avg_win_%',
-        'total_return_percentage_of_margin': 'total_return_%',
-        'average_loss_percentage_of_margin': 'avg_loss_%',
+        'average_trade_return_percentage_of_contract': 'avg_return_%',
+        'average_win_percentage_of_contract': 'avg_win_%',
+        'total_return_percentage_of_contract': 'total_return_%',
+        'average_loss_percentage_of_contract': 'avg_loss_%',
         'maximum_drawdown_percentage': 'max_drawdown_%',
+        'average_trade_duration_hours': 'avg_duration_h',
         'win_rate': 'win_rate_%',
         'max_consecutive_wins': 'max_cons_wins',
         'max_consecutive_losses': 'max_cons_losses',
@@ -291,20 +292,20 @@ class StrategyAnalyzer:
             # Calculate weighted metrics
             metrics_dict['win_rate'] = _calculate_weighted_win_rate(filtered_df, grouped)
 
-            # Percentage-based metrics
-            metrics_dict['total_return_percentage_of_margin'] = grouped['total_return_percentage_of_margin'].sum()
-            metrics_dict['average_trade_return_percentage_of_margin'] = _calculate_average_trade_return(
-                metrics_dict['total_return_percentage_of_margin'], metrics_dict['total_trades']
+            # Return metrics (contract-based)
+            metrics_dict['total_return_percentage_of_contract'] = grouped['total_return_percentage_of_contract'].sum()
+            metrics_dict['average_trade_return_percentage_of_contract'] = _calculate_average_trade_return(
+                metrics_dict['total_return_percentage_of_contract'], metrics_dict['total_trades']
             )
 
             # These metrics can be averaged as they are already normalized
-            metrics_dict['average_win_percentage_of_margin'] = grouped['average_win_percentage_of_margin'].mean()
-            metrics_dict['average_loss_percentage_of_margin'] = grouped['average_loss_percentage_of_margin'].mean()
-            metrics_dict['commission_percentage_of_margin'] = grouped['commission_percentage_of_margin'].mean()
+            metrics_dict['average_win_percentage_of_contract'] = grouped['average_win_percentage_of_contract'].mean()
+            metrics_dict['average_loss_percentage_of_contract'] = grouped['average_loss_percentage_of_contract'].mean()
+            metrics_dict['average_trade_duration_hours'] = grouped['average_trade_duration_hours'].mean()
 
             # Calculate profit factor percentage from aggregated wins and losses
-            total_wins_percentage = grouped['total_wins_percentage_of_margin'].sum()
-            total_losses_percentage = grouped['total_losses_percentage_of_margin'].sum()
+            total_wins_percentage = grouped['total_wins_percentage_of_contract'].sum()
+            total_losses_percentage = grouped['total_losses_percentage_of_contract'].sum()
 
             # Recalculate profit factor from aggregated data
             metrics_dict['profit_factor'] = _calculate_profit_ratio(
@@ -330,14 +331,14 @@ class StrategyAnalyzer:
             # Averages all metrics across strategies
             metrics_dict.update({
                 'win_rate': grouped['win_rate'].mean(),
+                'average_trade_duration_hours': grouped['average_trade_duration_hours'].mean(),
 
-                # Percentage-based metrics
-                'total_return_percentage_of_margin': grouped['total_return_percentage_of_margin'].sum(),
-                'average_trade_return_percentage_of_margin': grouped[
-                    'average_trade_return_percentage_of_margin'].mean(),
-                'average_win_percentage_of_margin': grouped['average_win_percentage_of_margin'].mean(),
-                'average_loss_percentage_of_margin': grouped['average_loss_percentage_of_margin'].mean(),
-                'commission_percentage_of_margin': grouped['commission_percentage_of_margin'].mean(),
+                # Return metrics (contract-based)
+                'total_return_percentage_of_contract': grouped['total_return_percentage_of_contract'].sum(),
+                'average_trade_return_percentage_of_contract': grouped[
+                    'average_trade_return_percentage_of_contract'].mean(),
+                'average_win_percentage_of_contract': grouped['average_win_percentage_of_contract'].mean(),
+                'average_loss_percentage_of_contract': grouped['average_loss_percentage_of_contract'].mean(),
 
                 # Risk metrics
                 'profit_factor': grouped['profit_factor'].mean(),

@@ -408,26 +408,25 @@ class MassTester:
 
         # Define column names
         columns = [
-            # Basic info
+            # --- Basic Trade Statistics ---
             'month',
             'symbol',
             'interval',
             'strategy',
             'total_trades',
             'win_rate',
-            # Contract-based metrics
+            'average_trade_duration_hours',
+
+            # --- Return Metrics --- (contract-based)
+            'total_wins_percentage_of_contract',
+            'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract',
             'average_trade_return_percentage_of_contract',
-            # Percentage-based metrics
-            'total_return_percentage_of_margin',
-            'average_trade_return_percentage_of_margin',
-            'average_win_percentage_of_margin',
-            'average_loss_percentage_of_margin',
-            'commission_percentage_of_margin',
-            'total_wins_percentage_of_margin',
-            'total_losses_percentage_of_margin',
-            # Risk metrics
+            'average_win_percentage_of_contract',
+            'average_loss_percentage_of_contract',
             'profit_factor',
+
+            # --- Risk Metrics ---
             'maximum_drawdown_percentage',
             'sharpe_ratio',
             'sortino_ratio',
@@ -470,7 +469,7 @@ class MassTester:
             for col in numeric_columns:
                 if col not in metrics:
                     # Log warning for missing critical metrics
-                    if col in ['total_trades', 'win_rate', 'total_return_percentage_of_margin']:
+                    if col in ['total_trades', 'win_rate', 'total_return_percentage_of_contract']:
                         missing_metrics_count += 1
                         if missing_metrics_count <= 5:  # Only log first 5 to avoid spam
                             logger.warning(

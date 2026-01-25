@@ -22,10 +22,10 @@ class TestFormatColumnName(unittest.TestCase):
         """Test formatting of special case column names."""
         # Test all special case mappings
         special_cases = {
-            'average_trade_return_percentage_of_margin': 'Avg Return %',
-            'average_win_percentage_of_margin': 'Avg Win %',
-            'total_return_percentage_of_margin': 'Total Return %',
-            'average_loss_percentage_of_margin': 'Avg Loss %',
+            'average_trade_return_percentage_of_contract': 'Avg Return %',
+            'average_win_percentage_of_contract': 'Avg Win %',
+            'total_return_percentage_of_contract': 'Total Return %',
+            'average_loss_percentage_of_contract': 'Avg Loss %',
             'maximum_drawdown_percentage': 'Max Drawdown %',
             'win_rate': 'Win Rate %',
             'max_consecutive_wins': 'Max Cons Wins',
@@ -88,9 +88,9 @@ class TestFilterDataframe(unittest.TestCase):
             'interval': ['1d', '1d', '4h', '4h', '1h'],
             'total_trades': [5, 15, 20, 25, 30],
             'win_rate': [60.0, 70.0, 55.0, 65.0, 75.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0, 8.0],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7, 1.2],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3, -0.4]
+            'total_return_percentage_of_contract': [5.0, 7.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.6, -0.3, -0.4]
         })
 
     def test_filter_by_min_avg_trades_per_combination(self):
@@ -109,9 +109,9 @@ class TestFilterDataframe(unittest.TestCase):
             'total_trades': [20, 40, 30, 60, 50],
             # RSI: 60 total, 2 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg; MACD: 50 total, 1 combination = 50 avg
             'win_rate': [60.0, 70.0, 55.0, 65.0, 75.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0, 8.0],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7, 1.2],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3, -0.4]
+            'total_return_percentage_of_contract': [5.0, 7.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.6, -0.3, -0.4]
         })
 
         # Based on debug output: RSI=15.0, EMA=22.5, MACD=50.0 avg trades per combination
@@ -192,9 +192,9 @@ class TestFilterDataframe(unittest.TestCase):
             'total_trades': [20, 40, 30, 60],
             # RSI: 60 total, 2 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg
             'win_rate': [60.0, 70.0, 55.0, 65.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3]
+            'total_return_percentage_of_contract': [5.0, 7.0, 4.0, 6.0],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.8, 0.7],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.6, -0.3]
         })
 
         # Filter by min_avg_trades_per_combination=35 and interval='4h'
@@ -239,9 +239,9 @@ class TestFilterDataframe(unittest.TestCase):
             'total_trades': [20, 40, 30, 30, 60, 50],
             # RSI: 3 symbols, EMA: 2 symbols, MACD: 1 symbol
             'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0, 75.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4]
+            'total_return_percentage_of_contract': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4]
         })
 
         # Filter with min_symbol_count=1 (should keep all strategies)
@@ -284,9 +284,9 @@ class TestFilterDataframe(unittest.TestCase):
             'total_trades': [20, 40, 30, 30, 60],
             # RSI: 90 total, 3 combinations = 30 avg; EMA: 90 total, 2 combinations = 45 avg
             'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3]
+            'total_return_percentage_of_contract': [5.0, 7.0, 6.0, 4.0, 6.0],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.95, 0.8, 0.7],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.45, -0.6, -0.3]
         })
 
         # Filter with min_symbol_count=2 and min_avg_trades_per_combination=35
@@ -605,16 +605,16 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'interval': ['1d', '1d', '4h', '4h'],
             'total_trades': [10, 15, 20, 25],
             'win_rate': [60.0, 70.0, 55.0, 65.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 4.0, 6.0],
-            'average_trade_return_percentage_of_margin': [0.5, 0.47, 0.2, 0.24],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.8, 0.7],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.6, -0.3],
-            'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1],
+            'average_trade_duration_hours': [24.0, 36.0, 12.0, 18.0],
+            'total_return_percentage_of_contract': [5.0, 7.0, 4.0, 6.0],
+            'average_trade_return_percentage_of_contract': [0.5, 0.47, 0.2, 0.24],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.8, 0.7],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.6, -0.3],
             # Calculate total wins and losses for a new profit factor calculation
-            # total_wins = (win_rate/100) * total_trades * average_win_percentage_of_margin
-            # total_losses = ((100-win_rate)/100) * total_trades * average_loss_percentage_of_margin
-            'total_wins_percentage_of_margin': [6.0, 9.45, 8.8, 11.375],  # [6*1.0, 10.5*0.9, 11*0.8, 16.25*0.7]
-            'total_losses_percentage_of_margin': [-2.0, -1.8, -5.4, -2.625],
+            # total_wins = (win_rate/100) * total_trades * average_win_percentage_of_contract
+            # total_losses = ((100-win_rate)/100) * total_trades * average_loss_percentage_of_contract
+            'total_wins_percentage_of_contract': [6.0, 9.45, 8.8, 11.375],  # [6*1.0, 10.5*0.9, 11*0.8, 16.25*0.7]
+            'total_losses_percentage_of_contract': [-2.0, -1.8, -5.4, -2.625],
             # [4*(-0.5), 4.5*(-0.4), 9*(-0.6), 8.75*(-0.3)]
             'profit_factor': [2.0, 2.5, 1.8, 2.2],
             'maximum_drawdown_percentage': [2.0, 1.5, 2.5, 1.8],
@@ -1425,13 +1425,13 @@ class TestStrategyAnalyzer(unittest.TestCase):
             'total_trades': [20, 40, 30, 30, 60, 50],
             # RSI: 3 symbols, EMA: 2 symbols, MACD: 1 symbol
             'win_rate': [60.0, 70.0, 65.0, 55.0, 65.0, 75.0],
-            'total_return_percentage_of_margin': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
-            'average_trade_return_percentage_of_margin': [0.25, 0.175, 0.2, 0.133, 0.1, 0.16],
-            'average_win_percentage_of_margin': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
-            'average_loss_percentage_of_margin': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4],
-            'commission_percentage_of_margin': [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-            'total_wins_percentage_of_margin': [12.0, 25.2, 18.525, 13.2, 27.3, 45.0],
-            'total_losses_percentage_of_margin': [-4.0, -4.8, -4.725, -10.8, -7.875, -5.0],
+            'average_trade_duration_hours': [24.0, 36.0, 30.0, 12.0, 18.0, 6.0],
+            'total_return_percentage_of_contract': [5.0, 7.0, 6.0, 4.0, 6.0, 8.0],
+            'average_trade_return_percentage_of_contract': [0.25, 0.175, 0.2, 0.133, 0.1, 0.16],
+            'average_win_percentage_of_contract': [1.0, 0.9, 0.95, 0.8, 0.7, 1.2],
+            'average_loss_percentage_of_contract': [-0.5, -0.4, -0.45, -0.6, -0.3, -0.4],
+            'total_wins_percentage_of_contract': [12.0, 25.2, 18.525, 13.2, 27.3, 45.0],
+            'total_losses_percentage_of_contract': [-4.0, -4.8, -4.725, -10.8, -7.875, -5.0],
             'profit_factor': [3.0, 5.25, 3.92, 1.22, 3.47, 9.0],
             'maximum_drawdown_percentage': [2.0, 1.5, 1.8, 2.5, 1.8, 1.2],
             'sharpe_ratio': [1.5, 1.8, 1.65, 1.2, 1.6, 2.0],

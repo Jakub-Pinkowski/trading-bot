@@ -7,7 +7,6 @@ from app.backtesting.metrics.summary_metrics import SummaryMetrics
 def create_sample_trade(
     net_pnl=100.0,
     return_percentage=1.0,
-    return_percentage_contract=0.1,
     duration_hours=24,
     margin_requirement=10000.0,
     commission=4.0
@@ -23,7 +22,7 @@ def create_sample_trade(
         'net_pnl': net_pnl,
         'gross_pnl': net_pnl + commission,
         'return_percentage_of_margin': return_percentage,
-        'return_percentage_of_contract': return_percentage_contract,
+        'return_percentage_of_contract': return_percentage,
         'margin_requirement': margin_requirement,
         'commission': commission
     }
@@ -149,7 +148,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 1
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
-        assert summary['total_return_percentage_of_margin'] == 1.0
+        assert summary['total_return_percentage_of_contract'] == 1.0
         assert summary['profit_factor'] == 9999.99  # No losing trades (returns very high finite number)
 
     def test_single_losing_trade(self):
@@ -162,7 +161,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 0
         assert summary['losing_trades'] == 1
         assert summary['win_rate'] == 0.0
-        assert summary['total_return_percentage_of_margin'] == -1.0
+        assert summary['total_return_percentage_of_contract'] == -1.0
         assert summary['profit_factor'] == 0.0  # No winning trades
 
     def test_multiple_trades(self):
@@ -179,9 +178,9 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 2
         assert summary['losing_trades'] == 1
         assert summary['win_rate'] == round((2 / 3) * 100, 2)
-        assert summary['total_return_percentage_of_margin'] == 2.5
-        assert summary['average_win_percentage_of_margin'] > 0
-        assert summary['average_loss_percentage_of_margin'] < 0
+        assert summary['total_return_percentage_of_contract'] == 2.5
+        assert summary['average_win_percentage_of_contract'] > 0
+        assert summary['average_loss_percentage_of_contract'] < 0
         assert summary['profit_factor'] == round(300.0 / 50.0, 2)  # (100 + 200) / 50
 
     def test_all_winning_trades(self):
@@ -198,7 +197,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 3
         assert summary['losing_trades'] == 0
         assert summary['win_rate'] == 100.0
-        assert summary['total_return_percentage_of_margin'] == 6.0
+        assert summary['total_return_percentage_of_contract'] == 6.0
         assert summary['profit_factor'] == 9999.99  # No losing trades (returns very high finite number)
 
     def test_all_losing_trades(self):
@@ -215,7 +214,7 @@ class TestCalculateSummaryMetrics:
         assert summary['winning_trades'] == 0
         assert summary['losing_trades'] == 3
         assert summary['win_rate'] == 0.0
-        assert summary['total_return_percentage_of_margin'] == -6.0
+        assert summary['total_return_percentage_of_contract'] == -6.0
         assert summary['profit_factor'] == 0.0  # No winning trades
 
 
@@ -340,11 +339,11 @@ class TestCalculateSummaryMetrics:
         assert summary['win_rate'] == 60.0
 
         # Percentage-based metrics
-        total_return_percentage = sum(trade['return_percentage_of_margin'] for trade in trades)
-        assert summary['total_return_percentage_of_margin'] == total_return_percentage
-        assert summary['average_trade_return_percentage_of_margin'] == total_return_percentage / 10
-        assert summary['average_win_percentage_of_margin'] > 0
-        assert summary['average_loss_percentage_of_margin'] < 0
+        total_return_percentage = sum(trade['return_percentage_of_contract'] for trade in trades)
+        assert summary['total_return_percentage_of_contract'] == total_return_percentage
+        assert summary['average_trade_return_percentage_of_contract'] == total_return_percentage / 10
+        assert summary['average_win_percentage_of_contract'] > 0
+        assert summary['average_loss_percentage_of_contract'] < 0
 
         # Duration metrics
         assert summary['average_trade_duration_hours'] == 6.8  # (4+6+12+3+5+8+10+7+4+9)/10
@@ -392,14 +391,14 @@ class TestCalculateSummaryMetrics:
 
         # Percentage-based metrics
         total_expected_return_percentage = 2.0 + 1.5 - 0.8 - 1.2 - 0.9 - 1.5 - 1.0 + 1.2 + 1.8 + 2.5 + 3.0
-        assert summary['total_return_percentage_of_margin'] == total_expected_return_percentage
-        assert summary['average_trade_return_percentage_of_margin'] == round(total_expected_return_percentage / 11, 2)
+        assert summary['total_return_percentage_of_contract'] == total_expected_return_percentage
+        assert summary['average_trade_return_percentage_of_contract'] == round(total_expected_return_percentage / 11, 2)
 
         # Risk metrics
         # Significant drawdown expected
         assert summary['maximum_drawdown_percentage'] >= 5.4  # From peak of 3.5% to lowest of -1.9%
         # Despite drawdown, overall strategy is profitable
-        assert summary['total_return_percentage_of_margin'] > 0
+        assert summary['total_return_percentage_of_contract'] > 0
         assert summary['calmar_ratio'] > 0
 
     def test_varying_trade_durations(self):
@@ -438,8 +437,8 @@ class TestCalculateSummaryMetrics:
 
         # Percentage-based metrics
         total_expected_return_percentage = 0.5 - 0.3 + 0.4 + 1.0 - 0.7 + 2.0 - 1.5 + 5.0 - 3.0
-        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
-        assert round(summary['average_trade_return_percentage_of_margin'],
+        assert round(summary['total_return_percentage_of_contract'], 2) == round(total_expected_return_percentage, 2)
+        assert round(summary['average_trade_return_percentage_of_contract'],
                      2) == round(total_expected_return_percentage / 9, 2)
 
     def test_extreme_profit_loss_values(self):
@@ -474,10 +473,10 @@ class TestCalculateSummaryMetrics:
 
         # Percentage-based metrics
         total_expected_return_percentage = 1.0 - 0.5 + 50.0 + 2.0 - 1.5 - 30.0 + 3.0 - 1.0
-        assert summary['total_return_percentage_of_margin'] == total_expected_return_percentage
-        assert summary['average_trade_return_percentage_of_margin'] == round(total_expected_return_percentage / 8, 2)
-        assert summary['average_win_percentage_of_margin'] > 10  # Skewed by the 50% profit
-        assert summary['average_loss_percentage_of_margin'] < -5  # Skewed by the -30% loss
+        assert summary['total_return_percentage_of_contract'] == total_expected_return_percentage
+        assert summary['average_trade_return_percentage_of_contract'] == round(total_expected_return_percentage / 8, 2)
+        assert summary['average_win_percentage_of_contract'] > 10  # Skewed by the 50% profit
+        assert summary['average_loss_percentage_of_contract'] < -5  # Skewed by the -30% loss
 
         # Risk metrics
         # Extreme values should be reflected in the metrics
@@ -514,8 +513,8 @@ class TestCalculateSummaryMetrics:
 
         # Percentage-based metrics
         total_expected_return_percentage = 1.5 - 1.2 + 2.0 - 1.8 + 2.5 - 2.2 + 3.0 - 2.7 + 3.5 - 3.2
-        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
-        assert round(summary['average_trade_return_percentage_of_margin'],
+        assert round(summary['total_return_percentage_of_contract'], 2) == round(total_expected_return_percentage, 2)
+        assert round(summary['average_trade_return_percentage_of_contract'],
                      2) == round(total_expected_return_percentage / 10, 2)
 
         # Duration metrics
@@ -526,7 +525,7 @@ class TestCalculateSummaryMetrics:
         # Volatility should be reflected in the drawdown metrics
         assert summary['maximum_drawdown_percentage'] > 0
         # Despite volatility, the strategy should be profitable
-        assert summary['total_return_percentage_of_margin'] > 0
+        assert summary['total_return_percentage_of_contract'] > 0
         assert summary['profit_factor'] > 1.0
 
     def test_seasonal_trading_pattern(self):
@@ -592,9 +591,9 @@ class TestCalculateSummaryMetrics:
 
         # Percentage-based metrics
         total_expected_return_percentage = (2.0 + 1.5 + 2.5 - 0.5) + (-1.2 - 1.8 + 1.0 - 1.5) + (1.3 - 0.9 + 1.6 - 0.7)
-        assert round(summary['total_return_percentage_of_margin'], 2) == round(total_expected_return_percentage, 2)
+        assert round(summary['total_return_percentage_of_contract'], 2) == round(total_expected_return_percentage, 2)
         # Use a more flexible comparison for average trade return percentage
-        avg_trade_return = summary['average_trade_return_percentage_of_margin']
+        avg_trade_return = summary['average_trade_return_percentage_of_contract']
         expected_avg_trade_return = total_expected_return_percentage / 12
         assert abs(avg_trade_return - expected_avg_trade_return) < 0.02  # Allow for small differences
 
@@ -602,7 +601,7 @@ class TestCalculateSummaryMetrics:
         # The seasonal pattern should create a significant drawdown during the correction period
         assert summary['maximum_drawdown_percentage'] > 0
         # Overall, the strategy should still be profitable
-        assert summary['total_return_percentage_of_margin'] > 0
+        assert summary['total_return_percentage_of_contract'] > 0
         assert summary['profit_factor'] > 1.0
 
 
@@ -1158,8 +1157,7 @@ class TestPrivateHelperMethods:
         assert hasattr(metrics, 'winning_trades')
         assert hasattr(metrics, 'losing_trades')
         assert hasattr(metrics, 'win_rate')
-        assert hasattr(metrics, 'total_return')
-        assert hasattr(metrics, 'total_margin_used')
+        assert hasattr(metrics, 'total_return_contract')
         assert hasattr(metrics, 'max_drawdown')
         assert hasattr(metrics, 'maximum_drawdown_percentage')
         assert hasattr(metrics, 'returns')
@@ -1227,11 +1225,11 @@ class TestPrivateHelperMethods:
         # Verify cumulative calculations
         assert len(metrics.cumulative_pnl_pct) == 3
         assert len(metrics.cumulative_pnl_dollars) == 3
-        assert metrics.cumulative_pnl_pct == [1.0, 0.5, 2.5]  # 1.0, 1.0-0.5, 0.5+2.0
+        assert metrics.cumulative_pnl_pct == [0.1, 0.05, 0.25]  # 0.1, 0.1-0.05, 0.05+0.2
         assert metrics.cumulative_pnl_dollars == [100.0, 50.0, 250.0]  # 100, 100-50, 50+200
 
-    def test_calculate_average_win_percentage_of_margin(self):
-        """Test _calculate_average_win_percentage_of_margin method."""
+    def test_calculate_average_win_percentage_of_contract(self):
+        """Test _calculate_average_win_percentage_of_contract method."""
         trades = [
             create_sample_trade(return_percentage=1.0),
             create_sample_trade(return_percentage=2.0),
@@ -1239,12 +1237,12 @@ class TestPrivateHelperMethods:
         ]
         metrics = SummaryMetrics(trades)
 
-        avg_win = metrics._calculate_average_win_percentage_of_margin()
+        avg_win = metrics._calculate_average_win_percentage_of_contract()
 
         assert avg_win == 1.5  # (1.0 + 2.0) / 2
 
-    def test_calculate_average_loss_percentage_of_margin(self):
-        """Test _calculate_average_loss_percentage_of_margin method."""
+    def test_calculate_average_loss_percentage_of_contract(self):
+        """Test _calculate_average_loss_percentage_of_contract method."""
         trades = [
             create_sample_trade(return_percentage=1.0),  # This should be ignored
             create_sample_trade(return_percentage=-0.5),
@@ -1252,7 +1250,7 @@ class TestPrivateHelperMethods:
         ]
         metrics = SummaryMetrics(trades)
 
-        avg_loss = metrics._calculate_average_loss_percentage_of_margin()
+        avg_loss = metrics._calculate_average_loss_percentage_of_contract()
 
         assert avg_loss == -1.0  # (-0.5 + -1.5) / 2
 

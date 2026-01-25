@@ -1114,13 +1114,12 @@ class TestMassTester:
                     'total_trades': 10,
                     'win_rate': 60.0,
                     'profit_factor': 1.5,
-                    'total_return_percentage_of_margin': 5.0,
-                    'average_trade_return_percentage_of_margin': 0.5,
-                    'average_win_percentage_of_margin': 1.0,
-                    'average_loss_percentage_of_margin': -0.5,
-                    'commission_percentage_of_margin': 0.1,
-                    'total_wins_percentage_of_margin': 6.0,
-                    'total_losses_percentage_of_margin': -2.0,
+                    'total_return_percentage_of_contract': 5.0,
+                    'average_trade_return_percentage_of_contract': 0.5,
+                    'average_win_percentage_of_contract': 1.0,
+                    'average_loss_percentage_of_contract': -0.5,
+                    'total_wins_percentage_of_contract': 6.0,
+                    'total_losses_percentage_of_contract': -2.0,
                     'maximum_drawdown_percentage': 2.0,
                     'total_net_pnl': 1000.0,
                     'avg_trade_net_pnl': 100.0,
@@ -1144,13 +1143,12 @@ class TestMassTester:
                     'total_trades': 5,
                     'win_rate': 40.0,
                     'profit_factor': 0.8,
-                    'total_return_percentage_of_margin': -2.0,
-                    'average_trade_return_percentage_of_margin': -0.4,
-                    'average_win_percentage_of_margin': 0.8,
-                    'average_loss_percentage_of_margin': -1.0,
-                    'commission_percentage_of_margin': 0.1,
-                    'total_wins_percentage_of_margin': 1.6,
-                    'total_losses_percentage_of_margin': -3.0,
+                    'total_return_percentage_of_contract': -2.0,
+                    'average_trade_return_percentage_of_contract': -0.4,
+                    'average_win_percentage_of_contract': 0.8,
+                    'average_loss_percentage_of_contract': -1.0,
+                    'total_wins_percentage_of_contract': 1.6,
+                    'total_losses_percentage_of_contract': -3.0,
                     'maximum_drawdown_percentage': 3.0,
                     'total_net_pnl': -500.0,
                     'avg_trade_net_pnl': -100.0,
@@ -1181,19 +1179,16 @@ class TestMassTester:
             'strategy',
             'total_trades',
             'win_rate',
+            'average_trade_duration_hours',
             # Contract-based metrics
+            'total_wins_percentage_of_contract',
+            'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract',
             'average_trade_return_percentage_of_contract',
-            # Percentage-based metrics
-            'total_return_percentage_of_margin',
-            'average_trade_return_percentage_of_margin',
-            'average_win_percentage_of_margin',
-            'average_loss_percentage_of_margin',
-            'commission_percentage_of_margin',
-            'total_wins_percentage_of_margin',
-            'total_losses_percentage_of_margin',
-            # Risk metrics
+            'average_win_percentage_of_contract',
+            'average_loss_percentage_of_contract',
             'profit_factor',
+            # Risk metrics
             'maximum_drawdown_percentage',
             'sharpe_ratio',
             'sortino_ratio',
@@ -1210,10 +1205,10 @@ class TestMassTester:
         assert df.iloc[0]['total_trades'] == 10
         assert df.iloc[0]['win_rate'] == 60.0
         # Percentage-based metrics
-        assert df.iloc[0]['total_return_percentage_of_margin'] == 5.0
-        assert df.iloc[0]['average_trade_return_percentage_of_margin'] == 0.5
-        assert df.iloc[0]['average_win_percentage_of_margin'] == 1.0
-        assert df.iloc[0]['average_loss_percentage_of_margin'] == -0.5
+        assert df.iloc[0]['total_return_percentage_of_contract'] == 5.0
+        assert df.iloc[0]['average_trade_return_percentage_of_contract'] == 0.5
+        assert df.iloc[0]['average_win_percentage_of_contract'] == 1.0
+        assert df.iloc[0]['average_loss_percentage_of_contract'] == -0.5
         # Risk metrics
         assert df.iloc[0]['profit_factor'] == 1.5
         assert df.iloc[0]['maximum_drawdown_percentage'] == 2.0
@@ -1227,10 +1222,10 @@ class TestMassTester:
         assert df.iloc[1]['total_trades'] == 5
         assert df.iloc[1]['win_rate'] == 40.0
         # Percentage-based metrics
-        assert df.iloc[1]['total_return_percentage_of_margin'] == -2.0
-        assert df.iloc[1]['average_trade_return_percentage_of_margin'] == -0.4
-        assert df.iloc[1]['average_win_percentage_of_margin'] == 0.8
-        assert df.iloc[1]['average_loss_percentage_of_margin'] == -1.0
+        assert df.iloc[1]['total_return_percentage_of_contract'] == -2.0
+        assert df.iloc[1]['average_trade_return_percentage_of_contract'] == -0.4
+        assert df.iloc[1]['average_win_percentage_of_contract'] == 0.8
+        assert df.iloc[1]['average_loss_percentage_of_contract'] == -1.0
         # Risk metrics
         assert df.iloc[1]['profit_factor'] == 0.8
         assert df.iloc[1]['maximum_drawdown_percentage'] == 3.0
@@ -1973,7 +1968,7 @@ class TestDataFrameBuilding:
                 'interval': '1h',
                 'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
                 'metrics': {
-                    # Missing 'total_trades', 'win_rate', 'total_return_percentage_of_margin'
+                    # Missing 'total_trades', 'win_rate', 'total_return_percentage_of_contract'
                     'sharpe_ratio': 1.5,
                     'maximum_drawdown_percentage': 10.0
                 },
@@ -1991,7 +1986,7 @@ class TestDataFrameBuilding:
             # Verify missing metrics were filled with 0
             assert df['total_trades'].iloc[0] == 0
             assert df['win_rate'].iloc[0] == 0
-            assert df['total_return_percentage_of_margin'].iloc[0] == 0
+            assert df['total_return_percentage_of_contract'].iloc[0] == 0
 
             # Verify warnings were logged for critical metrics
             assert mock_logger_warning.call_count >= 3
@@ -2095,8 +2090,8 @@ class TestDataFrameBuilding:
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': 60.0,
-                    'total_return_percentage_of_margin': 15.5,
-                    'average_trade_return_percentage_of_margin': 1.55,
+                    'total_return_percentage_of_contract': 15.5,
+                    'average_trade_return_percentage_of_contract': 1.55,
                     'sharpe_ratio': 1.8,
                     'maximum_drawdown_percentage': 8.5,
                     'profit_factor': 2.1,
@@ -2117,7 +2112,7 @@ class TestDataFrameBuilding:
             # Verify all values are correct
             assert df['total_trades'].iloc[0] == 10
             assert df['win_rate'].iloc[0] == 60.0
-            assert df['total_return_percentage_of_margin'].iloc[0] == 15.5
+            assert df['total_return_percentage_of_contract'].iloc[0] == 15.5
             assert df['sharpe_ratio'].iloc[0] == 1.8
             assert df['maximum_drawdown_percentage'].iloc[0] == 8.5
 

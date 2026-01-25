@@ -48,16 +48,15 @@ class SummaryMetrics:
         win_count = self.win_count
         loss_count = self.loss_count
         average_duration_hours = safe_average(self.durations, self.total_trades)
-        total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
-        total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
+        total_wins_percentage_of_contract = sum(trade['return_percentage_of_contract'] for trade in self.winning_trades)
+        total_losses_percentage_of_contract = sum(
+            trade['return_percentage_of_contract'] for trade in self.losing_trades)
 
-        # --- Return Metrics ---
-        total_return_percentage_of_margin = self.total_return
-        average_trade_return_percentage_of_margin = safe_average([self.total_return], self.total_trades)
-        average_win_percentage_of_margin = self._calculate_average_win_percentage_of_margin()
-        average_loss_percentage_of_margin = self._calculate_average_loss_percentage_of_margin()
+        # --- Return Metrics ---  (contract-based)
         total_return_percentage_of_contract = self.total_return_contract
         average_trade_return_percentage_of_contract = safe_average([self.total_return_contract], self.total_trades)
+        average_win_percentage_of_contract = self._calculate_average_win_percentage_of_contract()
+        average_loss_percentage_of_contract = self._calculate_average_loss_percentage_of_contract()
         profit_factor = self._calculate_profit_factor()
 
         # --- Risk Metrics ---
@@ -76,16 +75,14 @@ class SummaryMetrics:
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
             'average_trade_duration_hours': round(average_duration_hours, 2),
-            'total_wins_percentage_of_margin': round(total_wins_percentage_of_margin, 2),
-            'total_losses_percentage_of_margin': round(total_losses_percentage_of_margin, 2),
+            'total_wins_percentage_of_contract': round(total_wins_percentage_of_contract, 2),
+            'total_losses_percentage_of_contract': round(total_losses_percentage_of_contract, 2),
 
             # --- Return Metrics ---
-            'total_return_percentage_of_margin': round(total_return_percentage_of_margin, 2),
-            'average_trade_return_percentage_of_margin': round(average_trade_return_percentage_of_margin, 2),
-            'average_win_percentage_of_margin': round(average_win_percentage_of_margin, 2),
-            'average_loss_percentage_of_margin': round(average_loss_percentage_of_margin, 2),
             'total_return_percentage_of_contract': round(total_return_percentage_of_contract, 2),
             'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
+            'average_win_percentage_of_contract': round(average_win_percentage_of_contract, 2),
+            'average_loss_percentage_of_contract': round(average_loss_percentage_of_contract, 2),
             'profit_factor': round(profit_factor, 2),
 
             # --- Risk Metrics ---
@@ -121,27 +118,25 @@ class SummaryMetrics:
         self._calculate_cumulative_pnl()
 
         # Cache commonly used values
-        self.total_return = sum(trade['return_percentage_of_margin'] for trade in self.trades)
         self.total_return_contract = sum(trade['return_percentage_of_contract'] for trade in self.trades)
-        self.total_margin_used = sum(trade.get('margin_requirement', 0) for trade in self.trades)
         self.max_drawdown, self.maximum_drawdown_percentage = self._calculate_max_drawdown()
 
         # Cache commonly used lists
-        self.returns = [trade['return_percentage_of_margin'] for trade in self.trades]
+        self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.durations = [trade.get('duration_hours', 0) for trade in self.trades]
 
     def _calculate_win_loss_trades(self):
-        """Calculate winning and losing trades."""
-        self.winning_trades = [t for t in self.trades if t['return_percentage_of_margin'] > 0]
-        self.losing_trades = [t for t in self.trades if t['return_percentage_of_margin'] <= 0]
+        """Calculate winning and losing trades based on contract returns."""
+        self.winning_trades = [t for t in self.trades if t['return_percentage_of_contract'] > 0]
+        self.losing_trades = [t for t in self.trades if t['return_percentage_of_contract'] <= 0]
         self.win_count = len(self.winning_trades)
         self.loss_count = len(self.losing_trades)
         self.win_rate = (self.win_count / self.total_trades) * 100 if self.total_trades > 0 else 0
 
     def _calculate_cumulative_pnl(self):
-        """Calculate cumulative PnL for drawdown calculations."""
+        """Calculate cumulative PnL for drawdown calculations using contract-based percentages."""
         net_pnls = [trade['net_pnl'] for trade in self.trades]
-        return_pcts = [trade['return_percentage_of_margin'] for trade in self.trades]
+        return_pcts = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.cumulative_pnl_dollars = np.cumsum(net_pnls).tolist()
         self.cumulative_pnl_pct = np.cumsum(return_pcts).tolist()
 
@@ -172,28 +167,27 @@ class SummaryMetrics:
 
         return max_drawdown, maximum_drawdown_percentage
 
-    def _calculate_average_win_percentage_of_margin(self):
-        """Calculate average win percentage of margin."""
+    def _calculate_average_win_percentage_of_contract(self):
+        """Calculate average win percentage of contract value."""
         if not self._has_winning_trades():
             return 0
 
-        return safe_average([trade['return_percentage_of_margin'] for trade in self.winning_trades])
+        return safe_average([trade['return_percentage_of_contract'] for trade in self.winning_trades])
 
-    def _calculate_average_loss_percentage_of_margin(self):
-        """Calculate average loss percentage of margin."""
+    def _calculate_average_loss_percentage_of_contract(self):
+        """Calculate average loss percentage of contract value."""
         if not self._has_losing_trades():
             return 0
 
-        return safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
-
+        return safe_average([trade['return_percentage_of_contract'] for trade in self.losing_trades])
 
     def _calculate_profit_factor(self):
-        """Calculate a profit factor using percentage returns: Total Win % / Total Loss %."""
+        """Calculate a profit factor using contract-based percentage returns: Total Win % / Total Loss %."""
         if not self._has_trades():
             return 0
 
-        total_win_percentage = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
-        total_loss_percentage = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
+        total_win_percentage = sum(trade['return_percentage_of_contract'] for trade in self.winning_trades)
+        total_loss_percentage = sum(trade['return_percentage_of_contract'] for trade in self.losing_trades)
 
         if total_loss_percentage == 0:
             # Return very high finite number instead of infinity for better aggregation/comparison handling
@@ -247,7 +241,7 @@ class SummaryMetrics:
             # Return very high finite number instead of infinity for better aggregation/comparison handling
             return INFINITY_REPLACEMENT
 
-        return safe_divide(self.total_return, self.maximum_drawdown_percentage)
+        return safe_divide(self.total_return_contract, self.maximum_drawdown_percentage)
 
     def _calculate_value_at_risk(self, confidence=0.95):
         """ Returns the loss that won't be exceeded with the given confidence level. """
