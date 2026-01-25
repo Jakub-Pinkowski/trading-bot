@@ -47,6 +47,61 @@ class BaseStrategy:
         self.prev_time = None
         self.queued_signal = None
 
+    # ==================== Properties for Backward Compatibility ====================
+
+    @property
+    def position(self):
+        """Access position from position manager"""
+        return self.position_mgr.position
+
+    @position.setter
+    def position(self, value):
+        """Set position in position manager"""
+        self.position_mgr.position = value
+
+    @property
+    def entry_time(self):
+        """Access entry time from position manager"""
+        return self.position_mgr.entry_time
+
+    @entry_time.setter
+    def entry_time(self, value):
+        """Set entry time in position manager"""
+        self.position_mgr.entry_time = value
+
+    @property
+    def entry_price(self):
+        """Access entry price from position manager"""
+        return self.position_mgr.entry_price
+
+    @entry_price.setter
+    def entry_price(self, value):
+        """Set entry price in position manager"""
+        self.position_mgr.entry_price = value
+
+    @property
+    def trailing_stop(self):
+        """Access trailing stop from position manager"""
+        return self.position_mgr.trailing_stop
+
+    @trailing_stop.setter
+    def trailing_stop(self, value):
+        """Set trailing stop in position manager"""
+        self.position_mgr.trailing_stop = value
+
+    @property
+    def trades(self):
+        """Access trades from position manager"""
+        return self.position_mgr.trades
+
+    def _reset(self):
+        """Reset all state variables (backward compatibility)"""
+        self.position_mgr.reset()
+        self.switch_handler.reset()
+        self.prev_row = None
+        self.prev_time = None
+        self.queued_signal = None
+
     # ==================== Public API ====================
 
     def run(self, df, switch_dates):
