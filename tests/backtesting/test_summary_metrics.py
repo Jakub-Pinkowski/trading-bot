@@ -218,17 +218,6 @@ class TestCalculateSummaryMetrics:
         assert summary['total_return_percentage_of_margin'] == -6.0
         assert summary['profit_factor'] == 0.0  # No winning trades
 
-    def test_commission_metrics(self):
-        """Test the calculation of the commission metrics."""
-        trades = [
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0, commission=5.0),
-            create_sample_trade(net_pnl=200.0, return_percentage=2.0, commission=5.0),
-            create_sample_trade(net_pnl=300.0, return_percentage=3.0, commission=5.0)
-        ]
-        metrics = SummaryMetrics(trades)
-        summary = metrics.calculate_all_metrics()
-
-        assert summary['commission_percentage_of_margin'] == round((15.0 / 30000.0) * 100, 2)  # 3 trades * 10000 margin
 
     def test_duration_metrics(self):
         """Test the calculation of the duration metrics."""
@@ -1267,20 +1256,6 @@ class TestPrivateHelperMethods:
 
         assert avg_loss == -1.0  # (-0.5 + -1.5) / 2
 
-    def test_calculate_commission_percentage_of_margin(self):
-        """Test _calculate_commission_percentage_of_margin method."""
-        trades = [
-            create_sample_trade(commission=5.0, margin_requirement=10000.0),
-            create_sample_trade(commission=10.0, margin_requirement=20000.0)
-        ]
-        metrics = SummaryMetrics(trades)
-
-        commission_pct = metrics._calculate_commission_percentage_of_margin()
-
-        # Total commission: 15.0, Total margin: 30000.0
-        # Commission percentage: (15.0 / 30000.0) * 100 = 0.05%
-        expected = round((15.0 / 30000.0) * 100, 2)
-        assert commission_pct == expected
 
     def test_calculate_profit_factor(self):
         """Test _calculate_profit_factor method."""

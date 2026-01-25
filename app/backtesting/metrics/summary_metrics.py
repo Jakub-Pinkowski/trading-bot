@@ -48,24 +48,19 @@ class SummaryMetrics:
         win_count = self.win_count
         loss_count = self.loss_count
         average_duration_hours = safe_average(self.durations, self.total_trades)
+        total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
+        total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
 
-        # --- Normalized Metrics (Percentages) ---
+        # --- Return Metrics ---
         total_return_percentage_of_margin = self.total_return
         average_trade_return_percentage_of_margin = safe_average([self.total_return], self.total_trades)
         average_win_percentage_of_margin = self._calculate_average_win_percentage_of_margin()
         average_loss_percentage_of_margin = self._calculate_average_loss_percentage_of_margin()
-        commission_percentage_of_margin = self._calculate_commission_percentage_of_margin()
-
-        # Contract-based metrics
         total_return_percentage_of_contract = self.total_return_contract
         average_trade_return_percentage_of_contract = safe_average([self.total_return_contract], self.total_trades)
-
-        # Calculate total wins and losses for aggregation
-        total_wins_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.winning_trades)
-        total_losses_percentage_of_margin = sum(trade['return_percentage_of_margin'] for trade in self.losing_trades)
+        profit_factor = self._calculate_profit_factor()
 
         # --- Risk Metrics ---
-        profit_factor = self._calculate_profit_factor()
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
         sharpe_ratio = self._calculate_sharpe_ratio()
         sortino_ratio = self._calculate_sortino_ratio()
@@ -75,28 +70,25 @@ class SummaryMetrics:
         ulcer_index = self._calculate_ulcer_index()
 
         return {
-            # Basic info
+            # --- Basic Trade Statistics ---
             'total_trades': self.total_trades,
             'winning_trades': win_count,
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
             'average_trade_duration_hours': round(average_duration_hours, 2),
+            'total_wins_percentage_of_margin': round(total_wins_percentage_of_margin, 2),
+            'total_losses_percentage_of_margin': round(total_losses_percentage_of_margin, 2),
 
-            # Percentage-based metrics
+            # --- Return Metrics ---
             'total_return_percentage_of_margin': round(total_return_percentage_of_margin, 2),
             'average_trade_return_percentage_of_margin': round(average_trade_return_percentage_of_margin, 2),
             'average_win_percentage_of_margin': round(average_win_percentage_of_margin, 2),
             'average_loss_percentage_of_margin': round(average_loss_percentage_of_margin, 2),
-            'commission_percentage_of_margin': round(commission_percentage_of_margin, 2),
-            'total_wins_percentage_of_margin': round(total_wins_percentage_of_margin, 2),
-            'total_losses_percentage_of_margin': round(total_losses_percentage_of_margin, 2),
-
-            # Contract-based metrics
             'total_return_percentage_of_contract': round(total_return_percentage_of_contract, 2),
             'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
-
-            # Risk metrics
             'profit_factor': round(profit_factor, 2),
+
+            # --- Risk Metrics ---
             'maximum_drawdown_percentage': round(maximum_drawdown_percentage, 2),
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
@@ -194,17 +186,6 @@ class SummaryMetrics:
 
         return safe_average([trade['return_percentage_of_margin'] for trade in self.losing_trades])
 
-    def _calculate_commission_percentage_of_margin(self):
-        """Calculate commission as percentage of margin."""
-        if not self._has_trades():
-            return 0
-
-        total_commission_paid = sum(trade.get('commission', 0) for trade in self.trades)
-        total_margin_used = self.total_margin_used
-
-        commission_percentage_of_margin = (
-                                                  total_commission_paid / total_margin_used) * 100 if total_margin_used > 0 else 0
-        return commission_percentage_of_margin
 
     def _calculate_profit_factor(self):
         """Calculate a profit factor using percentage returns: Total Win % / Total Loss %."""
