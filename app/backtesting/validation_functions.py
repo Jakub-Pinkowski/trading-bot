@@ -11,6 +11,8 @@ When adding new strategies, add their validation function here following the sam
 from app.backtesting.validation_constants import *
 
 
+# ==================== Public API ====================
+
 def validate_rsi_parameters(rsi_period, lower, upper):
     """
     Enhanced validation for RSI parameters with guidance on reasonable ranges.

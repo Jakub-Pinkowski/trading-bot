@@ -10,6 +10,8 @@ from config import BACKTESTING_DIR
 logger = get_logger('backtesting/strategy_analysis')
 
 
+# ==================== Helper Functions ====================
+
 def _filter_dataframe(
     df,
     min_avg_trades_per_combination=0,
