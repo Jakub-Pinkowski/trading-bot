@@ -49,6 +49,9 @@ class Cache:
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
+        # Cache statistics
+        self.hits = 0
+        self.misses = 0
         self._load_cache()
 
     def save_cache(self, max_retries=DEFAULT_CACHE_RETRY_ATTEMPTS):
@@ -117,6 +120,7 @@ class Cache:
     def contains(self, key):
         """ Check if a key exists in the cache """
         if key not in self.cache_data:
+            self.misses += 1
             return False
 
         # Check if the item is expired
@@ -125,8 +129,10 @@ class Cache:
             if time.time() - timestamp > self.max_age:
                 # Remove the expired item
                 del self.cache_data[key]
+                self.misses += 1
                 return False
 
+        self.hits += 1
         return True
 
     def clear(self):
@@ -136,6 +142,26 @@ class Cache:
     def size(self):
         """Get the number of items in the cache."""
         return len(self.cache_data)
+
+    def get_stats(self):
+        """Get cache statistics.
+
+        Returns:
+            dict: Dictionary with 'hits', 'misses', 'total', and 'hit_rate' keys
+        """
+        total = self.hits + self.misses
+        hit_rate = (self.hits / total * 100) if total > 0 else 0
+        return {
+            'hits': self.hits,
+            'misses': self.misses,
+            'total': total,
+            'hit_rate': hit_rate
+        }
+
+    def reset_stats(self):
+        """Reset cache statistics."""
+        self.hits = 0
+        self.misses = 0
 
     # --- Private methods ---
 

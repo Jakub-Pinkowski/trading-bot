@@ -150,6 +150,10 @@ class MassTester:
         """  Run all tests with the configured parameters in parallel. """
         start_time = time.time()  # Track the start time of the entire process
 
+        # Reset cache statistics at the start of the run
+        indicator_cache.reset_stats()
+        dataframe_cache.reset_stats()
+
         if not hasattr(self, 'strategies') or not self.strategies:
             logger.error('No strategies added for testing. Use add_*_tests methods first.')
             raise ValueError('No strategies added for testing. Use add_*_tests methods first.')
@@ -246,7 +250,7 @@ class MassTester:
 
         # Run tests in parallel
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            future_to_test = {executor.submit(self._run_single_test, test_params): test_params for test_params in
+            future_to_test = {executor.submit(_run_single_test, test_params): test_params for test_params in
                               test_combinations}
 
             total_tests = len(test_combinations)
@@ -310,6 +314,44 @@ class MassTester:
         # Save caches after all tests complete (only from main process)
         # Note: save_cache() already handles file locking internally, no need to wrap it
         logger.info('All tests completed, saving caches...')
+
+        # Aggregate cache statistics from all test results
+        total_ind_hits = 0
+        total_ind_misses = 0
+        total_df_hits = 0
+        total_df_misses = 0
+
+        for result in self.results:
+            if 'cache_stats' in result:
+                total_ind_hits += result['cache_stats']['ind_hits']
+                total_ind_misses += result['cache_stats']['ind_misses']
+                total_df_hits += result['cache_stats']['df_hits']
+                total_df_misses += result['cache_stats']['df_misses']
+
+        # Calculate aggregated statistics
+        ind_total = total_ind_hits + total_ind_misses
+        ind_hit_rate = (total_ind_hits / ind_total * 100) if ind_total > 0 else 0
+        df_total = total_df_hits + total_df_misses
+        df_hit_rate = (total_df_hits / df_total * 100) if df_total > 0 else 0
+
+        print('\n' + '=' * 80)
+        print('CACHE PERFORMANCE STATISTICS')
+        print('=' * 80)
+        print(f'\nIndicator Cache:')
+        print(f'  - Entries: {indicator_cache.size()}')
+        print(f'  - Hits: {total_ind_hits:,}')
+        print(f'  - Misses: {total_ind_misses:,}')
+        print(f'  - Total queries: {ind_total:,}')
+        print(f'  - Hit rate: {ind_hit_rate:.2f}%')
+
+        print(f'\nDataFrame Cache:')
+        print(f'  - Entries: {dataframe_cache.size()}')
+        print(f'  - Hits: {total_df_hits:,}')
+        print(f'  - Misses: {total_df_misses:,}')
+        print(f'  - Total queries: {df_total:,}')
+        print(f'  - Hit rate: {df_hit_rate:.2f}%')
+        print('=' * 80 + '\n')
+
         try:
             indicator_cache_size = indicator_cache.size()
             indicator_cache.save_cache()
@@ -364,128 +406,6 @@ class MassTester:
             strategy_instance = create_strategy(strategy_type, **strategy_params)
 
             self.strategies.append((strategy_name, strategy_instance))
-
-    def _validate_dataframe(self, df, filepath):
-        """Comprehensive DataFrame validation.
-
-        Args:
-            df: DataFrame to validate
-            filepath: Path to the source file (for logging)
-
-        Returns:
-            bool: True if DataFrame is valid, False otherwise
-        """
-        # Check if DataFrame exists and is not empty
-        if df is None or df.empty:
-            logger.error(f'Empty or None DataFrame: {filepath}')
-            return False
-
-        # Check required columns
-        required_columns = ['open', 'high', 'low', 'close']
-        missing = [col for col in required_columns if col not in df.columns]
-        if missing:
-            logger.error(f'DataFrame missing required columns {missing}: {filepath}')
-            return False
-
-        # Check data types - all OHLC columns must be numeric
-        for col in required_columns:
-            if not pd.api.types.is_numeric_dtype(df[col]):
-                logger.error(f'Non-numeric column "{col}" (type: {df[col].dtype}): {filepath}')
-                return False
-
-        # Check for excessive NaN values
-        for col in required_columns:
-            nan_count = df[col].isna().sum()
-            if nan_count > 0:
-                nan_pct = (nan_count / len(df)) * 100
-                if nan_pct > 10:  # More than 10% NaN is concerning
-                    logger.warning(f'Column "{col}" has {nan_pct:.1f}% NaN values ({nan_count}/{len(df)} rows): {filepath}')
-
-        # Check index is DatetimeIndex (required for time-series operations)
-        if not isinstance(df.index, pd.DatetimeIndex):
-            logger.error(f'DataFrame index is not a DatetimeIndex (type: {type(df.index).__name__}): {filepath}')
-            return False
-
-        # Check index is sorted (critical for time-series data)
-        if not df.index.is_monotonic_increasing:
-            logger.error(f'DataFrame index is not sorted in ascending order: {filepath}')
-            return False
-
-        # Check for duplicate timestamps
-        if df.index.duplicated().any():
-            dup_count = df.index.duplicated().sum()
-            logger.warning(f'DataFrame has {dup_count} duplicate timestamp(s): {filepath}')
-            # Don't fail validation, just warn - duplicates might be intentional
-
-        return True
-
-    def _run_single_test(self, test_params):
-        """Run a single test with the given parameters."""
-        # Unpack parameters
-        tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath = test_params
-
-        output_buffer = []  # Buffer to collect verbose output
-        try:
-            df = get_cached_dataframe(filepath)
-        except Exception as error:
-            logger.error(f'Failed to read file: {filepath}\nReason: {error}')
-            return None
-
-        # Comprehensive DataFrame validation
-        if not self._validate_dataframe(df, filepath):
-            return None
-
-        # Check for the minimum row count required for reliable backtesting
-        if len(df) < MIN_ROWS_FOR_BACKTEST:
-            logger.warning(
-                f'DataFrame has only {len(df)} rows, need at least {MIN_ROWS_FOR_BACKTEST} '
-                f'for reliable backtesting in {filepath}'
-            )
-            # Continue anyway but log warning - some strategies may still work with fewer rows
-
-        if verbose:
-            output_buffer.append(f'\nRunning strategy: {strategy_name} for {symbol} {interval} {tested_month}')
-
-        trades_list = strategy_instance.run(df, switch_dates)
-
-        trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
-
-        if trades_with_metrics_list:
-            metrics = SummaryMetrics(trades_with_metrics_list)
-            summary_metrics = metrics.calculate_all_metrics()
-            if verbose:
-                original_stdout = sys.stdout
-                string_io = io.StringIO()
-                sys.stdout = string_io
-                SummaryMetrics.print_summary_metrics(summary_metrics)
-                sys.stdout = original_stdout
-                output_buffer.append(string_io.getvalue())
-
-            result = {
-                'month': tested_month,
-                'symbol': symbol,
-                'interval': interval,
-                'strategy': strategy_name,
-                'metrics': summary_metrics,
-                'timestamp': datetime.now().isoformat(),
-                'verbose_output': '\n'.join(output_buffer) if verbose else None
-            }
-            return result
-        else:
-            if verbose:
-                output_buffer.append(f'No trades generated by strategy {strategy_name} for {symbol} {interval} {tested_month}')
-
-            logger.info(f'No trades generated by strategy {strategy_name} for {symbol} {interval} {tested_month}')
-            # Return a complete result dictionary even when no trades are generated
-            return {
-                'month': tested_month,
-                'symbol': symbol,
-                'interval': interval,
-                'strategy': strategy_name,
-                'metrics': {},  # Empty metrics
-                'timestamp': datetime.now().isoformat(),
-                'verbose_output': '\n'.join(output_buffer) if verbose else None
-            }
 
     def _results_to_dataframe(self):
         """Convert results to a pandas DataFrame."""
@@ -610,3 +530,158 @@ class MassTester:
                 print('No results to save.')
         except Exception as error:
             logger.error(f'Failed to save results: {error}')
+
+
+def _validate_dataframe(df, filepath):
+    """Comprehensive DataFrame validation.
+
+    Args:
+        df: DataFrame to validate
+        filepath: Path to the source file (for logging)
+
+    Returns:
+        bool: True if DataFrame is valid, False otherwise
+    """
+    # Check if DataFrame exists and is not empty
+    if df is None or df.empty:
+        logger.error(f'Empty or None DataFrame: {filepath}')
+        return False
+
+    # Check required columns
+    required_columns = ['open', 'high', 'low', 'close']
+    missing = [col for col in required_columns if col not in df.columns]
+    if missing:
+        logger.error(f'DataFrame missing required columns {missing}: {filepath}')
+        return False
+
+    # Check data types - all OHLC columns must be numeric
+    for col in required_columns:
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            logger.error(f'Non-numeric column "{col}" (type: {df[col].dtype}): {filepath}')
+            return False
+
+    # Check for excessive NaN values
+    for col in required_columns:
+        nan_count = df[col].isna().sum()
+        if nan_count > 0:
+            nan_pct = (nan_count / len(df)) * 100
+            if nan_pct > 10:  # More than 10% NaN is concerning
+                logger.warning(f'Column "{col}" has {nan_pct:.1f}% NaN values ({nan_count}/{len(df)} rows): {filepath}')
+
+    # Check index is DatetimeIndex (required for time-series operations)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        logger.error(f'DataFrame index is not a DatetimeIndex (type: {type(df.index).__name__}): {filepath}')
+        return False
+
+    # Check index is sorted (critical for time-series data)
+    if not df.index.is_monotonic_increasing:
+        logger.error(f'DataFrame index is not sorted in ascending order: {filepath}')
+        return False
+
+    # Check for duplicate timestamps
+    if df.index.duplicated().any():
+        dup_count = df.index.duplicated().sum()
+        logger.warning(f'DataFrame has {dup_count} duplicate timestamp(s): {filepath}')
+        # Don't fail validation, just warn - duplicates might be intentional
+
+    return True
+
+
+def _run_single_test(test_params):
+    """Run a single test with the given parameters."""
+    # Unpack parameters
+    tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath = test_params
+
+    # Track cache stats before the test
+    ind_hits_before = indicator_cache.hits
+    ind_misses_before = indicator_cache.misses
+    df_hits_before = dataframe_cache.hits
+    df_misses_before = dataframe_cache.misses
+
+    output_buffer = []  # Buffer to collect verbose output
+    try:
+        df = get_cached_dataframe(filepath)
+    except Exception as error:
+        logger.error(f'Failed to read file: {filepath}\nReason: {error}')
+        return None
+
+    # Comprehensive DataFrame validation
+    if not _validate_dataframe(df, filepath):
+        return None
+
+    # Check for the minimum row count required for reliable backtesting
+    if len(df) < MIN_ROWS_FOR_BACKTEST:
+        logger.warning(
+            f'DataFrame has only {len(df)} rows, need at least {MIN_ROWS_FOR_BACKTEST} '
+            f'for reliable backtesting in {filepath}'
+        )
+        # Continue anyway but log warning - some strategies may still work with fewer rows
+
+    if verbose:
+        output_buffer.append(f'\nRunning strategy: {strategy_name} for {symbol} {interval} {tested_month}')
+
+    trades_list = strategy_instance.run(df, switch_dates)
+
+    trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
+
+    if trades_with_metrics_list:
+        metrics = SummaryMetrics(trades_with_metrics_list)
+        summary_metrics = metrics.calculate_all_metrics()
+        if verbose:
+            original_stdout = sys.stdout
+            string_io = io.StringIO()
+            sys.stdout = string_io
+            SummaryMetrics.print_summary_metrics(summary_metrics)
+            sys.stdout = original_stdout
+            output_buffer.append(string_io.getvalue())
+
+        # Calculate cache stats for this test
+        ind_hits_delta = indicator_cache.hits - ind_hits_before
+        ind_misses_delta = indicator_cache.misses - ind_misses_before
+        df_hits_delta = dataframe_cache.hits - df_hits_before
+        df_misses_delta = dataframe_cache.misses - df_misses_before
+
+        result = {
+            'month': tested_month,
+            'symbol': symbol,
+            'interval': interval,
+            'strategy': strategy_name,
+            'metrics': summary_metrics,
+            'timestamp': datetime.now().isoformat(),
+            'verbose_output': '\n'.join(output_buffer) if verbose else None,
+            'cache_stats': {
+                'ind_hits': ind_hits_delta,
+                'ind_misses': ind_misses_delta,
+                'df_hits': df_hits_delta,
+                'df_misses': df_misses_delta,
+            }
+        }
+        return result
+    else:
+        if verbose:
+            output_buffer.append(f'No trades generated by strategy {strategy_name} for {symbol} {interval} {tested_month}')
+
+        logger.info(f'No trades generated by strategy {strategy_name} for {symbol} {interval} {tested_month}')
+
+        # Calculate cache stats for this test
+        ind_hits_delta = indicator_cache.hits - ind_hits_before
+        ind_misses_delta = indicator_cache.misses - ind_misses_before
+        df_hits_delta = dataframe_cache.hits - df_hits_before
+        df_misses_delta = dataframe_cache.misses - df_misses_before
+
+        # Return a complete result dictionary even when no trades are generated
+        return {
+            'month': tested_month,
+            'symbol': symbol,
+            'interval': interval,
+            'strategy': strategy_name,
+            'metrics': {},  # Empty metrics
+            'timestamp': datetime.now().isoformat(),
+            'verbose_output': '\n'.join(output_buffer) if verbose else None,
+            'cache_stats': {
+                'ind_hits': ind_hits_delta,
+                'ind_misses': ind_misses_delta,
+                'df_hits': df_hits_delta,
+                'df_misses': df_misses_delta,
+            }
+        }

@@ -108,7 +108,7 @@ def main():
 
     # Run all tests
     # Set skip_existing=False to force re-running of all tests
-    tester.run_tests(verbose=False, max_workers=8)
+    tester.run_tests(verbose=False, max_workers=8, skip_existing=False)
 
 
 if __name__ == '__main__':
