@@ -51,6 +51,47 @@ Scenario 3: Gap down through stop
 """
 
 
+def should_trigger_stop(position, trailing_stop, price_high, price_low):
+    """
+    Check if trailing stop should be triggered.
+
+    Args:
+        position: 1 for long, -1 for short
+        trailing_stop: Current trailing stop level
+        price_high: Highest price during the bar
+        price_low: Lowest price during the bar
+
+    Returns:
+        bool: True if stop should trigger, False otherwise
+    """
+    if position == 1 and price_low <= trailing_stop:
+        # Long stop triggered
+        return True
+    elif position == -1 and price_high >= trailing_stop:
+        # Short stop triggered
+        return True
+    return False
+
+
+def update_trailing_stop(position_manager, position, current_stop, new_stop):
+    """
+    Update trailing stop if it represents a tightening of the stop.
+
+    Args:
+        position_manager: PositionManager instance
+        position: 1 for long, -1 for short
+        current_stop: Current trailing stop level
+        new_stop: New calculated stop level
+    """
+    # Only tighten stop (never loosen for trailing stops)
+    if position == 1 and new_stop > current_stop:
+        # Long: Only move stop UP
+        position_manager.trailing_stop = new_stop
+    elif position == -1 and new_stop < current_stop:
+        # Short: Only move stop DOWN
+        position_manager.trailing_stop = new_stop
+
+
 class TrailingStopManager:
     """
     Manages trailing stop functionality with proper look-ahead bias prevention.
@@ -89,7 +130,7 @@ class TrailingStopManager:
             position = position_manager.position
             trailing_stop = position_manager.trailing_stop
 
-            if self.should_trigger_stop(position, trailing_stop, price_high, price_low):
+            if should_trigger_stop(position, trailing_stop, price_high, price_low):
                 # Stop triggered - close at stop level (not at low/high price)
                 position_manager.close_position(idx, trailing_stop, switch=False)
                 return True  # Exit early - no stop update after position closed (prevents look-ahead bias)
@@ -104,29 +145,8 @@ class TrailingStopManager:
             new_stop = self.calculate_new_trailing_stop(position, price_high, price_low)
 
             if new_stop is not None:
-                self.update_trailing_stop(position_manager, position, trailing_stop, new_stop)
+                update_trailing_stop(position_manager, position, trailing_stop, new_stop)
 
-        return False
-
-    def should_trigger_stop(self, position, trailing_stop, price_high, price_low):
-        """
-        Check if trailing stop should be triggered.
-
-        Args:
-            position: 1 for long, -1 for short
-            trailing_stop: Current trailing stop level
-            price_high: Highest price during the bar
-            price_low: Lowest price during the bar
-
-        Returns:
-            bool: True if stop should trigger, False otherwise
-        """
-        if position == 1 and price_low <= trailing_stop:
-            # Long stop triggered
-            return True
-        elif position == -1 and price_high >= trailing_stop:
-            # Short stop triggered
-            return True
         return False
 
     def calculate_new_trailing_stop(self, position, price_high, price_low):
@@ -159,24 +179,6 @@ class TrailingStopManager:
             # Use bar low to calculate stop (most favorable price for short)
             return round(price_low * (1 + self.trailing_percentage / 100), 2)
         return None
-
-    def update_trailing_stop(self, position_manager, position, current_stop, new_stop):
-        """
-        Update trailing stop if it represents a tightening of the stop.
-
-        Args:
-            position_manager: PositionManager instance
-            position: 1 for long, -1 for short
-            current_stop: Current trailing stop level
-            new_stop: New calculated stop level
-        """
-        # Only tighten stop (never loosen for trailing stops)
-        if position == 1 and new_stop > current_stop:
-            # Long: Only move stop UP
-            position_manager.trailing_stop = new_stop
-        elif position == -1 and new_stop < current_stop:
-            # Short: Only move stop DOWN
-            position_manager.trailing_stop = new_stop
 
     def initialize_trailing_stop(self, position_manager, entry_price, direction):
         """

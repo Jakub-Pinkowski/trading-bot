@@ -11,31 +11,18 @@ This module manages position state and lifecycle during backtesting, including:
 class PositionManager:
     """Manages position state and lifecycle during backtesting."""
 
-    def __init__(self, slippage=0, slippage_type='percentage', symbol=None, trailing=None):
+    def __init__(self, slippage=0, symbol=None, trailing=None):
         """
         Initialize the position manager.
 
         Args:
-            slippage: Slippage value (interpretation depends on slippage_type)
-            slippage_type: Either 'percentage' or 'ticks'
-                - 'percentage': slippage is a percentage (e.g., 0.05 = 0.05%)
-                - 'ticks': slippage is number of ticks (e.g., 2 = 2 ticks)
-            symbol: The futures symbol (e.g., 'ZC', 'GC') - required for tick-based slippage
+            slippage: Slippage percentage (e.g., 0.05 = 0.05%)
+            symbol: The futures symbol (e.g., 'ZC', 'GC')
             trailing: Trailing stop percentage (if used)
         """
         self.slippage = slippage
-        self.slippage_type = slippage_type
         self.symbol = symbol
         self.trailing = trailing
-
-        # Get tick size for tick-based slippage
-        if slippage_type == 'ticks' and symbol:
-            from app.backtesting.tick_sizes import get_tick_size, get_decimal_places
-            self.tick_size = get_tick_size(symbol)
-            self.decimal_places = get_decimal_places(self.tick_size)
-        else:
-            self.tick_size = None
-            self.decimal_places = 2
 
         # Initialize position state
         self.position = None

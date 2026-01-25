@@ -1,5 +1,5 @@
 from app.backtesting.indicators import calculate_ema
-from app.backtesting.strategies.base_strategy import BaseStrategy
+from app.backtesting.strategies.base_strategy import BaseStrategy, precompute_hashes, detect_crossover, detect_threshold_cross
 
 
 class EMACrossoverStrategy(BaseStrategy):
@@ -10,20 +10,18 @@ class EMACrossoverStrategy(BaseStrategy):
         rollover=False,
         trailing=None,
         slippage=0,
-        slippage_type='percentage',
         symbol=None
     ):
         super().__init__(rollover=rollover,
                          trailing=trailing,
                          slippage=slippage,
-                         slippage_type=slippage_type,
                          symbol=symbol)
         self.ema_short = ema_short
         self.ema_long = ema_long
 
     def add_indicators(self, df):
         # Pre-compute hash once (used for both EMA calculations)
-        hashes = self._precompute_hashes(df)
+        hashes = precompute_hashes(df)
 
         # Both EMAs use the same hash - no redundant hashing!
         df['ema_short'] = calculate_ema(df['close'], period=self.ema_short,
@@ -42,9 +40,9 @@ class EMACrossoverStrategy(BaseStrategy):
         df['signal'] = 0
 
         # Buy signal: Short EMA crosses above Long EMA
-        df.loc[self._detect_crossover(df['ema_short'], df['ema_long'], 'above'), 'signal'] = 1
+        df.loc[detect_crossover(df['ema_short'], df['ema_long'], 'above'), 'signal'] = 1
 
         # Sell signal: Short EMA crosses below Long EMA
-        df.loc[self._detect_crossover(df['ema_short'], df['ema_long'], 'below'), 'signal'] = -1
+        df.loc[detect_crossover(df['ema_short'], df['ema_long'], 'below'), 'signal'] = -1
 
         return df

@@ -20,25 +20,114 @@ from app.backtesting.strategies.contract_switch_handler import ContractSwitchHan
 INDICATOR_WARMUP_PERIOD = 100
 
 
+def precompute_hashes(df):
+    """
+    Pre-compute hashes for commonly used price series.
+
+    This function calculates hashes once for price series that are typically
+    passed to multiple indicator functions. This eliminates redundant hash
+    computations and significantly improves performance when using multiple
+    indicators.
+
+    Args:
+        df: DataFrame with OHLCV data
+
+    Returns:
+        Dictionary with pre-computed hashes for common price series:
+        {
+            'close': hash of df['close'],
+            'high': hash of df['high'],
+            'low': hash of df['low'],
+            'open': hash of df['open'],
+            'volume': hash of df['volume']
+        }
+
+    Example:
+        def add_indicators(self, df):
+            from app.backtesting.strategies.base_strategy import precompute_hashes
+            # Pre-compute all hashes once
+            hashes = precompute_hashes(df)
+
+            # Pass pre-computed hashes to indicators (no redundant hashing!)
+            df['rsi'] = calculate_rsi(df['close'], period=14,
+                                     prices_hash=hashes['close'])
+            df['rsi_long'] = calculate_rsi(df['close'], period=21,
+                                          prices_hash=hashes['close'])
+            df['ema'] = calculate_ema(df['close'], period=9,
+                                     prices_hash=hashes['close'])
+            return df
+    """
+    hashes = {}
+
+    # Pre-compute hashes for OHLCV columns that exist in the DataFrame
+    for col in ['close', 'high', 'low', 'open', 'volume']:
+        if col in df.columns:
+            hashes[col] = hash_series(df[col])
+
+    return hashes
+
+
+def detect_crossover(series1, series2, direction='above'):
+    """
+    Detect when series1 crosses series2.
+
+    Args:
+        series1 (pd.Series): First series (e.g., fast EMA, MACD line)
+        series2 (pd.Series): Second series (e.g., slow EMA, signal line)
+        direction (str): 'above' for bullish crossover, 'below' for bearish crossover
+
+    Returns:
+        pd.Series: Boolean series indicating crossover points
+    """
+    prev_series1 = series1.shift(1)
+    prev_series2 = series2.shift(1)
+
+    if direction == 'above':
+        # Series1 crosses above series2 (bullish)
+        return (prev_series1 <= prev_series2) & (series1 > series2)
+    else:  # direction == 'below'
+        # Series1 crosses below series2 (bearish)
+        return (prev_series1 >= prev_series2) & (series1 < series2)
+
+
+def detect_threshold_cross(series, threshold, direction='below'):
+    """
+    Detect when a series crosses a threshold value.
+
+    Args:
+        series (pd.Series): The series to check (e.g., RSI, price)
+        threshold (float): The threshold value to cross
+        direction (str): 'below' for crossing downward, 'above' for crossing upward
+
+    Returns:
+        pd.Series: Boolean series indicating threshold cross-points
+    """
+    prev_series = series.shift(1)
+
+    if direction == 'below':
+        # Series crosses below a threshold (bearish)
+        return (prev_series > threshold) & (series <= threshold)
+    else:  # direction == 'above'
+        # Series crosses above a threshold (bullish)
+        return (prev_series < threshold) & (series >= threshold)
+
+
 class BaseStrategy:
-    def __init__(self, rollover=False, trailing=None, slippage=0, slippage_type='percentage', symbol=None):
+    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
         """
         Initialize the base strategy.
 
         Args:
             rollover: Whether to handle contract rollovers
             trailing: Trailing stop percentage (if used)
-            slippage: Slippage value (interpretation depends on slippage_type)
-            slippage_type: Either 'percentage' or 'ticks'
-                - 'percentage': slippage is a percentage (e.g., 0.05 = 0.05%)
-                - 'ticks': slippage is number of ticks (e.g., 2 = 2 ticks)
-            symbol: The futures symbol (e.g., 'ZC', 'GC') - required for tick-based slippage
+            slippage: Slippage percentage (e.g., 0.05 = 0.05%)
+            symbol: The futures symbol (e.g., 'ZC', 'GC')
         """
         self.rollover = rollover
         self.trailing = trailing
 
         # Delegate to managers
-        self.position_manager = PositionManager(slippage, slippage_type, symbol, trailing)
+        self.position_manager = PositionManager(slippage, symbol, trailing)
         self.trailing_stop_manager = TrailingStopManager(trailing) if trailing else None
         self.switch_handler = ContractSwitchHandler(None, rollover)
 
@@ -74,96 +163,10 @@ class BaseStrategy:
         raise NotImplementedError('Subclasses must implement generate_signals method')
 
     # ==================== Helper Methods for Subclasses ====================
-
-    def _precompute_hashes(self, df):
-        """
-        Pre-compute hashes for commonly used price series.
-
-        This method calculates hashes once for price series that are typically
-        passed to multiple indicator functions. This eliminates redundant hash
-        computations and significantly improves performance when using multiple
-        indicators.
-
-        Args:
-            df: DataFrame with OHLCV data
-
-        Returns:
-            Dictionary with pre-computed hashes for common price series:
-            {
-                'close': hash of df['close'],
-                'high': hash of df['high'],
-                'low': hash of df['low'],
-                'open': hash of df['open'],
-                'volume': hash of df['volume']
-            }
-
-        Example:
-            def add_indicators(self, df):
-                # Pre-compute all hashes once
-                hashes = self._precompute_hashes(df)
-
-                # Pass pre-computed hashes to indicators (no redundant hashing!)
-                df['rsi'] = calculate_rsi(df['close'], period=14,
-                                         prices_hash=hashes['close'])
-                df['rsi_long'] = calculate_rsi(df['close'], period=21,
-                                              prices_hash=hashes['close'])
-                df['ema'] = calculate_ema(df['close'], period=9,
-                                         prices_hash=hashes['close'])
-                return df
-        """
-        hashes = {}
-
-        # Pre-compute hashes for OHLCV columns that exist in the DataFrame
-        for col in ['close', 'high', 'low', 'open', 'volume']:
-            if col in df.columns:
-                hashes[col] = hash_series(df[col])
-
-        return hashes
-
-    # --- Signal Detection Helpers ---
-
-    def _detect_crossover(self, series1, series2, direction='above'):
-        """
-        Detect when series1 crosses series2.
-
-        Args:
-            series1 (pd.Series): First series (e.g., fast EMA, MACD line)
-            series2 (pd.Series): Second series (e.g., slow EMA, signal line)
-            direction (str): 'above' for bullish crossover, 'below' for bearish crossover
-
-        Returns:
-            pd.Series: Boolean series indicating crossover points
-        """
-        prev_series1 = series1.shift(1)
-        prev_series2 = series2.shift(1)
-
-        if direction == 'above':
-            # Series1 crosses above series2 (bullish)
-            return (prev_series1 <= prev_series2) & (series1 > series2)
-        else:  # direction == 'below'
-            # Series1 crosses below series2 (bearish)
-            return (prev_series1 >= prev_series2) & (series1 < series2)
-
-    def _detect_threshold_cross(self, series, threshold, direction='below'):
-        """
-        Detect when a series crosses a threshold value.
-
-        Args:
-            series (pd.Series): The series to check (e.g., RSI, price)
-            threshold (float): The threshold value to cross
-            direction (str): 'below' for crossing downward, 'above' for crossing upward
-
-        Returns:
-            pd.Series: Boolean series indicating threshold cross-points
-        """
-        prev_series = series.shift(1)
-
-        if direction == 'below':
-            # Series crosses below a threshold (bearish)
-            return (prev_series > threshold) & (series <= threshold)
-        else:  # direction == 'above'
-            # Series crosses above a threshold (bullish)
-            return (prev_series < threshold) & (series >= threshold)
+    # Helper methods are now available as module-level functions:
+    # - precompute_hashes(df)
+    # - detect_crossover(series1, series2, direction='above')
+    # - detect_threshold_cross(series, threshold, direction='below')
 
     # ==================== Private Methods ====================
 

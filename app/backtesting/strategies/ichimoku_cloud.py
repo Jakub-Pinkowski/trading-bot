@@ -1,5 +1,5 @@
 from app.backtesting.indicators import calculate_ichimoku
-from app.backtesting.strategies.base_strategy import BaseStrategy
+from app.backtesting.strategies.base_strategy import BaseStrategy, precompute_hashes, detect_crossover, detect_threshold_cross
 
 
 class IchimokuCloudStrategy(BaseStrategy):
@@ -21,7 +21,7 @@ class IchimokuCloudStrategy(BaseStrategy):
 
     def add_indicators(self, df):
         # Pre-compute all hashes once (Ichimoku uses 3 price series)
-        hashes = self._precompute_hashes(df)
+        hashes = precompute_hashes(df)
 
         # Pass all pre-computed hashes (avoids 3 redundant hash operations!)
         ichimoku_data = calculate_ichimoku(
@@ -55,8 +55,8 @@ class IchimokuCloudStrategy(BaseStrategy):
         df['signal'] = 0
 
         # Detect Tenkan-Kijun crossovers
-        tenkan_crosses_above = self._detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'above')
-        tenkan_crosses_below = self._detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'below')
+        tenkan_crosses_above = detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'above')
+        tenkan_crosses_below = detect_crossover(df['tenkan_sen'], df['kijun_sen'], 'below')
 
         # Determine if the price is above or below the cloud
         above_cloud = (df['close'] > df['senkou_span_a']) & (df['close'] > df['senkou_span_b'])

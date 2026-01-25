@@ -1,5 +1,5 @@
 from app.backtesting.indicators import calculate_rsi
-from app.backtesting.strategies.base_strategy import BaseStrategy
+from app.backtesting.strategies.base_strategy import BaseStrategy, precompute_hashes, detect_crossover, detect_threshold_cross
 
 
 class RSIStrategy(BaseStrategy):
@@ -11,13 +11,11 @@ class RSIStrategy(BaseStrategy):
         rollover=False,
         trailing=None,
         slippage=0,
-        slippage_type='percentage',
         symbol=None
     ):
         super().__init__(rollover=rollover,
                          trailing=trailing,
                          slippage=slippage,
-                         slippage_type=slippage_type,
                          symbol=symbol)
         self.rsi_period = rsi_period
         self.lower = lower
@@ -26,7 +24,7 @@ class RSIStrategy(BaseStrategy):
     def add_indicators(self, df):
         # Pre-compute hash once to avoid redundant hashing
         # This is especially beneficial if you add more indicators later
-        hashes = self._precompute_hashes(df)
+        hashes = precompute_hashes(df)
 
         # Pass pre-computed hash to indicator function
         df['rsi'] = calculate_rsi(df['close'], period=self.rsi_period,
@@ -43,9 +41,9 @@ class RSIStrategy(BaseStrategy):
         df['signal'] = 0
 
         # Buy signal: RSI crosses below a lower threshold
-        df.loc[self._detect_threshold_cross(df['rsi'], self.lower, 'below'), 'signal'] = 1
+        df.loc[detect_threshold_cross(df['rsi'], self.lower, 'below'), 'signal'] = 1
 
         # Sell signal: RSI crosses above an upper threshold
-        df.loc[self._detect_threshold_cross(df['rsi'], self.upper, 'above'), 'signal'] = -1
+        df.loc[detect_threshold_cross(df['rsi'], self.upper, 'above'), 'signal'] = -1
 
         return df

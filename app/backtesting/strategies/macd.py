@@ -1,5 +1,5 @@
 from app.backtesting.indicators import calculate_macd
-from app.backtesting.strategies.base_strategy import BaseStrategy
+from app.backtesting.strategies.base_strategy import BaseStrategy, precompute_hashes, detect_crossover, detect_threshold_cross
 
 
 class MACDStrategy(BaseStrategy):
@@ -19,7 +19,7 @@ class MACDStrategy(BaseStrategy):
 
     def add_indicators(self, df):
         # Pre-compute hash once
-        hashes = self._precompute_hashes(df)
+        hashes = precompute_hashes(df)
 
         # Pass pre-computed hash to MACD calculation
         macd_data = calculate_macd(
@@ -46,9 +46,9 @@ class MACDStrategy(BaseStrategy):
         df['signal'] = 0
 
         # Buy signal: MACD line crosses the above signal line
-        df.loc[self._detect_crossover(df['macd_line'], df['signal_line'], 'above'), 'signal'] = 1
+        df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'above'), 'signal'] = 1
 
         # Sell signal: MACD line crosses the below signal line
-        df.loc[self._detect_crossover(df['macd_line'], df['signal_line'], 'below'), 'signal'] = -1
+        df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'below'), 'signal'] = -1
 
         return df
