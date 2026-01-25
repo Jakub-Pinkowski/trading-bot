@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_rsi, calculate_ema, calculate_macd, calculate_ichimoku
+from app.backtesting.strategies.base_strategy import precompute_hashes
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
@@ -109,12 +110,11 @@ class TestHashOptimizationCorrectness:
 
 
 class TestBaseStrategyPrecomputeHashes:
-    """Test the _precompute_hashes() utility method"""
+    """Test the precompute_hashes() utility function"""
 
     def test_precompute_hashes_returns_all_columns(self, sample_dataframe):
-        """Test that _precompute_hashes returns hashes for all OHLCV columns"""
-        strategy = RSIStrategy(rsi_period=14, lower=30, upper=70)
-        hashes = strategy._precompute_hashes(sample_dataframe)
+        """Test that precompute_hashes returns hashes for all OHLCV columns"""
+        hashes = precompute_hashes(sample_dataframe)
 
         # Should have hashes for all OHLCV columns
         assert 'close' in hashes
@@ -129,11 +129,9 @@ class TestBaseStrategyPrecomputeHashes:
             assert len(value) == 32  # MD5 hash length
 
     def test_precompute_hashes_consistency(self, sample_dataframe):
-        """Test that _precompute_hashes produces consistent results"""
-        strategy = RSIStrategy(rsi_period=14, lower=30, upper=70)
-
-        hashes1 = strategy._precompute_hashes(sample_dataframe)
-        hashes2 = strategy._precompute_hashes(sample_dataframe)
+        """Test that precompute_hashes produces consistent results"""
+        hashes1 = precompute_hashes(sample_dataframe)
+        hashes2 = precompute_hashes(sample_dataframe)
 
         # Same DataFrame should produce same hashes
         assert hashes1 == hashes2
@@ -182,7 +180,7 @@ class TestHashOptimizationPerformance:
     def test_multiple_indicators_share_same_hash(self, sample_dataframe):
         """Test that multiple indicators can use the same pre-computed hash"""
         # Pre-compute hash ONCE
-        hashes = RSIStrategy()._precompute_hashes(sample_dataframe)
+        hashes = precompute_hashes(sample_dataframe)
 
         # Clear cache
         from app.backtesting.cache.indicators_cache import indicator_cache

@@ -482,8 +482,19 @@ class TestTrailingScenarios:
         # Create a custom strategy that will generate more trades and be more sensitive to trailing stops
         class TrailingImpactStrategy(BaseStrategy):
             def __init__(self, trailing=None):
-                super().__init__(trailing=trailing)
+                # Initialize counter before calling super().__init__
                 self.trailing_stops_triggered = 0
+
+                # Call parent init
+                super().__init__(trailing=trailing)
+
+                # Set callback on trailing_stop_manager to count triggers
+                if self.trailing_stop_manager:
+                    self.trailing_stop_manager.on_stop_triggered = self._count_trailing_stop
+
+            def _count_trailing_stop(self, position, stop_price):
+                """Callback to count trailing stop triggers"""
+                self.trailing_stops_triggered += 1
 
             def add_indicators(self, df):
                 return df
@@ -505,28 +516,6 @@ class TestTrailingScenarios:
                         df.iloc[i, df.columns.get_loc('signal')] = -1
 
                 return df
-
-            def _handle_trailing_stop(self, idx, price_high, price_low):
-                """Override to count trailing stop triggers"""
-                # Check if a trailing stop has been triggered
-                if self.position is not None and self.trailing_stop is not None:
-                    if self.position == 1 and price_low <= self.trailing_stop:
-                        self.trailing_stops_triggered += 1
-                        self._close_position(idx, self.trailing_stop, switch=False)
-                    elif self.position == -1 and price_high >= self.trailing_stop:
-                        self.trailing_stops_triggered += 1
-                        self._close_position(idx, self.trailing_stop, switch=False)
-
-                # Update trailing stop if position still open and price moved favorably
-                if self.position is not None and self.trailing_stop is not None:
-                    if self.position == 1:  # Long position
-                        new_stop = round(price_high * (1 - self.trailing / 100), 2)
-                        if new_stop > self.trailing_stop:
-                            self.trailing_stop = new_stop
-                    elif self.position == -1:  # Short position
-                        new_stop = round(price_low * (1 + self.trailing / 100), 2)
-                        if new_stop < self.trailing_stop:
-                            self.trailing_stop = new_stop
 
         strategies = [TrailingImpactStrategy(trailing=t) for t in trailing_values]
 

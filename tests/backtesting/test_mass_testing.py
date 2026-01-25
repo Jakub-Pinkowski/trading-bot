@@ -135,8 +135,11 @@ class TestMassTester:
                 }
             )
 
-    def test_add_macd_tests(self):
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_add_macd_tests(self, mock_file, mock_yaml_load):
         """Test that add_macd_tests correctly adds MACD strategies with all parameter combinations."""
+        mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add MACD tests with various parameters
@@ -173,10 +176,13 @@ class TestMassTester:
             assert strategy_instance.signal_period in signal_periods
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.slippage in slippages
+            assert strategy_instance.position_manager.slippage in slippages
 
-    def test_add_bollinger_bands_tests(self):
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_add_bollinger_bands_tests(self, mock_file, mock_yaml_load):
         """Test that add_bollinger_bands_tests correctly adds Bollinger Bands strategies with all parameter combinations."""
+        mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add Bollinger Bands tests with various parameters
@@ -211,7 +217,7 @@ class TestMassTester:
             assert strategy_instance.num_std in num_stds
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.slippage in slippages
+            assert strategy_instance.position_manager.slippage in slippages
 
     def test_add_bollinger_bands_tests_with_mock(self):
         """Test that add_bollinger_bands_tests correctly calls add_strategy_tests with the right parameters."""
@@ -240,8 +246,11 @@ class TestMassTester:
                 }
             )
 
-    def test_add_ichimoku_cloud_tests(self):
+    @patch('yaml.safe_load')
+    @patch('builtins.open', new_callable=mock_open, read_data='{}')
+    def test_add_ichimoku_cloud_tests(self, mock_file, mock_yaml_load):
         """Test that add_ichimoku_cloud_tests correctly adds Ichimoku strategies with all parameter combinations."""
+        mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add Ichimoku tests with various parameters
@@ -283,7 +292,7 @@ class TestMassTester:
             assert strategy_instance.displacement in displacements
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.slippage in slippages
+            assert strategy_instance.position_manager.slippage in slippages
 
     def test_add_ichimoku_cloud_tests_with_mock(self):
         """Test that add_ichimoku_cloud_tests correctly calls add_strategy_tests with the right parameters."""

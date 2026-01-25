@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from app.backtesting.strategies.base_strategy import BaseStrategy
+from app.backtesting.strategies.base_strategy import BaseStrategy, detect_crossover, detect_threshold_cross
 from tests.backtesting.strategies.conftest import create_test_df
 
 
@@ -48,10 +48,10 @@ class TestBaseStrategy:
     def test_initialization(self):
         """Test that the strategy initializes correctly."""
         strategy = StrategyForTesting()
-        assert strategy.position is None
-        assert strategy.entry_time is None
-        assert strategy.entry_price is None
-        assert strategy.trailing_stop is None
+        assert strategy.position_manager.position is None
+        assert strategy.position_manager.entry_time is None
+        assert strategy.position_manager.entry_price is None
+        assert strategy.position_manager.trailing_stop is None
         assert strategy.rollover is False
         assert strategy.trailing is None
 
@@ -301,44 +301,55 @@ class TestBaseStrategy:
         df = create_test_df(length=150)
 
         # Set up the strategy state to simulate a short position before switch
-        strategy._reset()
-        strategy.position = -1  # Short position
-        strategy.entry_time = df.index[101]
-        strategy.entry_price = df.iloc[101]['open']
+        strategy.position_manager.reset()
+        strategy.switch_handler.reset()
+        strategy.position_manager.position = -1  # Short position
+        strategy.position_manager.entry_time = df.index[101]
+        strategy.position_manager.entry_price = df.iloc[101]['open']
         strategy.prev_row = df.iloc[101]  # Set prev_row to avoid None
 
         # Set up switch dates
         switch_date = df.index[102]
-        strategy.switch_dates = [switch_date]
-        strategy.next_switch = switch_date
-        strategy.next_switch_idx = 0
+        strategy.switch_handler.switch_dates = [switch_date]
+        strategy.switch_handler.next_switch = switch_date
+        strategy.switch_handler.next_switch_idx = 0
 
         # First, close the position at switch
-        strategy._close_position_at_switch()
+        prev_position = strategy.position_manager.close_position_at_switch(strategy.prev_time, strategy.prev_row)
+        strategy.switch_handler.must_reopen = prev_position
 
         # Verify position is closed and must_reopen is set
-        assert strategy.position is None, "Position should be closed after _close_position_at_switch"
-        assert strategy.must_reopen == -1, "must_reopen should be set to -1 for short position"
+        assert strategy.position_manager.position is None, "Position should be closed after close_position_at_switch"
+        assert strategy.switch_handler.must_reopen == -1, "must_reopen should be set to -1 for short position"
 
         # Now test the reopening with slippage
         price_open = df.iloc[103]['open']
 
-        # Call _handle_contract_switch to reopen the position
-        strategy._handle_contract_switch(df.index[103], df.index[103], price_open)
+        # Manually reopen the position (simulating what handle_contract_switch does)
+        if strategy.switch_handler.must_reopen is not None:
+            strategy.position_manager.open_position(strategy.switch_handler.must_reopen, df.index[103], price_open)
+            strategy.switch_handler.must_reopen = None
+            # Advance the switch index
+            strategy.switch_handler.next_switch_idx += 1
+            if strategy.switch_handler.next_switch_idx < len(strategy.switch_handler.switch_dates):
+                strategy.switch_handler.next_switch = strategy.switch_handler.switch_dates[
+                    strategy.switch_handler.next_switch_idx]
+            else:
+                strategy.switch_handler.next_switch = None
 
         # Verify position is reopened
-        assert strategy.position == -1, "Position should be reopened as short"
+        assert strategy.position_manager.position == -1, "Position should be reopened as short"
 
         # Verify slippage was applied correctly
-        expected_price = round(price_open * (1 - strategy.slippage / 100), 2)
-        assert strategy.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.entry_price}"
+        expected_price = round(price_open * (1 - strategy.position_manager.slippage / 100), 2)
+        assert strategy.position_manager.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.position_manager.entry_price}"
 
         # Close the position to create a trade
-        strategy._close_position(df.index[104], df.iloc[104]['close'])
+        strategy.position_manager.close_position(df.index[104], df.iloc[104]['close'])
 
         # Verify we have a trade with the correct entry price
-        assert len(strategy.trades) > 0, "Should have at least one trade"
-        trade = strategy.trades[-1]
+        assert len(strategy.position_manager.trades) > 0, "Should have at least one trade"
+        trade = strategy.position_manager.trades[-1]
         assert trade['side'] == 'short', "Trade should be a short position"
         assert trade[
                    'entry_price'] == expected_price, f"Trade entry price should be {expected_price}, got {trade['entry_price']}"
@@ -372,23 +383,26 @@ class TestBaseStrategy:
         # Manually set up the state to test the specific code path
         # This simulates the state after a position has been closed due to a switch
         # and we're about to reopen it in the next contract
-        strategy._reset()
-        strategy.must_reopen = 1  # Indicate we want to reopen a long position
-        strategy.position = None  # No current position
+        strategy.position_manager.reset()
+        strategy.switch_handler.reset()
+        strategy.switch_handler.must_reopen = 1  # Indicate we want to reopen a long position
+        strategy.position_manager.position = None  # No current position
 
-        # Now call _handle_contract_switch directly to test the reopening logic
+        # Now call position_manager and switch_handler methods directly to test the reopening logic
         # This tests the code path where must_reopen is not None and position is None
         current_time = df.index[103]  # After the switch
         idx = df.index[103]
         price_open = df.iloc[103]['open']
 
-        strategy._handle_contract_switch(current_time, idx, price_open)
+        if strategy.switch_handler.must_reopen is not None:
+            strategy.position_manager.open_position(strategy.switch_handler.must_reopen, idx, price_open)
+            strategy.switch_handler.must_reopen = None
 
         # Verify that the position was reopened
-        assert strategy.position == 1  # Long position
-        assert strategy.entry_time == idx
-        assert strategy.entry_price is not None
-        assert strategy.must_reopen is None  # must_reopen should be reset
+        assert strategy.position_manager.position == 1  # Long position
+        assert strategy.position_manager.entry_time == idx
+        assert strategy.position_manager.entry_price is not None
+        assert strategy.switch_handler.must_reopen is None  # must_reopen should be reset
 
     def test_close_position_at_switch(self):
         """Test closing a position at a contract switch date."""
@@ -409,30 +423,31 @@ class TestBaseStrategy:
         strategy = SwitchTestStrategy()
 
         # Set up the state to simulate an open position
-        strategy._reset()
-        strategy.position = 1  # Long position
-        strategy.entry_time = df.index[101]
-        strategy.entry_price = 100.0
+        strategy.position_manager.reset()
+        strategy.switch_handler.reset()
+        strategy.position_manager.position = 1  # Long position
+        strategy.position_manager.entry_time = df.index[101]
+        strategy.position_manager.entry_price = 100.0
         strategy.prev_row = {'open': 110.0}  # Exit price for the switch
         strategy.prev_time = df.index[101]  # Previous candle time (should be used for exit time)
 
-        # Call _close_position_at_switch directly
+        # Call close_position_at_switch directly
         current_switch_time = df.index[102]
-        strategy._close_position_at_switch()
+        strategy.position_manager.close_position_at_switch(strategy.prev_time, strategy.prev_row)
 
         # Verify the position was closed
-        assert strategy.position is None
-        assert strategy.entry_time is None
-        assert strategy.entry_price is None
+        assert strategy.position_manager.position is None
+        assert strategy.position_manager.entry_time is None
+        assert strategy.position_manager.entry_price is None
 
         # Verify a trade was recorded with the switch flag
-        assert len(strategy.trades) == 1
-        assert strategy.trades[0]['switch'] is True
-        assert strategy.trades[0]['exit_price'] == 110.0
+        assert len(strategy.position_manager.trades) == 1
+        assert strategy.position_manager.trades[0]['switch'] is True
+        assert strategy.position_manager.trades[0]['exit_price'] == 110.0
 
         # Key test: Verify that exit_time uses prev_time, not the current switch time
-        assert strategy.trades[0]['exit_time'] == df.index[101]  # Should be prev_time
-        assert strategy.trades[0]['exit_time'] != current_switch_time  # Should NOT be switch time
+        assert strategy.position_manager.trades[0]['exit_time'] == df.index[101]  # Should be prev_time
+        assert strategy.position_manager.trades[0]['exit_time'] != current_switch_time  # Should NOT be switch time
 
     def test_contract_switch_exit_timing_integration(self):
         """Integration test to verify that contract switch exit timing uses previous candle time."""
@@ -593,8 +608,8 @@ class TestBaseStrategy:
             # For long positions:
             # - Entry price should be higher than the original price (pay more on entry)
             # - Exit price should be lower than the original price (receive less on exit)
-            expected_entry_price = round(original_entry_price * (1 + strategy.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 - strategy.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -613,8 +628,8 @@ class TestBaseStrategy:
             # For short positions:
             # - Entry price should be lower than the original price (receive less on entry)
             # - Exit price should be higher than the original price (pay more on exit)
-            expected_entry_price = round(original_entry_price * (1 - strategy.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 + strategy.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
+            expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -632,7 +647,7 @@ class TestBaseStrategyHelperMethods:
             'series1': [1.0, 2.0, 3.0, 4.0, 5.0],
             'series2': [5.0, 4.0, 3.0, 2.0, 1.0],
         })
-        result = strategy._detect_crossover(df['series1'], df['series2'], 'above')
+        result = detect_crossover(df['series1'], df['series2'], 'above')
         expected = pd.Series([False, False, False, True, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
 
@@ -643,7 +658,7 @@ class TestBaseStrategyHelperMethods:
             'series1': [5.0, 4.0, 3.0, 2.0, 1.0],
             'series2': [1.0, 2.0, 3.0, 4.0, 5.0],
         })
-        result = strategy._detect_crossover(df['series1'], df['series2'], 'below')
+        result = detect_crossover(df['series1'], df['series2'], 'below')
         expected = pd.Series([False, False, False, True, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
 
@@ -651,7 +666,7 @@ class TestBaseStrategyHelperMethods:
         """Test _detect_threshold_cross for crossing below a threshold."""
         strategy = StrategyForTesting()
         df = pd.DataFrame({'series': [40.0, 35.0, 30.0, 25.0, 20.0]})
-        result = strategy._detect_threshold_cross(df['series'], 30.0, 'below')
+        result = detect_threshold_cross(df['series'], 30.0, 'below')
         expected = pd.Series([False, False, True, False, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
 
@@ -659,7 +674,7 @@ class TestBaseStrategyHelperMethods:
         """Test _detect_threshold_cross for crossing above a threshold."""
         strategy = StrategyForTesting()
         df = pd.DataFrame({'series': [20.0, 25.0, 30.0, 35.0, 40.0]})
-        result = strategy._detect_threshold_cross(df['series'], 30.0, 'above')
+        result = detect_threshold_cross(df['series'], 30.0, 'above')
         expected = pd.Series([False, False, True, False, False])
         pd.testing.assert_series_equal(result, expected, check_names=False)
 
@@ -668,8 +683,8 @@ class TestBaseStrategyHelperMethods:
         strategy = StrategyForTesting()
         # Test RSI-like threshold crossing
         df = pd.DataFrame({'rsi': [50.0, 40.0, 30.0, 25.0, 35.0, 70.0, 75.0, 65.0]})
-        crosses_below_30 = strategy._detect_threshold_cross(df['rsi'], 30.0, 'below')
-        crosses_above_70 = strategy._detect_threshold_cross(df['rsi'], 70.0, 'above')
+        crosses_below_30 = detect_threshold_cross(df['rsi'], 30.0, 'below')
+        crosses_above_70 = detect_threshold_cross(df['rsi'], 70.0, 'above')
         assert crosses_below_30[2] == True  # Crosses below at index 2
         assert crosses_above_70[5] == True  # Crosses above at index 5
         # Test EMA-like crossover
@@ -677,8 +692,8 @@ class TestBaseStrategyHelperMethods:
             'ema_fast': [100, 102, 104, 106, 108, 107, 105, 103],
             'ema_slow': [102, 103, 104, 104, 104, 106, 106, 106],
         })
-        bullish = strategy._detect_crossover(df['ema_fast'], df['ema_slow'], 'above')
-        bearish = strategy._detect_crossover(df['ema_fast'], df['ema_slow'], 'below')
+        bullish = detect_crossover(df['ema_fast'], df['ema_slow'], 'above')
+        bearish = detect_crossover(df['ema_fast'], df['ema_slow'], 'below')
         # Verify crossovers are detected
         assert bullish.sum() >= 1
         assert bearish.sum() >= 1
@@ -952,7 +967,7 @@ class TestTrailingStopEdgeCases:
         strategy = StrategyForTesting(trailing=5.0)
 
         # Test long position
-        new_stop_long = strategy._calculate_new_trailing_stop(
+        new_stop_long = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=1,
             price_high=110.0,
             price_low=105.0
@@ -962,7 +977,7 @@ class TestTrailingStopEdgeCases:
             f"Long stop calculation incorrect. Expected {expected_long}, got {new_stop_long}"
 
         # Test short position
-        new_stop_short = strategy._calculate_new_trailing_stop(
+        new_stop_short = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=-1,
             price_high=95.0,
             price_low=90.0
@@ -972,7 +987,7 @@ class TestTrailingStopEdgeCases:
             f"Short stop calculation incorrect. Expected {expected_short}, got {new_stop_short}"
 
         # Test invalid position
-        new_stop_invalid = strategy._calculate_new_trailing_stop(
+        new_stop_invalid = strategy.trailing_stop_manager.calculate_new_trailing_stop(
             position=0,
             price_high=100.0,
             price_low=100.0

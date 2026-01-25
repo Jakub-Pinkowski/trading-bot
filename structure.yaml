@@ -131,6 +131,8 @@ trading-bot/
 # TODO [MEDIUM]: Make the whole module lighter, remove unnecessary logic
 # TODO [MEDIUM]: Add tick-based slippage instead of percentage
 # TODO [MEDIUM]: Revise whether I'm not overengineering anything
+# TODO [MEDIUM]: Update structure.yaml after refactoring
+# TODO [MEDIUM]: Check test coverage after refactoring
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
