@@ -724,8 +724,7 @@ class TestMassTester:
             'interval': '1h',
             'strategy': 'Test Strategy',
             'metrics': {'total_trades': 10, 'win_rate': 60.0},
-            'timestamp': '2023-01-01T00:00:00',
-            'verbose_output': 'Verbose test output'
+            'timestamp': '2023-01-01T00:00:00'
         }
 
         # Mock the future
@@ -753,15 +752,14 @@ class TestMassTester:
         # Verify the results
         assert len(results) == 1
 
-        # Verify that print was called with the verbose output
+        # Verify that print was called with preparation message
         mock_print.assert_any_call('Preparing: Month=1!, Symbol=ZS, Interval=1h')
-        mock_print.assert_any_call('Verbose test output')
 
         # Verify that the timing information was printed
         mock_print.assert_any_call(ANY)  # Average time per test
         mock_print.assert_any_call(ANY)  # Total execution time
 
-        # Verify that verbose_output was removed from the result
+        # Verify that verbose_output is not in the result (it's printed directly now)
         assert 'verbose_output' not in results[0]
 
     @patch('app.backtesting.mass_testing._load_existing_results')
@@ -895,8 +893,7 @@ class TestMassTester:
         assert result['strategy'] == 'Test Strategy'
         assert 'metrics' in result
         assert 'timestamp' in result
-        assert 'verbose_output' in result
-        assert result['verbose_output'] is None  # Should be None when verbose=False
+        assert 'verbose_output' not in result  # verbose_output is no longer returned
 
         # Verify the strategy was called correctly
         # The switch_dates are generated inside _run_single_test based on the symbol
@@ -932,17 +929,12 @@ class TestMassTester:
         # Create a tester
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
-        # Mock sys.stdout to capture print output
-        with patch('sys.stdout'), patch('io.StringIO') as mock_string_io:
-            # Mock the StringIO instance
-            mock_string_io_instance = MagicMock()
-            mock_string_io.return_value = mock_string_io_instance
-            mock_string_io_instance.getvalue.return_value = "Test output"
+        # Create preprocessed switch dates and filepath
+        switch_dates = []
+        filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
 
-            # Create preprocessed switch dates and filepath
-            switch_dates = []
-            filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
-
+        # Mock print to capture verbose output
+        with patch('builtins.print') as mock_print:
             # Run a single test with verbose=True using the new format
             result = _run_single_test((
                 '1!',
@@ -963,9 +955,11 @@ class TestMassTester:
             assert result['strategy'] == 'Test Strategy'
             assert 'metrics' in result
             assert 'timestamp' in result
-            assert 'verbose_output' in result
-            assert result['verbose_output'] is not None  # Should contain output when verbose=True
-            assert "Test output" in result['verbose_output']  # Should contain the captured output
+            assert 'verbose_output' not in result  # verbose_output is no longer returned
+
+            # Verify that print was called with verbose messages (output is printed directly)
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any('Running strategy: Test Strategy' in str(call) for call in print_calls)
 
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
     def test_run_single_test_no_trades(self, mock_get_df):
@@ -1040,32 +1034,34 @@ class TestMassTester:
         switch_dates = []
         filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
 
-        # Run a single test with verbose=True using the new format
-        result = _run_single_test((
-            '1!',
-            'ZS',
-            '1h',
-            'Test Strategy',
-            strategy,
-            True,
-            switch_dates,
-            filepath
-        ))
+        # Mock print to capture verbose output
+        with patch('builtins.print') as mock_print:
+            # Run a single test with verbose=True using the new format
+            result = _run_single_test((
+                '1!',
+                'ZS',
+                '1h',
+                'Test Strategy',
+                strategy,
+                True,
+                switch_dates,
+                filepath
+            ))
 
-        # Verify the result
-        assert result is not None
-        assert result['month'] == '1!'
-        assert result['symbol'] == 'ZS'
-        assert result['interval'] == '1h'
-        assert result['strategy'] == 'Test Strategy'
-        assert result['metrics'] == {}  # Empty metrics
-        assert 'timestamp' in result
-        assert 'verbose_output' in result
-        assert result['verbose_output'] is not None
+            # Verify the result
+            assert result is not None
+            assert result['month'] == '1!'
+            assert result['symbol'] == 'ZS'
+            assert result['interval'] == '1h'
+            assert result['strategy'] == 'Test Strategy'
+            assert result['metrics'] == {}  # Empty metrics
+            assert 'timestamp' in result
+            assert 'verbose_output' not in result  # verbose_output is no longer returned
 
-        # Verify that the verbose output contains the no trades message
-        expected_message = 'No trades generated by strategy Test Strategy for ZS 1h 1!'
-        assert expected_message in result['verbose_output']
+            # Verify that the no trades message was printed directly
+            expected_message = 'No trades generated by strategy Test Strategy for ZS 1h 1!'
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any(expected_message in str(call) for call in print_calls)
 
     @patch('app.backtesting.mass_testing.get_cached_dataframe')
     def test_run_single_test_file_error(self, mock_get_df):
