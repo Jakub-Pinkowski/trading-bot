@@ -482,8 +482,19 @@ class TestTrailingScenarios:
         # Create a custom strategy that will generate more trades and be more sensitive to trailing stops
         class TrailingImpactStrategy(BaseStrategy):
             def __init__(self, trailing=None):
-                super().__init__(trailing=trailing)
+                # Initialize counter before calling super().__init__
                 self.trailing_stops_triggered = 0
+                
+                # Call parent init
+                super().__init__(trailing=trailing)
+                
+                # Set callback on trailing_stop_manager to count triggers
+                if self.trailing_stop_manager:
+                    self.trailing_stop_manager.on_stop_triggered = self._count_trailing_stop
+
+            def _count_trailing_stop(self, position, stop_price):
+                """Callback to count trailing stop triggers"""
+                self.trailing_stops_triggered += 1
 
             def add_indicators(self, df):
                 return df
@@ -505,115 +516,6 @@ class TestTrailingScenarios:
                         df.iloc[i, df.columns.get_loc('signal')] = -1
 
                 return df
-
-            def _extract_trades(self, df, switch_dates):
-                """Override to count trailing stop triggers"""
-                # Call parent method
-                self.switch_handler.set_switch_dates(switch_dates)
-                self.switch_handler.reset()
-                self.position_manager.reset()
-                
-                # Reset state variables
-                self.prev_row = None
-                self.prev_time = None
-                self.queued_signal = None
-
-                # Counter to skip the first candles for indicator warm-up
-                from app.backtesting.strategies.base_strategy import INDICATOR_WARMUP_PERIOD
-                candle_count = 0
-
-                for idx, row in df.iterrows():
-                    current_time = pd.to_datetime(idx)
-                    signal = row['signal']
-                    price_open = row['open']
-                    price_high = row['high']
-                    price_low = row['low']
-
-                    # Increment candle counter
-                    candle_count += 1
-
-                    # Skip signal processing for the first candles to allow indicators to warm up
-                    if candle_count <= INDICATOR_WARMUP_PERIOD:
-                        self.prev_time = current_time
-                        self.prev_row = row
-                        continue
-
-                    # Handle trailing stop logic if enabled - custom version to count triggers
-                    if self.trailing_stop_manager:
-                        # Check if trailing stop was triggered
-                        if self.position_manager.has_open_position() and self.position_manager.trailing_stop is not None:
-                            position = self.position_manager.position
-                            trailing_stop = self.position_manager.trailing_stop
-                            
-                            if position == 1 and price_low <= trailing_stop:
-                                # Long stop triggered - count it
-                                self.trailing_stops_triggered += 1
-                                self.position_manager.close_position(idx, trailing_stop, switch=False)
-                                self.prev_time = current_time
-                                self.prev_row = row
-                                continue
-                            elif position == -1 and price_high >= trailing_stop:
-                                # Short stop triggered - count it
-                                self.trailing_stops_triggered += 1
-                                self.position_manager.close_position(idx, trailing_stop, switch=False)
-                                self.prev_time = current_time
-                                self.prev_row = row
-                                continue
-                        
-                        # Update trailing stop if not triggered
-                        if self.position_manager.has_open_position() and self.position_manager.trailing_stop is not None:
-                            position = self.position_manager.position
-                            trailing_stop = self.position_manager.trailing_stop
-                            new_stop = self.trailing_stop_manager.calculate_new_trailing_stop(position, price_high, price_low)
-                            
-                            if new_stop is not None:
-                                if position == 1 and new_stop > trailing_stop:
-                                    self.position_manager.trailing_stop = new_stop
-                                elif position == -1 and new_stop < trailing_stop:
-                                    self.position_manager.trailing_stop = new_stop
-
-                    # Handle contract switches
-                    if self.switch_handler.should_switch(current_time):
-                        if self.position_manager.has_open_position() and self.prev_row is not None:
-                            prev_position = self.position_manager.close_position_at_switch(self.prev_time, self.prev_row)
-                            if self.rollover:
-                                self.switch_handler.must_reopen = prev_position
-                                self.switch_handler.skip_signal_this_bar = True
-
-                    skip_signal = self.switch_handler.handle_contract_switch(current_time, self.position_manager, idx, price_open)
-
-                    # Skip signal for this bar if we are in a rollover position
-                    if skip_signal:
-                        self.prev_time = current_time
-                        self.prev_row = row
-                        continue
-
-                    # Execute queued signal from the previous bar
-                    if self.queued_signal is not None:
-                        flip = None
-                        if self.queued_signal == 1 and self.position_manager.position != 1:
-                            flip = 1
-                        elif self.queued_signal == -1 and self.position_manager.position != -1:
-                            flip = -1
-
-                        if flip is not None:
-                            # Close if currently in position
-                            if self.position_manager.has_open_position():
-                                self.position_manager.close_position(idx, price_open, switch=False)
-                            # Open a new position at this (current) bar
-                            self.position_manager.open_position(flip, idx, price_open)
-
-                        # Reset after using
-                        self.queued_signal = None
-
-                    # Set/overwrite queued_signal for next bar execution
-                    if signal != 0:
-                        self.queued_signal = signal
-
-                    self.prev_time = current_time
-                    self.prev_row = row
-
-                return self.position_manager.get_trades()
 
         strategies = [TrailingImpactStrategy(trailing=t) for t in trailing_values]
 

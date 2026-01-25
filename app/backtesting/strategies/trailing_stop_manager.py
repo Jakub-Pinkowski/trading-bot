@@ -103,14 +103,17 @@ class TrailingStopManager:
 
     # ==================== Initialization ====================
 
-    def __init__(self, trailing_percentage):
+    def __init__(self, trailing_percentage, on_stop_triggered=None):
         """
         Initialize the trailing stop manager.
 
         Args:
             trailing_percentage: Trailing stop percentage (e.g., 5 for 5%)
+            on_stop_triggered: Optional callback function called when trailing stop is triggered.
+                              Signature: on_stop_triggered(position, stop_price)
         """
         self.trailing_percentage = trailing_percentage
+        self.on_stop_triggered = on_stop_triggered
 
     # ==================== Public Methods ====================
 
@@ -139,6 +142,11 @@ class TrailingStopManager:
             if should_trigger_stop(position, trailing_stop, price_high, price_low):
                 # Stop triggered - close at stop level (not at low/high price)
                 position_manager.close_position(idx, trailing_stop, switch=False)
+                
+                # Call callback if provided
+                if self.on_stop_triggered is not None:
+                    self.on_stop_triggered(position, trailing_stop)
+                
                 return True  # Exit early - no stop update after position closed (prevents look-ahead bias)
 
         # STEP 2: Update trailing stop based on favorable price movement
