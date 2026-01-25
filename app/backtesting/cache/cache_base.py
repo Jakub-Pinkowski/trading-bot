@@ -163,7 +163,7 @@ class Cache:
         self.hits = 0
         self.misses = 0
 
-    # --- Private methods ---
+    # ==================== Private Methods ====================
 
     def _load_cache(self):
         """Load the cache from the disk with file locking."""

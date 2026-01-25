@@ -7,6 +7,8 @@ from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/strategy_factory')
 
+# ==================== Module Configuration ====================
+
 # Define strategy types
 STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger', 'ichimoku']
 
@@ -16,6 +18,8 @@ _logged_warnings = set()
 # Configuration variable to control whether warnings should be logged
 _log_warnings_enabled = False
 
+
+# ==================== Parameter Extraction & Validation ====================
 
 def _log_warnings_once(warnings, strategy_type):
     """Log warnings only if they haven't been logged before and warnings are enabled."""
@@ -78,6 +82,8 @@ def _validate_range(value, param_name, min_val, max_val):
         logger.error(f"Invalid {param_name}: {value}")
         raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
 
+
+# --- Strategy-Specific Validators ---
 
 def _validate_rsi_parameters(rsi_period, lower, upper):
     """
@@ -348,6 +354,8 @@ def _validate_common_parameters(rollover, trailing, slippage):
     return warnings
 
 
+# ==================== Strategy Creation ====================
+
 def create_strategy(strategy_type, **params):
     """ Create a strategy instance based on a strategy type and parameters. """
     # Validate strategy type
@@ -532,6 +540,8 @@ def _create_ichimoku_strategy(**params):
         **common_params
     )
 
+
+# ==================== Utility Functions ====================
 
 def _format_common_params(**params):
     """Format common parameters for the strategy name."""

@@ -179,6 +179,8 @@ class StrategyAnalyzer:
         results_file = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
         self._load_results(results_file)
 
+    # ==================== Public API ====================
+
     def get_top_strategies(
         self,
         metric,
@@ -233,7 +235,7 @@ class StrategyAnalyzer:
 
         return sorted_df
 
-    # --- Private methods ---
+    # ==================== Private Methods ====================
 
     def _load_results(self, file_path):
         """Load results from a parquet file."""

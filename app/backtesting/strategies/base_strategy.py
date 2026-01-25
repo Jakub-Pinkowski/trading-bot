@@ -63,6 +63,8 @@ class BaseStrategy:
 
         self._reset()
 
+    # ==================== Public API ====================
+
     def run(self, df, switch_dates):
         """
         Run the strategy.
@@ -72,6 +74,22 @@ class BaseStrategy:
         trades = self._extract_trades(df, switch_dates)
 
         return trades
+
+    def add_indicators(self, df):
+        """Add indicators to the dataframe. To be implemented by subclasses."""
+        raise NotImplementedError('Subclasses must implement add_indicators method')
+
+    def generate_signals(self, df):
+        """
+        Generate signals based on indicators. To be implemented by subclasses.
+        Signals:
+            1: Long entry
+           -1: Short entry
+            0: No action
+        """
+        raise NotImplementedError('Subclasses must implement generate_signals method')
+
+    # ==================== Helper Methods for Subclasses ====================
 
     def _precompute_hashes(self, df):
         """
@@ -118,21 +136,7 @@ class BaseStrategy:
 
         return hashes
 
-    def add_indicators(self, df):
-        """Add indicators to the dataframe. To be implemented by subclasses."""
-        raise NotImplementedError('Subclasses must implement add_indicators method')
-
-    def generate_signals(self, df):
-        """
-        Generate signals based on indicators. To be implemented by subclasses.
-        Signals:
-            1: Long entry
-           -1: Short entry
-            0: No action
-        """
-        raise NotImplementedError('Subclasses must implement generate_signals method')
-
-    # --- Helper methods for signal detection ---
+    # --- Signal Detection Helpers ---
 
     def _detect_crossover(self, series1, series2, direction='above'):
         """
@@ -177,7 +181,9 @@ class BaseStrategy:
             # Series crosses above a threshold (bullish)
             return (prev_series < threshold) & (series >= threshold)
 
-    # --- Private methods ---
+    # ==================== Private Methods ====================
+
+    # --- State Management ---
 
     def _reset(self):
         """Reset all state variables"""
@@ -200,6 +206,8 @@ class BaseStrategy:
         self.entry_price = None
         self.position = None
         self.trailing_stop = None
+
+    # --- Trade Extraction & Execution ---
 
     def _extract_trades(self, df, switch_dates):
         """Extract trades based on signals.
@@ -285,6 +293,8 @@ class BaseStrategy:
 
         return self.trades
 
+    # --- Slippage Calculations ---
+
     def _apply_slippage_to_entry_price(self, direction, price):
         """Apply slippage to entry price based on a position direction"""
         if direction == 1:  # Long position
@@ -306,6 +316,8 @@ class BaseStrategy:
             adjusted_price = price * (1 + self.slippage / 100)
 
         return round(adjusted_price, 2)
+
+    # --- Position Management ---
 
     def _open_new_position(self, direction, idx, price_open):
         self.position = direction
@@ -350,6 +362,8 @@ class BaseStrategy:
             self.skip_signal_this_bar = True
         else:
             self.must_reopen = None
+
+    # --- Event Handlers ---
 
     def _handle_trailing_stop(self, idx, price_high, price_low):
         """Manage trailing stop trigger and update logic."""

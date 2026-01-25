@@ -73,6 +73,8 @@ class MassTester:
         # Initialize results storage
         self.results = []
 
+    # ==================== Public API - Strategy Configuration ====================
+
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
         self._add_strategy_tests(
             strategy_type='rsi',
@@ -145,6 +147,8 @@ class MassTester:
                 'slippage': slippages
             }
         )
+
+    # ==================== Public API - Execution ====================
 
     def run_tests(self, verbose=True, max_workers=None, skip_existing=True):
         """  Run all tests with the configured parameters in parallel. """
@@ -383,7 +387,7 @@ class MassTester:
 
         return self.results
 
-    # --- Private methods ---
+    # ==================== Private Methods ====================
 
     def _add_strategy_tests(self, strategy_type, param_grid):
         """ Generic method for adding strategy tests with all combinations of given parameters. """

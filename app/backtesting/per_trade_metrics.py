@@ -4,6 +4,8 @@ from config import CONTRACT_MULTIPLIERS
 
 logger = get_logger('backtesting/per_trade_metrics')
 
+# ==================== Constants ====================
+
 # Fixed commission per trade in dollars
 COMMISSION_PER_TRADE = 4
 
@@ -20,6 +22,8 @@ MARGIN_RATIOS = {
     'default': 0.10  # ~10% Default fallback
 }
 
+
+# ==================== Helper Functions ====================
 
 def get_symbol_category(symbol):
     """Categorize symbols into asset classes to apply appropriate margin ratios."""
@@ -47,6 +51,8 @@ def estimate_margin(symbol, entry_price, contract_multiplier):
     contract_value = entry_price * contract_multiplier
     return contract_value * ratio
 
+
+# ==================== Public API ====================
 
 def calculate_trade_metrics(trade, symbol):
     """ Calculate metrics for a single trade. """
