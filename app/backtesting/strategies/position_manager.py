@@ -7,8 +7,6 @@ This module manages position state and lifecycle during backtesting, including:
 - Slippage calculations for entry and exit prices
 """
 
-from app.backtesting.strategies.trailing_stop_manager import TrailingStopManager
-
 
 class PositionManager:
     """Manages position state and lifecycle during backtesting."""
@@ -112,10 +110,11 @@ class PositionManager:
 
         # Set initial trailing stop if trailing is enabled
         if self.trailing is not None:
-            # Use static initialization method directly
-            self.trailing_stop = TrailingStopManager.initialize_trailing_stop(
-                self, price_open, direction
-            )
+            # Calculate initial trailing stop based on entry price
+            if direction == 1:  # Long position
+                self.trailing_stop = round(self.entry_price * (1 - self.trailing / 100), 2)
+            else:  # Short position
+                self.trailing_stop = round(self.entry_price * (1 + self.trailing / 100), 2)
 
     def close_position(self, exit_time, exit_price, switch=False):
         """
