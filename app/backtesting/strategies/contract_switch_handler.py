@@ -9,6 +9,8 @@ reopening positions on the new contract.
 import pandas as pd
 
 
+# ==================== Helper Functions ====================
+
 def prepare_reopen(position_manager):
     """
     Prepare for contract switch by closing position.
@@ -58,6 +60,8 @@ def execute_queued_signal(queued_signal, position_manager, idx, price_open):
 class ContractSwitchHandler:
     """Manages contract rollover logic for futures backtesting."""
 
+    # ==================== Initialization ====================
+
     def __init__(self, switch_dates=None, rollover=False):
         """
         Initialize the contract switch handler.
@@ -72,6 +76,8 @@ class ContractSwitchHandler:
         self.next_switch = None
         self.must_reopen = None
         self.skip_signal_this_bar = False
+
+    # ==================== Public Methods ====================
 
     def set_switch_dates(self, switch_dates):
         """Set or update the contract switch dates"""

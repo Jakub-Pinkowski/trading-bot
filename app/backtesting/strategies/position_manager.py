@@ -11,6 +11,8 @@ This module manages position state and lifecycle during backtesting, including:
 class PositionManager:
     """Manages position state and lifecycle during backtesting."""
 
+    # ==================== Initialization ====================
+
     def __init__(self, slippage=0, symbol=None, trailing=None):
         """
         Initialize the position manager.

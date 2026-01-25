@@ -20,6 +20,8 @@ from app.backtesting.strategies.contract_switch_handler import ContractSwitchHan
 INDICATOR_WARMUP_PERIOD = 100
 
 
+# ==================== Helper Functions for Subclasses ====================
+
 def precompute_hashes(df):
     """
     Pre-compute hashes for commonly used price series.
@@ -113,6 +115,8 @@ def detect_threshold_cross(series, threshold, direction='below'):
 
 
 class BaseStrategy:
+    # ==================== Initialization ====================
+
     def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
         """
         Initialize the base strategy.

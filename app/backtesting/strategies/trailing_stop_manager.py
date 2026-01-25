@@ -51,6 +51,8 @@ Scenario 3: Gap down through stop
 """
 
 
+# ==================== Helper Functions ====================
+
 def should_trigger_stop(position, trailing_stop, price_high, price_low):
     """
     Check if trailing stop should be triggered.
@@ -99,6 +101,8 @@ class TrailingStopManager:
     See comprehensive documentation in module docstring about order of operations.
     """
 
+    # ==================== Initialization ====================
+
     def __init__(self, trailing_percentage):
         """
         Initialize the trailing stop manager.
@@ -107,6 +111,8 @@ class TrailingStopManager:
             trailing_percentage: Trailing stop percentage (e.g., 5 for 5%)
         """
         self.trailing_percentage = trailing_percentage
+
+    # ==================== Public Methods ====================
 
     def handle_trailing_stop(self, position_manager, idx, price_high, price_low):
         """
@@ -148,6 +154,8 @@ class TrailingStopManager:
                 update_trailing_stop(position_manager, position, trailing_stop, new_stop)
 
         return False
+
+    # ==================== Helper Methods ====================
 
     def calculate_new_trailing_stop(self, position, price_high, price_low):
         """
