@@ -22,8 +22,13 @@ trading-bot/
 │   │   │   ├── macd.py                           # Moving Average Convergence Divergence indicator
 │   │   │   └── rsi.py                            # Relative Strength Index indicator
 │   │   ├── strategies/                           # Trading strategies to backtest
+│   │   │   ├── base/                             # Base strategy components
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── base_strategy.py              # Base strategy class
+│   │   │   │   ├── position_manager.py           # Position management logic
+│   │   │   │   ├── trailing_stop_manager.py      # Trailing stop loss management
+│   │   │   │   └── contract_switch_handler.py    # Contract rollover handling
 │   │   │   ├── __init__.py
-│   │   │   ├── base_strategy.py                  # Base strategy class
 │   │   │   ├── bollinger_bands.py                # Bollinger Bands strategy
 │   │   │   ├── ema_crossover.py                  # EMA Crossover strategy
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from app.backtesting.strategies.base_strategy import BaseStrategy, detect_crossover, detect_threshold_cross
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, detect_crossover, detect_threshold_cross
 from tests.backtesting.strategies.conftest import create_test_df
 
 

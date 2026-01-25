@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_rsi, calculate_ema, calculate_macd, calculate_ichimoku
-from app.backtesting.strategies.base_strategy import precompute_hashes
+from app.backtesting.strategies.base.base_strategy import precompute_hashes
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.rsi import RSIStrategy

@@ -1,8 +1,8 @@
 import pandas as pd
 
-from app.backtesting.strategies.contract_switch_handler import ContractSwitchHandler
-from app.backtesting.strategies.position_manager import PositionManager
-from app.backtesting.strategies.trailing_stop_manager import TrailingStopManager
+from app.backtesting.strategies.base.contract_switch_handler import ContractSwitchHandler
+from app.backtesting.strategies.base.position_manager import PositionManager
+from app.backtesting.strategies.base.trailing_stop_manager import TrailingStopManager
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 # Strategy Execution Constants
@@ -46,7 +46,7 @@ def precompute_hashes(df):
 
     Example:
         def add_indicators(self, df):
-            from app.backtesting.strategies.base_strategy import precompute_hashes
+            from app.backtesting.strategies.base.base_strategy import precompute_hashes
             # Pre-compute all hashes once
             hashes = precompute_hashes(df)
 
