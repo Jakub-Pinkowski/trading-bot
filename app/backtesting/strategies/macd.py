@@ -5,6 +5,9 @@ from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
 
 
 class MACDStrategy(BaseStrategy):
+
+    # ==================== Initialization ====================
+
     def __init__(
         self,
         fast_period=12,
@@ -18,6 +21,8 @@ class MACDStrategy(BaseStrategy):
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
+
+    # ==================== Public Methods ====================
 
     def add_indicators(self, df):
         # Pre-compute hash once

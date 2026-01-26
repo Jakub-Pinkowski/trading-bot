@@ -5,6 +5,9 @@ from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
 
 
 class IchimokuCloudStrategy(BaseStrategy):
+
+    # ==================== Initialization ====================
+
     def __init__(
         self,
         tenkan_period=9,
@@ -20,6 +23,8 @@ class IchimokuCloudStrategy(BaseStrategy):
         self.kijun_period = kijun_period
         self.senkou_span_b_period = senkou_span_b_period
         self.displacement = displacement
+
+    # ==================== Public Methods ====================
 
     def add_indicators(self, df):
         # Pre-compute all hashes once

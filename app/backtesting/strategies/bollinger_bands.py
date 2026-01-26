@@ -5,6 +5,9 @@ from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
 
 
 class BollingerBandsStrategy(BaseStrategy):
+
+    # ==================== Initialization ====================
+
     def __init__(
         self,
         period=20,
@@ -20,6 +23,8 @@ class BollingerBandsStrategy(BaseStrategy):
                          symbol=symbol)
         self.period = period
         self.num_std = num_std
+
+    # ==================== Public Methods ====================
 
     def add_indicators(self, df):
         # Pre-compute hash once

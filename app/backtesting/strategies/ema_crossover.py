@@ -5,6 +5,9 @@ from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
 
 
 class EMACrossoverStrategy(BaseStrategy):
+
+    # ==================== Initialization ====================
+
     def __init__(
         self,
         ema_short=9,
@@ -20,6 +23,8 @@ class EMACrossoverStrategy(BaseStrategy):
                          symbol=symbol)
         self.ema_short = ema_short
         self.ema_long = ema_long
+
+    # ==================== Public Methods ====================
 
     def add_indicators(self, df):
         # Pre-compute hash once

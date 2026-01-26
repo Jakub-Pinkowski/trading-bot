@@ -5,6 +5,9 @@ from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
 
 
 class RSIStrategy(BaseStrategy):
+
+    # ==================== Initialization ====================
+
     def __init__(
         self,
         rsi_period=14,
@@ -22,6 +25,8 @@ class RSIStrategy(BaseStrategy):
         self.rsi_period = rsi_period
         self.lower = lower
         self.upper = upper
+
+    # ==================== Public Methods ====================
 
     def add_indicators(self, df):
         # Pre-compute hash once
