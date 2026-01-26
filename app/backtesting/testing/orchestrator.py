@@ -87,8 +87,7 @@ def run_tests(
     _execute_tests_in_parallel(
         tester,
         test_combinations,
-        max_workers,
-        start_time
+        max_workers
     )
 
     # --- Cache Statistics Reporting ---
@@ -212,7 +211,7 @@ def _prepare_test_combinations(
 
 # --- Parallel Execution ---
 
-def _execute_tests_in_parallel(tester, test_combinations, max_workers, start_time):
+def _execute_tests_in_parallel(tester, test_combinations, max_workers):
     """Run tests in parallel using ProcessPoolExecutor."""
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_test = {executor.submit(run_single_test, test_params): test_params for test_params in

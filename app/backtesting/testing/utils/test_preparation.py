@@ -16,7 +16,7 @@ def load_existing_results():
     if os.path.exists(parquet_filename):
         try:
             df = pd.read_parquet(parquet_filename)
-            # Create tuples directly from DataFrame columns - O(1) operation with vectorization
+            # Create set of tuples for O(1) lookup (set construction is O(n))
             existing_combinations = set(zip(
                 df['month'].values,
                 df['symbol'].values,
