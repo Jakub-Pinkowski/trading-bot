@@ -31,8 +31,8 @@ class TestMassTester:
         }
 
         # Mock the strategy_factory functions
-        with patch('app.backtesting.mass_testing.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.mass_testing.create_strategy') as mock_create:
+        with patch('app.backtesting.strategy_factory.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.strategy_factory.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -63,8 +63,8 @@ class TestMassTester:
         }
 
         # Mock the strategy_factory functions
-        with patch('app.backtesting.mass_testing.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.mass_testing.create_strategy') as mock_create:
+        with patch('app.backtesting.strategy_factory.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.strategy_factory.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -398,8 +398,8 @@ class TestMassTester:
             }
         }
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('yaml.safe_load')
@@ -492,8 +492,8 @@ class TestMassTester:
         # MNG should have empty switch dates (NG not in main symbols)
         assert len(mng_switch_dates) == 0
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('yaml.safe_load')
@@ -573,8 +573,8 @@ class TestMassTester:
         assert str(gc_switch_dates[0]) == '2023-01-20 00:00:00'
         assert str(gc_switch_dates[1]) == '2023-02-20 00:00:00'
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('yaml.safe_load')
@@ -662,8 +662,8 @@ class TestMassTester:
         # The preprocessing logic should handle missing _symbol_mappings gracefully
         # This will be tested when run_tests is called, but we can verify the structure is loaded correctly
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     def test_run_tests_basic(self, mock_executor, mock_as_completed, mock_test_exists, mock_load_results):
@@ -718,8 +718,8 @@ class TestMassTester:
         mock_executor_instance.__enter__.return_value.submit.assert_called_once()
         mock_as_completed.assert_called_once()
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('builtins.print')
@@ -774,7 +774,7 @@ class TestMassTester:
         # Verify that verbose_output is not in the result (it's printed directly now)
         assert 'verbose_output' not in results[0]
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
     def test_run_tests_no_strategies(self, mock_load_results):
         """Test that run_tests raises an error when no strategies are added."""
         mock_load_results.return_value = (pd.DataFrame(), set())
@@ -784,8 +784,8 @@ class TestMassTester:
         with pytest.raises(ValueError, match='No strategies added for testing'):
             tester.run_tests()
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     def test_run_tests_all_skipped(self, mock_test_exists, mock_load_results):
         """Test that run_tests handles the case where all tests are skipped."""
         mock_load_results.return_value = (pd.DataFrame(), set())
@@ -802,8 +802,8 @@ class TestMassTester:
         assert results == []
         mock_test_exists.assert_called()
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('builtins.print')
     @patch('app.backtesting.testing.mass_tester.get_strategy_name')
     def test_run_tests_skipped_verbose(self, mock_get_name, mock_print, mock_test_exists, mock_load_results):
@@ -1441,8 +1441,8 @@ class TestHelperFunctions:
 class TestMassTesterPerformanceOptimizations:
     """Test class for performance optimization features added to MassTester."""
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('builtins.print')
@@ -1527,8 +1527,8 @@ class TestMassTesterPerformanceOptimizations:
             assert 'Avg:' in message
             assert 's/100tests' in message
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('gc.collect')
@@ -1585,8 +1585,8 @@ class TestMassTesterPerformanceOptimizations:
         # Verify gc.collect() was called at least twice (at 100 and 200 tests)
         assert mock_gc_collect.call_count >= 2
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     def test_run_tests_intermediate_result_saving(
@@ -1648,8 +1648,8 @@ class TestMassTesterPerformanceOptimizations:
             # The final results should only contain the last 501 tests (1500 - 999 cleared)
             assert len(results) == 501  # 1500 - 999 (cleared at intermediate save)
 
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
     @patch('app.backtesting.testing.reporting.logger')
@@ -1740,12 +1740,12 @@ class TestMassTesterPerformanceOptimizations:
 
     @patch('yaml.safe_load')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
-    @patch('app.backtesting.mass_testing._load_existing_results')
-    @patch('app.backtesting.mass_testing._test_already_exists')
+    @patch('app.backtesting.testing.orchestrator.load_existing_results')
+    @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
-    @patch('app.backtesting.mass_testing.indicator_cache')
-    @patch('app.backtesting.mass_testing.dataframe_cache')
+    @patch('app.backtesting.testing.orchestrator.indicator_cache')
+    @patch('app.backtesting.testing.orchestrator.dataframe_cache')
     def test_caches_not_saved_from_workers(
         self,
         mock_dataframe_cache,
@@ -1888,7 +1888,7 @@ class TestDataFrameValidation:
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_few_rows), \
                 patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
-                patch('app.backtesting.mass_testing.calculate_trade_metrics', return_value={}), \
+                patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
             result = _run_single_test(test_params)
 
@@ -1922,7 +1922,7 @@ class TestDataFrameValidation:
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_valid), \
                 patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
-                patch('app.backtesting.mass_testing.calculate_trade_metrics', return_value={}), \
+                patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
             result = _run_single_test(test_params)
 
