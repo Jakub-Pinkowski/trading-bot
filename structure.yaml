@@ -170,7 +170,7 @@ trading-bot/
 # TODO [LOW]: Fix all the grammar errors
 
 # Tests
-# TODO [HIGH]: Split tests accroding to the new backtesting module structure
+# TODO [HIGH]: Split tests according to the new backtesting module structure
 # TODO [HIGH]: Verify all tests in a separate file to look for any tests testing themselves rather than testing the app's logic'
 # TODO [MEDIUM]: Add more real data tests in general
 # TODO [MEDIUM]: Remove helping comments and leave only those that actually bring value
