@@ -7,13 +7,8 @@ from app.backtesting import MassTester
 from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.dataframe_validators import validate_dataframe
+from app.backtesting.testing.reporting import results_to_dataframe, save_results
 from config import HISTORICAL_DATA_DIR
-
-# Create aliases for backward compatibility with test names
-_load_existing_results = load_existing_results
-_check_test_exists = check_test_exists
-_run_single_test = run_single_test
-_validate_dataframe = validate_dataframe
 
 
 class TestMassTester:
@@ -855,7 +850,7 @@ class TestMassTester:
         assert total_time_found, "Total execution time message not found in print calls"
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
-    def test_run_single_test(self, mock_get_df):
+    def testrun_single_test(self, mock_get_df):
         """Test the _run_single_test method."""
         # Setup mock
         dates = pd.date_range('2023-01-01', periods=3, freq='h')
@@ -886,7 +881,7 @@ class TestMassTester:
         filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
 
         # Run a single test with the new format
-        result = _run_single_test((
+        result = run_single_test((
             '1!',
             'ZS',
             '1h',
@@ -948,7 +943,7 @@ class TestMassTester:
         # Mock print to capture verbose output
         with patch('builtins.print') as mock_print:
             # Run a single test with verbose=True using the new format
-            result = _run_single_test((
+            result = run_single_test((
                 '1!',
                 'ZS',
                 '1h',
@@ -1000,7 +995,7 @@ class TestMassTester:
         filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
 
         # Run a single test with the new format
-        result = _run_single_test((
+        result = run_single_test((
             '1!',
             'ZS',
             '1h',
@@ -1049,7 +1044,7 @@ class TestMassTester:
         # Mock print to capture verbose output
         with patch('builtins.print') as mock_print:
             # Run a single test with verbose=True using the new format
-            result = _run_single_test((
+            result = run_single_test((
                 '1!',
                 'ZS',
                 '1h',
@@ -1089,7 +1084,7 @@ class TestMassTester:
         filepath = f'{HISTORICAL_DATA_DIR}/1!/ZS/ZS_1h.parquet'
 
         # Run a single test with the new format
-        result = _run_single_test((
+        result = run_single_test((
             '1!',
             'ZS',
             '1h',
@@ -1169,7 +1164,7 @@ class TestMassTester:
         ]
 
         # Convert results to DataFrame
-        df = tester._results_to_dataframe()
+        df = results_to_dataframe(tester.results)
 
         # Verify the DataFrame
         assert isinstance(df, pd.DataFrame)
@@ -1241,7 +1236,7 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.results = []
 
-        df = tester._results_to_dataframe()
+        df = results_to_dataframe(tester.results)
 
         assert isinstance(df, pd.DataFrame)
         assert df.empty
@@ -1263,7 +1258,7 @@ class TestMassTester:
         ]
 
         # Save results
-        tester._save_results()
+        save_results(tester.results)
 
         # Verify save_to_parquet was called
         mock_save_to_parquet.assert_called_once()
@@ -1280,7 +1275,7 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.results = []
 
-        tester._save_results()
+        save_results(tester.results)
 
         # Verify save_to_parquet was not called
         mock_save_to_parquet.assert_not_called()
@@ -1306,7 +1301,7 @@ class TestMassTester:
         ]
 
         # Call _save_results, which should catch the exception
-        tester._save_results()
+        save_results(tester.results)
 
         # Verify that the logger was called with an error message
         mock_logger.error.assert_called_once()
@@ -1827,7 +1822,7 @@ class TestDataFrameValidation:
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=empty_df), \
                 patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
-            result = _run_single_test(test_params)
+            result = run_single_test(test_params)
 
             # Verify None is returned
             assert result is None
@@ -1856,7 +1851,7 @@ class TestDataFrameValidation:
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_missing_columns), \
                 patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
-            result = _run_single_test(test_params)
+            result = run_single_test(test_params)
 
             # Verify None is returned
             assert result is None
@@ -1890,7 +1885,7 @@ class TestDataFrameValidation:
                 patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
                 patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
-            result = _run_single_test(test_params)
+            result = run_single_test(test_params)
 
             # Verify warning was logged
             mock_logger_warning.assert_called_once()
@@ -1924,7 +1919,7 @@ class TestDataFrameValidation:
                 patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
                 patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
-            result = _run_single_test(test_params)
+            result = run_single_test(test_params)
 
             # Verify no warning was logged (DataFrame has enough rows)
             mock_logger_warning.assert_not_called()
@@ -1946,7 +1941,7 @@ class TestDataFrameValidation:
         # Mock get_cached_dataframe to return None
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=None), \
                 patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
-            result = _run_single_test(test_params)
+            result = run_single_test(test_params)
 
             # Verify None is returned
             assert result is None
@@ -1980,7 +1975,7 @@ class TestDataFrameBuilding:
         ]
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning:
-            df = tester._results_to_dataframe()
+            df = results_to_dataframe(tester.results)
 
             # Verify DataFrame was created
             assert not df.empty
@@ -2019,7 +2014,7 @@ class TestDataFrameBuilding:
         ]
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning:
-            df = tester._results_to_dataframe()
+            df = results_to_dataframe(tester.results)
 
             # Verify DataFrame was created
             assert not df.empty
@@ -2061,7 +2056,7 @@ class TestDataFrameBuilding:
         ]
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning:
-            df = tester._results_to_dataframe()
+            df = results_to_dataframe(tester.results)
 
             # Verify DataFrame was created
             assert not df.empty
@@ -2106,7 +2101,7 @@ class TestDataFrameBuilding:
         ]
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning:
-            df = tester._results_to_dataframe()
+            df = results_to_dataframe(tester.results)
 
             # Verify DataFrame was created correctly
             assert not df.empty
@@ -2164,7 +2159,7 @@ class TestDataFrameBuilding:
         ]
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning:
-            df = tester._results_to_dataframe()
+            df = results_to_dataframe(tester.results)
 
             # Verify DataFrame was created
             assert not df.empty
@@ -2179,9 +2174,9 @@ class TestDataFrameBuilding:
 
 
 class TestValidateDataFrame:
-    """Direct unit tests for the _validate_dataframe method."""
+    """Direct unit tests for the validate_dataframe method."""
 
-    def test_validate_dataframe_with_valid_data(self):
+    def testvalidate_dataframe_with_valid_data(self):
         """Test that valid DataFrame passes all validations."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2193,35 +2188,35 @@ class TestValidateDataFrame:
             'close': [101.0, 102.0, 103.0] * 100,
         }, index=pd.date_range('2023-01-01', periods=300, freq='1h'))
 
-        result = _validate_dataframe(df, 'test.parquet')
+        result = validate_dataframe(df, 'test.parquet')
 
         assert result is True
 
-    def test_validate_dataframe_with_none(self):
+    def testvalidate_dataframe_with_none(self):
         """Test that None DataFrame fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(None, 'test.parquet')
+            result = validate_dataframe(None, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
             assert 'Empty or None DataFrame' in str(mock_error.call_args)
 
-    def test_validate_dataframe_with_empty_dataframe(self):
+    def testvalidate_dataframe_with_empty_dataframe(self):
         """Test that empty DataFrame fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         df = pd.DataFrame()
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
             assert 'Empty or None DataFrame' in str(mock_error.call_args)
 
-    def test_validate_dataframe_with_missing_columns(self):
+    def testvalidate_dataframe_with_missing_columns(self):
         """Test that DataFrame with missing required columns fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2232,7 +2227,7 @@ class TestValidateDataFrame:
         })
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
@@ -2241,7 +2236,7 @@ class TestValidateDataFrame:
             assert 'low' in error_msg
             assert 'close' in error_msg
 
-    def test_validate_dataframe_with_non_numeric_columns(self):
+    def testvalidate_dataframe_with_non_numeric_columns(self):
         """Test that DataFrame with non-numeric OHLC columns fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2254,7 +2249,7 @@ class TestValidateDataFrame:
         })
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
@@ -2262,7 +2257,7 @@ class TestValidateDataFrame:
             assert 'Non-numeric column' in error_msg
             assert 'close' in error_msg
 
-    def test_validate_dataframe_with_excessive_nan_values(self):
+    def testvalidate_dataframe_with_excessive_nan_values(self):
         """Test that DataFrame with >10% NaN values logs warning but passes."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2276,7 +2271,7 @@ class TestValidateDataFrame:
         }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation but log warning
             assert result is True
@@ -2286,7 +2281,7 @@ class TestValidateDataFrame:
             assert '20.0%' in warning_msg
             assert 'NaN values' in warning_msg
 
-    def test_validate_dataframe_with_acceptable_nan_values(self):
+    def testvalidate_dataframe_with_acceptable_nan_values(self):
         """Test that DataFrame with <10% NaN values passes without warning."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2300,13 +2295,13 @@ class TestValidateDataFrame:
         }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation without warning (< 10% threshold)
             assert result is True
             mock_warning.assert_not_called()
 
-    def test_validate_dataframe_with_non_datetime_index(self):
+    def testvalidate_dataframe_with_non_datetime_index(self):
         """Test that DataFrame with non-DatetimeIndex fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2319,7 +2314,7 @@ class TestValidateDataFrame:
         })  # Default integer index
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
@@ -2327,7 +2322,7 @@ class TestValidateDataFrame:
             assert 'not a DatetimeIndex' in error_msg
             assert 'RangeIndex' in error_msg or 'Int64Index' in error_msg
 
-    def test_validate_dataframe_with_string_index(self):
+    def testvalidate_dataframe_with_string_index(self):
         """Test that DataFrame with string index fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2340,7 +2335,7 @@ class TestValidateDataFrame:
         }, index=['2023-01-01', '2023-01-02', '2023-01-03'])  # String index, not DatetimeIndex
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
@@ -2348,7 +2343,7 @@ class TestValidateDataFrame:
             assert 'not a DatetimeIndex' in error_msg
             assert 'Index' in error_msg
 
-    def test_validate_dataframe_with_unsorted_index(self):
+    def testvalidate_dataframe_with_unsorted_index(self):
         """Test that DataFrame with unsorted index fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2361,7 +2356,7 @@ class TestValidateDataFrame:
         }, index=pd.to_datetime(['2023-01-03', '2023-01-01', '2023-01-02']))  # Out of order
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
             mock_error.assert_called_once()
@@ -2369,7 +2364,7 @@ class TestValidateDataFrame:
             assert 'not sorted' in error_msg
             assert 'ascending order' in error_msg
 
-    def test_validate_dataframe_with_duplicate_timestamps(self):
+    def testvalidate_dataframe_with_duplicate_timestamps(self):
         """Test that DataFrame with duplicate timestamps logs warning but passes."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2382,7 +2377,7 @@ class TestValidateDataFrame:
         }, index=pd.to_datetime(['2023-01-01 10:00', '2023-01-01 10:00', '2023-01-01 11:00']))  # Duplicate
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation but log warning
             assert result is True
@@ -2390,7 +2385,7 @@ class TestValidateDataFrame:
             warning_msg = str(mock_warning.call_args)
             assert '1 duplicate timestamp' in warning_msg
 
-    def test_validate_dataframe_with_multiple_issues(self):
+    def testvalidate_dataframe_with_multiple_issues(self):
         """Test DataFrame with multiple validation issues."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2410,7 +2405,7 @@ class TestValidateDataFrame:
         }, index=pd.DatetimeIndex(dates))
 
         with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
-            result = _validate_dataframe(df, 'test.parquet')
+            result = validate_dataframe(df, 'test.parquet')
 
             # Should pass but log warnings for both issues
             assert result is True
@@ -2420,7 +2415,7 @@ class TestValidateDataFrame:
             assert any('NaN values' in msg for msg in warning_messages)
             assert any('duplicate timestamp' in msg for msg in warning_messages)
 
-    def test_validate_dataframe_with_all_valid_data_types(self):
+    def testvalidate_dataframe_with_all_valid_data_types(self):
         """Test that various valid numeric types pass validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2432,11 +2427,11 @@ class TestValidateDataFrame:
             'close': pd.Series([101, 102, 103], dtype='int64'),  # explicit int64
         }, index=pd.date_range('2023-01-01', periods=3, freq='1h'))
 
-        result = _validate_dataframe(df, 'test.parquet')
+        result = validate_dataframe(df, 'test.parquet')
 
         assert result is True
 
-    def test_validate_dataframe_error_message_includes_filepath(self):
+    def testvalidate_dataframe_error_message_includes_filepath(self):
         """Test that error messages include the filepath for debugging."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -2444,7 +2439,7 @@ class TestValidateDataFrame:
         test_filepath = '/path/to/test_data.parquet'
 
         with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
-            _validate_dataframe(df, test_filepath)
+            validate_dataframe(df, test_filepath)
 
             error_msg = str(mock_error.call_args)
             assert test_filepath in error_msg

@@ -4,7 +4,6 @@ import yaml
 
 from app.backtesting.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.testing.orchestrator import run_tests as orchestrator_run_tests
-from app.backtesting.testing.reporting import results_to_dataframe, save_results as save_results_func
 from app.utils.logger import get_logger
 from config import SWITCH_DATES_FILE_PATH
 
@@ -144,11 +143,3 @@ class MassTester:
             strategy_instance = create_strategy(strategy_type, **strategy_params)
 
             self.strategies.append((strategy_name, strategy_instance))
-
-    def _results_to_dataframe(self):
-        """Convert results to a pandas DataFrame."""
-        return results_to_dataframe(self.results)
-
-    def _save_results(self):
-        """Save results to one big parquet file."""
-        save_results_func(self.results)
