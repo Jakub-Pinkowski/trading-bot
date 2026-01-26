@@ -14,7 +14,7 @@ from app.backtesting.strategy_factory import (
     _validate_positive_integer, _validate_positive_number, _validate_range, _format_common_params,
     _log_warnings_once, _logged_warnings
 )
-from app.backtesting.validation_functions import (
+from app.backtesting.validators import (
     validate_rsi_parameters, validate_ema_parameters, validate_macd_parameters,
     validate_bollinger_parameters, validate_ichimoku_parameters, validate_common_parameters
 )

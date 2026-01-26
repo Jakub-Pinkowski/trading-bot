@@ -3,7 +3,7 @@ from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.validation_functions import (
+from app.backtesting.validators import (
     validate_rsi_parameters,
     validate_ema_parameters,
     validate_macd_parameters,
