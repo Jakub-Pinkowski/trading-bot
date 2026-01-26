@@ -10,6 +10,7 @@ trading-bot/
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
 │   │   ├── cache/                                # Caching system for backtesting
+│   │   │   ├── __init__.py
 │   │   │   ├── cache_base.py                     # Base cache class
 │   │   │   ├── dataframe_cache.py                # Dataframe caching
 │   │   │   └── indicators_cache.py               # Indicator caching
@@ -21,27 +22,32 @@ trading-bot/
 │   │   │   ├── ichimoku.py                       # Ichimoku Cloud indicator
 │   │   │   ├── macd.py                           # Moving Average Convergence Divergence indicator
 │   │   │   └── rsi.py                            # Relative Strength Index indicator
+│   │   ├── metrics/                              # Metrics calculation modules
+│   │   │   ├── __init__.py
+│   │   │   ├── per_trade_metrics.py              # Per trade metrics
+│   │   │   └── summary_metrics.py                # Summary metrics
 │   │   ├── strategies/                           # Trading strategies to backtest
 │   │   │   ├── base/                             # Base strategy components
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── base_strategy.py              # Base strategy class
+│   │   │   │   ├── contract_switch_handler.py    # Contract rollover handling
 │   │   │   │   ├── position_manager.py           # Position management logic
-│   │   │   │   ├── trailing_stop_manager.py      # Trailing stop loss management
-│   │   │   │   └── contract_switch_handler.py    # Contract rollover handling
+│   │   │   │   └── trailing_stop_manager.py      # Trailing stop loss management
 │   │   │   ├── __init__.py
 │   │   │   ├── bollinger_bands.py                # Bollinger Bands strategy
 │   │   │   ├── ema_crossover.py                  # EMA Crossover strategy
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
-│   │   ├── metrics/                              # Metrics calculation modules
-│   │   │   ├── __init__.py
-│   │   │   ├── per_trade_metrics.py              # Per trade metrics
-│   │   │   └── summary_metrics.py                # Summary metrics
 │   │   ├── __init__.py
+│   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
+│   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
+│   │   ├── BACKTESTING_USER_GUIDE.md             # User guide
 │   │   ├── mass_testing.py                       # Mass testing framework
 │   │   ├── strategy_analysis.py                  # Strategy analysis utilities
-│   │   └── strategy_factory.py                   # Strategy creation factory
+│   │   ├── strategy_factory.py                   # Strategy creation factory
+│   │   ├── validation_constants.py               # Validation constants
+│   │   └── validation_functions.py               # Validation functions
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
