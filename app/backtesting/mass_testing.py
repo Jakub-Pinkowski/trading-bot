@@ -193,7 +193,7 @@ class MassTester:
                         tested_month, symbol, interval
                     )] = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
 
-        # Generate all combinations more efficiently
+        # Generate all combinations
         all_combinations = [(tested_month, symbol, interval, strategy_name, strategy_instance)
                             for tested_month in self.tested_months
                             for symbol in self.symbols
@@ -302,10 +302,6 @@ class MassTester:
 
                 if result:
                     self.results.append(result)
-
-        # Save caches after all tests complete (only from main process)
-        # Note: save_cache() already handles file locking internally, no need to wrap it
-        logger.info('All tests completed, saving caches...')
 
         # Aggregate cache statistics from all test results
         total_ind_hits = 0
