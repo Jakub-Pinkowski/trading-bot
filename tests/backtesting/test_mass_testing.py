@@ -851,7 +851,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
     def testrun_single_test(self, mock_get_df):
-        """Test the _run_single_test method."""
+        """Test the run_single_test function."""
         # Setup mock
         dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
@@ -908,7 +908,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
     def test_run_single_test_verbose(self, mock_get_df):
-        """Test the _run_single_test method with verbose output."""
+        """Test the run_single_test function with verbose output."""
         # Setup mock
         dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
@@ -970,7 +970,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
     def test_run_single_test_no_trades(self, mock_get_df):
-        """Test the _run_single_test method when no trades are generated."""
+        """Test the run_single_test function when no trades are generated."""
         # Setup mock
         dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
@@ -1017,7 +1017,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
     def test_run_single_test_no_trades_verbose(self, mock_get_df):
-        """Test the _run_single_test method when no trades are generated with verbose=True."""
+        """Test the run_single_test function when no trades are generated with verbose=True."""
         # Setup mock
         dates = pd.date_range('2023-01-01', periods=3, freq='h')
         mock_df = pd.DataFrame({
@@ -1072,7 +1072,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.runner.get_cached_dataframe')
     def test_run_single_test_file_error(self, mock_get_df):
-        """Test the _run_single_test method when there's an error reading the file."""
+        """Test the run_single_test function when there's an error reading the file."""
         # Set up mocks to raise an exception
         mock_get_df.side_effect = Exception("File not found")
 
@@ -1243,7 +1243,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.reporting.save_to_parquet')
     def test_save_results(self, mock_save_to_parquet):
-        """Test the _save_results method."""
+        """Test the save_results function."""
         # Create a tester with some results
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.results = [
@@ -1271,7 +1271,7 @@ class TestMassTester:
 
     @patch('app.backtesting.testing.reporting.save_to_parquet')
     def test_save_results_empty(self, mock_save_to_parquet):
-        """Test the _save_results method with empty results."""
+        """Test the save_results function with empty results."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.results = []
 
@@ -1283,7 +1283,7 @@ class TestMassTester:
     @patch('app.backtesting.testing.reporting.save_to_parquet')
     @patch('app.backtesting.testing.reporting.logger')
     def test_save_results_error_handling(self, mock_logger, mock_save_to_parquet):
-        """Test error handling in the _save_results method."""
+        """Test error handling in the save_results function."""
         # Setup mock to raise an exception
         mock_save_to_parquet.side_effect = Exception("Test error")
 
@@ -1300,7 +1300,7 @@ class TestMassTester:
             }
         ]
 
-        # Call _save_results, which should catch the exception
+        # Call save_results, which should catch the exception
         save_results(tester.results)
 
         # Verify that the logger was called with an error message
