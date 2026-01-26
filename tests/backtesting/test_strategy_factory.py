@@ -15,8 +15,8 @@ from app.backtesting.strategy_factory import (
     _log_warnings_once, _logged_warnings
 )
 from app.backtesting.validators import (
-    validate_rsi_parameters, validate_ema_parameters, validate_macd_parameters,
-    validate_bollinger_parameters, validate_ichimoku_parameters, validate_common_parameters
+    RSIValidator, EMAValidator, MACDValidator,
+    BollingerValidator, IchimokuValidator, CommonValidator
 )
 
 
@@ -469,242 +469,284 @@ class TestParameterValidation(unittest.TestCase):
     def testvalidate_rsi_parameters_optimal(self):
         """Test RSI parameter validation with optimal parameters."""
         # Standard parameters should generate no warnings
-        warnings = validate_rsi_parameters(14, 30, 70)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=30, upper=70)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_rsi_parameters_warnings(self):
         """Test RSI parameter validation with parameters that generate warnings."""
         # Very short period
-        warnings = validate_rsi_parameters(5, 30, 70)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=5, lower=30, upper=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite short", warnings[0])
 
         # Very long period
-        warnings = validate_rsi_parameters(35, 30, 70)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=35, lower=30, upper=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite long", warnings[0])
 
         # Very aggressive lower threshold
-        warnings = validate_rsi_parameters(14, 15, 70)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=15, upper=70)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("very aggressive" in w for w in warnings))
         self.assertTrue(any("very wide" in w for w in warnings))
 
         # Very conservative lower threshold
-        warnings = validate_rsi_parameters(14, 45, 70)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=45, upper=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very conservative", warnings[0])
 
         # Very aggressive upper threshold
-        warnings = validate_rsi_parameters(14, 30, 55)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=30, upper=55)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very aggressive", warnings[0])
 
         # Very conservative upper threshold
-        warnings = validate_rsi_parameters(14, 30, 85)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=30, upper=85)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("very conservative" in w for w in warnings))
         self.assertTrue(any("very wide" in w for w in warnings))
 
         # Very narrow gap
-        warnings = validate_rsi_parameters(14, 40, 50)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=40, upper=50)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("very aggressive" in w for w in warnings))
         self.assertTrue(any("quite narrow" in w for w in warnings))
 
         # Very wide gap
-        warnings = validate_rsi_parameters(14, 20, 80)
+        validator = RSIValidator()
+        warnings = validator.validate(rsi_period=14, lower=20, upper=80)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very wide", warnings[0])
 
     def testvalidate_ema_parameters_optimal(self):
         """Test EMA parameter validation with optimal parameters."""
         # Standard parameters should generate no warnings
-        warnings = validate_ema_parameters(9, 21)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=9, ema_long=21)
         self.assertEqual(len(warnings), 0)
 
-        warnings = validate_ema_parameters(12, 26)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=12, ema_long=26)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_ema_parameters_warnings(self):
         """Test EMA parameter validation with parameters that generate warnings."""
         # Very short periods
-        warnings = validate_ema_parameters(3, 15)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=3, ema_long=15)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("very sensitive" in w for w in warnings))
         self.assertTrue(any("very wide" in w for w in warnings))
 
         # Very long periods
-        warnings = validate_ema_parameters(25, 60)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=25, ema_long=60)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too slow for crossover" in w for w in warnings))
         self.assertTrue(any("too slow and miss trend" in w for w in warnings))
 
         # Too close ratio
-        warnings = validate_ema_parameters(12, 15)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=12, ema_long=15)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too close", warnings[0])
 
         # Very wide ratio
-        warnings = validate_ema_parameters(5, 50)
+        validator = EMAValidator()
+        warnings = validator.validate(ema_short=5, ema_long=50)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very wide", warnings[0])
 
     def testvalidate_macd_parameters_optimal(self):
         """Test MACD parameter validation with optimal parameters."""
         # Standard parameters should generate a positive note
-        warnings = validate_macd_parameters(12, 26, 9)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=12, slow_period=26, signal_period=9)
         self.assertEqual(len(warnings), 1)
         self.assertIn("standard MACD parameters", warnings[0])
 
     def testvalidate_macd_parameters_warnings(self):
         """Test MACD parameter validation with parameters that generate warnings."""
         # Very short fast period
-        warnings = validate_macd_parameters(5, 26, 9)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=5, slow_period=26, signal_period=9)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very short", warnings[0])
 
         # Very long fast period
-        warnings = validate_macd_parameters(20, 26, 9)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=20, slow_period=26, signal_period=9)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too slow for responsive", warnings[0])
 
         # Very short slow period
-        warnings = validate_macd_parameters(12, 15, 9)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=12, slow_period=15, signal_period=9)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too short for trend", warnings[0])
 
         # Very long slow period
-        warnings = validate_macd_parameters(12, 35, 9)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=12, slow_period=35, signal_period=9)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too slow and miss trend", warnings[0])
 
         # Very short signal period
-        warnings = validate_macd_parameters(12, 26, 5)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=12, slow_period=26, signal_period=5)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very short", warnings[0])
 
         # Very long signal period
-        warnings = validate_macd_parameters(12, 26, 15)
+        validator = MACDValidator()
+        warnings = validator.validate(fast_period=12, slow_period=26, signal_period=15)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too slow for timely", warnings[0])
 
     def testvalidate_bollinger_parameters_optimal(self):
         """Test Bollinger Bands parameter validation with optimal parameters."""
         # Standard parameters should generate a positive note
-        warnings = validate_bollinger_parameters(20, 2.0)
+        validator = BollingerValidator()
+        warnings = validator.validate(period=20, num_std=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("standard Bollinger Bands", warnings[0])
 
     def testvalidate_bollinger_parameters_warnings(self):
         """Test Bollinger Bands parameter validation with parameters that generate warnings."""
         # Very short period
-        warnings = validate_bollinger_parameters(10, 2.0)
+        validator = BollingerValidator()
+        warnings = validator.validate(period=10, num_std=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite short", warnings[0])
 
         # Very long period
-        warnings = validate_bollinger_parameters(30, 2.0)
+        validator = BollingerValidator()
+        warnings = validator.validate(period=30, num_std=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite long", warnings[0])
 
         # Very narrow bands
-        warnings = validate_bollinger_parameters(20, 1.0)
+        validator = BollingerValidator()
+        warnings = validator.validate(period=20, num_std=1.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite narrow", warnings[0])
 
         # Very wide bands
-        warnings = validate_bollinger_parameters(20, 3.0)
+        validator = BollingerValidator()
+        warnings = validator.validate(period=20, num_std=3.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite wide", warnings[0])
 
     def testvalidate_ichimoku_parameters_optimal(self):
         """Test Ichimoku parameter validation with optimal parameters."""
         # Traditional parameters should generate a positive note
-        warnings = validate_ichimoku_parameters(9, 26, 52, 26)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=9, kijun_period=26, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 1)
         self.assertIn("traditional Ichimoku parameters", warnings[0])
 
     def testvalidate_ichimoku_parameters_warnings(self):
         """Test Ichimoku parameter validation with parameters that generate warnings."""
         # Very short tenkan period
-        warnings = validate_ichimoku_parameters(5, 26, 52, 26)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=5, kijun_period=26, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("quite short" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
 
         # Very long tenkan period
-        warnings = validate_ichimoku_parameters(15, 26, 52, 26)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=15, kijun_period=26, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too slow for conversion" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
 
         # Very short kijun period
-        warnings = validate_ichimoku_parameters(9, 20, 52, 26)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=9, kijun_period=20, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 4)
         self.assertTrue(any("too short for baseline" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
 
         # Very long kijun period
-        warnings = validate_ichimoku_parameters(9, 35, 52, 26)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=9, kijun_period=35, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 4)
         self.assertTrue(any("too slow for trend" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
 
         # Different displacement
-        warnings = validate_ichimoku_parameters(9, 26, 52, 20)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=9, kijun_period=26, senkou_span_b_period=52, displacement=20)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
         self.assertTrue(any("may be too short for proper cloud projection" in w for w in warnings))
 
         # Non-traditional ratios
-        warnings = validate_ichimoku_parameters(12, 24, 48, 24)
+        validator = IchimokuValidator()
+        warnings = validator.validate(tenkan_period=12, kijun_period=24, senkou_span_b_period=48, displacement=24)
         self.assertEqual(len(warnings), 1)
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
 
     def testvalidate_common_parameters_optimal(self):
         """Test common parameter validation with optimal parameters."""
         # Reasonable parameters should generate no warnings
-        warnings = validate_common_parameters(False, 2.5, 0.15)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=2.5, slippage=0.15)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_common_parameters_warnings(self):
         """Test common parameter validation with parameters that generate warnings."""
         # Very tight trailing stop
-        warnings = validate_common_parameters(False, 0.5, None)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=0.5, slippage=None)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very tight", warnings[0])
 
         # Very wide trailing stop
-        warnings = validate_common_parameters(False, 8.0, None)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=8.0, slippage=None)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very wide", warnings[0])
 
         # Zero slippage
-        warnings = validate_common_parameters(False, None, 0.0)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=None, slippage=0.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("unrealistic", warnings[0])
 
         # Very high slippage
-        warnings = validate_common_parameters(False, None, 0.8)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=None, slippage=0.8)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very high", warnings[0])
 
     def test_validate_common_parameters_invalid_rollover_type(self):
-        """Test that validate_common_parameters raises ValueError for non-boolean rollover."""
+        """Test that CommonValidator raises ValueError for non-boolean rollover."""
         # String instead of boolean
+        validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validate_common_parameters("true", None, None)
+            validator.validate(rollover="true", trailing=None, slippage=None)
 
         # Integer instead of boolean
+        validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validate_common_parameters(1, None, None)
+            validator.validate(rollover=1, trailing=None, slippage=None)
 
         # None instead of boolean
+        validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validate_common_parameters(None, None, None)
+            validator.validate(rollover=None, trailing=None, slippage=None)
 
     def test_validation_integration_with_strategy_creation(self):
         """Test that validation warnings are properly logged during strategy creation."""

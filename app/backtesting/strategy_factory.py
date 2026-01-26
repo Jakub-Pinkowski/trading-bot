@@ -4,12 +4,12 @@ from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.validators import (
-    validate_rsi_parameters,
-    validate_ema_parameters,
-    validate_macd_parameters,
-    validate_bollinger_parameters,
-    validate_ichimoku_parameters,
-    validate_common_parameters
+    RSIValidator,
+    EMAValidator,
+    MACDValidator,
+    BollingerValidator,
+    IchimokuValidator,
+    CommonValidator
 )
 from app.utils.logger import get_logger
 
@@ -132,10 +132,13 @@ def _create_rsi_strategy(**params):
         raise ValueError(f"Lower threshold must be less than upper threshold")
 
     # Enhanced parameter validation with guidance
-    rsi_warnings = validate_rsi_parameters(rsi_period, lower, upper)
-    common_warnings = validate_common_parameters(common_params['rollover'],
-                                                 common_params['trailing'],
-                                                 common_params['slippage'])
+    rsi_validator = RSIValidator()
+    rsi_warnings = rsi_validator.validate(rsi_period=rsi_period, lower=lower, upper=upper)
+    
+    common_validator = CommonValidator()
+    common_warnings = common_validator.validate(rollover=common_params['rollover'],
+                                                trailing=common_params['trailing'],
+                                                slippage=common_params['slippage'])
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(rsi_warnings + common_warnings, "RSI")
@@ -165,10 +168,13 @@ def _create_ema_strategy(**params):
         raise ValueError(f"Short EMA period must be less than long EMA period")
 
     # Enhanced parameter validation with guidance
-    ema_warnings = validate_ema_parameters(ema_short, ema_long)
-    common_warnings = validate_common_parameters(common_params['rollover'],
-                                                 common_params['trailing'],
-                                                 common_params['slippage'])
+    ema_validator = EMAValidator()
+    ema_warnings = ema_validator.validate(ema_short=ema_short, ema_long=ema_long)
+    
+    common_validator = CommonValidator()
+    common_warnings = common_validator.validate(rollover=common_params['rollover'],
+                                                trailing=common_params['trailing'],
+                                                slippage=common_params['slippage'])
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(ema_warnings + common_warnings, "EMA")
@@ -199,10 +205,15 @@ def _create_macd_strategy(**params):
         raise ValueError(f"Fast period must be less than slow period")
 
     # Enhanced parameter validation with guidance
-    macd_warnings = validate_macd_parameters(fast_period, slow_period, signal_period)
-    common_warnings = validate_common_parameters(common_params['rollover'],
-                                                 common_params['trailing'],
-                                                 common_params['slippage'])
+    macd_validator = MACDValidator()
+    macd_warnings = macd_validator.validate(fast_period=fast_period, 
+                                            slow_period=slow_period, 
+                                            signal_period=signal_period)
+    
+    common_validator = CommonValidator()
+    common_warnings = common_validator.validate(rollover=common_params['rollover'],
+                                                trailing=common_params['trailing'],
+                                                slippage=common_params['slippage'])
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(macd_warnings + common_warnings, "MACD")
@@ -228,10 +239,13 @@ def _create_bollinger_strategy(**params):
     _validate_positive_number(num_std, "number of standard deviations")
 
     # Enhanced parameter validation with guidance
-    bollinger_warnings = validate_bollinger_parameters(period, num_std)
-    common_warnings = validate_common_parameters(common_params['rollover'],
-                                                 common_params['trailing'],
-                                                 common_params['slippage'])
+    bollinger_validator = BollingerValidator()
+    bollinger_warnings = bollinger_validator.validate(period=period, num_std=num_std)
+    
+    common_validator = CommonValidator()
+    common_warnings = common_validator.validate(rollover=common_params['rollover'],
+                                                trailing=common_params['trailing'],
+                                                slippage=common_params['slippage'])
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
@@ -260,10 +274,16 @@ def _create_ichimoku_strategy(**params):
     _validate_positive_integer(displacement, "displacement")
 
     # Enhanced parameter validation with guidance
-    ichimoku_warnings = validate_ichimoku_parameters(tenkan_period, kijun_period, senkou_span_b_period, displacement)
-    common_warnings = validate_common_parameters(common_params['rollover'],
-                                                 common_params['trailing'],
-                                                 common_params['slippage'])
+    ichimoku_validator = IchimokuValidator()
+    ichimoku_warnings = ichimoku_validator.validate(tenkan_period=tenkan_period, 
+                                                     kijun_period=kijun_period, 
+                                                     senkou_span_b_period=senkou_span_b_period, 
+                                                     displacement=displacement)
+    
+    common_validator = CommonValidator()
+    common_warnings = common_validator.validate(rollover=common_params['rollover'],
+                                                trailing=common_params['trailing'],
+                                                slippage=common_params['slippage'])
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
