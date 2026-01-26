@@ -15,6 +15,8 @@ logger = get_logger('backtesting/testing/mass_tester')
 class MassTester:
     """A framework for mass-testing trading strategies with different parameter combinations."""
 
+    # ==================== Initialization ====================
+
     def __init__(self, tested_months, symbols, intervals):
         """Initialize the mass tester with lists of months, symbols, and intervals to test."""
         self.strategies = []

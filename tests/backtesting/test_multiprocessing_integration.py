@@ -158,7 +158,7 @@ class TestMultiprocessingIntegration:
             pass
 
         # Create tester with invalid data path (will cause exceptions)
-        with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', str(tmp_path / "nonexistent")):
+        with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(tmp_path / "nonexistent")):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -199,8 +199,8 @@ class TestMultiprocessingIntegration:
 
         # Mock cache save methods to track calls
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
-            with patch('app.backtesting.mass_testing.indicator_cache') as mock_ind_cache:
-                with patch('app.backtesting.mass_testing.dataframe_cache') as mock_df_cache:
+            with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind_cache:
+                with patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df_cache:
                     # Setup mocks
                     mock_ind_cache.size.return_value = 10
                     mock_df_cache.size.return_value = 5
@@ -408,7 +408,7 @@ class TestRealDataMultiprocessing:
                 shutil.copy(actual_file, target_file)
 
                 # Patch both the module-level import and the config module
-                with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
+                with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     # Test multiple strategies on the same symbol
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
 
@@ -455,7 +455,7 @@ class TestRealDataMultiprocessing:
                     target_file = os.path.join(month_dir, f'{symbol}_1d.parquet')
                     shutil.copy(actual_file, target_file)
 
-            with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
+            with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                 # Test multiple symbols
                 tester = MassTester(['1!'], ['ZC', '6A'], ['1d'])
                 tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
@@ -498,7 +498,7 @@ class TestRealDataMultiprocessing:
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
 
-                with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
+                with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     # First run - should populate cache
                     tester1 = MassTester(['1!'], ['ZC'], ['1d'])
                     tester1.add_rsi_tests([14], [30], [70], [False], [None], [0])
@@ -605,7 +605,7 @@ class TestRealDataMultiprocessing:
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
 
-                with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
+                with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
 
                     # Add multiple parameter combinations
@@ -656,7 +656,7 @@ class TestRealDataMultiprocessing:
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
 
-                with patch('app.backtesting.mass_testing.HISTORICAL_DATA_DIR', tmpdir):
+                with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
