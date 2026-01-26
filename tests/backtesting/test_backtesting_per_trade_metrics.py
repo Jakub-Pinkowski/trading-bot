@@ -728,10 +728,8 @@ class TestPrintTradeMetrics:
         assert "Entry Price: 4200.0" in output
         assert "Exit Price: 4210.0" in output
 
-        # Check for percentage-based metrics
-        assert "PERCENTAGE-BASED METRICS" in output
-        assert "Net Return % of Margin:" in output
-        assert "2.5%" in output
+        # Check for return metrics
+        assert "RETURN METRICS" in output
         assert "Return % of Contract:" in output
         assert "0.5%" in output
 
@@ -774,10 +772,8 @@ class TestPrintTradeMetrics:
         # Verify the output contains key information
         assert "TRADE METRICS" in output
 
-        # Check for percentage-based metrics
-        assert "PERCENTAGE-BASED METRICS" in output
-        assert "Net Return % of Margin:" in output
-        assert "-0.5%" in output
+        # Check for return metrics
+        assert "RETURN METRICS" in output
         assert "Return % of Contract:" in output
         assert "-0.1%" in output
 
@@ -825,10 +821,8 @@ class TestPrintTradeMetrics:
         assert "Entry Price: 4200.0" in output
         assert "Exit Price: 4200.0" in output
 
-        # Check for percentage-based metrics
-        assert "PERCENTAGE-BASED METRICS" in output
-        assert "Net Return % of Margin:" in output
-        assert "0.0%" in output
+        # Check for return metrics
+        assert "RETURN METRICS" in output
         assert "Return % of Contract:" in output
         assert "0.0%" in output
 
@@ -913,9 +907,7 @@ class TestPrintTradeMetrics:
         assert "Entry Price: 1000000.0" in output
         assert "Exit Price: 0.001" in output
 
-        # Check for percentage-based metrics
-        assert "PERCENTAGE-BASED METRICS" in output
-        assert "Net Return % of Margin:" in output
-        assert "9999.99%" in output
+        # Check for return metrics
+        assert "RETURN METRICS" in output
         assert "Return % of Contract:" in output
         assert "9999.99%" in output
