@@ -8,7 +8,7 @@ from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.testing.reporting import save_results
 from app.backtesting.testing.runner import run_single_test
-from app.backtesting.testing.utils.test_preparation import load_existing_results, test_already_exists
+from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR
 
@@ -185,7 +185,7 @@ def _prepare_test_combinations(
             last_verbose_combo = (tested_month, symbol, interval)
 
         # Check if this test has already been run
-        if skip_existing and test_already_exists(existing_data,
+        if skip_existing and check_test_exists(existing_data,
                                                   tested_month,
                                                   symbol,
                                                   interval,

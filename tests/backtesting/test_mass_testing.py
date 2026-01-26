@@ -4,10 +4,16 @@ import pandas as pd
 import pytest
 
 from app.backtesting import MassTester
-from app.backtesting.testing.utils.test_preparation import load_existing_results, test_already_exists
+from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.dataframe_validators import validate_dataframe
 from config import HISTORICAL_DATA_DIR
+
+# Create aliases for backward compatibility with test names
+_load_existing_results = load_existing_results
+_check_test_exists = check_test_exists
+_run_single_test = run_single_test
+_validate_dataframe = validate_dataframe
 
 
 class TestMassTester:
@@ -799,7 +805,7 @@ class TestMassTester:
     @patch('app.backtesting.mass_testing._load_existing_results')
     @patch('app.backtesting.mass_testing._test_already_exists')
     @patch('builtins.print')
-    @patch('app.backtesting.mass_testing.get_strategy_name')
+    @patch('app.backtesting.testing.mass_tester.get_strategy_name')
     def test_run_tests_skipped_verbose(self, mock_get_name, mock_print, mock_test_exists, mock_load_results):
         """Test that run_tests handles skipped tests with verbose=True."""
         mock_load_results.return_value = (pd.DataFrame(), set())
@@ -1394,7 +1400,7 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
+        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
 
         assert result == True
 
@@ -1417,7 +1423,7 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 3')
+        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 3')
 
         assert result == False
 
@@ -1427,7 +1433,7 @@ class TestHelperFunctions:
         existing_combinations = set()
         existing_data = (existing_df, existing_combinations)
 
-        result = _test_already_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
+        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
 
         assert result is False
 

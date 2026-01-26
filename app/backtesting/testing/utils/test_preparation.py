@@ -29,7 +29,7 @@ def load_existing_results():
     return pd.DataFrame(), set()
 
 
-def test_already_exists(existing_data, month, symbol, interval, strategy):
+def check_test_exists(existing_data, month, symbol, interval, strategy):
     """Check if a test with the given parameters already exists in the results."""
     existing_results, existing_combinations = existing_data
 
