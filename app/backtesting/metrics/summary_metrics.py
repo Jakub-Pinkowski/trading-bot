@@ -11,6 +11,10 @@ logger = get_logger('backtesting/summary_metrics')
 MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
 MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
 
+# Risk and Performance Metrics Constants
+RISK_FREE_RATE = 0.0  # Default risk-free rate for Sharpe and Sortino ratios
+CONFIDENCE_LEVEL = 0.95  # Default confidence level for VaR and Expected Shortfall (95%)
+
 # Used when ratio calculations would result in infinity
 # Rationale: Large but finite number that won't break aggregations
 INFINITY_REPLACEMENT = 9999.99
@@ -136,9 +140,9 @@ class SummaryMetrics:
     def _calculate_cumulative_pnl(self):
         """Calculate cumulative PnL for drawdown calculations using contract-based percentages."""
         net_pnls = [trade['net_pnl'] for trade in self.trades]
-        return_pcts = [trade['return_percentage_of_contract'] for trade in self.trades]
+        return_percentages = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.cumulative_pnl_dollars = np.cumsum(net_pnls).tolist()
-        self.cumulative_pnl_pct = np.cumsum(return_pcts).tolist()
+        self.cumulative_pnl_percentage = np.cumsum(return_percentages).tolist()
 
     def _calculate_max_drawdown(self):
         """Calculate the maximum drawdown given a list of trades."""
@@ -148,20 +152,20 @@ class SummaryMetrics:
         # Calculate max drawdown in dollars
         peak_dollars = 0
         max_drawdown = 0
-        for val in self.cumulative_pnl_dollars:
-            if val > peak_dollars:
-                peak_dollars = val
-            drawdown = peak_dollars - val
+        for value in self.cumulative_pnl_dollars:
+            if value > peak_dollars:
+                peak_dollars = value
+            drawdown = peak_dollars - value
             if drawdown > max_drawdown:
                 max_drawdown = drawdown
 
         # Calculate max drawdown in percentage
-        peak_pct = 0
+        peak_percentage = 0
         maximum_drawdown_percentage = 0
-        for val in self.cumulative_pnl_pct:
-            if val > peak_pct:
-                peak_pct = val
-            drawdown_percentage = peak_pct - val
+        for value in self.cumulative_pnl_percentage:
+            if value > peak_percentage:
+                peak_percentage = value
+            drawdown_percentage = peak_percentage - value
             if drawdown_percentage > maximum_drawdown_percentage:
                 maximum_drawdown_percentage = drawdown_percentage
 
@@ -195,42 +199,41 @@ class SummaryMetrics:
 
         return abs(safe_divide(total_win_percentage, total_loss_percentage))
 
-    def _calculate_sharpe_ratio(self, risk_free_rate=0.0):
+    def _calculate_sharpe_ratio(self):
         """Calculate the Sharpe ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Returns."""
         if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_SHARPE:
             return 0
 
-        avg_return = safe_average(self.returns)
+        average_return = safe_average(self.returns)
 
         # Calculate standard deviation
         std_dev = np.std(self.returns, ddof=0)
 
         if std_dev == 0:
-            return 0  # Avoid division by zero
+            return 0
 
-        return safe_divide(avg_return - risk_free_rate, std_dev)
+        return safe_divide(average_return - RISK_FREE_RATE, std_dev)
 
-    def _calculate_sortino_ratio(self, risk_free_rate=0.0):
+    def _calculate_sortino_ratio(self):
         """Calculate Sortino ratio: (Average Return - Risk-Free Rate) / Standard Deviation of Negative Returns."""
         if not self._has_trades():
             return 0
 
-        avg_return = safe_average(self.returns)
+        average_return = safe_average(self.returns)
 
         # Calculate downside deviation (returns below the risk-free rate)
-        negative_returns = [r - risk_free_rate for r in self.returns if r < risk_free_rate]
+        negative_returns = [r - RISK_FREE_RATE for r in self.returns if r < RISK_FREE_RATE]
 
         if not negative_returns:
-            # Return very high finite number instead of infinity for better aggregation/comparison handling
             return INFINITY_REPLACEMENT
 
         downside_variance = safe_average([r ** 2 for r in negative_returns])
         downside_deviation = downside_variance ** 0.5
 
         if downside_deviation == 0:
-            return 0  # Avoid division by zero
+            return 0
 
-        return safe_divide(avg_return - risk_free_rate, downside_deviation)
+        return safe_divide(average_return - RISK_FREE_RATE, downside_deviation)
 
     def _calculate_calmar_ratio(self):
         """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
@@ -238,13 +241,12 @@ class SummaryMetrics:
             return 0
 
         if self.maximum_drawdown_percentage == 0:
-            # Return very high finite number instead of infinity for better aggregation/comparison handling
             return INFINITY_REPLACEMENT
 
         return safe_divide(self.total_return_contract, self.maximum_drawdown_percentage)
 
-    def _calculate_value_at_risk(self, confidence=0.95):
-        """ Returns the loss that won't be exceeded with the given confidence level. """
+    def _calculate_value_at_risk(self):
+        """Returns the loss that won't be exceeded with the given confidence level."""
         if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_VAR:
             return 0
 
@@ -252,13 +254,13 @@ class SummaryMetrics:
         sorted_returns = sorted(self.returns)
 
         # Find the index corresponding to the confidence level
-        index = int((1 - confidence) * len(sorted_returns))
+        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
 
         # Return the absolute value of the loss at that index
         return abs(sorted_returns[max(0, index)])
 
-    def _calculate_expected_shortfall(self, confidence=0.95):
-        """ Returns the average loss in the worst (1-confidence)% of cases."""
+    def _calculate_expected_shortfall(self):
+        """Returns the average loss in the worst (1-confidence)% of cases."""
         if not self._has_trades() or len(self.returns) < MIN_RETURNS_FOR_VAR:
             return 0
 
@@ -266,7 +268,7 @@ class SummaryMetrics:
         sorted_returns = sorted(self.returns)
 
         # Find the index corresponding to the confidence level
-        index = int((1 - confidence) * len(sorted_returns))
+        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
 
         # Calculate the average of the worst returns
         worst_returns = sorted_returns[:max(1, index + 1)]
@@ -281,14 +283,13 @@ class SummaryMetrics:
         drawdowns = []
         peak = 0
 
-        for val in self.cumulative_pnl_pct:
-            if val > peak:
-                peak = val
+        for value in self.cumulative_pnl_percentage:
+            if value > peak:
+                peak = value
                 drawdowns.append(0)
             else:
-                # Use the same drawdown calculation as in _calculate_max_drawdown
-                drawdown_pct = peak - val
-                drawdowns.append(drawdown_pct)
+                drawdown_percentage = peak - value
+                drawdowns.append(drawdown_percentage)
 
         # Calculate Ulcer Index
         return np.sqrt(np.mean(np.array(drawdowns) ** 2))

@@ -644,26 +644,6 @@ class TestCalculateSharpeRatio:
         sharpe_ratio = metrics._calculate_sharpe_ratio()
         assert sharpe_ratio == 0  # Should return 0 to avoid division by zero
 
-    def test_with_risk_free_rate(self):
-        """Test calculation of Sharpe ratio with a non-zero risk-free rate."""
-        trades = [
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
-            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
-            create_sample_trade(net_pnl=300.0, return_percentage=3.0)
-        ]
-        risk_free_rate = 0.5  # 0.5%
-        metrics = SummaryMetrics(trades)
-        sharpe_ratio = metrics._calculate_sharpe_ratio(risk_free_rate)
-
-        # Calculate expected value manually
-        returns = [1.0, 2.0, 3.0]
-        avg_return = sum(returns) / len(returns)
-        variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
-        std_dev = variance ** 0.5
-        expected_sharpe = (avg_return - risk_free_rate) / std_dev
-
-        assert abs(sharpe_ratio - expected_sharpe) < 1e-10  # Allow for small floating-point differences
-
 
 class TestCalculateSortinoRatio:
     """Tests for the calculate_sortino_ratio function."""
@@ -825,11 +805,9 @@ class TestCalculateSortinoRatio:
             create_sample_trade(net_pnl=200.0, return_percentage=2.0),
             create_sample_trade(net_pnl=-50.0, return_percentage=-0.5)
         ]
-        risk_free_rate = 0.5  # 0.5%
         metrics = SummaryMetrics(trades)
-        sortino_ratio = metrics._calculate_sortino_ratio(risk_free_rate)
+        sortino_ratio = metrics._calculate_sortino_ratio()
         assert isinstance(sortino_ratio, float)
-        # The actual value would depend on the implementation details
 
 
 class TestCalculateCalmarRatio:
@@ -927,26 +905,6 @@ class TestCalculateValueAtRisk:
         # of the return at the 5th percentile, which is the 1st worst return (-4.0)
         assert var == 4.0
 
-    def test_custom_confidence_level(self):
-        """Test calculation of Value at Risk with a custom confidence level."""
-        trades = [
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
-            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
-            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
-            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
-            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
-            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
-            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
-            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
-            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
-            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
-        ]
-        metrics = SummaryMetrics(trades)
-        var = metrics._calculate_value_at_risk(confidence=0.9)
-
-        # With 10 trades and 90% confidence, we expect the VaR to be the absolute value
-        # of the return at the 10th percentile, which is the 1st worst return (-4.0)
-        assert var == 4.0
 
 
 class TestCalculateExpectedShortfall:
@@ -1005,27 +963,6 @@ class TestCalculateExpectedShortfall:
         # With 10 trades and 95% confidence, we expect the ES to be the average of the worst 5% of returns,
         # which is the average of the worst return (-4.0)
         assert es == 4.0
-
-    def test_custom_confidence_level(self):
-        """Test calculation of Expected Shortfall with a custom confidence level."""
-        trades = [
-            create_sample_trade(net_pnl=100.0, return_percentage=1.0),
-            create_sample_trade(net_pnl=200.0, return_percentage=2.0),
-            create_sample_trade(net_pnl=-50.0, return_percentage=-0.5),
-            create_sample_trade(net_pnl=-100.0, return_percentage=-1.0),
-            create_sample_trade(net_pnl=300.0, return_percentage=3.0),
-            create_sample_trade(net_pnl=-200.0, return_percentage=-2.0),
-            create_sample_trade(net_pnl=400.0, return_percentage=4.0),
-            create_sample_trade(net_pnl=-300.0, return_percentage=-3.0),
-            create_sample_trade(net_pnl=500.0, return_percentage=5.0),
-            create_sample_trade(net_pnl=-400.0, return_percentage=-4.0)
-        ]
-        metrics = SummaryMetrics(trades)
-        es = metrics._calculate_expected_shortfall(confidence=0.8)
-
-        # With 10 trades and 80% confidence, we expect the ES to be the average of the worst 20% of returns,
-        # which is the average of the 2 worst returns (-4.0 and -3.0)
-        assert es == (4.0 + 3.0) / 2
 
 
 class TestCalculateUlcerIndex:
@@ -1163,7 +1100,7 @@ class TestPrivateHelperMethods:
         assert hasattr(metrics, 'returns')
         assert hasattr(metrics, 'durations')
         assert hasattr(metrics, 'cumulative_pnl_dollars')
-        assert hasattr(metrics, 'cumulative_pnl_pct')
+        assert hasattr(metrics, 'cumulative_pnl_percentage')
 
         assert len(metrics.winning_trades) == 1
         assert len(metrics.losing_trades) == 1
@@ -1223,9 +1160,9 @@ class TestPrivateHelperMethods:
         metrics._calculate_cumulative_pnl()
 
         # Verify cumulative calculations
-        assert len(metrics.cumulative_pnl_pct) == 3
+        assert len(metrics.cumulative_pnl_percentage) == 3
         assert len(metrics.cumulative_pnl_dollars) == 3
-        assert metrics.cumulative_pnl_pct == [0.1, 0.05, 0.25]  # 0.1, 0.1-0.05, 0.05+0.2
+        assert metrics.cumulative_pnl_percentage == [0.1, 0.05, 0.25]  # 0.1, 0.1-0.05, 0.05+0.2
         assert metrics.cumulative_pnl_dollars == [100.0, 50.0, 250.0]  # 100, 100-50, 50+200
 
     def test_calculate_average_win_percentage_of_contract(self):
