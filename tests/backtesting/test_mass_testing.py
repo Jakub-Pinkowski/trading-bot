@@ -26,8 +26,8 @@ class TestMassTester:
         }
 
         # Mock the strategy_factory functions
-        with patch('app.backtesting.strategy_factory.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.strategy_factory.create_strategy') as mock_create:
+        with patch('app.backtesting.testing.mass_tester.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.testing.mass_tester.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -58,8 +58,8 @@ class TestMassTester:
         }
 
         # Mock the strategy_factory functions
-        with patch('app.backtesting.strategy_factory.get_strategy_name') as mock_get_name, \
-                patch('app.backtesting.strategy_factory.create_strategy') as mock_create:
+        with patch('app.backtesting.testing.mass_tester.get_strategy_name') as mock_get_name, \
+                patch('app.backtesting.testing.mass_tester.create_strategy') as mock_create:
             # Set up the mocks
             mock_get_name.return_value = "TestStrategy"
             mock_strategy = MagicMock()
@@ -1312,8 +1312,8 @@ class TestHelperFunctions:
 
     @patch('os.path.exists')
     @patch('pandas.read_parquet')
-    def test_load_existing_results_file_exists(self, mock_read_parquet, mock_exists):
-        """Test _load_existing_results when the file exists."""
+    def testload_existing_results_file_exists(self, mock_read_parquet, mock_exists):
+        """Test load_existing_results when the file exists."""
         mock_exists.return_value = True
         mock_df = pd.DataFrame({
             'month': ['1!'],
@@ -1323,7 +1323,7 @@ class TestHelperFunctions:
         })
         mock_read_parquet.return_value = mock_df
 
-        df, existing_combinations = _load_existing_results()
+        df, existing_combinations = load_existing_results()
 
         # Check the DataFrame
         assert isinstance(df, pd.DataFrame)
@@ -1339,11 +1339,11 @@ class TestHelperFunctions:
 
     @patch('os.path.exists')
     @patch('pandas.read_parquet')
-    def test_load_existing_results_file_not_exists(self, mock_read_parquet, mock_exists):
-        """Test _load_existing_results when the file doesn't exist."""
+    def testload_existing_results_file_not_exists(self, mock_read_parquet, mock_exists):
+        """Test load_existing_results when the file doesn't exist."""
         mock_exists.return_value = False
 
-        df, existing_combinations = _load_existing_results()
+        df, existing_combinations = load_existing_results()
 
         # Check the DataFrame
         assert isinstance(df, pd.DataFrame)
@@ -1358,12 +1358,12 @@ class TestHelperFunctions:
 
     @patch('os.path.exists')
     @patch('pandas.read_parquet')
-    def test_load_existing_results_error(self, mock_read_parquet, mock_exists):
-        """Test _load_existing_results when there's an error reading the file."""
+    def testload_existing_results_error(self, mock_read_parquet, mock_exists):
+        """Test load_existing_results when there's an error reading the file."""
         mock_exists.return_value = True
         mock_read_parquet.side_effect = Exception("Error reading file")
 
-        df, existing_combinations = _load_existing_results()
+        df, existing_combinations = load_existing_results()
 
         # Check the DataFrame
         assert isinstance(df, pd.DataFrame)
@@ -1395,7 +1395,7 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
+        result = check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
 
         assert result == True
 
@@ -1418,7 +1418,7 @@ class TestHelperFunctions:
 
         existing_data = (existing_df, existing_combinations)
 
-        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 3')
+        result = check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 3')
 
         assert result == False
 
@@ -1428,7 +1428,7 @@ class TestHelperFunctions:
         existing_combinations = set()
         existing_data = (existing_df, existing_combinations)
 
-        result = _check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
+        result = check_test_exists(existing_data, '1!', 'ZS', '1h', 'Strategy 1')
 
         assert result is False
 
@@ -1456,21 +1456,12 @@ class TestMassTesterPerformanceOptimizations:
         mock_load_results.return_value = (pd.DataFrame(), set())
         mock_test_exists.return_value = False
 
-        # Mock time.time() to return predictable values
-        # Start time: 0, batch times: 10, 20, 30, etc.
-        mock_time.side_effect = [
-            0,
-            10,
-            20,
-            30,
-            40,
-            50,
-            60,
-            70,
-            80,
-            90,
-            100
-        ]  # start, batch1, batch2, batch3, end + extras
+        # Mock time.time() to return incrementing values
+        time_counter = [0]
+        def mock_time_func():
+            time_counter[0] += 1
+            return time_counter[0]
+        mock_time.side_effect = mock_time_func
 
         # Create mock results
         mock_results = []
@@ -1481,7 +1472,8 @@ class TestMassTesterPerformanceOptimizations:
                 'interval': '1h',
                 'strategy': f'Test Strategy {i}',
                 'metrics': {'total_trades': 10, 'win_rate': 60.0},
-                'timestamp': '2023-01-01T00:00:00'
+                'timestamp': '2023-01-01T00:00:00',
+                'cache_stats': {'ind_hits': 0, 'ind_misses': 0, 'df_hits': 0, 'df_misses': 0}
             })
 
         # Mock futures
@@ -1630,12 +1622,12 @@ class TestMassTesterPerformanceOptimizations:
             param_grid={'ema_short': list(range(1, 1501)), 'ema_long': [1600], 'rollover': [True], 'trailing': [None]}
         )
 
-        # Mock the _save_results method to track calls
-        with patch.object(tester, '_save_results') as mock_save_results:
+        # Mock the save_results function to track calls
+        with patch('app.backtesting.testing.orchestrator.save_results') as mock_save_results:
             # Run tests
             results = tester.run_tests(verbose=False)
 
-            # Verify _save_results was called at least twice:
+            # Verify save_results was called at least twice:
             # Once at 1000 tests (intermediate) and once at the end (final)
             assert mock_save_results.call_count >= 2
 
@@ -1647,7 +1639,7 @@ class TestMassTesterPerformanceOptimizations:
     @patch('app.backtesting.testing.orchestrator.check_test_exists')
     @patch('concurrent.futures.as_completed')
     @patch('concurrent.futures.ProcessPoolExecutor')
-    @patch('app.backtesting.testing.reporting.logger')
+    @patch('app.backtesting.testing.orchestrator.logger')
     @patch('builtins.print')
     def test_run_tests_worker_exception_handling(
         self,
@@ -1821,7 +1813,7 @@ class TestDataFrameValidation:
         empty_df = pd.DataFrame()
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=empty_df), \
-                patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
+                patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_logger_error:
             result = run_single_test(test_params)
 
             # Verify None is returned
@@ -1850,7 +1842,7 @@ class TestDataFrameValidation:
         })
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_missing_columns), \
-                patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
+                patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_logger_error:
             result = run_single_test(test_params)
 
             # Verify None is returned
@@ -1882,7 +1874,7 @@ class TestDataFrameValidation:
         }, index=pd.date_range('2023-01-01', periods=50, freq='1h'))
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_few_rows), \
-                patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
+                patch('app.backtesting.testing.runner.logger.warning') as mock_logger_warning, \
                 patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
             result = run_single_test(test_params)
@@ -1916,7 +1908,7 @@ class TestDataFrameValidation:
         }, index=pd.date_range('2023-01-01', periods=200, freq='1h'))
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=df_valid), \
-                patch('app.backtesting.testing.reporting.logger.warning') as mock_logger_warning, \
+                patch('app.backtesting.testing.utils.dataframe_validators.logger.warning') as mock_logger_warning, \
                 patch('app.backtesting.testing.runner.calculate_trade_metrics', return_value={}), \
                 patch.object(tester.strategies[0][1], 'run', return_value=[]):
             result = run_single_test(test_params)
@@ -1940,7 +1932,7 @@ class TestDataFrameValidation:
 
         # Mock get_cached_dataframe to return None
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=None), \
-                patch('app.backtesting.testing.reporting.logger.error') as mock_logger_error:
+                patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_logger_error:
             result = run_single_test(test_params)
 
             # Verify None is returned
@@ -2196,7 +2188,7 @@ class TestValidateDataFrame:
         """Test that None DataFrame fails validation."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(None, 'test.parquet')
 
             assert result is False
@@ -2209,7 +2201,7 @@ class TestValidateDataFrame:
 
         df = pd.DataFrame()
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2226,7 +2218,7 @@ class TestValidateDataFrame:
             'high': [102.0, 103.0, 104.0],
         })
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2248,7 +2240,7 @@ class TestValidateDataFrame:
             'close': ['100', '101', '102'],  # String instead of numeric
         })
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2270,7 +2262,7 @@ class TestValidateDataFrame:
             'close': close_values,
         }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
-        with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.warning') as mock_warning:
             result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation but log warning
@@ -2294,7 +2286,7 @@ class TestValidateDataFrame:
             'close': close_values,
         }, index=pd.date_range('2023-01-01', periods=100, freq='1h'))
 
-        with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.warning') as mock_warning:
             result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation without warning (< 10% threshold)
@@ -2313,7 +2305,7 @@ class TestValidateDataFrame:
             'close': [101.0, 102.0, 103.0],
         })  # Default integer index
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2334,7 +2326,7 @@ class TestValidateDataFrame:
             'close': [101.0, 102.0, 103.0],
         }, index=['2023-01-01', '2023-01-02', '2023-01-03'])  # String index, not DatetimeIndex
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2355,7 +2347,7 @@ class TestValidateDataFrame:
             'close': [101.0, 102.0, 103.0],
         }, index=pd.to_datetime(['2023-01-03', '2023-01-01', '2023-01-02']))  # Out of order
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             result = validate_dataframe(df, 'test.parquet')
 
             assert result is False
@@ -2376,7 +2368,7 @@ class TestValidateDataFrame:
             'close': [101.0, 102.0, 103.0],
         }, index=pd.to_datetime(['2023-01-01 10:00', '2023-01-01 10:00', '2023-01-01 11:00']))  # Duplicate
 
-        with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.warning') as mock_warning:
             result = validate_dataframe(df, 'test.parquet')
 
             # Should pass validation but log warning
@@ -2404,7 +2396,7 @@ class TestValidateDataFrame:
             'close': close_values,
         }, index=pd.DatetimeIndex(dates))
 
-        with patch('app.backtesting.testing.reporting.logger.warning') as mock_warning:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.warning') as mock_warning:
             result = validate_dataframe(df, 'test.parquet')
 
             # Should pass but log warnings for both issues
@@ -2438,7 +2430,7 @@ class TestValidateDataFrame:
         df = pd.DataFrame()
         test_filepath = '/path/to/test_data.parquet'
 
-        with patch('app.backtesting.testing.reporting.logger.error') as mock_error:
+        with patch('app.backtesting.testing.utils.dataframe_validators.logger.error') as mock_error:
             validate_dataframe(df, test_filepath)
 
             error_msg = str(mock_error.call_args)
