@@ -39,11 +39,21 @@ trading-bot/
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy
 │   │   │   ├── macd.py                           # MACD strategy
 │   │   │   └── rsi.py                            # RSI strategy
+│   │   ├── testing/                             # Mass testing framework
+│   │   │   ├── utils/                           # Test utilities
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── dataframe_validators.py      # DataFrame validation functions
+│   │   │   │   ├── test_preparation.py          # Test combination preparation & filtering
+│   │   │   │   └── slippage_calculators.py      # Slippage calculation utilities
+│   │   │   ├── __init__.py
+│   │   │   ├── mass_tester.py                   # MassTester class and public API
+│   │   │   ├── orchestrator.py                  # Test orchestration & parallel execution
+│   │   │   ├── reporting.py                     # Results conversion & saving
+│   │   │   └── runner.py                        # Single test execution logic
 │   │   ├── __init__.py
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
 │   │   ├── BACKTESTING_USER_GUIDE.md             # User guide
-│   │   ├── mass_testing.py                       # Mass testing framework
 │   │   ├── strategy_analysis.py                  # Strategy analysis utilities
 │   │   ├── strategy_factory.py                   # Strategy creation factory
 │   │   ├── validation_constants.py               # Validation constants

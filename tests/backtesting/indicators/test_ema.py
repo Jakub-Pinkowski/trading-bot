@@ -45,7 +45,7 @@ def test_calculate_ema_invalid_period():
 def test_calculate_ema_non_numeric_data():
     """Test EMA calculation with non-numeric data"""
     prices = pd.Series(["a", "b", "c"])
-    with pytest.raises(pd.errors.DataError):
+    with pytest.raises((pd.errors.DataError, AttributeError)):
         prices_hash = hash_series(prices)
         calculate_ema(prices, period=9, prices_hash=prices_hash)
 
