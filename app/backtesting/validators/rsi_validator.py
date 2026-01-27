@@ -5,9 +5,19 @@ This module contains the RSI strategy parameter validator.
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
-
-
+from app.backtesting.validators.constants import (
+    RSI_PERIOD_MIN_RECOMMENDED,
+    RSI_PERIOD_MAX_RECOMMENDED,
+    RSI_PERIOD_STANDARD,
+    RSI_LOWER_MIN_AGGRESSIVE,
+    RSI_LOWER_MAX_CONSERVATIVE,
+    RSI_LOWER_STANDARD,
+    RSI_UPPER_MIN_AGGRESSIVE,
+    RSI_UPPER_MAX_CONSERVATIVE,
+    RSI_UPPER_STANDARD,
+    RSI_GAP_MIN,
+    RSI_GAP_MAX,
+)
 class RSIValidator(Validator):
     """Validator for RSI strategy parameters."""
 
