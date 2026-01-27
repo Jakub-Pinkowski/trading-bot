@@ -5,7 +5,14 @@ This module contains the Bollinger Bands strategy parameter validator.
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
+from app.backtesting.validators.constants import (
+    BB_PERIOD_MIN,
+    BB_PERIOD_MAX,
+    BB_PERIOD_STANDARD,
+    BB_STD_MIN,
+    BB_STD_MAX,
+    BB_STD_STANDARD,
+)
 
 
 class BollingerValidator(Validator):

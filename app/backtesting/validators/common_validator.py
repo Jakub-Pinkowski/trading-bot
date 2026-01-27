@@ -5,7 +5,15 @@ This module contains the validator for common strategy parameters shared across 
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
+from app.backtesting.validators.constants import (
+    TRAILING_STOP_MIN,
+    TRAILING_STOP_MAX,
+    TRAILING_STOP_COMMON_MIN,
+    TRAILING_STOP_COMMON_MAX,
+    SLIPPAGE_MAX,
+    SLIPPAGE_TYPICAL_MIN,
+    SLIPPAGE_TYPICAL_MAX,
+)
 
 
 class CommonValidator(Validator):

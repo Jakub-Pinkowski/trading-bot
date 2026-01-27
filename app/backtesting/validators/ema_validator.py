@@ -5,7 +5,18 @@ This module contains the EMA crossover strategy parameter validator.
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
+from app.backtesting.validators.constants import (
+    EMA_SHORT_MIN,
+    EMA_SHORT_MAX,
+    EMA_SHORT_COMMON_MIN,
+    EMA_SHORT_COMMON_MAX,
+    EMA_LONG_MIN,
+    EMA_LONG_MAX,
+    EMA_LONG_COMMON_MIN,
+    EMA_LONG_COMMON_MAX,
+    EMA_RATIO_MIN,
+    EMA_RATIO_MAX,
+)
 
 
 class EMAValidator(Validator):

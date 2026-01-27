@@ -14,8 +14,8 @@ class Validator:
         """Initialize the validator with an empty warnings list."""
         self.warnings = []
 
-    def validate_range(self, value, name, min_val, max_val, rec_min, rec_max, 
-                      min_msg_template=None, max_msg_template=None):
+    def validate_range(self, value, name, min_val, max_val, rec_min, rec_max,
+                       min_msg=None, max_msg=None):
         """
         Reusable range validation with warnings for recommended ranges.
 
@@ -26,8 +26,8 @@ class Validator:
             max_val: Absolute maximum value (raises error if violated)
             rec_min: Recommended minimum value (generates warning if below)
             rec_max: Recommended maximum value (generates warning if above)
-            min_msg_template: Optional custom message for below recommended minimum
-            max_msg_template: Optional custom message for above recommended maximum
+            min_msg: Optional custom message for below recommended minimum
+            max_msg: Optional custom message for above recommended maximum
 
         Raises:
             ValueError: If value is outside absolute min/max range
@@ -38,13 +38,13 @@ class Validator:
 
         # Check recommended range and add warnings
         if value < rec_min:
-            if min_msg_template:
-                self.warnings.append(min_msg_template)
+            if min_msg:
+                self.warnings.append(min_msg)
             else:
                 self.warnings.append(f"{name} {value} is below recommended range ({rec_min}-{rec_max})")
         elif value > rec_max:
-            if max_msg_template:
-                self.warnings.append(max_msg_template)
+            if max_msg:
+                self.warnings.append(max_msg)
             else:
                 self.warnings.append(f"{name} {value} is above recommended range ({rec_min}-{rec_max})")
 

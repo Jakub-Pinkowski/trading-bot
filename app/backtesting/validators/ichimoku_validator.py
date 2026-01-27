@@ -5,7 +5,24 @@ This module contains the Ichimoku Cloud strategy parameter validator.
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
+from app.backtesting.validators.constants import (
+    ICHIMOKU_TENKAN_MIN,
+    ICHIMOKU_TENKAN_MAX,
+    ICHIMOKU_TENKAN_STANDARD,
+    ICHIMOKU_KIJUN_MIN,
+    ICHIMOKU_KIJUN_MAX,
+    ICHIMOKU_KIJUN_STANDARD,
+    ICHIMOKU_SENKOU_B_MIN,
+    ICHIMOKU_SENKOU_B_MAX,
+    ICHIMOKU_SENKOU_B_STANDARD,
+    ICHIMOKU_DISPLACEMENT_MIN,
+    ICHIMOKU_DISPLACEMENT_MAX,
+    ICHIMOKU_DISPLACEMENT_STANDARD,
+    ICHIMOKU_TENKAN_KIJUN_RATIO_MIN,
+    ICHIMOKU_TENKAN_KIJUN_RATIO_MAX,
+    ICHIMOKU_KIJUN_SENKOU_RATIO_MIN,
+    ICHIMOKU_KIJUN_SENKOU_RATIO_MAX,
+)
 
 
 class IchimokuValidator(Validator):

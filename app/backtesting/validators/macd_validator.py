@@ -5,7 +5,17 @@ This module contains the MACD strategy parameter validator.
 """
 
 from app.backtesting.validators.base import Validator
-from app.backtesting.validators.constants import *
+from app.backtesting.validators.constants import (
+    MACD_FAST_MIN,
+    MACD_FAST_MAX,
+    MACD_FAST_STANDARD,
+    MACD_SLOW_MIN,
+    MACD_SLOW_MAX,
+    MACD_SLOW_STANDARD,
+    MACD_SIGNAL_MIN,
+    MACD_SIGNAL_MAX,
+    MACD_SIGNAL_STANDARD,
+)
 
 
 class MACDValidator(Validator):
