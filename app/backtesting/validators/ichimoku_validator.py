@@ -25,8 +25,13 @@ from app.backtesting.validators.constants import (
 )
 
 
+# ==================== Ichimoku Cloud Validator ====================
+
+
 class IchimokuValidator(Validator):
     """Validator for Ichimoku Cloud strategy parameters."""
+
+    # ==================== Validation Method ====================
 
     def validate(self, tenkan_period, kijun_period, senkou_span_b_period, displacement, **kwargs):
         """
@@ -52,39 +57,49 @@ class IchimokuValidator(Validator):
         Raises:
             ValueError: If parameters have invalid types or values
         """
-        self.warnings = []
+        self.reset_warnings()
 
-        # Type validation
+        # --- Type Validation ---
+
+        # Validate all Ichimoku periods are positive integers
         self.validate_positive_integer(tenkan_period, "tenkan period")
         self.validate_positive_integer(kijun_period, "kijun period")
         self.validate_positive_integer(senkou_span_b_period, "senkou span B period")
         self.validate_positive_integer(displacement, "displacement")
 
-        # Tenkan period validation
+        # --- Tenkan Period Range Validation ---
+
+        # Warn if Tenkan period is too short
         if tenkan_period < ICHIMOKU_TENKAN_MIN:
             self.warnings.append(
                 f"Ichimoku Tenkan period {tenkan_period} is quite short and may be too sensitive. "
                 f"Consider using {ICHIMOKU_TENKAN_MIN}-{ICHIMOKU_TENKAN_MAX} range ({ICHIMOKU_TENKAN_STANDARD} is traditional)."
             )
+        # Warn if Tenkan period is too long
         elif tenkan_period > ICHIMOKU_TENKAN_MAX:
             self.warnings.append(
                 f"Ichimoku Tenkan period {tenkan_period} may be too slow for conversion line. "
                 f"Consider using {ICHIMOKU_TENKAN_MIN}-{ICHIMOKU_TENKAN_MAX} range ({ICHIMOKU_TENKAN_STANDARD} is traditional)."
             )
 
-        # Kijun period validation
+        # --- Kijun Period Range Validation ---
+
+        # Warn if Kijun period is too short
         if kijun_period < ICHIMOKU_KIJUN_MIN:
             self.warnings.append(
                 f"Ichimoku Kijun period {kijun_period} may be too short for baseline. "
                 f"Consider using {ICHIMOKU_KIJUN_MIN}-{ICHIMOKU_KIJUN_MAX} range ({ICHIMOKU_KIJUN_STANDARD} is traditional)."
             )
+        # Warn if Kijun period is too long
         elif kijun_period > ICHIMOKU_KIJUN_MAX:
             self.warnings.append(
                 f"Ichimoku Kijun period {kijun_period} may be too slow for trend confirmation. "
                 f"Consider using {ICHIMOKU_KIJUN_MIN}-{ICHIMOKU_KIJUN_MAX} range ({ICHIMOKU_KIJUN_STANDARD} is traditional)."
             )
 
-        # Senkou Span B period validation
+        # --- Senkou Span B Period Range Validation ---
+
+        # Warn if Senkou Span B period is too short
         if senkou_span_b_period < ICHIMOKU_SENKOU_B_MIN:
             self.warnings.append(
                 f"Ichimoku Senkou Span B period {senkou_span_b_period} may be too short for cloud formation. "
@@ -123,14 +138,18 @@ class IchimokuValidator(Validator):
                 f"Consider maintaining traditional proportions (e.g., {ICHIMOKU_KIJUN_STANDARD}/{ICHIMOKU_SENKOU_B_STANDARD})."
             )
 
-        # Displacement vs Kijun check
+        # --- Displacement Relationship Check ---
+
+        # Warn if displacement doesn't match Kijun period (traditional relationship)
         if displacement != kijun_period:
             self.warnings.append(
                 f"Ichimoku displacement ({displacement}) differs from Kijun period ({kijun_period}). "
                 f"Traditional Ichimoku uses same value for both (typically {ICHIMOKU_DISPLACEMENT_STANDARD})."
             )
 
-        # Traditional combination check
+        # --- Traditional Configuration Check ---
+
+        # Provide info when using traditional Ichimoku configuration
         if (tenkan_period, kijun_period, senkou_span_b_period, displacement) == (
                 ICHIMOKU_TENKAN_STANDARD,
                 ICHIMOKU_KIJUN_STANDARD,

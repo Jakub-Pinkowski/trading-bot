@@ -16,8 +16,13 @@ from app.backtesting.validators.constants import (
 )
 
 
+# ==================== Common Parameters Validator ====================
+
+
 class CommonValidator(Validator):
     """Validator for common strategy parameters (rollover, trailing, slippage)."""
+
+    # ==================== Validation Method ====================
 
     def validate(self, rollover, trailing, slippage, **kwargs):
         """
@@ -40,21 +45,29 @@ class CommonValidator(Validator):
         Raises:
             ValueError: If parameters have invalid types or values
         """
-        self.warnings = []
+        self.reset_warnings()
 
-        # Type validation
+        # --- Type Validation ---
+
+        # Validate rollover is a boolean value
         self.validate_boolean(rollover, "rollover")
+        # Validate trailing is None or a positive number
         self.validate_optional_positive_number(trailing, "trailing")
+        # Validate slippage is None or a non-negative number (zero allowed)
         self.validate_optional_non_negative_number(slippage, "slippage")
 
-        # Trailing stop validation
+        # --- Trailing Stop Validation ---
+
+        # Only validate trailing stop if it's provided
         if trailing is not None:
+            # Warn if trailing stop is too tight
             if trailing < TRAILING_STOP_MIN:
                 self.warnings.append(
                     f"Trailing stop {trailing}% is very tight and may be stopped out frequently. "
                     f"Consider using {TRAILING_STOP_MIN}-{TRAILING_STOP_MAX}% range "
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
+            # Warn if trailing stop is too wide
             elif trailing > TRAILING_STOP_MAX:
                 self.warnings.append(
                     f"Trailing stop {trailing}% is very wide and may give back large profits. "
@@ -62,14 +75,18 @@ class CommonValidator(Validator):
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
 
-        # Slippage validation
+        # --- Slippage Validation ---
+
+        # Only validate slippage if it's provided
         if slippage is not None:
+            # Warn if slippage is unrealistically high
             if slippage > SLIPPAGE_MAX:
                 self.warnings.append(
                     f"Slippage {slippage}% is very high and may significantly impact returns. "
                     f"Consider using 0-{SLIPPAGE_MAX}% range "
                     f"({SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% is typical for liquid futures)."
                 )
+            # Warn if slippage is unrealistically zero
             elif slippage == 0:
                 self.warnings.append(
                     f"Slippage {slippage}% is unrealistic - all orders experience some slippage. "

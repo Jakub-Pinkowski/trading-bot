@@ -6,13 +6,28 @@ methods for all strategy parameter validators. All specific validators should
 inherit from this base class.
 """
 
+import math
+
+
+# ==================== Base Validator Class ====================
+
 
 class Validator:
     """Base class for parameter validators with reusable validation methods."""
 
+    # ==================== Initialization ====================
+
     def __init__(self):
         """Initialize the validator with an empty warnings list."""
         self.warnings = []
+
+    # ==================== Warning Management ====================
+
+    def reset_warnings(self):
+        """Reset the warnings list at the start of validation."""
+        self.warnings = []
+
+    # ==================== Range And Gap Validation ====================
 
     def validate_range(
         self, value, name, minimum_value, maximum_value,
@@ -35,16 +50,17 @@ class Validator:
         Raises:
             ValueError: If value is outside absolute min/max range
         """
-        # Check absolute bounds
+        # Validate value is within absolute bounds
         if value < minimum_value or value > maximum_value:
             raise ValueError(f"{name} must be between {minimum_value} and {maximum_value}")
 
-        # Check recommended range and add warnings
+        # Add warning if value is below recommended minimum
         if value < recommended_minimum:
             if minimum_message:
                 self.warnings.append(minimum_message)
             else:
                 self.warnings.append(f"{name} {value} is below recommended range ({recommended_minimum}-{recommended_maximum})")
+        # Add warning if value is above recommended maximum
         elif value > recommended_maximum:
             if maximum_message:
                 self.warnings.append(maximum_message)
@@ -66,11 +82,13 @@ class Validator:
             minimum_message: Optional custom message for gap too small
             maximum_message: Optional custom message for gap too large
         """
+        # Add warning if gap is too small
         if gap < minimum_gap:
             if minimum_message:
                 self.warnings.append(minimum_message)
             else:
                 self.warnings.append(f"{name} ({gap}) is below recommended minimum {minimum_gap}")
+        # Add warning if gap is too large
         elif gap > maximum_gap:
             if maximum_message:
                 self.warnings.append(maximum_message)
@@ -92,16 +110,20 @@ class Validator:
             minimum_message: Optional custom message for ratio too small
             maximum_message: Optional custom message for ratio too large
         """
+        # Add warning if ratio is too small
         if ratio < minimum_ratio:
             if minimum_message:
                 self.warnings.append(minimum_message)
             else:
                 self.warnings.append(f"{name} ratio ({ratio:.1f}) is below recommended minimum {minimum_ratio}")
+        # Add warning if ratio is too large
         elif ratio > maximum_ratio:
             if maximum_message:
                 self.warnings.append(maximum_message)
             else:
                 self.warnings.append(f"{name} ratio ({ratio:.1f}) is above recommended maximum {maximum_ratio}")
+
+    # ==================== Message Handling ====================
 
     def add_info_message(self, message):
         """
@@ -111,6 +133,8 @@ class Validator:
             message: The informational message to add
         """
         self.warnings.append(message)
+
+    # ==================== Type Validation ====================
 
     def validate_positive_integer(self, value, param_name):
         """
@@ -123,7 +147,8 @@ class Validator:
         Raises:
             ValueError: If value is not a positive integer
         """
-        if not isinstance(value, int) or value <= 0:
+        # Explicitly exclude booleans since bool inherits from int in Python
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
             raise ValueError(f"{param_name} must be a positive integer")
 
     def validate_positive_number(self, value, param_name):
@@ -137,7 +162,17 @@ class Validator:
         Raises:
             ValueError: If value is not positive
         """
-        if not isinstance(value, (int, float)) or value <= 0:
+        # Explicitly exclude booleans since bool inherits from int in Python
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{param_name} must be positive")
+
+        # Reject infinity and NaN values for float inputs
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                raise ValueError(f"{param_name} must be a finite number")
+
+        # Validate value is positive
+        if value <= 0:
             raise ValueError(f"{param_name} must be positive")
 
     def validate_boolean(self, value, param_name):
@@ -167,18 +202,20 @@ class Validator:
         Raises:
             ValueError: If value is not a number or is outside the range
         """
-        # Explicitly exclude booleans
+        # Explicitly exclude booleans since bool inherits from int in Python
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
 
-        # Check for special float values
+        # Reject infinity and NaN values for float inputs
         if isinstance(value, float):
-            import math
             if math.isnan(value) or math.isinf(value):
                 raise ValueError(f"{param_name} must be a finite number")
 
+        # Validate value is within range
         if value < minimum_value or value > maximum_value:
             raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
+
+    # ==================== Optional Value Validation ====================
 
     def validate_optional_positive_number(self, value, param_name):
         """
@@ -191,8 +228,20 @@ class Validator:
         Raises:
             ValueError: If value is not None and not a positive number
         """
-        if value is not None and (not isinstance(value, (int, float)) or value <= 0):
-            raise ValueError(f"{param_name} must be None or a positive number")
+        # Only validate if value is provided
+        if value is not None:
+            # Explicitly exclude booleans since bool inherits from int in Python
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"{param_name} must be None or a positive number")
+
+            # Reject infinity and NaN values for float inputs
+            if isinstance(value, float):
+                if math.isnan(value) or math.isinf(value):
+                    raise ValueError(f"{param_name} must be None or a finite number")
+
+            # Validate value is positive
+            if value <= 0:
+                raise ValueError(f"{param_name} must be None or a positive number")
 
     def validate_optional_non_negative_number(self, value, param_name):
         """
@@ -205,8 +254,22 @@ class Validator:
         Raises:
             ValueError: If value is not None and not a non-negative number
         """
-        if value is not None and (not isinstance(value, (int, float)) or value < 0):
-            raise ValueError(f"{param_name} must be None or a non-negative number")
+        # Only validate if value is provided
+        if value is not None:
+            # Explicitly exclude booleans since bool inherits from int in Python
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"{param_name} must be None or a non-negative number")
+
+            # Reject infinity and NaN values for float inputs
+            if isinstance(value, float):
+                if math.isnan(value) or math.isinf(value):
+                    raise ValueError(f"{param_name} must be None or a finite number")
+
+            # Validate value is non-negative (zero is allowed)
+            if value < 0:
+                raise ValueError(f"{param_name} must be None or a non-negative number")
+
+    # ==================== Abstract Method ====================
 
     def validate(self, **kwargs):
         """
