@@ -11,8 +11,7 @@ from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.strategy_factory import (
     create_strategy, get_strategy_name, _extract_common_params,
-    _validate_positive_integer, _validate_positive_number, _validate_range, _format_common_params,
-    _log_warnings_once, _logged_warnings
+    _format_common_params, _log_warnings_once, _logged_warnings
 )
 from app.backtesting.validators import (
     BollingerValidator, CommonValidator, EMAValidator,
@@ -161,7 +160,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('rsi', upper=110)
 
         # Lower >= upper
-        with pytest.raises(ValueError, match="Lower threshold must be less than upper threshold"):
+        with pytest.raises(ValueError, match="Lower threshold .* must be less than upper threshold"):
             create_strategy('rsi', lower=70, upper=30)
 
     def test_create_ema_strategy_invalid_parameters(self):
@@ -175,7 +174,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('ema', ema_long=-1)
 
         # Short >= long
-        with pytest.raises(ValueError, match="Short EMA period must be less than long EMA period"):
+        with pytest.raises(ValueError, match="Short EMA period .* must be less than long EMA period"):
             create_strategy('ema', ema_short=21, ema_long=9)
 
     def test_create_macd_strategy_invalid_parameters(self):
@@ -193,7 +192,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('macd', signal_period=-1)
 
         # Fast >= slow
-        with pytest.raises(ValueError, match="Fast period must be less than slow period"):
+        with pytest.raises(ValueError, match="Fast period .* must be less than slow period"):
             create_strategy('macd', fast_period=26, slow_period=12)
 
     def test_create_bollinger_strategy_invalid_parameters(self):
@@ -362,89 +361,80 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         self.assertIsNone(result['trailing'])
         self.assertIsNone(result['slippage'])
 
-    def test_extract_common_params_invalid_rollover(self):
-        """Test _extract_common_params with invalid rollover."""
-        with pytest.raises(ValueError, match="rollover must be a boolean"):
-            _extract_common_params(rollover="True")
-
-    def test_extract_common_params_invalid_trailing(self):
-        """Test _extract_common_params with invalid trailing."""
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing=0)
-
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing=-1)
-
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing="2.0")
-
-    def test_extract_common_params_invalid_slippage(self):
-        """Test _extract_common_params with invalid slippage."""
-        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
-            _extract_common_params(slippage=-1)
-
-        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
-            _extract_common_params(slippage="0.5")
-
     def test_validate_positive_integer_valid(self):
-        """Test _validate_positive_integer with valid values."""
+        """Test validate_positive_integer with valid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
         # Should not raise any exception
-        _validate_positive_integer(1, "test_param")
-        _validate_positive_integer(100, "test_param")
+        validator.validate_positive_integer(1, "test_param")
+        validator.validate_positive_integer(100, "test_param")
 
     def test_validate_positive_integer_invalid(self):
-        """Test _validate_positive_integer with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(0, "test_param")
+        """Test validate_positive_integer with invalid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(-1, "test_param")
+            validator.validate_positive_integer(0, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(1.5, "test_param")
+            validator.validate_positive_integer(-1, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer("1", "test_param")
+            validator.validate_positive_integer(1.5, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be a positive integer"):
+            validator.validate_positive_integer("1", "test_param")
 
     def test_validate_positive_number_valid(self):
-        """Test _validate_positive_number with valid values."""
+        """Test validate_positive_number with valid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
         # Should not raise any exception
-        _validate_positive_number(1, "test_param")
-        _validate_positive_number(1.5, "test_param")
-        _validate_positive_number(100.0, "test_param")
+        validator.validate_positive_number(1, "test_param")
+        validator.validate_positive_number(1.5, "test_param")
+        validator.validate_positive_number(100.0, "test_param")
 
     def test_validate_positive_number_invalid(self):
-        """Test _validate_positive_number with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(0, "test_param")
+        """Test validate_positive_number with invalid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(-1, "test_param")
+            validator.validate_positive_number(0, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(-1.5, "test_param")
+            validator.validate_positive_number(-1, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number("1", "test_param")
+            validator.validate_positive_number(-1.5, "test_param")
+
+        with pytest.raises(ValueError, match="test_param must be positive"):
+            validator.validate_positive_number("1", "test_param")
 
     def test_validate_range_valid(self):
-        """Test _validate_range with valid values."""
+        """Test validate_type_and_range with valid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
         # Should not raise any exception
-        _validate_range(5, "test_param", 0, 10)
-        _validate_range(0, "test_param", 0, 10)
-        _validate_range(10, "test_param", 0, 10)
-        _validate_range(5.5, "test_param", 0, 10)
+        validator.validate_type_and_range(5, "test_param", 0, 10)
+        validator.validate_type_and_range(0, "test_param", 0, 10)
+        validator.validate_type_and_range(10, "test_param", 0, 10)
+        validator.validate_type_and_range(5.5, "test_param", 0, 10)
 
     def test_validate_range_invalid(self):
-        """Test _validate_range with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range(-1, "test_param", 0, 10)
+        """Test validate_type_and_range with invalid values."""
+        from app.backtesting.validators import Validator
+        validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range(11, "test_param", 0, 10)
+            validator.validate_type_and_range(-1, "test_param", 0, 10)
 
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range("5", "test_param", 0, 10)
+            validator.validate_type_and_range(11, "test_param", 0, 10)
+
+        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
+            validator.validate_type_and_range("5", "test_param", 0, 10)
 
     def test_format_common_params(self):
         """Test _format_common_params function."""

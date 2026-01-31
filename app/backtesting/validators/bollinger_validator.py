@@ -34,8 +34,15 @@ class BollingerValidator(Validator):
 
         Returns:
             List of warning messages
+
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Type validation
+        self.validate_positive_integer(period, "period")
+        self.validate_positive_number(number_of_standard_deviations, "number of standard deviations")
 
         # Period validation
         if period < BB_PERIOD_MIN:

@@ -112,6 +112,102 @@ class Validator:
         """
         self.warnings.append(message)
 
+    def validate_positive_integer(self, value, param_name):
+        """
+        Validate that a parameter is a positive integer.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not a positive integer
+        """
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError(f"{param_name} must be a positive integer")
+
+    def validate_positive_number(self, value, param_name):
+        """
+        Validate that a parameter is a positive number (int or float).
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not positive
+        """
+        if not isinstance(value, (int, float)) or value <= 0:
+            raise ValueError(f"{param_name} must be positive")
+
+    def validate_boolean(self, value, param_name):
+        """
+        Validate that a parameter is a boolean.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not a boolean
+        """
+        if not isinstance(value, bool):
+            raise ValueError(f"{param_name} must be a boolean (True or False)")
+
+    def validate_type_and_range(self, value, param_name, min_val, max_val):
+        """
+        Validate that a parameter is a number within a specified range.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+            min_val: Minimum value (inclusive)
+            max_val: Maximum value (inclusive)
+
+        Raises:
+            ValueError: If value is not a number or is outside the range
+        """
+        # Explicitly exclude booleans
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
+
+        # Check for special float values
+        if isinstance(value, float):
+            import math
+            if math.isnan(value) or math.isinf(value):
+                raise ValueError(f"{param_name} must be a finite number")
+
+        if value < min_val or value > max_val:
+            raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
+
+    def validate_optional_positive_number(self, value, param_name):
+        """
+        Validate that a parameter is None or a positive number.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not None and not a positive number
+        """
+        if value is not None and (not isinstance(value, (int, float)) or value <= 0):
+            raise ValueError(f"{param_name} must be None or a positive number")
+
+    def validate_optional_non_negative_number(self, value, param_name):
+        """
+        Validate that a parameter is None or a non-negative number.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not None and not a non-negative number
+        """
+        if value is not None and (not isinstance(value, (int, float)) or value < 0):
+            raise ValueError(f"{param_name} must be None or a non-negative number")
+
     def validate(self, **kwargs):
         """
         Validate parameters. Must be implemented by subclasses.

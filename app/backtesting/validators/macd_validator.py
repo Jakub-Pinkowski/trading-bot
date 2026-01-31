@@ -39,8 +39,20 @@ class MACDValidator(Validator):
 
         Returns:
             List of warning messages
+
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Type validation
+        self.validate_positive_integer(fast_period, "fast period")
+        self.validate_positive_integer(slow_period, "slow period")
+        self.validate_positive_integer(signal_period, "signal period")
+
+        # Cross-validation
+        if fast_period >= slow_period:
+            raise ValueError(f"Fast period ({fast_period}) must be less than slow period ({slow_period})")
 
         # Fast period validation
         if fast_period < MACD_FAST_MIN:

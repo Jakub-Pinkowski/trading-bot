@@ -38,13 +38,14 @@ class CommonValidator(Validator):
             List of warning messages
 
         Raises:
-            ValueError: If rollover is not a boolean
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
 
-        # Rollover validation
-        if not isinstance(rollover, bool):
-            raise ValueError(f"rollover must be a boolean (True or False), got {type(rollover).__name__}")
+        # Type validation
+        self.validate_boolean(rollover, "rollover")
+        self.validate_optional_positive_number(trailing, "trailing")
+        self.validate_optional_non_negative_number(slippage, "slippage")
 
         # Trailing stop validation
         if trailing is not None:

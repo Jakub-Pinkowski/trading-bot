@@ -48,8 +48,17 @@ class IchimokuValidator(Validator):
 
         Returns:
             List of warning messages
+
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Type validation
+        self.validate_positive_integer(tenkan_period, "tenkan period")
+        self.validate_positive_integer(kijun_period, "kijun period")
+        self.validate_positive_integer(senkou_span_b_period, "senkou span B period")
+        self.validate_positive_integer(displacement, "displacement")
 
         # Tenkan period validation
         if tenkan_period < ICHIMOKU_TENKAN_MIN:

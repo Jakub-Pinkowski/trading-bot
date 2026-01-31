@@ -38,8 +38,19 @@ class EMAValidator(Validator):
 
         Returns:
             List of warning messages
+
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Type validation
+        self.validate_positive_integer(short_ema_period, "short EMA period")
+        self.validate_positive_integer(long_ema_period, "long EMA period")
+
+        # Cross-validation
+        if short_ema_period >= long_ema_period:
+            raise ValueError(f"Short EMA period ({short_ema_period}) must be less than long EMA period ({long_ema_period})")
 
         # Short EMA validation
         if short_ema_period < EMA_SHORT_MIN:
