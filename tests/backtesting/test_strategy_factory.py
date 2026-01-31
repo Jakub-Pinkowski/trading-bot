@@ -469,52 +469,52 @@ class TestParameterValidation(unittest.TestCase):
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=5, lower=30, upper=70)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite short", warnings[0])
+        self.assertIn("too short", warnings[0])
 
         # Very long period
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=35, lower=30, upper=70)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite long", warnings[0])
+        self.assertIn("too long", warnings[0])
 
         # Very aggressive lower threshold
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=15, upper=70)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("very aggressive" in w for w in warnings))
-        self.assertTrue(any("very wide" in w for w in warnings))
+        self.assertTrue(any("too aggressive" in w for w in warnings))
+        self.assertTrue(any("too wide" in w for w in warnings))
 
         # Very conservative lower threshold
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=45, upper=70)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very conservative", warnings[0])
+        self.assertIn("too conservative", warnings[0])
 
         # Very aggressive upper threshold
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=30, upper=55)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very aggressive", warnings[0])
+        self.assertIn("too aggressive", warnings[0])
 
         # Very conservative upper threshold
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=30, upper=85)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("very conservative" in w for w in warnings))
-        self.assertTrue(any("very wide" in w for w in warnings))
+        self.assertTrue(any("too conservative" in w for w in warnings))
+        self.assertTrue(any("too wide" in w for w in warnings))
 
         # Very narrow gap
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=40, upper=50)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("very aggressive" in w for w in warnings))
-        self.assertTrue(any("quite narrow" in w for w in warnings))
+        self.assertTrue(any("too aggressive" in w for w in warnings))
+        self.assertTrue(any("too narrow" in w for w in warnings))
 
         # Very wide gap
         validator = RSIValidator()
         warnings = validator.validate(rsi_period=14, lower=20, upper=80)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very wide", warnings[0])
+        self.assertIn("too wide", warnings[0])
 
     def testvalidate_ema_parameters_optimal(self):
         """Test EMA parameter validation with optimal parameters."""
@@ -533,15 +533,15 @@ class TestParameterValidation(unittest.TestCase):
         validator = EMAValidator()
         warnings = validator.validate(short_ema_period=3, long_ema_period=15)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("very sensitive" in w for w in warnings))
-        self.assertTrue(any("very wide" in w for w in warnings))
+        self.assertTrue(any("too short" in w for w in warnings))
+        self.assertTrue(any("too wide" in w for w in warnings))
 
         # Very long periods
         validator = EMAValidator()
         warnings = validator.validate(short_ema_period=25, long_ema_period=60)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("too slow for crossover" in w for w in warnings))
-        self.assertTrue(any("too slow and miss trend" in w for w in warnings))
+        self.assertTrue(any("too long" in w for w in warnings))
+        self.assertTrue(any("miss trend changes" in w for w in warnings))
 
         # Too close ratio
         validator = EMAValidator()
@@ -553,7 +553,7 @@ class TestParameterValidation(unittest.TestCase):
         validator = EMAValidator()
         warnings = validator.validate(short_ema_period=5, long_ema_period=50)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very wide", warnings[0])
+        self.assertIn("too wide", warnings[0])
 
     def testvalidate_macd_parameters_optimal(self):
         """Test MACD parameter validation with optimal parameters."""
@@ -569,37 +569,37 @@ class TestParameterValidation(unittest.TestCase):
         validator = MACDValidator()
         warnings = validator.validate(fast_period=5, slow_period=26, signal_period=9)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very short", warnings[0])
+        self.assertIn("too short", warnings[0])
 
         # Very long fast period
         validator = MACDValidator()
         warnings = validator.validate(fast_period=20, slow_period=26, signal_period=9)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("too slow for responsive", warnings[0])
+        self.assertIn("too long", warnings[0])
 
         # Very short slow period
         validator = MACDValidator()
         warnings = validator.validate(fast_period=12, slow_period=15, signal_period=9)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("too short for trend", warnings[0])
+        self.assertIn("too short", warnings[0])
 
         # Very long slow period
         validator = MACDValidator()
         warnings = validator.validate(fast_period=12, slow_period=35, signal_period=9)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("too slow and miss trend", warnings[0])
+        self.assertIn("miss trend changes", warnings[0])
 
         # Very short signal period
         validator = MACDValidator()
         warnings = validator.validate(fast_period=12, slow_period=26, signal_period=5)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very short", warnings[0])
+        self.assertIn("too short", warnings[0])
 
         # Very long signal period
         validator = MACDValidator()
         warnings = validator.validate(fast_period=12, slow_period=26, signal_period=15)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("too slow for timely", warnings[0])
+        self.assertIn("delay signals", warnings[0])
 
     def testvalidate_bollinger_parameters_optimal(self):
         """Test Bollinger Bands parameter validation with optimal parameters."""
@@ -615,25 +615,25 @@ class TestParameterValidation(unittest.TestCase):
         validator = BollingerValidator()
         warnings = validator.validate(period=10, number_of_standard_deviations=2.0)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite short", warnings[0])
+        self.assertIn("too short", warnings[0])
 
         # Very long period
         validator = BollingerValidator()
         warnings = validator.validate(period=30, number_of_standard_deviations=2.0)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite long", warnings[0])
+        self.assertIn("too long", warnings[0])
 
         # Very narrow bands
         validator = BollingerValidator()
         warnings = validator.validate(period=20, number_of_standard_deviations=1.0)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite narrow", warnings[0])
+        self.assertIn("too narrow", warnings[0])
 
         # Very wide bands
         validator = BollingerValidator()
         warnings = validator.validate(period=20, number_of_standard_deviations=3.0)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("quite wide", warnings[0])
+        self.assertIn("too wide", warnings[0])
 
     def testvalidate_ichimoku_parameters_optimal(self):
         """Test Ichimoku parameter validation with optimal parameters."""
@@ -649,21 +649,21 @@ class TestParameterValidation(unittest.TestCase):
         validator = IchimokuValidator()
         warnings = validator.validate(tenkan_period=5, kijun_period=26, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("quite short" in w for w in warnings))
+        self.assertTrue(any("too short" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
 
         # Very long tenkan period
         validator = IchimokuValidator()
         warnings = validator.validate(tenkan_period=15, kijun_period=26, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 2)
-        self.assertTrue(any("too slow for conversion" in w for w in warnings))
+        self.assertTrue(any("too long" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
 
         # Very short kijun period
         validator = IchimokuValidator()
         warnings = validator.validate(tenkan_period=9, kijun_period=20, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 4)
-        self.assertTrue(any("too short for baseline" in w for w in warnings))
+        self.assertTrue(any("too short" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
 
@@ -671,7 +671,7 @@ class TestParameterValidation(unittest.TestCase):
         validator = IchimokuValidator()
         warnings = validator.validate(tenkan_period=9, kijun_period=35, senkou_span_b_period=52, displacement=26)
         self.assertEqual(len(warnings), 4)
-        self.assertTrue(any("too slow for trend" in w for w in warnings))
+        self.assertTrue(any("too long" in w for w in warnings))
         self.assertTrue(any("deviates from traditional" in w for w in warnings))
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
 
@@ -680,7 +680,7 @@ class TestParameterValidation(unittest.TestCase):
         warnings = validator.validate(tenkan_period=9, kijun_period=26, senkou_span_b_period=52, displacement=20)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("differs from Kijun period" in w for w in warnings))
-        self.assertTrue(any("may be too short for proper cloud projection" in w for w in warnings))
+        self.assertTrue(any("too short" in w for w in warnings))
 
         # Non-traditional ratios
         validator = IchimokuValidator()
@@ -701,13 +701,13 @@ class TestParameterValidation(unittest.TestCase):
         validator = CommonValidator()
         warnings = validator.validate(rollover=False, trailing=0.5, slippage=None)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very tight", warnings[0])
+        self.assertIn("too tight", warnings[0])
 
         # Very wide trailing stop
         validator = CommonValidator()
         warnings = validator.validate(rollover=False, trailing=8.0, slippage=None)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very wide", warnings[0])
+        self.assertIn("too wide", warnings[0])
 
         # Zero slippage
         validator = CommonValidator()
@@ -719,7 +719,7 @@ class TestParameterValidation(unittest.TestCase):
         validator = CommonValidator()
         warnings = validator.validate(rollover=False, trailing=None, slippage=0.8)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("very high", warnings[0])
+        self.assertIn("too high", warnings[0])
 
     def test_validate_common_parameters_invalid_rollover_type(self):
         """Test that CommonValidator raises ValueError for non-boolean rollover."""

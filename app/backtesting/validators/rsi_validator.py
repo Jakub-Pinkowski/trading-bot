@@ -70,14 +70,14 @@ class RSIValidator(Validator):
         # Warn if RSI period is too short
         if rsi_period < RSI_PERIOD_MIN_RECOMMENDED:
             self.warnings.append(
-                f"RSI period {rsi_period} is quite short and may generate excessive noise. "
+                f"RSI period {rsi_period} is too short and may generate excessive noise. "
                 f"Consider using {RSI_PERIOD_MIN_RECOMMENDED}-{RSI_PERIOD_MAX_RECOMMENDED} range "
                 f"({RSI_PERIOD_STANDARD} is most common)."
             )
         # Warn if RSI period is too long
         elif rsi_period > RSI_PERIOD_MAX_RECOMMENDED:
             self.warnings.append(
-                f"RSI period {rsi_period} is quite long and may be too slow to catch trends. "
+                f"RSI period {rsi_period} is too long and may miss trends. "
                 f"Consider using {RSI_PERIOD_MIN_RECOMMENDED}-{RSI_PERIOD_MAX_RECOMMENDED} range "
                 f"({RSI_PERIOD_STANDARD} is most common)."
             )
@@ -87,14 +87,14 @@ class RSIValidator(Validator):
         # Warn if lower threshold is too aggressive
         if lower < RSI_LOWER_MIN_AGGRESSIVE:
             self.warnings.append(
-                f"RSI lower threshold {lower} is very aggressive and may generate many false signals. "
+                f"RSI lower threshold {lower} is too aggressive and may generate false signals. "
                 f"Consider using {RSI_LOWER_MIN_AGGRESSIVE}-{RSI_LOWER_MAX_CONSERVATIVE} range "
                 f"({RSI_LOWER_STANDARD} is standard)."
             )
         # Warn if lower threshold is too conservative
         elif lower > RSI_LOWER_MAX_CONSERVATIVE:
             self.warnings.append(
-                f"RSI lower threshold {lower} is very conservative and may miss opportunities. "
+                f"RSI lower threshold {lower} is too conservative and may miss opportunities. "
                 f"Consider using {RSI_LOWER_MIN_AGGRESSIVE}-{RSI_LOWER_MAX_CONSERVATIVE} range "
                 f"({RSI_LOWER_STANDARD} is standard)."
             )
@@ -104,14 +104,14 @@ class RSIValidator(Validator):
         # Warn if upper threshold is too aggressive
         if upper < RSI_UPPER_MIN_AGGRESSIVE:
             self.warnings.append(
-                f"RSI upper threshold {upper} is very aggressive and may generate many false signals. "
+                f"RSI upper threshold {upper} is too aggressive and may generate false signals. "
                 f"Consider using {RSI_UPPER_MIN_AGGRESSIVE}-{RSI_UPPER_MAX_CONSERVATIVE} range "
                 f"({RSI_UPPER_STANDARD} is standard)."
             )
         # Warn if upper threshold is too conservative
         elif upper > RSI_UPPER_MAX_CONSERVATIVE:
             self.warnings.append(
-                f"RSI upper threshold {upper} is very conservative and may miss opportunities. "
+                f"RSI upper threshold {upper} is too conservative and may miss opportunities. "
                 f"Consider using {RSI_UPPER_MIN_AGGRESSIVE}-{RSI_UPPER_MAX_CONSERVATIVE} range "
                 f"({RSI_UPPER_STANDARD} is standard)."
             )
@@ -124,13 +124,13 @@ class RSIValidator(Validator):
         # Warn if gap is too narrow
         if gap < RSI_GAP_MIN:
             self.warnings.append(
-                f"RSI threshold gap ({gap}) is quite narrow and may generate excessive signals. "
+                f"RSI threshold gap ({gap}) is too narrow and may generate excessive signals. "
                 f"Consider using a gap of at least {RSI_GAP_MIN} points (e.g., {RSI_LOWER_STANDARD}/{RSI_UPPER_STANDARD})."
             )
         # Warn if gap is too wide
         elif gap > RSI_GAP_MAX:
             self.warnings.append(
-                f"RSI threshold gap ({gap}) is very wide and may miss many opportunities. "
+                f"RSI threshold gap ({gap}) is too wide and may miss opportunities. "
                 f"Consider using a gap of {RSI_GAP_MIN}-{RSI_GAP_MAX} points."
             )
 

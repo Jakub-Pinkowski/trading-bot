@@ -68,13 +68,13 @@ class MACDValidator(Validator):
         # Warn if fast period is too small
         if fast_period < MACD_FAST_MIN:
             self.warnings.append(
-                f"MACD fast period {fast_period} is very short and may generate excessive noise. "
+                f"MACD fast period {fast_period} is too short and may generate excessive noise. "
                 f"Consider using {MACD_FAST_MIN}-{MACD_FAST_MAX} range ({MACD_FAST_STANDARD} is standard)."
             )
         # Warn if fast period is too large
         elif fast_period > MACD_FAST_MAX:
             self.warnings.append(
-                f"MACD fast period {fast_period} may be too slow for responsive signals. "
+                f"MACD fast period {fast_period} is too long and may miss signals. "
                 f"Consider using {MACD_FAST_MIN}-{MACD_FAST_MAX} range ({MACD_FAST_STANDARD} is standard)."
             )
 
@@ -83,13 +83,13 @@ class MACDValidator(Validator):
         # Warn if slow period is too small
         if slow_period < MACD_SLOW_MIN:
             self.warnings.append(
-                f"MACD slow period {slow_period} may be too short for trend confirmation. "
+                f"MACD slow period {slow_period} is too short and may not confirm trends. "
                 f"Consider using {MACD_SLOW_MIN}-{MACD_SLOW_MAX} range ({MACD_SLOW_STANDARD} is standard)."
             )
         # Warn if slow period is too large
         elif slow_period > MACD_SLOW_MAX:
             self.warnings.append(
-                f"MACD slow period {slow_period} may be too slow and miss trend changes. "
+                f"MACD slow period {slow_period} is too long and may miss trend changes. "
                 f"Consider using {MACD_SLOW_MIN}-{MACD_SLOW_MAX} range ({MACD_SLOW_STANDARD} is standard)."
             )
 
@@ -98,13 +98,13 @@ class MACDValidator(Validator):
         # Warn if signal period is too small
         if signal_period < MACD_SIGNAL_MIN:
             self.warnings.append(
-                f"MACD signal period {signal_period} is very short and may generate false signals. "
+                f"MACD signal period {signal_period} is too short and may generate false signals. "
                 f"Consider using {MACD_SIGNAL_MIN}-{MACD_SIGNAL_MAX} range ({MACD_SIGNAL_STANDARD} is standard)."
             )
         # Warn if signal period is too large
         elif signal_period > MACD_SIGNAL_MAX:
             self.warnings.append(
-                f"MACD signal period {signal_period} may be too slow for timely signals. "
+                f"MACD signal period {signal_period} is too long and may delay signals. "
                 f"Consider using {MACD_SIGNAL_MIN}-{MACD_SIGNAL_MAX} range ({MACD_SIGNAL_STANDARD} is standard)."
             )
 

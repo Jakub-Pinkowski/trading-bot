@@ -63,14 +63,14 @@ class CommonValidator(Validator):
             # Warn if trailing stop is too tight
             if trailing < TRAILING_STOP_MIN:
                 self.warnings.append(
-                    f"Trailing stop {trailing}% is very tight and may be stopped out frequently. "
+                    f"Trailing stop {trailing}% is too tight and may be stopped out frequently. "
                     f"Consider using {TRAILING_STOP_MIN}-{TRAILING_STOP_MAX}% range "
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
             # Warn if trailing stop is too wide
             elif trailing > TRAILING_STOP_MAX:
                 self.warnings.append(
-                    f"Trailing stop {trailing}% is very wide and may give back large profits. "
+                    f"Trailing stop {trailing}% is too wide and may give back large profits. "
                     f"Consider using {TRAILING_STOP_MIN}-{TRAILING_STOP_MAX}% range "
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
@@ -82,7 +82,7 @@ class CommonValidator(Validator):
             # Warn if slippage is unrealistically high
             if slippage > SLIPPAGE_MAX:
                 self.warnings.append(
-                    f"Slippage {slippage}% is very high and may significantly impact returns. "
+                    f"Slippage {slippage}% is too high and may significantly impact returns. "
                     f"Consider using 0-{SLIPPAGE_MAX}% range "
                     f"({SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% is typical for liquid futures)."
                 )

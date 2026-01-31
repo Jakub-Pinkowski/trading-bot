@@ -37,12 +37,12 @@ class IchimokuValidator(Validator):
         """
         Enhanced validation for Ichimoku parameters with guidance on reasonable ranges.
 
-        Reasonable ranges based on traditional Ichimoku settings:
+        Reasonable ranges based6 on traditional Ichimoku settings:
         - Tenkan-sen: 7-12 (9 is traditional)
         - Kijun-sen: 22-30 (26 is traditional)
         - Senkou Span B: 44-60 (52 is traditional)
         - Displacement: 22-30 (26 is traditional, should match Kijun-sen)
-        - Traditional Ichimoku: 9/26/52/26 based on Japanese market cycles
+        - Traditional Ichimoku: 9/2/52/26 based on Japanese market cycles
 
         Args:
             tenkan_period: Tenkan-sen (conversion line) period
@@ -72,13 +72,13 @@ class IchimokuValidator(Validator):
         # Warn if Tenkan period is too short
         if tenkan_period < ICHIMOKU_TENKAN_MIN:
             self.warnings.append(
-                f"Ichimoku Tenkan period {tenkan_period} is quite short and may be too sensitive. "
+                f"Ichimoku Tenkan period {tenkan_period} is too short and may generate excessive signals. "
                 f"Consider using {ICHIMOKU_TENKAN_MIN}-{ICHIMOKU_TENKAN_MAX} range ({ICHIMOKU_TENKAN_STANDARD} is traditional)."
             )
         # Warn if Tenkan period is too long
         elif tenkan_period > ICHIMOKU_TENKAN_MAX:
             self.warnings.append(
-                f"Ichimoku Tenkan period {tenkan_period} may be too slow for conversion line. "
+                f"Ichimoku Tenkan period {tenkan_period} is too long and may miss signals. "
                 f"Consider using {ICHIMOKU_TENKAN_MIN}-{ICHIMOKU_TENKAN_MAX} range ({ICHIMOKU_TENKAN_STANDARD} is traditional)."
             )
 
@@ -87,13 +87,13 @@ class IchimokuValidator(Validator):
         # Warn if Kijun period is too short
         if kijun_period < ICHIMOKU_KIJUN_MIN:
             self.warnings.append(
-                f"Ichimoku Kijun period {kijun_period} may be too short for baseline. "
+                f"Ichimoku Kijun period {kijun_period} is too short and may not establish baseline. "
                 f"Consider using {ICHIMOKU_KIJUN_MIN}-{ICHIMOKU_KIJUN_MAX} range ({ICHIMOKU_KIJUN_STANDARD} is traditional)."
             )
         # Warn if Kijun period is too long
         elif kijun_period > ICHIMOKU_KIJUN_MAX:
             self.warnings.append(
-                f"Ichimoku Kijun period {kijun_period} may be too slow for trend confirmation. "
+                f"Ichimoku Kijun period {kijun_period} is too long and may miss trend changes. "
                 f"Consider using {ICHIMOKU_KIJUN_MIN}-{ICHIMOKU_KIJUN_MAX} range ({ICHIMOKU_KIJUN_STANDARD} is traditional)."
             )
 
@@ -102,28 +102,34 @@ class IchimokuValidator(Validator):
         # Warn if Senkou Span B period is too short
         if senkou_span_b_period < ICHIMOKU_SENKOU_B_MIN:
             self.warnings.append(
-                f"Ichimoku Senkou Span B period {senkou_span_b_period} may be too short for cloud formation. "
+                f"Ichimoku Senkou Span B period {senkou_span_b_period} is too short for cloud formation. "
                 f"Consider using {ICHIMOKU_SENKOU_B_MIN}-{ICHIMOKU_SENKOU_B_MAX} range ({ICHIMOKU_SENKOU_B_STANDARD} is traditional)."
             )
+        # Warn if Senkou Span B period is too long
         elif senkou_span_b_period > ICHIMOKU_SENKOU_B_MAX:
             self.warnings.append(
-                f"Ichimoku Senkou Span B period {senkou_span_b_period} may be too slow. "
+                f"Ichimoku Senkou Span B period {senkou_span_b_period} is too long and may lag trends. "
                 f"Consider using {ICHIMOKU_SENKOU_B_MIN}-{ICHIMOKU_SENKOU_B_MAX} range ({ICHIMOKU_SENKOU_B_STANDARD} is traditional)."
             )
 
-        # Displacement validation
+        # --- Displacement Range Validation ---
+
+        # Warn if displacement is too short
         if displacement < ICHIMOKU_DISPLACEMENT_MIN:
             self.warnings.append(
-                f"Ichimoku displacement {displacement} may be too short for proper cloud projection. "
+                f"Ichimoku displacement {displacement} is too short for proper cloud projection. "
                 f"Consider using {ICHIMOKU_DISPLACEMENT_MIN}-{ICHIMOKU_DISPLACEMENT_MAX} range ({ICHIMOKU_DISPLACEMENT_STANDARD} is traditional)."
             )
+        # Warn if displacement is too long
         elif displacement > ICHIMOKU_DISPLACEMENT_MAX:
             self.warnings.append(
-                f"Ichimoku displacement {displacement} may project too far into future. "
+                f"Ichimoku displacement {displacement} is too long and may project too far ahead. "
                 f"Consider using {ICHIMOKU_DISPLACEMENT_MIN}-{ICHIMOKU_DISPLACEMENT_MAX} range ({ICHIMOKU_DISPLACEMENT_STANDARD} is traditional)."
             )
 
-        # Traditional ratios validation
+        # --- Traditional Ratios Validation ---
+
+        # Calculate and validate Tenkan/Kijun ratio
         tenkan_kijun_ratio = kijun_period / tenkan_period
         if tenkan_kijun_ratio < ICHIMOKU_TENKAN_KIJUN_RATIO_MIN or tenkan_kijun_ratio > ICHIMOKU_TENKAN_KIJUN_RATIO_MAX:
             self.warnings.append(
