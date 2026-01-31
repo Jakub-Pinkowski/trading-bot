@@ -301,13 +301,17 @@ def create_strategy(strategy_type, **params):
     
     # Get and run validator for warnings
     validator_class = get_validator_class(strategy_type)
+    # Always validate common parameters, regardless of strategy-specific validator
+    common_warnings = _validate_common_params(common_params)
+    all_warnings = common_warnings
     if validator_class:
         validator = validator_class()
         # Map parameter names for validator
         mapped_params = _map_params_for_validator(strategy_type, params_with_defaults)
-        warnings = validator.validate(**mapped_params)
-        common_warnings = _validate_common_params(common_params)
-        _log_warnings_once(warnings + common_warnings, strategy_type)
+        strategy_warnings = validator.validate(**mapped_params)
+        all_warnings = strategy_warnings + common_warnings
+    if all_warnings:
+        _log_warnings_once(all_warnings, strategy_type)
     
     # Create strategy instance
     return strategy_class(**strategy_params, **common_params)
