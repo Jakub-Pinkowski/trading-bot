@@ -150,6 +150,8 @@ trading-bot/
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# BUG [LOW]: Slippage is sometimes None and sometimes 0
+# TODO [HIGH]: Ensure we use consistent naming across all backtesting module, especially method parameters for strategies/indicators
 # TODO [MEDIUM]: Add comments to all validator files
 # TODO [MEDIUM]: Backtesting_architecture should use real-life data for examples instead of synthetic data
 # TODO [MEDIUM]: Strategy and indicator names should match
