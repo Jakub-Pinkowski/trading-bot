@@ -9,6 +9,9 @@ logger = get_logger('backtesting/testing/utils/dataframe_validators')
 # Minimum rows required for reliable backtesting (100 warm-up + 50 for indicators)
 MIN_ROWS_FOR_BACKTEST = 150
 
+# Maximum acceptable percentage of NaN values before warning
+MAX_NAN_PERCENTAGE_WARNING = 10.0
+
 
 # ==================== DataFrame Validation ====================
 
@@ -45,8 +48,8 @@ def validate_dataframe(df, filepath):
         nan_count = df[col].isna().sum()
         if nan_count > 0:
             nan_pct = (nan_count / len(df)) * 100
-            # More than 10% NaN is concerning
-            if nan_pct > 10:
+            # More than MAX_NAN_PERCENTAGE_WARNING% NaN is concerning
+            if nan_pct > MAX_NAN_PERCENTAGE_WARNING:
                 logger.warning(f'Column "{col}" has {nan_pct:.1f}% NaN values ({nan_count}/{len(df)} rows): {filepath}')
 
     # Check index is DatetimeIndex (required for time-series operations)
