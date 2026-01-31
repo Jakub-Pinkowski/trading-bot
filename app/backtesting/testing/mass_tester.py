@@ -33,14 +33,13 @@ class MassTester:
 
     # ==================== Public API - Strategy Configuration ====================
 
-    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
-        """Add RSI strategy tests with all parameter combinations."""
+    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
+        """Add Bollinger Bands strategy tests with all parameter combinations."""
         self._add_strategy_tests(
-            strategy_type='rsi',
+            strategy_type='bollinger',
             param_grid={
-                'rsi_period': rsi_periods,
-                'lower': lower_thresholds,
-                'upper': upper_thresholds,
+                'period': periods,
+                'num_std': num_stds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages
@@ -54,33 +53,6 @@ class MassTester:
             param_grid={
                 'ema_short': ema_shorts,
                 'ema_long': ema_longs,
-                'rollover': rollovers,
-                'trailing': trailing_stops,
-                'slippage': slippages
-            }
-        )
-
-    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
-        """Add MACD strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='macd',
-            param_grid={
-                'fast_period': fast_periods,
-                'slow_period': slow_periods,
-                'signal_period': signal_periods,
-                'rollover': rollovers,
-                'trailing': trailing_stops,
-                'slippage': slippages
-            }
-        )
-
-    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
-        """Add Bollinger Bands strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='bollinger',
-            param_grid={
-                'period': periods,
-                'num_std': num_stds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages
@@ -105,6 +77,34 @@ class MassTester:
                 'kijun_period': kijun_periods,
                 'senkou_span_b_period': senkou_span_b_periods,
                 'displacement': displacements,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            }
+        )
+
+    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
+        """Add MACD strategy tests with all parameter combinations."""
+        self._add_strategy_tests(
+            strategy_type='macd',
+            param_grid={
+                'fast_period': fast_periods,
+                'slow_period': slow_periods,
+                'signal_period': signal_periods,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            }
+        )
+
+    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
+        """Add RSI strategy tests with all parameter combinations."""
+        self._add_strategy_tests(
+            strategy_type='rsi',
+            param_grid={
+                'rsi_period': rsi_periods,
+                'lower': lower_thresholds,
+                'upper': upper_thresholds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages

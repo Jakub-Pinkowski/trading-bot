@@ -53,14 +53,16 @@ def results_to_dataframe(results):
     # Create arrays for numeric columns
     numeric_columns = columns[4:]  # All columns except month, symbol, interval, strategy
 
-    # Pre-allocate arrays for all columns including string columns
-    data = {
-        'month': [None] * n_results,
-        'symbol': [None] * n_results,
-        'interval': [None] * n_results,
-        'strategy': [None] * n_results,
+    # Pre-allocate arrays for all columns with proper types
+    # Using dict[str, list] to avoid type inference issues
+    data: dict[str, list] = {
+        'month': [''] * n_results,
+        'symbol': [''] * n_results,
+        'interval': [''] * n_results,
+        'strategy': [''] * n_results,
     }
 
+    # Add numeric columns with proper float initialization
     for col in numeric_columns:
         data[col] = [0.0] * n_results
 

@@ -57,25 +57,6 @@ def main():
         intervals=['4h'],
     )
 
-    # RSI is a momentum oscillator that measures the speed and change of price movements
-    tester.add_rsi_tests(
-        rsi_periods=[13],
-        lower_thresholds=[20, 30, 40],
-        upper_thresholds=[60, 70, 80],
-        rollovers=[False],
-        trailing_stops=[None, 1, 2, 3],
-        slippages=[0.05]
-    )
-
-    # EMA Crossover uses two moving averages to identify trend changes
-    # tester.add_ema_crossover_tests(
-    #     ema_shorts=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-    #     ema_longs=[16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-    #     rollovers=[False],
-    #     trailing_stops=[None, 1, 2, 3],
-    #     slippages=[0.05]
-    # )
-
     # Bollinger Bands measure volatility and relative price levels
     # tester.add_bollinger_bands_tests(
     #     periods=[10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
@@ -85,11 +66,10 @@ def main():
     #     slippages=[0.05]
     # )
 
-    # MACD identifies changes in momentum, direction, and strength
-    # tester.add_macd_tests(
-    #     fast_periods=[8, 9, 10, 11, 12, 13, 14, 15, 16],
-    #     slow_periods=[21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
-    #     signal_periods=[6, 7, 8, 9, 10, 11, 12, 13],
+    # EMA Crossover uses two moving averages to identify trend changes
+    # tester.add_ema_crossover_tests(
+    #     ema_shorts=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    #     ema_longs=[16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
     #     rollovers=[False],
     #     trailing_stops=[None, 1, 2, 3],
     #     slippages=[0.05]
@@ -105,6 +85,26 @@ def main():
     #     trailing_stops=[None, 1, 2, 3],
     #     slippages=[0.05]
     # )
+
+    # MACD identifies changes in momentum, direction, and strength
+    # tester.add_macd_tests(
+    #     fast_periods=[8, 9, 10, 11, 12, 13, 14, 15, 16],
+    #     slow_periods=[21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
+    #     signal_periods=[6, 7, 8, 9, 10, 11, 12, 13],
+    #     rollovers=[False],
+    #     trailing_stops=[None, 1, 2, 3],
+    #     slippages=[0.05]
+    # )
+
+    # RSI is a momentum oscillator that measures the speed and change of price movements
+    tester.add_rsi_tests(
+        rsi_periods=[13],
+        lower_thresholds=[20, 30, 40],
+        upper_thresholds=[60, 70, 80],
+        rollovers=[False],
+        trailing_stops=[None, 1, 2, 3],
+        slippages=[0.05]
+    )
 
     # Run all tests
     # Set skip_existing=False to force re-running of all tests
