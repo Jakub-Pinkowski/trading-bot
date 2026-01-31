@@ -154,22 +154,22 @@ class Validator:
         if not isinstance(value, bool):
             raise ValueError(f"{param_name} must be a boolean (True or False)")
 
-    def validate_type_and_range(self, value, param_name, min_val, max_val):
+    def validate_type_and_range(self, value, param_name, minimum_value, maximum_value):
         """
         Validate that a parameter is a number within a specified range.
 
         Args:
             value: The value to validate
             param_name: Parameter name for error messages
-            min_val: Minimum value (inclusive)
-            max_val: Maximum value (inclusive)
+            minimum_value: Minimum value (inclusive)
+            maximum_value: Maximum value (inclusive)
 
         Raises:
             ValueError: If value is not a number or is outside the range
         """
         # Explicitly exclude booleans
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
+            raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
 
         # Check for special float values
         if isinstance(value, float):
@@ -177,8 +177,8 @@ class Validator:
             if math.isnan(value) or math.isinf(value):
                 raise ValueError(f"{param_name} must be a finite number")
 
-        if value < min_val or value > max_val:
-            raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
+        if value < minimum_value or value > maximum_value:
+            raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
 
     def validate_optional_positive_number(self, value, param_name):
         """
