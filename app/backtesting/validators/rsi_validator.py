@@ -18,6 +18,8 @@ from app.backtesting.validators.constants import (
     RSI_GAP_MIN,
     RSI_GAP_MAX,
 )
+
+
 class RSIValidator(Validator):
     """Validator for RSI strategy parameters."""
 

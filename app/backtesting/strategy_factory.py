@@ -91,6 +91,24 @@ def _validate_range(value, param_name, min_val, max_val):
         raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
 
 
+def _validate_common_params(common_params):
+    """
+    Validate common parameters and return warnings.
+    
+    Args:
+        common_params: Dictionary with 'rollover', 'trailing', and 'slippage' keys
+        
+    Returns:
+        List of warning messages from CommonValidator
+    """
+    common_validator = CommonValidator()
+    return common_validator.validate(
+        rollover=common_params['rollover'],
+        trailing=common_params['trailing'],
+        slippage=common_params['slippage']
+    )
+
+
 # ==================== Strategy Creation ====================
 
 def create_strategy(strategy_type, **params):
@@ -134,11 +152,7 @@ def _create_rsi_strategy(**params):
     # Enhanced parameter validation with guidance
     rsi_validator = RSIValidator()
     rsi_warnings = rsi_validator.validate(rsi_period=rsi_period, lower=lower, upper=upper)
-    
-    common_validator = CommonValidator()
-    common_warnings = common_validator.validate(rollover=common_params['rollover'],
-                                                trailing=common_params['trailing'],
-                                                slippage=common_params['slippage'])
+    common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(rsi_warnings + common_warnings, "RSI")
@@ -170,11 +184,7 @@ def _create_ema_strategy(**params):
     # Enhanced parameter validation with guidance
     ema_validator = EMAValidator()
     ema_warnings = ema_validator.validate(ema_short=ema_short, ema_long=ema_long)
-    
-    common_validator = CommonValidator()
-    common_warnings = common_validator.validate(rollover=common_params['rollover'],
-                                                trailing=common_params['trailing'],
-                                                slippage=common_params['slippage'])
+    common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(ema_warnings + common_warnings, "EMA")
@@ -209,11 +219,7 @@ def _create_macd_strategy(**params):
     macd_warnings = macd_validator.validate(fast_period=fast_period, 
                                             slow_period=slow_period, 
                                             signal_period=signal_period)
-    
-    common_validator = CommonValidator()
-    common_warnings = common_validator.validate(rollover=common_params['rollover'],
-                                                trailing=common_params['trailing'],
-                                                slippage=common_params['slippage'])
+    common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(macd_warnings + common_warnings, "MACD")
@@ -241,11 +247,7 @@ def _create_bollinger_strategy(**params):
     # Enhanced parameter validation with guidance
     bollinger_validator = BollingerValidator()
     bollinger_warnings = bollinger_validator.validate(period=period, num_std=num_std)
-    
-    common_validator = CommonValidator()
-    common_warnings = common_validator.validate(rollover=common_params['rollover'],
-                                                trailing=common_params['trailing'],
-                                                slippage=common_params['slippage'])
+    common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
@@ -279,11 +281,7 @@ def _create_ichimoku_strategy(**params):
                                                      kijun_period=kijun_period, 
                                                      senkou_span_b_period=senkou_span_b_period, 
                                                      displacement=displacement)
-    
-    common_validator = CommonValidator()
-    common_warnings = common_validator.validate(rollover=common_params['rollover'],
-                                                trailing=common_params['trailing'],
-                                                slippage=common_params['slippage'])
+    common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
     _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
