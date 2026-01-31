@@ -155,7 +155,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('rsi', upper=110)
 
         # Lower >= upper
-        with pytest.raises(ValueError, match="Lower threshold must be less than upper threshold"):
+        with pytest.raises(ValueError, match="Lower threshold .* must be less than upper threshold"):
             create_strategy('rsi', lower=70, upper=30)
 
     def test_create_ema_strategy_invalid_parameters(self):
@@ -169,7 +169,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('ema', ema_long=-1)
 
         # Short >= long
-        with pytest.raises(ValueError, match="Short EMA period must be less than long EMA period"):
+        with pytest.raises(ValueError, match="Short EMA period .* must be less than long EMA period"):
             create_strategy('ema', ema_short=21, ema_long=9)
 
     def test_create_macd_strategy_invalid_parameters(self):
@@ -187,7 +187,7 @@ class TestStrategyFactory(unittest.TestCase):
             create_strategy('macd', signal_period=-1)
 
         # Fast >= slow
-        with pytest.raises(ValueError, match="Fast period must be less than slow period"):
+        with pytest.raises(ValueError, match="Fast period .* must be less than slow period"):
             create_strategy('macd', fast_period=26, slow_period=12)
 
     def test_create_bollinger_strategy_invalid_parameters(self):
@@ -256,21 +256,25 @@ class TestStrategyFactory(unittest.TestCase):
         with pytest.raises(ValueError, match="rollover must be a boolean"):
             create_strategy('rsi', rollover="True")  # String instead of boolean
 
-        # Invalid trailing (not a positive number)
+        # Invalid trailing (not a number)
+        with pytest.raises(ValueError, match="trailing must be None or a number"):
+            create_strategy('rsi', trailing="invalid")  # String instead of number
+
+        # Invalid trailing (not positive)
         with pytest.raises(ValueError, match="trailing must be None or a positive number"):
             create_strategy('rsi', trailing=0)  # Zero is not positive
 
         with pytest.raises(ValueError, match="trailing must be None or a positive number"):
             create_strategy('rsi', trailing=-1)  # Negative number
 
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
+        with pytest.raises(ValueError, match="trailing must be None or a number"):
             create_strategy('rsi', trailing="2.0")  # String instead of number
 
         # Invalid slippage (not a non-negative number)
         with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
             create_strategy('rsi', slippage=-1)  # Negative number
 
-        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
+        with pytest.raises(ValueError, match="slippage must be None or a number"):
             create_strategy('rsi', slippage="0.5")  # String instead of number
 
     def test_get_strategy_name(self):
@@ -355,30 +359,6 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         self.assertEqual(result['rollover'], False)
         self.assertIsNone(result['trailing'])
         self.assertIsNone(result['slippage'])
-
-    def test_extract_common_params_invalid_rollover(self):
-        """Test _extract_common_params with invalid rollover."""
-        with pytest.raises(ValueError, match="rollover must be a boolean"):
-            _extract_common_params(rollover="True")
-
-    def test_extract_common_params_invalid_trailing(self):
-        """Test _extract_common_params with invalid trailing."""
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing=0)
-
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing=-1)
-
-        with pytest.raises(ValueError, match="trailing must be None or a positive number"):
-            _extract_common_params(trailing="2.0")
-
-    def test_extract_common_params_invalid_slippage(self):
-        """Test _extract_common_params with invalid slippage."""
-        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
-            _extract_common_params(slippage=-1)
-
-        with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
-            _extract_common_params(slippage="0.5")
 
     def test_format_common_params(self):
         """Test _format_common_params function."""
