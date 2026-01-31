@@ -333,10 +333,10 @@ class TestPicklingValidation:
                 {'fast_period': 12, 'slow_period': 26, 'signal_period': 9, 'rollover': False, 'trailing': None,
                  'slippage': 0}
             ),
-            ('bollinger', {'period': 20, 'std_dev': 2, 'rollover': False, 'trailing': None, 'slippage': 0}),
+            ('bollinger', {'period': 20, 'num_std': 2, 'rollover': False, 'trailing': None, 'slippage': 0}),
             (
                 'ichimoku',
-                {'tenkan': 9, 'kijun': 26, 'senkou_b': 52, 'displacement': 26, 'rollover': False, 'trailing': None,
+                {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26, 'rollover': False, 'trailing': None,
                  'slippage': 0}
             ),
         ]
