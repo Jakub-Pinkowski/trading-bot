@@ -9,23 +9,28 @@ When adding new strategies or indicators, add their validation constants to this
 following the same pattern: MIN, MAX, STANDARD, and any specific thresholds.
 """
 
-# ==================== RSI Parameter Validation ====================
-# Rationale: Based on common trading practices and extensive backtesting
+# ==================== Common Parameters Validation ====================
+# Rationale: Based on typical futures trading practices
 
-RSI_PERIOD_MIN_RECOMMENDED = 10  # Below this: too sensitive to noise
-RSI_PERIOD_MAX_RECOMMENDED = 30  # Above this: too slow to catch trends
-RSI_PERIOD_STANDARD = 14  # Most widely used RSI period
+TRAILING_STOP_MIN = 1.0  # Below this: too tight, frequent stop-outs
+TRAILING_STOP_MAX = 5.0  # Above this: too wide, large profit give-backs
+TRAILING_STOP_COMMON_MIN = 2.0  # Common range lower bound
+TRAILING_STOP_COMMON_MAX = 3.0  # Common range upper bound
 
-RSI_LOWER_MIN_AGGRESSIVE = 20  # Below this: very aggressive oversold level
-RSI_LOWER_MAX_CONSERVATIVE = 40  # Above this: may miss oversold opportunities
-RSI_LOWER_STANDARD = 30  # Most common oversold threshold
+SLIPPAGE_MAX = 0.5  # Above this: unrealistically high slippage
+SLIPPAGE_TYPICAL_MIN = 0.1  # Typical range lower bound for liquid futures
+SLIPPAGE_TYPICAL_MAX = 0.2  # Typical range upper bound for liquid futures
 
-RSI_UPPER_MIN_AGGRESSIVE = 60  # Below this: very aggressive overbought level
-RSI_UPPER_MAX_CONSERVATIVE = 80  # Above this: may miss overbought opportunities
-RSI_UPPER_STANDARD = 70  # Most common overbought threshold
+# ==================== Bollinger Bands Parameter Validation ====================
+# Rationale: Based on John Bollinger's original parameters (20/2.0)
 
-RSI_GAP_MIN = 20  # Minimum recommended gap between thresholds
-RSI_GAP_MAX = 50  # Maximum recommended gap between thresholds
+BB_PERIOD_MIN = 15  # Below this: too sensitive
+BB_PERIOD_MAX = 25  # Above this: too slow
+BB_PERIOD_STANDARD = 20  # Standard Bollinger Bands period
+
+BB_STD_MIN = 1.5  # Below this: bands too narrow, excessive signals
+BB_STD_MAX = 2.5  # Above this: bands too wide, miss opportunities
+BB_STD_STANDARD = 2.0  # Standard deviation (captures ~95% of price action)
 
 # ==================== EMA Crossover Parameter Validation ====================
 # Rationale: Based on common moving average crossover strategies
@@ -42,32 +47,6 @@ EMA_LONG_COMMON_MAX = 26  # Most common range upper bound
 
 EMA_RATIO_MIN = 1.5  # Minimum ratio between long and short EMAs
 EMA_RATIO_MAX = 3.0  # Maximum ratio between long and short EMAs
-
-# ==================== MACD Parameter Validation ====================
-# Rationale: Based on Gerald Appel's original MACD parameters (12/26/9)
-
-MACD_FAST_MIN = 8  # Below this: excessive noise
-MACD_FAST_MAX = 15  # Above this: too slow for fast line
-MACD_FAST_STANDARD = 12  # Standard MACD fast period
-
-MACD_SLOW_MIN = 20  # Below this: too short for trend confirmation
-MACD_SLOW_MAX = 30  # Above this: too slow to detect trend changes
-MACD_SLOW_STANDARD = 26  # Standard MACD slow period
-
-MACD_SIGNAL_MIN = 7  # Below this: excessive false signals
-MACD_SIGNAL_MAX = 12  # Above this: too slow for timely signals
-MACD_SIGNAL_STANDARD = 9  # Standard MACD signal period
-
-# ==================== Bollinger Bands Parameter Validation ====================
-# Rationale: Based on John Bollinger's original parameters (20/2.0)
-
-BB_PERIOD_MIN = 15  # Below this: too sensitive
-BB_PERIOD_MAX = 25  # Above this: too slow
-BB_PERIOD_STANDARD = 20  # Standard Bollinger Bands period
-
-BB_STD_MIN = 1.5  # Below this: bands too narrow, excessive signals
-BB_STD_MAX = 2.5  # Above this: bands too wide, miss opportunities
-BB_STD_STANDARD = 2.0  # Standard deviation (captures ~95% of price action)
 
 # ==================== Ichimoku Parameter Validation ====================
 # Rationale: Based on traditional Japanese Ichimoku settings (9/26/52/26)
@@ -94,17 +73,38 @@ ICHIMOKU_TENKAN_KIJUN_RATIO_MAX = 3.5  # Maximum ratio for traditional proportio
 ICHIMOKU_KIJUN_SENKOU_RATIO_MIN = 1.8  # Minimum ratio for proper cloud
 ICHIMOKU_KIJUN_SENKOU_RATIO_MAX = 2.2  # Maximum ratio for traditional proportions
 
-# ==================== Common Parameters Validation ====================
-# Rationale: Based on typical futures trading practices
+# ==================== MACD Parameter Validation ====================
+# Rationale: Based on Gerald Appel's original MACD parameters (12/26/9)
 
-TRAILING_STOP_MIN = 1.0  # Below this: too tight, frequent stop-outs
-TRAILING_STOP_MAX = 5.0  # Above this: too wide, large profit give-backs
-TRAILING_STOP_COMMON_MIN = 2.0  # Common range lower bound
-TRAILING_STOP_COMMON_MAX = 3.0  # Common range upper bound
+MACD_FAST_MIN = 8  # Below this: excessive noise
+MACD_FAST_MAX = 15  # Above this: too slow for fast line
+MACD_FAST_STANDARD = 12  # Standard MACD fast period
 
-SLIPPAGE_MAX = 0.5  # Above this: unrealistically high slippage
-SLIPPAGE_TYPICAL_MIN = 0.1  # Typical range lower bound for liquid futures
-SLIPPAGE_TYPICAL_MAX = 0.2  # Typical range upper bound for liquid futures
+MACD_SLOW_MIN = 20  # Below this: too short for trend confirmation
+MACD_SLOW_MAX = 30  # Above this: too slow to detect trend changes
+MACD_SLOW_STANDARD = 26  # Standard MACD slow period
+
+MACD_SIGNAL_MIN = 7  # Below this: excessive false signals
+MACD_SIGNAL_MAX = 12  # Above this: too slow for timely signals
+MACD_SIGNAL_STANDARD = 9  # Standard MACD signal period
+
+# ==================== RSI Parameter Validation ====================
+# Rationale: Based on common trading practices and extensive backtesting
+
+RSI_PERIOD_MIN_RECOMMENDED = 10  # Below this: too sensitive to noise
+RSI_PERIOD_MAX_RECOMMENDED = 30  # Above this: too slow to catch trends
+RSI_PERIOD_STANDARD = 14  # Most widely used RSI period
+
+RSI_LOWER_MIN_AGGRESSIVE = 20  # Below this: very aggressive oversold level
+RSI_LOWER_MAX_CONSERVATIVE = 40  # Above this: may miss oversold opportunities
+RSI_LOWER_STANDARD = 30  # Most common oversold threshold
+
+RSI_UPPER_MIN_AGGRESSIVE = 60  # Below this: very aggressive overbought level
+RSI_UPPER_MAX_CONSERVATIVE = 80  # Above this: may miss overbought opportunities
+RSI_UPPER_STANDARD = 70  # Most common overbought threshold
+
+RSI_GAP_MIN = 20  # Minimum recommended gap between thresholds
+RSI_GAP_MAX = 50  # Maximum recommended gap between thresholds
 
 # ==================== Future Strategy Constants ====================
 # Add new strategy validation constants below this section following the same pattern:
