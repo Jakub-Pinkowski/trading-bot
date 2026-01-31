@@ -18,7 +18,7 @@ from app.backtesting.validators.constants import (
 class BollingerValidator(Validator):
     """Validator for Bollinger Bands strategy parameters."""
 
-    def validate(self, period, num_std, **kwargs):
+    def validate(self, period, number_of_standard_deviations, **kwargs):
         """
         Enhanced validation for Bollinger Bands parameters with guidance on reasonable ranges.
 
@@ -29,7 +29,7 @@ class BollingerValidator(Validator):
 
         Args:
             period: Moving average period for Bollinger Bands
-            num_std: Number of standard deviations for bands
+            number_of_standard_deviations: Number of standard deviations for bands
             **kwargs: Additional parameters (ignored)
 
         Returns:
@@ -50,19 +50,19 @@ class BollingerValidator(Validator):
             )
 
         # Standard deviation validation
-        if num_std < BB_STD_MIN:
+        if number_of_standard_deviations < BB_STD_MIN:
             self.warnings.append(
-                f"Bollinger Bands standard deviation {num_std} is quite narrow and may generate excessive signals. "
+                f"Bollinger Bands standard deviation {number_of_standard_deviations} is quite narrow and may generate excessive signals. "
                 f"Consider using {BB_STD_MIN}-{BB_STD_MAX} range ({BB_STD_STANDARD} is standard)."
             )
-        elif num_std > BB_STD_MAX:
+        elif number_of_standard_deviations > BB_STD_MAX:
             self.warnings.append(
-                f"Bollinger Bands standard deviation {num_std} is quite wide and may miss opportunities. "
+                f"Bollinger Bands standard deviation {number_of_standard_deviations} is quite wide and may miss opportunities. "
                 f"Consider using {BB_STD_MIN}-{BB_STD_MAX} range ({BB_STD_STANDARD} is standard)."
             )
 
         # Standard combination check
-        if (period, num_std) == (BB_PERIOD_STANDARD, BB_STD_STANDARD):
+        if (period, number_of_standard_deviations) == (BB_PERIOD_STANDARD, BB_STD_STANDARD):
             self.warnings.append(
                 f"Using standard Bollinger Bands parameters ({BB_PERIOD_STANDARD}/{BB_STD_STANDARD}) - captures ~95% of price action."
             )

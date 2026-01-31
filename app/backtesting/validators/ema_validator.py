@@ -22,7 +22,7 @@ from app.backtesting.validators.constants import (
 class EMAValidator(Validator):
     """Validator for EMA crossover strategy parameters."""
 
-    def validate(self, ema_short, ema_long, **kwargs):
+    def validate(self, short_ema_period, long_ema_period, **kwargs):
         """
         Enhanced validation for EMA crossover parameters with guidance on reasonable ranges.
 
@@ -32,8 +32,8 @@ class EMAValidator(Validator):
         - Ratio: Long should be 1.5-3x the short period for good separation
 
         Args:
-            ema_short: Short EMA period
-            ema_long: Long EMA period
+            short_ema_period: Short EMA period
+            long_ema_period: Long EMA period
             **kwargs: Additional parameters (ignored)
 
         Returns:
@@ -42,43 +42,43 @@ class EMAValidator(Validator):
         self.warnings = []
 
         # Short EMA validation
-        if ema_short < EMA_SHORT_MIN:
+        if short_ema_period < EMA_SHORT_MIN:
             self.warnings.append(
-                f"Short EMA period {ema_short} is very sensitive and may generate excessive noise. "
+                f"Short EMA period {short_ema_period} is very sensitive and may generate excessive noise. "
                 f"Consider using {EMA_SHORT_MIN}-{EMA_SHORT_MAX} range "
                 f"({EMA_SHORT_COMMON_MIN}-{EMA_SHORT_COMMON_MAX} are most common)."
             )
-        elif ema_short > EMA_SHORT_MAX:
+        elif short_ema_period > EMA_SHORT_MAX:
             self.warnings.append(
-                f"Short EMA period {ema_short} may be too slow for crossover signals. "
+                f"Short EMA period {short_ema_period} may be too slow for crossover signals. "
                 f"Consider using {EMA_SHORT_MIN}-{EMA_SHORT_MAX} range "
                 f"({EMA_SHORT_COMMON_MIN}-{EMA_SHORT_COMMON_MAX} are most common)."
             )
 
         # Long EMA validation
-        if ema_long < EMA_LONG_MIN:
+        if long_ema_period < EMA_LONG_MIN:
             self.warnings.append(
-                f"Long EMA period {ema_long} may be too short for trend confirmation. "
+                f"Long EMA period {long_ema_period} may be too short for trend confirmation. "
                 f"Consider using {EMA_LONG_MIN}-{EMA_LONG_MAX} range "
                 f"({EMA_LONG_COMMON_MIN}-{EMA_LONG_COMMON_MAX} are most common)."
             )
-        elif ema_long > EMA_LONG_MAX:
+        elif long_ema_period > EMA_LONG_MAX:
             self.warnings.append(
-                f"Long EMA period {ema_long} may be too slow and miss trend changes. "
+                f"Long EMA period {long_ema_period} may be too slow and miss trend changes. "
                 f"Consider using {EMA_LONG_MIN}-{EMA_LONG_MAX} range "
                 f"({EMA_LONG_COMMON_MIN}-{EMA_LONG_COMMON_MAX} are most common)."
             )
 
         # Ratio validation
-        ratio = ema_long / ema_short
+        ratio = long_ema_period / short_ema_period
         if ratio < EMA_RATIO_MIN:
             self.warnings.append(
-                f"EMA ratio ({ratio:.1f}) is too close - periods {ema_short}/{ema_long} may generate false signals. "
+                f"EMA ratio ({ratio:.1f}) is too close - periods {short_ema_period}/{long_ema_period} may generate false signals. "
                 f"Consider using a ratio of {EMA_RATIO_MIN}-{EMA_RATIO_MAX}x (e.g., 9/21, 12/26)."
             )
         elif ratio > EMA_RATIO_MAX:
             self.warnings.append(
-                f"EMA ratio ({ratio:.1f}) is very wide - periods {ema_short}/{ema_long} may be too slow. "
+                f"EMA ratio ({ratio:.1f}) is very wide - periods {short_ema_period}/{long_ema_period} may be too slow. "
                 f"Consider using a ratio of {EMA_RATIO_MIN}-{EMA_RATIO_MAX}x (e.g., 9/21, 12/26)."
             )
 

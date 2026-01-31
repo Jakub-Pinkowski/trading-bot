@@ -169,21 +169,21 @@ def _create_rsi_strategy(**params):
 def _create_ema_strategy(**params):
     """ Create an EMA Crossover strategy instance. """
     # Extract parameters with defaults
-    ema_short = params.get('ema_short', 9)
-    ema_long = params.get('ema_long', 21)
+    short_ema_period = params.get('ema_short', 9)
+    long_ema_period = params.get('ema_long', 21)
     common_params = _extract_common_params(**params)
 
     # Validate parameters
-    _validate_positive_integer(ema_short, "short EMA period")
-    _validate_positive_integer(ema_long, "long EMA period")
+    _validate_positive_integer(short_ema_period, "short EMA period")
+    _validate_positive_integer(long_ema_period, "long EMA period")
 
-    if ema_short >= ema_long:
-        logger.error(f"Short EMA period ({ema_short}) must be less than long EMA period ({ema_long})")
+    if short_ema_period >= long_ema_period:
+        logger.error(f"Short EMA period ({short_ema_period}) must be less than long EMA period ({long_ema_period})")
         raise ValueError(f"Short EMA period must be less than long EMA period")
 
     # Enhanced parameter validation with guidance
     ema_validator = EMAValidator()
-    ema_warnings = ema_validator.validate(ema_short=ema_short, ema_long=ema_long)
+    ema_warnings = ema_validator.validate(short_ema_period=short_ema_period, long_ema_period=long_ema_period)
     common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
@@ -191,8 +191,8 @@ def _create_ema_strategy(**params):
 
     # Create and return strategy
     return EMACrossoverStrategy(
-        ema_short=ema_short,
-        ema_long=ema_long,
+        ema_short=short_ema_period,
+        ema_long=long_ema_period,
         **common_params
     )
 
@@ -237,16 +237,16 @@ def _create_bollinger_strategy(**params):
     """  Create a Bollinger Bands strategy instance. """
     # Extract parameters with defaults
     period = params.get('period', 20)
-    num_std = params.get('num_std', 2)
+    number_of_standard_deviations = params.get('num_std', 2)
     common_params = _extract_common_params(**params)
 
     # Validate parameters
     _validate_positive_integer(period, "period")
-    _validate_positive_number(num_std, "number of standard deviations")
+    _validate_positive_number(number_of_standard_deviations, "number of standard deviations")
 
     # Enhanced parameter validation with guidance
     bollinger_validator = BollingerValidator()
-    bollinger_warnings = bollinger_validator.validate(period=period, num_std=num_std)
+    bollinger_warnings = bollinger_validator.validate(period=period, number_of_standard_deviations=number_of_standard_deviations)
     common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
@@ -255,7 +255,7 @@ def _create_bollinger_strategy(**params):
     # Create and return strategy
     return BollingerBandsStrategy(
         period=period,
-        num_std=num_std,
+        num_std=number_of_standard_deviations,
         **common_params
     )
 
@@ -315,9 +315,9 @@ def get_strategy_name(strategy_type, **params):
         return f'RSI(period={rsi_period},lower={lower},upper={upper},{common_params_str})'
 
     elif strategy_type.lower() == 'ema':
-        ema_short = params.get('ema_short', 9)
-        ema_long = params.get('ema_long', 21)
-        return f'EMA(short={ema_short},long={ema_long},{common_params_str})'
+        short_ema_period = params.get('ema_short', 9)
+        long_ema_period = params.get('ema_long', 21)
+        return f'EMA(short={short_ema_period},long={long_ema_period},{common_params_str})'
 
     elif strategy_type.lower() == 'macd':
         fast_period = params.get('fast_period', 12)
@@ -327,8 +327,8 @@ def get_strategy_name(strategy_type, **params):
 
     elif strategy_type.lower() == 'bollinger':
         period = params.get('period', 20)
-        num_std = params.get('num_std', 2)
-        return f'BB(period={period},std={num_std},{common_params_str})'
+        number_of_standard_deviations = params.get('num_std', 2)
+        return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
 
     elif strategy_type.lower() == 'ichimoku':
         tenkan_period = params.get('tenkan_period', 9)

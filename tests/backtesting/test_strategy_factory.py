@@ -530,38 +530,38 @@ class TestParameterValidation(unittest.TestCase):
         """Test EMA parameter validation with optimal parameters."""
         # Standard parameters should generate no warnings
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=9, ema_long=21)
+        warnings = validator.validate(short_ema_period=9, long_ema_period=21)
         self.assertEqual(len(warnings), 0)
 
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=12, ema_long=26)
+        warnings = validator.validate(short_ema_period=12, long_ema_period=26)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_ema_parameters_warnings(self):
         """Test EMA parameter validation with parameters that generate warnings."""
         # Very short periods
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=3, ema_long=15)
+        warnings = validator.validate(short_ema_period=3, long_ema_period=15)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("very sensitive" in w for w in warnings))
         self.assertTrue(any("very wide" in w for w in warnings))
 
         # Very long periods
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=25, ema_long=60)
+        warnings = validator.validate(short_ema_period=25, long_ema_period=60)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too slow for crossover" in w for w in warnings))
         self.assertTrue(any("too slow and miss trend" in w for w in warnings))
 
         # Too close ratio
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=12, ema_long=15)
+        warnings = validator.validate(short_ema_period=12, long_ema_period=15)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too close", warnings[0])
 
         # Very wide ratio
         validator = EMAValidator()
-        warnings = validator.validate(ema_short=5, ema_long=50)
+        warnings = validator.validate(short_ema_period=5, long_ema_period=50)
         self.assertEqual(len(warnings), 1)
         self.assertIn("very wide", warnings[0])
 
@@ -615,7 +615,7 @@ class TestParameterValidation(unittest.TestCase):
         """Test Bollinger Bands parameter validation with optimal parameters."""
         # Standard parameters should generate a positive note
         validator = BollingerValidator()
-        warnings = validator.validate(period=20, num_std=2.0)
+        warnings = validator.validate(period=20, number_of_standard_deviations=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("standard Bollinger Bands", warnings[0])
 
@@ -623,25 +623,25 @@ class TestParameterValidation(unittest.TestCase):
         """Test Bollinger Bands parameter validation with parameters that generate warnings."""
         # Very short period
         validator = BollingerValidator()
-        warnings = validator.validate(period=10, num_std=2.0)
+        warnings = validator.validate(period=10, number_of_standard_deviations=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite short", warnings[0])
 
         # Very long period
         validator = BollingerValidator()
-        warnings = validator.validate(period=30, num_std=2.0)
+        warnings = validator.validate(period=30, number_of_standard_deviations=2.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite long", warnings[0])
 
         # Very narrow bands
         validator = BollingerValidator()
-        warnings = validator.validate(period=20, num_std=1.0)
+        warnings = validator.validate(period=20, number_of_standard_deviations=1.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite narrow", warnings[0])
 
         # Very wide bands
         validator = BollingerValidator()
-        warnings = validator.validate(period=20, num_std=3.0)
+        warnings = validator.validate(period=20, number_of_standard_deviations=3.0)
         self.assertEqual(len(warnings), 1)
         self.assertIn("quite wide", warnings[0])
 
