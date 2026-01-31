@@ -28,11 +28,11 @@ _log_warnings_enabled = True
 
 # Strategy name mappings for logging
 STRATEGY_DISPLAY_NAMES = {
-    'rsi': 'RSI',
-    'ema': 'EMA',
-    'macd': 'MACD',
     'bollinger': 'Bollinger Bands',
-    'ichimoku': 'Ichimoku'
+    'ema': 'EMA',
+    'ichimoku': 'Ichimoku',
+    'macd': 'MACD',
+    'rsi': 'RSI'
 }
 
 def _log_warnings_once(warnings, strategy_type):
@@ -203,12 +203,12 @@ def _validate_common_params(common_params):
 
 # Parameter name mappings for validators
 VALIDATOR_PARAM_MAPPING = {
+    'bollinger': {
+        'num_std': 'number_of_standard_deviations'
+    },
     'ema': {
         'ema_short': 'short_ema_period',
         'ema_long': 'long_ema_period'
-    },
-    'bollinger': {
-        'num_std': 'number_of_standard_deviations'
     }
 }
 
@@ -275,7 +275,7 @@ def create_strategy(strategy_type, **params):
     common_params = _extract_common_params(**params)
     
     # Remove common params from strategy params to avoid duplication
-    strategy_params = {k: v for k, v in params.items() if k not in ['rollover', 'trailing', 'slippage']}
+    strategy_params = {param_name: param_value for param_name, param_value in params.items() if param_name not in ['rollover', 'trailing', 'slippage']}
     
     # Get defaults from strategy class for validation purposes
     strategy_defaults = _get_strategy_defaults(strategy_class)
