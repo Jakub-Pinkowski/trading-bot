@@ -1826,7 +1826,7 @@ class TestMassTesterPerformanceOptimizations:
 
         # Create tester and add strategies
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Run tests
         results = tester.run_tests(verbose=False)
@@ -1847,7 +1847,7 @@ class TestDataFrameValidation:
     def test_run_single_test_with_empty_dataframe(self):
         """Test that _run_single_test returns None when DataFrame is empty."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Get the test parameters
         test_params = (
@@ -1872,7 +1872,7 @@ class TestDataFrameValidation:
     def test_run_single_test_with_missing_columns(self):
         """Test that _run_single_test returns None when required columns are missing."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Get the test parameters
         test_params = (
@@ -1903,7 +1903,7 @@ class TestDataFrameValidation:
     def test_run_single_test_with_insufficient_rows(self):
         """Test that _run_single_test logs warning but continues when rows < 150."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Get the test parameters
         test_params = (
@@ -1937,7 +1937,7 @@ class TestDataFrameValidation:
     def test_run_single_test_with_valid_dataframe(self):
         """Test that _run_single_test processes valid DataFrame correctly."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Get the test parameters
         test_params = (
@@ -1968,7 +1968,7 @@ class TestDataFrameValidation:
     def test_run_single_test_with_none_dataframe(self):
         """Test that _run_single_test returns None when get_cached_dataframe returns None."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
         # Get the test parameters
         test_params = (
