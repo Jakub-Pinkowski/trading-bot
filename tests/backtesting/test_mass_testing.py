@@ -78,7 +78,7 @@ class TestMassTester:
             assert len(tester.strategies) == expected_count
 
     def test_add_rsi_tests(self):
-        """Test that add_rsi_tests correctly adds RSI strategies with all parameter combinations."""
+        """Test that add_strategy_tests correctly adds RSI strategies with all parameter combinations."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add RSI tests with various parameters
@@ -91,12 +91,19 @@ class TestMassTester:
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_rsi_tests(rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages)
+            tester.add_strategy_tests('rsi', {
+                'rsi_period': rsi_periods,
+                'lower': lower_thresholds,
+                'upper': upper_thresholds,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            })
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
-                strategy_type='rsi',
-                param_grid={
+                'rsi',
+                {
                     'rsi_period': rsi_periods,
                     'lower': lower_thresholds,
                     'upper': upper_thresholds,
@@ -107,7 +114,7 @@ class TestMassTester:
             )
 
     def test_add_ema_crossover_tests(self):
-        """Test that add_ema_crossover_tests correctly adds EMA strategies with all parameter combinations."""
+        """Test that add_strategy_tests correctly adds EMA strategies with all parameter combinations."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add EMA tests with various parameters
@@ -119,12 +126,18 @@ class TestMassTester:
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_ema_crossover_tests(ema_shorts, ema_longs, rollovers, trailing_stops, slippages)
+            tester.add_strategy_tests('ema', {
+                'ema_short': ema_shorts,
+                'ema_long': ema_longs,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            })
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
-                strategy_type='ema',
-                param_grid={
+                'ema',
+                {
                     'ema_short': ema_shorts,
                     'ema_long': ema_longs,
                     'rollover': rollovers,
@@ -136,7 +149,7 @@ class TestMassTester:
     @patch('yaml.safe_load')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
     def test_add_macd_tests(self, mock_file, mock_yaml_load):
-        """Test that add_macd_tests correctly adds MACD strategies with all parameter combinations."""
+        """Test that add_strategy_tests correctly adds MACD strategies with all parameter combinations."""
         mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -148,7 +161,14 @@ class TestMassTester:
         trailing_stops = [None, 2.0]
         slippages = [0.0, 1.0]
 
-        tester.add_macd_tests(fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages)
+        tester.add_strategy_tests('macd', {
+            'fast_period': fast_periods,
+            'slow_period': slow_periods,
+            'signal_period': signal_periods,
+            'rollover': rollovers,
+            'trailing': trailing_stops,
+            'slippage': slippages
+        })
 
         # Calculate the expected number of strategies
         expected_count = (
@@ -179,7 +199,7 @@ class TestMassTester:
     @patch('yaml.safe_load')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
     def test_add_bollinger_bands_tests(self, mock_file, mock_yaml_load):
-        """Test that add_bollinger_bands_tests correctly adds Bollinger Bands strategies with all parameter combinations."""
+        """Test that add_strategy_tests correctly adds Bollinger Bands strategies with all parameter combinations."""
         mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -191,7 +211,13 @@ class TestMassTester:
         slippages = [0.0, 1.0]
 
         # Test with direct call
-        tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
+        tester.add_strategy_tests('bollinger', {
+            'period': periods,
+            'num_std': num_stds,
+            'rollover': rollovers,
+            'trailing': trailing_stops,
+            'slippage': slippages
+        })
 
         # Calculate the expected number of strategies
         expected_count = (
@@ -218,7 +244,7 @@ class TestMassTester:
             assert strategy_instance.position_manager.slippage in slippages
 
     def test_add_bollinger_bands_tests_with_mock(self):
-        """Test that add_bollinger_bands_tests correctly calls add_strategy_tests with the right parameters."""
+        """Test that add_strategy_tests correctly calls with the right parameters for Bollinger Bands."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add Bollinger Bands tests with various parameters
@@ -230,12 +256,18 @@ class TestMassTester:
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
+            tester.add_strategy_tests('bollinger', {
+                'period': periods,
+                'num_std': num_stds,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            })
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
-                strategy_type='bollinger',
-                param_grid={
+                'bollinger',
+                {
                     'period': periods,
                     'num_std': num_stds,
                     'rollover': rollovers,
@@ -247,7 +279,7 @@ class TestMassTester:
     @patch('yaml.safe_load')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
     def test_add_ichimoku_cloud_tests(self, mock_file, mock_yaml_load):
-        """Test that add_ichimoku_cloud_tests correctly adds Ichimoku strategies with all parameter combinations."""
+        """Test that add_strategy_tests correctly adds Ichimoku strategies with all parameter combinations."""
         mock_yaml_load.return_value = {'ZS': ['2023-01-15', '2023-02-15']}
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
@@ -261,8 +293,15 @@ class TestMassTester:
         slippages = [0.0, 1.0]
 
         # Test with direct call
-        tester.add_ichimoku_cloud_tests(tenkan_periods, kijun_periods, senkou_span_b_periods,
-                                        displacements, rollovers, trailing_stops, slippages)
+        tester.add_strategy_tests('ichimoku', {
+            'tenkan_period': tenkan_periods,
+            'kijun_period': kijun_periods,
+            'senkou_span_b_period': senkou_span_b_periods,
+            'displacement': displacements,
+            'rollover': rollovers,
+            'trailing': trailing_stops,
+            'slippage': slippages
+        })
 
         # Calculate expected number of strategies
         expected_count = (
@@ -293,7 +332,7 @@ class TestMassTester:
             assert strategy_instance.position_manager.slippage in slippages
 
     def test_add_ichimoku_cloud_tests_with_mock(self):
-        """Test that add_ichimoku_cloud_tests correctly calls add_strategy_tests with the right parameters."""
+        """Test that add_strategy_tests correctly calls with the right parameters for Ichimoku."""
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add Ichimoku tests with various parameters
@@ -307,13 +346,20 @@ class TestMassTester:
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_ichimoku_cloud_tests(tenkan_periods, kijun_periods, senkou_span_b_periods,
-                                            displacements, rollovers, trailing_stops, slippages)
+            tester.add_strategy_tests('ichimoku', {
+                'tenkan_period': tenkan_periods,
+                'kijun_period': kijun_periods,
+                'senkou_span_b_period': senkou_span_b_periods,
+                'displacement': displacements,
+                'rollover': rollovers,
+                'trailing': trailing_stops,
+                'slippage': slippages
+            })
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
-                strategy_type='ichimoku',
-                param_grid={
+                'ichimoku',
+                {
                     'tenkan_period': tenkan_periods,
                     'kijun_period': kijun_periods,
                     'senkou_span_b_period': senkou_span_b_periods,

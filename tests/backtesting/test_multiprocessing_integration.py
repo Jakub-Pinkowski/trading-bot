@@ -129,14 +129,14 @@ class TestMultiprocessingIntegration:
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
             # Create tester and add simple RSI test
             tester = MassTester(['1!'], ['ZS'], ['1h'])
-            tester.add_rsi_tests(
-                rsi_periods=[14],
-                lower_thresholds=[30],
-                upper_thresholds=[70],
-                rollovers=[False],
-                trailing_stops=[None],
-                slippages=[0]
-            )
+            tester.add_strategy_tests('rsi', {
+                'rsi_period': [14],
+                'lower': [30],
+                'upper': [70],
+                'rollover': [False],
+                'trailing': [None],
+                'slippage': [0]
+            })
 
             # Run tests with real multiprocessing
             results = tester.run_tests(max_workers=2, verbose=False)
@@ -160,7 +160,14 @@ class TestMultiprocessingIntegration:
         # Create tester with invalid data path (will cause exceptions)
         with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(tmp_path / "nonexistent")):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
-            tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+            tester.add_strategy_tests('rsi', {
+                'rsi_period': [14],
+                'lower': [30],
+                'upper': [70],
+                'rollover': [False],
+                'trailing': [None],
+                'slippage': [0]
+            })
 
             # This should not raise, even though workers will fail
             results = tester.run_tests(max_workers=2, verbose=False)
@@ -206,7 +213,7 @@ class TestMultiprocessingIntegration:
                     mock_df_cache.size.return_value = 5
 
                     tester = MassTester(['1!'], ['ZS'], ['1h'])
-                    tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                    tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     # Run tests with skip_existing=False to ensure tests actually run
                     tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
@@ -413,9 +420,9 @@ class TestRealDataMultiprocessing:
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
 
                     # Add multiple different strategies
-                    tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
-                    tester.add_ema_crossover_tests([9], [21], [False], [None], [0])
-                    tester.add_macd_tests([12], [26], [9], [False], [None], [0])
+                    tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
+                    tester.add_strategy_tests('ema', {'ema_short': [9], 'ema_long': [21], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
+                    tester.add_strategy_tests('macd', {'fast_period': [12], 'slow_period': [26], 'signal_period': [9], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     # Run with multiprocessing
                     results = tester.run_tests(max_workers=3, verbose=False)
@@ -458,7 +465,7 @@ class TestRealDataMultiprocessing:
             with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                 # Test multiple symbols
                 tester = MassTester(['1!'], ['ZC', '6A'], ['1d'])
-                tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                 # Run with multiprocessing
                 results = tester.run_tests(max_workers=2, verbose=False)
@@ -501,7 +508,7 @@ class TestRealDataMultiprocessing:
                 with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     # First run - should populate cache
                     tester1 = MassTester(['1!'], ['ZC'], ['1d'])
-                    tester1.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                    tester1.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
                     results1 = tester1.run_tests(max_workers=2, verbose=False)
 
                     # Check cache was populated (cache should have at least filepath entry)
@@ -511,7 +518,7 @@ class TestRealDataMultiprocessing:
 
                     # Second run - should use cache (faster)
                     tester2 = MassTester(['1!'], ['ZC'], ['1d'])
-                    tester2.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                    tester2.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     start_time = time.time()
                     results2 = tester2.run_tests(max_workers=2, verbose=False)
@@ -552,7 +559,7 @@ class TestRealDataMultiprocessing:
                 with patch('config.HISTORICAL_DATA_DIR', tmpdir):
                     # Serial execution (1 worker)
                     tester_serial = MassTester(['1!'], ['ZC'], ['1d'])
-                    tester_serial.add_rsi_tests([14, 20], [30], [70], [False], [None], [0])
+                    tester_serial.add_strategy_tests('rsi', {'rsi_period': [14, 20], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     start_serial = time.time()
                     results_serial = tester_serial.run_tests(max_workers=1, verbose=False, skip_existing=False)
@@ -564,7 +571,7 @@ class TestRealDataMultiprocessing:
 
                     # Parallel execution (4 workers)
                     tester_parallel = MassTester(['1!'], ['ZC'], ['1d'])
-                    tester_parallel.add_rsi_tests([14, 20], [30], [70], [False], [None], [0])
+                    tester_parallel.add_strategy_tests('rsi', {'rsi_period': [14, 20], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     start_parallel = time.time()
                     results_parallel = tester_parallel.run_tests(max_workers=4, verbose=False, skip_existing=False)
@@ -609,14 +616,14 @@ class TestRealDataMultiprocessing:
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
 
                     # Add multiple parameter combinations
-                    tester.add_rsi_tests(
-                        rsi_periods=[10, 14, 20],
-                        lower_thresholds=[25, 30],
-                        upper_thresholds=[70, 75],
-                        rollovers=[False],
-                        trailing_stops=[None],
-                        slippages=[0]
-                    )
+                    tester.add_strategy_tests('rsi', {
+                        'rsi_period': [10, 14, 20],
+                        'lower': [25, 30],
+                        'upper': [70, 75],
+                        'rollover': [False],
+                        'trailing': [None],
+                        'slippage': [0]
+                    })
 
                     # Should create 3 * 2 * 2 = 12 combinations
                     results = tester.run_tests(max_workers=4, verbose=False)
@@ -658,7 +665,7 @@ class TestRealDataMultiprocessing:
 
                 with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
-                    tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                    tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     results = tester.run_tests(max_workers=4, verbose=False)
 
@@ -709,7 +716,7 @@ class TestRealDataMultiprocessing:
 
                     for i in range(3):
                         tester = MassTester(['1!'], ['ZC'], ['1d'])
-                        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                        tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
                         results = tester.run_tests(max_workers=2, verbose=False)
                         results_list.append(results)
 
@@ -756,7 +763,7 @@ class TestRealDataMultiprocessing:
                 with patch('config.HISTORICAL_DATA_DIR', tmpdir):
                     # Mix valid and invalid symbols to cause some worker failures
                     tester = MassTester(['1!'], ['ZC', 'NONEXISTENT'], ['1d'])
-                    tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
+                    tester.add_strategy_tests('rsi', {'rsi_period': [14], 'lower': [30], 'upper': [70], 'rollover': [False], 'trailing': [None], 'slippage': [0]})
 
                     # Should complete without crashing even if some workers fail
                     results = tester.run_tests(max_workers=2, verbose=False)
