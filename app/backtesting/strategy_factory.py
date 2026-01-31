@@ -125,28 +125,62 @@ def _validate_strategy_params(strategy_type, params):
             logger.error(f"Short EMA period ({ema_short}) must be less than long EMA period ({ema_long})")
             raise ValueError("Short EMA period must be less than long EMA period")
     
-    else:
-        # Delegate strategy-specific validation to the appropriate validator
-        validator_class = get_validator_class(strategy_type)
+    elif strategy_type == 'macd':
+        fast_period = params.get('fast_period', 12)
+        slow_period = params.get('slow_period', 26)
+        signal_period = params.get('signal_period', 9)
+        
+        if not isinstance(fast_period, int) or fast_period <= 0:
+            logger.error(f"Invalid fast_period: {fast_period}")
+            raise ValueError("fast period must be a positive integer")
+        
+        if not isinstance(slow_period, int) or slow_period <= 0:
+            logger.error(f"Invalid slow_period: {slow_period}")
+            raise ValueError("slow period must be a positive integer")
+        
+        if not isinstance(signal_period, int) or signal_period <= 0:
+            logger.error(f"Invalid signal_period: {signal_period}")
+            raise ValueError("signal period must be a positive integer")
+        
+        if fast_period >= slow_period:
+            logger.error(f"Fast period ({fast_period}) must be less than slow period ({slow_period})")
+            raise ValueError("Fast period must be less than slow period")
+    
+    elif strategy_type == 'bollinger':
+        period = params.get('period', 20)
+        num_std = params.get('num_std', 2)
+        
+        if not isinstance(period, int) or period <= 0:
+            logger.error(f"Invalid period: {period}")
+            raise ValueError("period must be a positive integer")
+        
+        if not isinstance(num_std, (int, float)) or num_std <= 0:
+            logger.error(f"Invalid num_std: {num_std}")
+            raise ValueError("number of standard deviations must be positive")
+    
+    elif strategy_type == 'ichimoku':
+        tenkan_period = params.get('tenkan_period', 9)
+        kijun_period = params.get('kijun_period', 26)
+        senkou_span_b_period = params.get('senkou_span_b_period', 52)
+        displacement = params.get('displacement', 26)
+        
+        if not isinstance(tenkan_period, int) or tenkan_period <= 0:
+            logger.error(f"Invalid tenkan_period: {tenkan_period}")
+            raise ValueError("tenkan period must be a positive integer")
+        
+        if not isinstance(kijun_period, int) or kijun_period <= 0:
+            logger.error(f"Invalid kijun_period: {kijun_period}")
+            raise ValueError("kijun period must be a positive integer")
+        
+        if not isinstance(senkou_span_b_period, int) or senkou_span_b_period <= 0:
+            logger.error(f"Invalid senkou_span_b_period: {senkou_span_b_period}")
+            raise ValueError("senkou span B period must be a positive integer")
+        
+        if not isinstance(displacement, int) or displacement <= 0:
+            logger.error(f"Invalid displacement: {displacement}")
+            raise ValueError("displacement must be a positive integer")
 
-        # If no validator is found, log a warning and return no warnings/errors
-        if validator_class is None:
-            logger.warning(f"No validator found for strategy type: {strategy_type}")
-            return []
 
-        validator = validator_class()
-        validate_method = getattr(validator, 'validate', None)
-
-        # If the validator does not implement a validate method, log and return
-        if validate_method is None:
-            logger.warning(f"Validator for strategy type {strategy_type} has no 'validate' method")
-            return []
-
-        # Prefer calling validate with keyword arguments; fall back to single dict if needed
-        try:
-            return validate_method(**params)
-        except TypeError:
-            return validate_method(params)
 def _validate_common_params(common_params):
     """
     Validate common parameters and return warnings.
@@ -167,34 +201,6 @@ def _validate_common_params(common_params):
 
 # ==================== Strategy Creation ====================
 
-# Strategy parameter defaults
-STRATEGY_DEFAULTS = {
-    'rsi': {
-        'rsi_period': 14,
-        'lower': 30,
-        'upper': 70
-    },
-    'ema': {
-        'ema_short': 9,
-        'ema_long': 21
-    },
-    'macd': {
-        'fast_period': 12,
-        'slow_period': 26,
-        'signal_period': 9
-    },
-    'bollinger': {
-        'period': 20,
-        'num_std': 2
-    },
-    'ichimoku': {
-        'tenkan_period': 9,
-        'kijun_period': 26,
-        'senkou_span_b_period': 52,
-        'displacement': 26
-    }
-}
-
 # Parameter name mappings for validators
 VALIDATOR_PARAM_MAPPING = {
     'ema': {
@@ -206,13 +212,25 @@ VALIDATOR_PARAM_MAPPING = {
     }
 }
 
-def _get_params_with_defaults(strategy_type, params):
-    """Merge provided parameters with strategy defaults."""
-    if strategy_type in STRATEGY_DEFAULTS:
-        merged = STRATEGY_DEFAULTS[strategy_type].copy()
-        merged.update(params)
-        return merged
-    return params
+def _get_strategy_defaults(strategy_class):
+    """
+    Extract default parameter values from a strategy class's __init__ method.
+    
+    Arguments:
+        strategy_class: The strategy class to inspect
+    
+    Returns:
+        Dictionary of parameter names to their default values
+    """
+    import inspect
+    sig = inspect.signature(strategy_class.__init__)
+    defaults = {}
+    for param_name, param in sig.parameters.items():
+        if param_name in ['self', 'rollover', 'trailing', 'slippage', 'symbol']:
+            continue
+        if param.default != inspect.Parameter.empty:
+            defaults[param_name] = param.default
+    return defaults
 
 def _map_params_for_validator(strategy_type, params):
     """Map strategy parameter names to validator parameter names."""
@@ -259,8 +277,9 @@ def create_strategy(strategy_type, **params):
     # Remove common params from strategy params to avoid duplication
     strategy_params = {k: v for k, v in params.items() if k not in ['rollover', 'trailing', 'slippage']}
     
-    # Merge provided params with defaults for validation
-    params_with_defaults = _get_params_with_defaults(strategy_type, params)
+    # Get defaults from strategy class for validation purposes
+    strategy_defaults = _get_strategy_defaults(strategy_class)
+    params_with_defaults = {**strategy_defaults, **params}
     
     # Validate strategy-specific parameters
     _validate_strategy_params(strategy_type, params_with_defaults)
