@@ -33,11 +33,31 @@ class MassTester:
 
     # ==================== Public API - Strategy Configuration ====================
 
+    def add_strategy_tests(self, strategy_type, param_grid):
+        """
+        Generic method to add tests for ANY strategy.
+        
+        Usage:
+            tester.add_strategy_tests('rsi', {
+                'rsi_period': [13, 14, 21],
+                'lower': [20, 30],
+                'upper': [70, 80],
+                'rollover': [False],
+                'trailing': [None, 1, 2],
+                'slippage': [0.05]
+            })
+        
+        Arguments:
+            strategy_type: Strategy identifier (e.g., 'rsi', 'ema')
+            param_grid: Dictionary mapping parameter names to lists of values
+        """
+        self._add_strategy_tests(strategy_type, param_grid)
+
     def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
         """Add Bollinger Bands strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='bollinger',
-            param_grid={
+        self.add_strategy_tests(
+            'bollinger',
+            {
                 'period': periods,
                 'num_std': num_stds,
                 'rollover': rollovers,
@@ -48,9 +68,9 @@ class MassTester:
 
     def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops, slippages=None):
         """Add EMA Crossover strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='ema',
-            param_grid={
+        self.add_strategy_tests(
+            'ema',
+            {
                 'ema_short': ema_shorts,
                 'ema_long': ema_longs,
                 'rollover': rollovers,
@@ -70,9 +90,9 @@ class MassTester:
         slippages=None
     ):
         """Add Ichimoku Cloud strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='ichimoku',
-            param_grid={
+        self.add_strategy_tests(
+            'ichimoku',
+            {
                 'tenkan_period': tenkan_periods,
                 'kijun_period': kijun_periods,
                 'senkou_span_b_period': senkou_span_b_periods,
@@ -85,9 +105,9 @@ class MassTester:
 
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
         """Add MACD strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='macd',
-            param_grid={
+        self.add_strategy_tests(
+            'macd',
+            {
                 'fast_period': fast_periods,
                 'slow_period': slow_periods,
                 'signal_period': signal_periods,
@@ -99,9 +119,9 @@ class MassTester:
 
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
         """Add RSI strategy tests with all parameter combinations."""
-        self._add_strategy_tests(
-            strategy_type='rsi',
-            param_grid={
+        self.add_strategy_tests(
+            'rsi',
+            {
                 'rsi_period': rsi_periods,
                 'lower': lower_thresholds,
                 'upper': upper_thresholds,

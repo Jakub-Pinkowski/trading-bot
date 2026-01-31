@@ -9,10 +9,12 @@ from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
+from app.backtesting.strategies.base.registry import (
+    list_strategies, get_strategy_class, get_validator_class
+)
 from app.backtesting.strategy_factory import (
     create_strategy, get_strategy_name, _extract_common_params,
-    _validate_positive_integer, _validate_positive_number, _validate_range, _format_common_params,
-    _log_warnings_once, _logged_warnings
+    _format_common_params, _log_warnings_once, _logged_warnings
 )
 from app.backtesting.validators import (
     BollingerValidator, CommonValidator, EMAValidator,
@@ -137,14 +139,6 @@ class TestStrategyFactory(unittest.TestCase):
         """Test creating a strategy with an unknown type."""
         with pytest.raises(ValueError, match="Unknown strategy type"):
             create_strategy('unknown')
-
-    @patch('app.backtesting.strategy_factory.STRATEGY_TYPES', ['rsi', 'ema', 'macd', 'bollinger', 'custom'])
-    def test_create_strategy_fallback(self):
-        """Test the fallback return statement when a strategy type is in STRATEGY_TYPES but has no specific handler."""
-        # This test is specifically for line 79 in strategy_factory.py
-        # The 'custom' strategy type is added to STRATEGY_TYPES but has no specific handler
-        result = create_strategy('custom')
-        self.assertIsNone(result)
 
     def test_create_rsi_strategy_invalid_parameters(self):
         """Test creating an RSI strategy with invalid parameters."""
@@ -385,66 +379,6 @@ class TestPrivateHelperFunctions(unittest.TestCase):
 
         with pytest.raises(ValueError, match="slippage must be None or a non-negative number"):
             _extract_common_params(slippage="0.5")
-
-    def test_validate_positive_integer_valid(self):
-        """Test _validate_positive_integer with valid values."""
-        # Should not raise any exception
-        _validate_positive_integer(1, "test_param")
-        _validate_positive_integer(100, "test_param")
-
-    def test_validate_positive_integer_invalid(self):
-        """Test _validate_positive_integer with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(0, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(-1, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer(1.5, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            _validate_positive_integer("1", "test_param")
-
-    def test_validate_positive_number_valid(self):
-        """Test _validate_positive_number with valid values."""
-        # Should not raise any exception
-        _validate_positive_number(1, "test_param")
-        _validate_positive_number(1.5, "test_param")
-        _validate_positive_number(100.0, "test_param")
-
-    def test_validate_positive_number_invalid(self):
-        """Test _validate_positive_number with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(0, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(-1, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number(-1.5, "test_param")
-
-        with pytest.raises(ValueError, match="test_param must be positive"):
-            _validate_positive_number("1", "test_param")
-
-    def test_validate_range_valid(self):
-        """Test _validate_range with valid values."""
-        # Should not raise any exception
-        _validate_range(5, "test_param", 0, 10)
-        _validate_range(0, "test_param", 0, 10)
-        _validate_range(10, "test_param", 0, 10)
-        _validate_range(5.5, "test_param", 0, 10)
-
-    def test_validate_range_invalid(self):
-        """Test _validate_range with invalid values."""
-        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range(-1, "test_param", 0, 10)
-
-        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range(11, "test_param", 0, 10)
-
-        with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            _validate_range("5", "test_param", 0, 10)
 
     def test_format_common_params(self):
         """Test _format_common_params function."""
@@ -1033,6 +967,93 @@ class TestWarningConfiguration(unittest.TestCase):
         # Create a different strategy - should log new warnings
         create_strategy('ema', ema_short=5, ema_long=18)
         self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
+
+
+class TestStrategyRegistry(unittest.TestCase):
+    """Tests for the strategy registry functionality."""
+
+    def test_list_strategies(self):
+        """Test listing all registered strategies."""
+        strategies = list_strategies()
+        
+        # Check that all expected strategies are registered
+        self.assertIn('rsi', strategies)
+        self.assertIn('ema', strategies)
+        self.assertIn('macd', strategies)
+        self.assertIn('bollinger', strategies)
+        self.assertIn('ichimoku', strategies)
+        
+        # Check that the list is sorted
+        self.assertEqual(strategies, sorted(strategies))
+
+    def test_get_strategy_class(self):
+        """Test getting strategy classes from registry."""
+        # Test getting existing strategy classes
+        rsi_class = get_strategy_class('rsi')
+        self.assertEqual(rsi_class, RSIStrategy)
+        
+        ema_class = get_strategy_class('ema')
+        self.assertEqual(ema_class, EMACrossoverStrategy)
+        
+        macd_class = get_strategy_class('macd')
+        self.assertEqual(macd_class, MACDStrategy)
+        
+        bollinger_class = get_strategy_class('bollinger')
+        self.assertEqual(bollinger_class, BollingerBandsStrategy)
+        
+        ichimoku_class = get_strategy_class('ichimoku')
+        self.assertEqual(ichimoku_class, IchimokuCloudStrategy)
+        
+        # Test case insensitivity
+        self.assertEqual(get_strategy_class('RSI'), RSIStrategy)
+        self.assertEqual(get_strategy_class('EMA'), EMACrossoverStrategy)
+        
+        # Test non-existent strategy
+        self.assertIsNone(get_strategy_class('nonexistent'))
+
+    def test_get_validator_class(self):
+        """Test getting validator classes from registry."""
+        # Test getting existing validator classes
+        rsi_validator = get_validator_class('rsi')
+        self.assertEqual(rsi_validator, RSIValidator)
+        
+        ema_validator = get_validator_class('ema')
+        self.assertEqual(ema_validator, EMAValidator)
+        
+        macd_validator = get_validator_class('macd')
+        self.assertEqual(macd_validator, MACDValidator)
+        
+        bollinger_validator = get_validator_class('bollinger')
+        self.assertEqual(bollinger_validator, BollingerValidator)
+        
+        ichimoku_validator = get_validator_class('ichimoku')
+        self.assertEqual(ichimoku_validator, IchimokuValidator)
+        
+        # Test case insensitivity
+        self.assertEqual(get_validator_class('RSI'), RSIValidator)
+        
+        # Test non-existent validator
+        self.assertIsNone(get_validator_class('nonexistent'))
+
+    def test_create_strategy_with_registry(self):
+        """Test that create_strategy uses the registry correctly."""
+        # Test creating each strategy type
+        strategies_to_test = [
+            ('rsi', {'rsi_period': 14, 'lower': 30, 'upper': 70}, RSIStrategy),
+            ('ema', {'ema_short': 9, 'ema_long': 21}, EMACrossoverStrategy),
+            ('macd', {'fast_period': 12, 'slow_period': 26, 'signal_period': 9}, MACDStrategy),
+            ('bollinger', {'period': 20, 'num_std': 2}, BollingerBandsStrategy),
+            ('ichimoku', {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26}, IchimokuCloudStrategy),
+        ]
+        
+        for strategy_type, params, expected_class in strategies_to_test:
+            strategy = create_strategy(strategy_type, **params)
+            self.assertIsInstance(strategy, expected_class)
+    
+    def test_create_strategy_unknown_type(self):
+        """Test that create_strategy raises error for unknown strategy types."""
+        with pytest.raises(ValueError, match="Unknown strategy type: nonexistent"):
+            create_strategy('nonexistent')
 
 
 if __name__ == '__main__':

@@ -2,8 +2,11 @@ from app.backtesting.indicators import calculate_ema
 from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
                                                            precompute_hashes,
                                                            detect_crossover)
+from app.backtesting.strategies.base.registry import register_strategy
+from app.backtesting.validators import EMAValidator
 
 
+@register_strategy('ema', EMAValidator)
 class EMACrossoverStrategy(BaseStrategy):
 
     # ==================== Initialization ====================

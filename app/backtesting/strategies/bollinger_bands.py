@@ -2,8 +2,11 @@ from app.backtesting.indicators import calculate_bollinger_bands
 from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
                                                            precompute_hashes,
                                                            detect_crossover)
+from app.backtesting.strategies.base.registry import register_strategy
+from app.backtesting.validators import BollingerValidator
 
 
+@register_strategy('bollinger', BollingerValidator)
 class BollingerBandsStrategy(BaseStrategy):
 
     # ==================== Initialization ====================

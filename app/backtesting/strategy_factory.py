@@ -1,24 +1,21 @@
+from app.backtesting.strategies.base.registry import (
+    get_strategy_class,
+    get_validator_class,
+    list_strategies
+)
+from app.backtesting.validators import CommonValidator
+from app.utils.logger import get_logger
+
+# Import all strategies to trigger registration
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.validators import (
-    BollingerValidator,
-    CommonValidator,
-    EMAValidator,
-    IchimokuValidator,
-    MACDValidator,
-    RSIValidator
-)
-from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/strategy_factory')
 
 # ==================== Module Configuration ====================
-
-# Define strategy types
-STRATEGY_TYPES = ['bollinger', 'ema', 'ichimoku', 'macd', 'rsi']
 
 # Set to track already logged warnings to prevent duplicates
 _logged_warnings = set()
@@ -29,15 +26,25 @@ _log_warnings_enabled = True
 
 # ==================== Parameter Extraction & Validation ====================
 
+# Strategy name mappings for logging
+STRATEGY_DISPLAY_NAMES = {
+    'rsi': 'RSI',
+    'ema': 'EMA',
+    'macd': 'MACD',
+    'bollinger': 'Bollinger Bands',
+    'ichimoku': 'Ichimoku'
+}
+
 def _log_warnings_once(warnings, strategy_type):
     """Log warnings only if they haven't been logged before and warnings are enabled."""
     if not _log_warnings_enabled:
         return
 
+    display_name = STRATEGY_DISPLAY_NAMES.get(strategy_type, strategy_type)
     for warning in warnings:
         warning_key = f"{strategy_type}: {warning}"
         if warning_key not in _logged_warnings:
-            logger.warning(f"{strategy_type} Strategy Parameter Guidance: {warning}")
+            logger.warning(f"{display_name} Strategy Parameter Guidance: {warning}")
             _logged_warnings.add(warning_key)
 
 
@@ -70,32 +77,115 @@ def _extract_common_params(**params):
     }
 
 
-def _validate_positive_integer(value, param_name):
-    """Validate that a parameter is a positive integer."""
-    if not isinstance(value, int) or value <= 0:
-        logger.error(f"Invalid {param_name}: {value}")
-        raise ValueError(f"{param_name} must be a positive integer")
-
-
-def _validate_positive_number(value, param_name):
-    """Validate that a parameter is a positive number (int or float)."""
-    if not isinstance(value, (int, float)) or value <= 0:
-        logger.error(f"Invalid {param_name}: {value}")
-        raise ValueError(f"{param_name} must be positive")
-
-
-def _validate_range(value, param_name, min_val, max_val):
-    """Validate that a parameter is within a specified range."""
-    if not isinstance(value, (int, float)) or value < min_val or value > max_val:
-        logger.error(f"Invalid {param_name}: {value}")
-        raise ValueError(f"{param_name} must be between {min_val} and {max_val}")
+def _validate_strategy_params(strategy_type, params):
+    """
+    Validate strategy-specific parameters.
+    
+    Arguments:
+        strategy_type: Strategy identifier
+        params: Parameters to validate (merged with defaults)
+    
+    Raises:
+        ValueError: If parameters are invalid
+    """
+    if strategy_type == 'rsi':
+        rsi_period = params.get('rsi_period', 14)
+        lower = params.get('lower', 30)
+        upper = params.get('upper', 70)
+        
+        if not isinstance(rsi_period, int) or rsi_period <= 0:
+            logger.error(f"Invalid rsi_period: {rsi_period}")
+            raise ValueError("rsi period must be a positive integer")
+        
+        if not isinstance(lower, (int, float)) or lower < 0 or lower > 100:
+            logger.error(f"Invalid lower: {lower}")
+            raise ValueError("lower threshold must be between 0 and 100")
+        
+        if not isinstance(upper, (int, float)) or upper < 0 or upper > 100:
+            logger.error(f"Invalid upper: {upper}")
+            raise ValueError("upper threshold must be between 0 and 100")
+        
+        if lower >= upper:
+            logger.error(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
+            raise ValueError("Lower threshold must be less than upper threshold")
+    
+    elif strategy_type == 'ema':
+        ema_short = params.get('ema_short', 9)
+        ema_long = params.get('ema_long', 21)
+        
+        if not isinstance(ema_short, int) or ema_short <= 0:
+            logger.error(f"Invalid ema_short: {ema_short}")
+            raise ValueError("short EMA period must be a positive integer")
+        
+        if not isinstance(ema_long, int) or ema_long <= 0:
+            logger.error(f"Invalid ema_long: {ema_long}")
+            raise ValueError("long EMA period must be a positive integer")
+        
+        if ema_short >= ema_long:
+            logger.error(f"Short EMA period ({ema_short}) must be less than long EMA period ({ema_long})")
+            raise ValueError("Short EMA period must be less than long EMA period")
+    
+    elif strategy_type == 'macd':
+        fast_period = params.get('fast_period', 12)
+        slow_period = params.get('slow_period', 26)
+        signal_period = params.get('signal_period', 9)
+        
+        if not isinstance(fast_period, int) or fast_period <= 0:
+            logger.error(f"Invalid fast_period: {fast_period}")
+            raise ValueError("fast period must be a positive integer")
+        
+        if not isinstance(slow_period, int) or slow_period <= 0:
+            logger.error(f"Invalid slow_period: {slow_period}")
+            raise ValueError("slow period must be a positive integer")
+        
+        if not isinstance(signal_period, int) or signal_period <= 0:
+            logger.error(f"Invalid signal_period: {signal_period}")
+            raise ValueError("signal period must be a positive integer")
+        
+        if fast_period >= slow_period:
+            logger.error(f"Fast period ({fast_period}) must be less than slow period ({slow_period})")
+            raise ValueError("Fast period must be less than slow period")
+    
+    elif strategy_type == 'bollinger':
+        period = params.get('period', 20)
+        num_std = params.get('num_std', 2)
+        
+        if not isinstance(period, int) or period <= 0:
+            logger.error(f"Invalid period: {period}")
+            raise ValueError("period must be a positive integer")
+        
+        if not isinstance(num_std, (int, float)) or num_std <= 0:
+            logger.error(f"Invalid num_std: {num_std}")
+            raise ValueError("number of standard deviations must be positive")
+    
+    elif strategy_type == 'ichimoku':
+        tenkan_period = params.get('tenkan_period', 9)
+        kijun_period = params.get('kijun_period', 26)
+        senkou_span_b_period = params.get('senkou_span_b_period', 52)
+        displacement = params.get('displacement', 26)
+        
+        if not isinstance(tenkan_period, int) or tenkan_period <= 0:
+            logger.error(f"Invalid tenkan_period: {tenkan_period}")
+            raise ValueError("tenkan period must be a positive integer")
+        
+        if not isinstance(kijun_period, int) or kijun_period <= 0:
+            logger.error(f"Invalid kijun_period: {kijun_period}")
+            raise ValueError("kijun period must be a positive integer")
+        
+        if not isinstance(senkou_span_b_period, int) or senkou_span_b_period <= 0:
+            logger.error(f"Invalid senkou_span_b_period: {senkou_span_b_period}")
+            raise ValueError("senkou span B period must be a positive integer")
+        
+        if not isinstance(displacement, int) or displacement <= 0:
+            logger.error(f"Invalid displacement: {displacement}")
+            raise ValueError("displacement must be a positive integer")
 
 
 def _validate_common_params(common_params):
     """
     Validate common parameters and return warnings.
     
-    Args:
+    Arguments:
         common_params: Dictionary with 'rollover', 'trailing', and 'slippage' keys
         
     Returns:
@@ -111,190 +201,116 @@ def _validate_common_params(common_params):
 
 # ==================== Strategy Creation ====================
 
+# Strategy parameter defaults
+STRATEGY_DEFAULTS = {
+    'rsi': {
+        'rsi_period': 14,
+        'lower': 30,
+        'upper': 70
+    },
+    'ema': {
+        'ema_short': 9,
+        'ema_long': 21
+    },
+    'macd': {
+        'fast_period': 12,
+        'slow_period': 26,
+        'signal_period': 9
+    },
+    'bollinger': {
+        'period': 20,
+        'num_std': 2
+    },
+    'ichimoku': {
+        'tenkan_period': 9,
+        'kijun_period': 26,
+        'senkou_span_b_period': 52,
+        'displacement': 26
+    }
+}
+
+# Parameter name mappings for validators
+VALIDATOR_PARAM_MAPPING = {
+    'ema': {
+        'ema_short': 'short_ema_period',
+        'ema_long': 'long_ema_period'
+    },
+    'bollinger': {
+        'num_std': 'number_of_standard_deviations'
+    }
+}
+
+def _get_params_with_defaults(strategy_type, params):
+    """Merge provided parameters with strategy defaults."""
+    if strategy_type in STRATEGY_DEFAULTS:
+        merged = STRATEGY_DEFAULTS[strategy_type].copy()
+        merged.update(params)
+        return merged
+    return params
+
+def _map_params_for_validator(strategy_type, params):
+    """Map strategy parameter names to validator parameter names."""
+    if strategy_type not in VALIDATOR_PARAM_MAPPING:
+        return params
+    
+    mapping = VALIDATOR_PARAM_MAPPING[strategy_type]
+    mapped_params = params.copy()
+    
+    for strategy_param, validator_param in mapping.items():
+        if strategy_param in mapped_params:
+            mapped_params[validator_param] = mapped_params[strategy_param]
+    
+    return mapped_params
+
 def create_strategy(strategy_type, **params):
-    """ Create a strategy instance based on a strategy type and parameters. """
-    # Validate strategy type
-    if strategy_type.lower() not in STRATEGY_TYPES:
-        logger.error(f"Unknown strategy type: {strategy_type}")
+    """
+    Create a strategy instance based on type and parameters.
+    
+    Uses registry pattern - no if/elif chains needed!
+    
+    Arguments:
+        strategy_type: Strategy identifier (e.g., 'rsi', 'ema')
+        **params: Strategy-specific and common parameters
+    
+    Returns:
+        Strategy instance configured with the given parameters
+    
+    Raises:
+        ValueError: If strategy type is unknown or parameters are invalid
+    """
+    strategy_type = strategy_type.lower()
+    
+    # Get strategy class from registry
+    strategy_class = get_strategy_class(strategy_type)
+    if not strategy_class:
+        available = ', '.join(list_strategies())
+        logger.error(f"Unknown strategy: {strategy_type}. Available: {available}")
         raise ValueError(f"Unknown strategy type: {strategy_type}")
-
-    # Create a strategy based on type
-    if strategy_type.lower() == 'bollinger':
-        return _create_bollinger_strategy(**params)
-    elif strategy_type.lower() == 'ema':
-        return _create_ema_strategy(**params)
-    elif strategy_type.lower() == 'ichimoku':
-        return _create_ichimoku_strategy(**params)
-    elif strategy_type.lower() == 'macd':
-        return _create_macd_strategy(**params)
-    elif strategy_type.lower() == 'rsi':
-        return _create_rsi_strategy(**params)
-    return None
-
-
-def _create_bollinger_strategy(**params):
-    """  Create a Bollinger Bands strategy instance. """
-    # Extract parameters with defaults
-    period = params.get('period', 20)
-    number_of_standard_deviations = params.get('num_std', 2)
+    
+    # Extract and validate common parameters
     common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(period, "period")
-    _validate_positive_number(number_of_standard_deviations, "number of standard deviations")
-
-    # Enhanced parameter validation with guidance
-    bollinger_validator = BollingerValidator()
-    bollinger_warnings = bollinger_validator.validate(period=period,
-                                                      number_of_standard_deviations=number_of_standard_deviations)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
-
-    # Create and return strategy
-    return BollingerBandsStrategy(
-        period=period,
-        num_std=number_of_standard_deviations,
-        **common_params
-    )
-
-
-def _create_ema_strategy(**params):
-    """ Create an EMA Crossover strategy instance. """
-    # Extract parameters with defaults
-    short_ema_period = params.get('ema_short', 9)
-    long_ema_period = params.get('ema_long', 21)
-    common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(short_ema_period, "short EMA period")
-    _validate_positive_integer(long_ema_period, "long EMA period")
-
-    if short_ema_period >= long_ema_period:
-        logger.error(f"Short EMA period ({short_ema_period}) must be less than long EMA period ({long_ema_period})")
-        raise ValueError(f"Short EMA period must be less than long EMA period")
-
-    # Enhanced parameter validation with guidance
-    ema_validator = EMAValidator()
-    ema_warnings = ema_validator.validate(short_ema_period=short_ema_period, long_ema_period=long_ema_period)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(ema_warnings + common_warnings, "EMA")
-
-    # Create and return strategy
-    return EMACrossoverStrategy(
-        ema_short=short_ema_period,
-        ema_long=long_ema_period,
-        **common_params
-    )
-
-
-def _create_ichimoku_strategy(**params):
-    """ Create an Ichimoku Cloud strategy instance. """
-    # Extract parameters with defaults
-    tenkan_period = params.get('tenkan_period', 9)
-    kijun_period = params.get('kijun_period', 26)
-    senkou_span_b_period = params.get('senkou_span_b_period', 52)
-    displacement = params.get('displacement', 26)
-    common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(tenkan_period, "tenkan period")
-    _validate_positive_integer(kijun_period, "kijun period")
-    _validate_positive_integer(senkou_span_b_period, "senkou span B period")
-    _validate_positive_integer(displacement, "displacement")
-
-    # Enhanced parameter validation with guidance
-    ichimoku_validator = IchimokuValidator()
-    ichimoku_warnings = ichimoku_validator.validate(tenkan_period=tenkan_period,
-                                                    kijun_period=kijun_period,
-                                                    senkou_span_b_period=senkou_span_b_period,
-                                                    displacement=displacement)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
-
-    # Create and return strategy
-    return IchimokuCloudStrategy(
-        tenkan_period=tenkan_period,
-        kijun_period=kijun_period,
-        senkou_span_b_period=senkou_span_b_period,
-        displacement=displacement,
-        **common_params
-    )
-
-
-def _create_macd_strategy(**params):
-    """ Create a MACD strategy instance. """
-    # Extract parameters with defaults
-    fast_period = params.get('fast_period', 12)
-    slow_period = params.get('slow_period', 26)
-    signal_period = params.get('signal_period', 9)
-    common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(fast_period, "fast period")
-    _validate_positive_integer(slow_period, "slow period")
-    _validate_positive_integer(signal_period, "signal period")
-
-    if fast_period >= slow_period:
-        logger.error(f"Fast period ({fast_period}) must be less than slow period ({slow_period})")
-        raise ValueError(f"Fast period must be less than slow period")
-
-    # Enhanced parameter validation with guidance
-    macd_validator = MACDValidator()
-    macd_warnings = macd_validator.validate(fast_period=fast_period, 
-                                            slow_period=slow_period, 
-                                            signal_period=signal_period)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(macd_warnings + common_warnings, "MACD")
-
-    # Create and return strategy
-    return MACDStrategy(
-        fast_period=fast_period,
-        slow_period=slow_period,
-        signal_period=signal_period,
-        **common_params
-    )
-
-
-def _create_rsi_strategy(**params):
-    """  Create an RSI strategy instance. """
-    # Extract parameters with defaults
-    rsi_period = params.get('rsi_period', 14)
-    lower = params.get('lower', 30)
-    upper = params.get('upper', 70)
-    common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(rsi_period, "rsi period")
-    _validate_range(lower, "lower threshold", 0, 100)
-    _validate_range(upper, "upper threshold", 0, 100)
-
-    if lower >= upper:
-        logger.error(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
-        raise ValueError(f"Lower threshold must be less than upper threshold")
-
-    # Enhanced parameter validation with guidance
-    rsi_validator = RSIValidator()
-    rsi_warnings = rsi_validator.validate(rsi_period=rsi_period, lower=lower, upper=upper)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(rsi_warnings + common_warnings, "RSI")
-
-    # Create and return strategy
-    return RSIStrategy(
-        rsi_period=rsi_period,
-        lower=lower,
-        upper=upper,
-        **common_params
-    )
+    
+    # Remove common params from strategy params to avoid duplication
+    strategy_params = {k: v for k, v in params.items() if k not in ['rollover', 'trailing', 'slippage']}
+    
+    # Merge provided params with defaults for validation
+    params_with_defaults = _get_params_with_defaults(strategy_type, params)
+    
+    # Validate strategy-specific parameters
+    _validate_strategy_params(strategy_type, params_with_defaults)
+    
+    # Get and run validator for warnings
+    validator_class = get_validator_class(strategy_type)
+    if validator_class:
+        validator = validator_class()
+        # Map parameter names for validator
+        mapped_params = _map_params_for_validator(strategy_type, params_with_defaults)
+        warnings = validator.validate(**mapped_params)
+        common_warnings = _validate_common_params(common_params)
+        _log_warnings_once(warnings + common_warnings, strategy_type)
+    
+    # Create strategy instance
+    return strategy_class(**strategy_params, **common_params)
 
 
 # ==================== Utility Functions ====================

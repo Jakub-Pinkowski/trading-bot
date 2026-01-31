@@ -2,8 +2,11 @@ from app.backtesting.indicators import calculate_ichimoku
 from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
                                                            precompute_hashes,
                                                            detect_crossover)
+from app.backtesting.strategies.base.registry import register_strategy
+from app.backtesting.validators import IchimokuValidator
 
 
+@register_strategy('ichimoku', IchimokuValidator)
 class IchimokuCloudStrategy(BaseStrategy):
 
     # ==================== Initialization ====================

@@ -2,8 +2,11 @@ from app.backtesting.indicators import calculate_rsi
 from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
                                                            precompute_hashes,
                                                            detect_threshold_cross)
+from app.backtesting.strategies.base.registry import register_strategy
+from app.backtesting.validators import RSIValidator
 
 
+@register_strategy('rsi', RSIValidator)
 class RSIStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
