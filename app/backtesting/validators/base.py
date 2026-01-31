@@ -14,9 +14,11 @@ class Validator:
         """Initialize the validator with an empty warnings list."""
         self.warnings = []
 
-    def validate_range(self, value, name, minimum_value, maximum_value, 
-                       recommended_minimum, recommended_maximum,
-                       minimum_message=None, maximum_message=None):
+    def validate_range(
+        self, value, name, minimum_value, maximum_value,
+        recommended_minimum, recommended_maximum,
+        minimum_message=None, maximum_message=None
+    ):
         """
         Reusable range validation with warnings for recommended ranges.
 
@@ -49,8 +51,10 @@ class Validator:
             else:
                 self.warnings.append(f"{name} {value} is above recommended range ({recommended_minimum}-{recommended_maximum})")
 
-    def validate_gap(self, gap, name, minimum_gap, maximum_gap, 
-                     minimum_message=None, maximum_message=None):
+    def validate_gap(
+        self, gap, name, minimum_gap, maximum_gap,
+        minimum_message=None, maximum_message=None
+    ):
         """
         Validate a gap/difference between two parameters.
 
@@ -73,8 +77,10 @@ class Validator:
             else:
                 self.warnings.append(f"{name} ({gap}) is above recommended maximum {maximum_gap}")
 
-    def validate_ratio(self, ratio, name, minimum_ratio, maximum_ratio, 
-                       minimum_message=None, maximum_message=None):
+    def validate_ratio(
+        self, ratio, name, minimum_ratio, maximum_ratio,
+        minimum_message=None, maximum_message=None
+    ):
         """
         Validate a ratio between two parameters.
 

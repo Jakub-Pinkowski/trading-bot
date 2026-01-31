@@ -42,87 +42,6 @@ def create_test_df(length=150, base_price=100.0, symbol='CME:ES2!', trend='neutr
     return df
 
 
-def create_rsi_test_df(length=50):
-    """
-    Create test dataframe with price patterns suitable for RSI testing.
-
-    Returns DataFrame with downtrend (low RSI) then uptrend (high RSI).
-    """
-    dates = pd.date_range('2023-01-01', periods=length, freq='h')
-
-    # Create a price series that will generate clear RSI signals
-    close_prices = []
-
-    # Downtrend for the first part (push RSI low)
-    for i in range(20):
-        close_prices.append(100 - i)
-
-    # Uptrend for the second part (push RSI high)
-    for i in range(20):
-        close_prices.append(80 + i)
-
-    # Downtrend again
-    for i in range(10):
-        close_prices.append(100 - i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    df = pd.DataFrame({
-        'symbol': ['CME:ES2!'] * length,
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-        'volume': [10000.0] * length
-    }, index=pd.DatetimeIndex(dates, name='datetime'))
-
-    return df
-
-
-def create_macd_test_df(length=60):
-    """
-    Create test dataframe with price patterns suitable for MACD testing.
-
-    Returns DataFrame with alternating trends to generate MACD crossovers.
-    """
-    dates = pd.date_range('2023-01-01', periods=length, freq='h')
-
-    close_prices = []
-
-    # Start with a downtrend
-    for i in range(15):
-        close_prices.append(100 - i)
-
-    # Then an uptrend to create a bullish crossover
-    for i in range(15):
-        close_prices.append(85 + i * 1.5)
-
-    # Then a downtrend to create a bearish crossover
-    for i in range(15):
-        close_prices.append(107.5 - i * 1.5)
-
-    # Then another uptrend
-    for i in range(15):
-        close_prices.append(85 + i)
-
-    # Ensure the length matches the requested length
-    while len(close_prices) < length:
-        close_prices.append(close_prices[-1])
-
-    df = pd.DataFrame({
-        'symbol': ['CME:ES2!'] * length,
-        'open': close_prices,
-        'high': [p + 1 for p in close_prices],
-        'low': [p - 1 for p in close_prices],
-        'close': close_prices,
-        'volume': [10000.0] * length
-    }, index=pd.DatetimeIndex(dates, name='datetime'))
-
-    return df
-
-
 def create_bollinger_test_df(length=50):
     """
     Create test dataframe with price patterns suitable for Bollinger Bands testing.
@@ -238,6 +157,87 @@ def create_ichimoku_test_df(length=100):
         'open': close_prices,
         'high': [p + abs(np.random.randn()) for p in close_prices],
         'low': [p - abs(np.random.randn()) for p in close_prices],
+        'close': close_prices,
+        'volume': [10000.0] * length
+    }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+    return df
+
+
+def create_macd_test_df(length=60):
+    """
+    Create test dataframe with price patterns suitable for MACD testing.
+
+    Returns DataFrame with alternating trends to generate MACD crossovers.
+    """
+    dates = pd.date_range('2023-01-01', periods=length, freq='h')
+
+    close_prices = []
+
+    # Start with a downtrend
+    for i in range(15):
+        close_prices.append(100 - i)
+
+    # Then an uptrend to create a bullish crossover
+    for i in range(15):
+        close_prices.append(85 + i * 1.5)
+
+    # Then a downtrend to create a bearish crossover
+    for i in range(15):
+        close_prices.append(107.5 - i * 1.5)
+
+    # Then another uptrend
+    for i in range(15):
+        close_prices.append(85 + i)
+
+    # Ensure the length matches the requested length
+    while len(close_prices) < length:
+        close_prices.append(close_prices[-1])
+
+    df = pd.DataFrame({
+        'symbol': ['CME:ES2!'] * length,
+        'open': close_prices,
+        'high': [p + 1 for p in close_prices],
+        'low': [p - 1 for p in close_prices],
+        'close': close_prices,
+        'volume': [10000.0] * length
+    }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+    return df
+
+
+def create_rsi_test_df(length=50):
+    """
+    Create test dataframe with price patterns suitable for RSI testing.
+
+    Returns DataFrame with downtrend (low RSI) then uptrend (high RSI).
+    """
+    dates = pd.date_range('2023-01-01', periods=length, freq='h')
+
+    # Create a price series that will generate clear RSI signals
+    close_prices = []
+
+    # Downtrend for the first part (push RSI low)
+    for i in range(20):
+        close_prices.append(100 - i)
+
+    # Uptrend for the second part (push RSI high)
+    for i in range(20):
+        close_prices.append(80 + i)
+
+    # Downtrend again
+    for i in range(10):
+        close_prices.append(100 - i)
+
+    # Ensure the length matches the requested length
+    while len(close_prices) < length:
+        close_prices.append(close_prices[-1])
+
+    df = pd.DataFrame({
+        'symbol': ['CME:ES2!'] * length,
+        'open': close_prices,
+        'high': [p + 1 for p in close_prices],
+        'low': [p - 1 for p in close_prices],
         'close': close_prices,
         'volume': [10000.0] * length
     }, index=pd.DatetimeIndex(dates, name='datetime'))

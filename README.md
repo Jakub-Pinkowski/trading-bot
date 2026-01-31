@@ -140,10 +140,11 @@ The following configuration options are available in the `mass_backtest.py` file
 
 - Data selection: `tested_months`, `symbols`, `intervals`
 - Strategy methods:
-  - `add_rsi_tests()`: Configure RSI strategy tests
-  - `add_ema_crossover_tests()`: Configure EMA Crossover strategy tests
-  - `add_macd_tests()`: Configure MACD strategy tests
   - `add_bollinger_bands_tests()`: Configure Bollinger Bands strategy tests
+  - `add_ema_crossover_tests()`: Configure EMA Crossover strategy tests
+  - `add_ichimoku_cloud_tests()`: Configure Ichimoku Cloud strategy tests
+  - `add_macd_tests()`: Configure MACD strategy tests
+  - `add_rsi_tests()`: Configure RSI strategy tests
 - Output options: `verbose`, `save_results` (in the `run_tests()` method)
 
 #### Programmatic Usage

@@ -33,11 +33,11 @@ strategies in this system.
 
 The system includes 5 built-in strategies:
 
-- **RSI**: Relative Strength Index (oversold/overbought)
-- **EMA**: Exponential Moving Average crossover
-- **MACD**: Moving Average Convergence Divergence
 - **Bollinger Bands**: Price bands based on volatility
+- **EMA**: Exponential Moving Average crossover
 - **Ichimoku Cloud**: Japanese cloud charting
+- **MACD**: Moving Average Convergence Divergence
+- **RSI**: Relative Strength Index (oversold/overbought)
 
 ### Prerequisites
 
@@ -102,13 +102,12 @@ tester = MassTester(
 
 ### Adding Strategy Tests
 
-#### RSI Strategy
+#### Bollinger Bands Strategy
 
 ```python
-tester.add_rsi_tests(
-    rsi_periods=[13, 14, 21],
-    lower_thresholds=[20, 30, 40],
-    upper_thresholds=[60, 70, 80],
+tester.add_bollinger_bands_tests(
+  periods=[20, 25],
+  num_stds=[2.0, 2.5],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
     slippages=[0.05]
@@ -127,6 +126,20 @@ tester.add_ema_crossover_tests(
 )
 ```
 
+#### Ichimoku Cloud Strategy
+
+```python
+tester.add_ichimoku_cloud_tests(
+  tenkan_periods=[9, 12],
+  kijun_periods=[26, 30],
+  senkou_span_b_periods=[52, 60],
+  displacements=[26, 30],
+  rollovers=[False],
+  trailing_stops=[None, 1, 2, 3],
+  slippages=[0.05]
+)
+```
+
 #### MACD Strategy
 
 ```python
@@ -140,26 +153,13 @@ tester.add_macd_tests(
 )
 ```
 
-#### Bollinger Bands Strategy
+#### RSI Strategy
 
 ```python
-tester.add_bollinger_bands_tests(
-    periods=[20, 25],
-    num_stds=[2.0, 2.5],
-    rollovers=[False],
-    trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
-)
-```
-
-#### Ichimoku Cloud Strategy
-
-```python
-tester.add_ichimoku_cloud_tests(
-    tenkan_periods=[9, 12],
-    kijun_periods=[26, 30],
-    senkou_span_b_periods=[52, 60],
-    displacements=[26, 30],
+tester.add_rsi_tests(
+  rsi_periods=[13, 14, 21],
+  lower_thresholds=[20, 30, 40],
+  upper_thresholds=[60, 70, 80],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
     slippages=[0.05]
@@ -186,11 +186,10 @@ def main():
         intervals=['4h']
     )
 
-    # RSI is a momentum oscillator
-    tester.add_rsi_tests(
-        rsi_periods=[13],
-        lower_thresholds=[20, 30, 40],
-        upper_thresholds=[60, 70, 80],
+    # Bollinger Bands measure volatility
+    tester.add_bollinger_bands_tests(
+      periods=[20],
+      num_stds=[2.0],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
         slippages=[0.05]
@@ -205,10 +204,11 @@ def main():
         slippages=[0.05]
     )
 
-    # Bollinger Bands measure volatility
-    tester.add_bollinger_bands_tests(
-        periods=[20],
-        num_stds=[2.0],
+    # RSI is a momentum oscillator
+    tester.add_rsi_tests(
+      rsi_periods=[13],
+      lower_thresholds=[20, 30, 40],
+      upper_thresholds=[60, 70, 80],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
         slippages=[0.05]

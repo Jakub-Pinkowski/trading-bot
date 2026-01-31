@@ -4,12 +4,12 @@ from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.validators import (
-    RSIValidator,
-    EMAValidator,
-    MACDValidator,
     BollingerValidator,
+    CommonValidator,
+    EMAValidator,
     IchimokuValidator,
-    CommonValidator
+    MACDValidator,
+    RSIValidator
 )
 from app.utils.logger import get_logger
 
@@ -18,7 +18,7 @@ logger = get_logger('backtesting/strategy_factory')
 # ==================== Module Configuration ====================
 
 # Define strategy types
-STRATEGY_TYPES = ['rsi', 'ema', 'macd', 'bollinger', 'ichimoku']
+STRATEGY_TYPES = ['bollinger', 'ema', 'ichimoku', 'macd', 'rsi']
 
 # Set to track already logged warnings to prevent duplicates
 _logged_warnings = set()
@@ -119,49 +119,43 @@ def create_strategy(strategy_type, **params):
         raise ValueError(f"Unknown strategy type: {strategy_type}")
 
     # Create a strategy based on type
-    if strategy_type.lower() == 'rsi':
-        return _create_rsi_strategy(**params)
+    if strategy_type.lower() == 'bollinger':
+        return _create_bollinger_strategy(**params)
     elif strategy_type.lower() == 'ema':
         return _create_ema_strategy(**params)
-    elif strategy_type.lower() == 'macd':
-        return _create_macd_strategy(**params)
-    elif strategy_type.lower() == 'bollinger':
-        return _create_bollinger_strategy(**params)
     elif strategy_type.lower() == 'ichimoku':
         return _create_ichimoku_strategy(**params)
+    elif strategy_type.lower() == 'macd':
+        return _create_macd_strategy(**params)
+    elif strategy_type.lower() == 'rsi':
+        return _create_rsi_strategy(**params)
     return None
 
 
-def _create_rsi_strategy(**params):
-    """  Create an RSI strategy instance. """
+def _create_bollinger_strategy(**params):
+    """  Create a Bollinger Bands strategy instance. """
     # Extract parameters with defaults
-    rsi_period = params.get('rsi_period', 14)
-    lower = params.get('lower', 30)
-    upper = params.get('upper', 70)
+    period = params.get('period', 20)
+    number_of_standard_deviations = params.get('num_std', 2)
     common_params = _extract_common_params(**params)
 
     # Validate parameters
-    _validate_positive_integer(rsi_period, "rsi period")
-    _validate_range(lower, "lower threshold", 0, 100)
-    _validate_range(upper, "upper threshold", 0, 100)
-
-    if lower >= upper:
-        logger.error(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
-        raise ValueError(f"Lower threshold must be less than upper threshold")
+    _validate_positive_integer(period, "period")
+    _validate_positive_number(number_of_standard_deviations, "number of standard deviations")
 
     # Enhanced parameter validation with guidance
-    rsi_validator = RSIValidator()
-    rsi_warnings = rsi_validator.validate(rsi_period=rsi_period, lower=lower, upper=upper)
+    bollinger_validator = BollingerValidator()
+    bollinger_warnings = bollinger_validator.validate(period=period,
+                                                      number_of_standard_deviations=number_of_standard_deviations)
     common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
-    _log_warnings_once(rsi_warnings + common_warnings, "RSI")
+    _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
 
     # Create and return strategy
-    return RSIStrategy(
-        rsi_period=rsi_period,
-        lower=lower,
-        upper=upper,
+    return BollingerBandsStrategy(
+        period=period,
+        num_std=number_of_standard_deviations,
         **common_params
     )
 
@@ -193,6 +187,42 @@ def _create_ema_strategy(**params):
     return EMACrossoverStrategy(
         ema_short=short_ema_period,
         ema_long=long_ema_period,
+        **common_params
+    )
+
+
+def _create_ichimoku_strategy(**params):
+    """ Create an Ichimoku Cloud strategy instance. """
+    # Extract parameters with defaults
+    tenkan_period = params.get('tenkan_period', 9)
+    kijun_period = params.get('kijun_period', 26)
+    senkou_span_b_period = params.get('senkou_span_b_period', 52)
+    displacement = params.get('displacement', 26)
+    common_params = _extract_common_params(**params)
+
+    # Validate parameters
+    _validate_positive_integer(tenkan_period, "tenkan period")
+    _validate_positive_integer(kijun_period, "kijun period")
+    _validate_positive_integer(senkou_span_b_period, "senkou span B period")
+    _validate_positive_integer(displacement, "displacement")
+
+    # Enhanced parameter validation with guidance
+    ichimoku_validator = IchimokuValidator()
+    ichimoku_warnings = ichimoku_validator.validate(tenkan_period=tenkan_period,
+                                                    kijun_period=kijun_period,
+                                                    senkou_span_b_period=senkou_span_b_period,
+                                                    displacement=displacement)
+    common_warnings = _validate_common_params(common_params)
+
+    # Log all warnings (only once per unique warning)
+    _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
+
+    # Create and return strategy
+    return IchimokuCloudStrategy(
+        tenkan_period=tenkan_period,
+        kijun_period=kijun_period,
+        senkou_span_b_period=senkou_span_b_period,
+        displacement=displacement,
         **common_params
     )
 
@@ -233,65 +263,36 @@ def _create_macd_strategy(**params):
     )
 
 
-def _create_bollinger_strategy(**params):
-    """  Create a Bollinger Bands strategy instance. """
+def _create_rsi_strategy(**params):
+    """  Create an RSI strategy instance. """
     # Extract parameters with defaults
-    period = params.get('period', 20)
-    number_of_standard_deviations = params.get('num_std', 2)
+    rsi_period = params.get('rsi_period', 14)
+    lower = params.get('lower', 30)
+    upper = params.get('upper', 70)
     common_params = _extract_common_params(**params)
 
     # Validate parameters
-    _validate_positive_integer(period, "period")
-    _validate_positive_number(number_of_standard_deviations, "number of standard deviations")
+    _validate_positive_integer(rsi_period, "rsi period")
+    _validate_range(lower, "lower threshold", 0, 100)
+    _validate_range(upper, "upper threshold", 0, 100)
+
+    if lower >= upper:
+        logger.error(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
+        raise ValueError(f"Lower threshold must be less than upper threshold")
 
     # Enhanced parameter validation with guidance
-    bollinger_validator = BollingerValidator()
-    bollinger_warnings = bollinger_validator.validate(period=period, number_of_standard_deviations=number_of_standard_deviations)
+    rsi_validator = RSIValidator()
+    rsi_warnings = rsi_validator.validate(rsi_period=rsi_period, lower=lower, upper=upper)
     common_warnings = _validate_common_params(common_params)
 
     # Log all warnings (only once per unique warning)
-    _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
+    _log_warnings_once(rsi_warnings + common_warnings, "RSI")
 
     # Create and return strategy
-    return BollingerBandsStrategy(
-        period=period,
-        num_std=number_of_standard_deviations,
-        **common_params
-    )
-
-
-def _create_ichimoku_strategy(**params):
-    """ Create an Ichimoku Cloud strategy instance. """
-    # Extract parameters with defaults
-    tenkan_period = params.get('tenkan_period', 9)
-    kijun_period = params.get('kijun_period', 26)
-    senkou_span_b_period = params.get('senkou_span_b_period', 52)
-    displacement = params.get('displacement', 26)
-    common_params = _extract_common_params(**params)
-
-    # Validate parameters
-    _validate_positive_integer(tenkan_period, "tenkan period")
-    _validate_positive_integer(kijun_period, "kijun period")
-    _validate_positive_integer(senkou_span_b_period, "senkou span B period")
-    _validate_positive_integer(displacement, "displacement")
-
-    # Enhanced parameter validation with guidance
-    ichimoku_validator = IchimokuValidator()
-    ichimoku_warnings = ichimoku_validator.validate(tenkan_period=tenkan_period, 
-                                                     kijun_period=kijun_period, 
-                                                     senkou_span_b_period=senkou_span_b_period, 
-                                                     displacement=displacement)
-    common_warnings = _validate_common_params(common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
-
-    # Create and return strategy
-    return IchimokuCloudStrategy(
-        tenkan_period=tenkan_period,
-        kijun_period=kijun_period,
-        senkou_span_b_period=senkou_span_b_period,
-        displacement=displacement,
+    return RSIStrategy(
+        rsi_period=rsi_period,
+        lower=lower,
+        upper=upper,
         **common_params
     )
 
@@ -308,27 +309,15 @@ def get_strategy_name(strategy_type, **params):
     """ Get a standardized name for a strategy with the given parameters. """
     common_params_str = _format_common_params(**params)
 
-    if strategy_type.lower() == 'rsi':
-        rsi_period = params.get('rsi_period', 14)
-        lower = params.get('lower', 30)
-        upper = params.get('upper', 70)
-        return f'RSI(period={rsi_period},lower={lower},upper={upper},{common_params_str})'
+    if strategy_type.lower() == 'bollinger':
+        period = params.get('period', 20)
+        number_of_standard_deviations = params.get('num_std', 2)
+        return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
 
     elif strategy_type.lower() == 'ema':
         short_ema_period = params.get('ema_short', 9)
         long_ema_period = params.get('ema_long', 21)
         return f'EMA(short={short_ema_period},long={long_ema_period},{common_params_str})'
-
-    elif strategy_type.lower() == 'macd':
-        fast_period = params.get('fast_period', 12)
-        slow_period = params.get('slow_period', 26)
-        signal_period = params.get('signal_period', 9)
-        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},{common_params_str})'
-
-    elif strategy_type.lower() == 'bollinger':
-        period = params.get('period', 20)
-        number_of_standard_deviations = params.get('num_std', 2)
-        return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
 
     elif strategy_type.lower() == 'ichimoku':
         tenkan_period = params.get('tenkan_period', 9)
@@ -336,6 +325,18 @@ def get_strategy_name(strategy_type, **params):
         senkou_span_b_period = params.get('senkou_span_b_period', 52)
         displacement = params.get('displacement', 26)
         return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},{common_params_str})'
+
+    elif strategy_type.lower() == 'macd':
+        fast_period = params.get('fast_period', 12)
+        slow_period = params.get('slow_period', 26)
+        signal_period = params.get('signal_period', 9)
+        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},{common_params_str})'
+
+    elif strategy_type.lower() == 'rsi':
+        rsi_period = params.get('rsi_period', 14)
+        lower = params.get('lower', 30)
+        upper = params.get('upper', 70)
+        return f'RSI(period={rsi_period},lower={lower},upper={upper},{common_params_str})'
 
     else:
         return f'Unknown({strategy_type})'
