@@ -48,8 +48,35 @@ class IchimokuValidator(Validator):
 
         Returns:
             List of warning messages
+        
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Tenkan period type and value validation
+        if not isinstance(tenkan_period, int):
+            raise ValueError(f"tenkan period must be a positive integer, got {type(tenkan_period).__name__}")
+        if tenkan_period <= 0:
+            raise ValueError("tenkan period must be a positive integer")
+
+        # Kijun period type and value validation
+        if not isinstance(kijun_period, int):
+            raise ValueError(f"kijun period must be a positive integer, got {type(kijun_period).__name__}")
+        if kijun_period <= 0:
+            raise ValueError("kijun period must be a positive integer")
+
+        # Senkou Span B period type and value validation
+        if not isinstance(senkou_span_b_period, int):
+            raise ValueError(f"senkou span B period must be a positive integer, got {type(senkou_span_b_period).__name__}")
+        if senkou_span_b_period <= 0:
+            raise ValueError("senkou span B period must be a positive integer")
+
+        # Displacement type and value validation
+        if not isinstance(displacement, int):
+            raise ValueError(f"displacement must be a positive integer, got {type(displacement).__name__}")
+        if displacement <= 0:
+            raise ValueError("displacement must be a positive integer")
 
         # Tenkan period validation
         if tenkan_period < ICHIMOKU_TENKAN_MIN:

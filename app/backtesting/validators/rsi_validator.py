@@ -41,8 +41,33 @@ class RSIValidator(Validator):
 
         Returns:
             List of warning messages
+        
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # RSI period type and value validation
+        if not isinstance(rsi_period, int):
+            raise ValueError(f"rsi period must be a positive integer, got {type(rsi_period).__name__}")
+        if rsi_period <= 0:
+            raise ValueError("rsi period must be a positive integer")
+
+        # Lower threshold type and value validation
+        if not isinstance(lower, (int, float)):
+            raise ValueError(f"lower threshold must be a number, got {type(lower).__name__}")
+        if lower < 0 or lower > 100:
+            raise ValueError("lower threshold must be between 0 and 100")
+
+        # Upper threshold type and value validation
+        if not isinstance(upper, (int, float)):
+            raise ValueError(f"upper threshold must be a number, got {type(upper).__name__}")
+        if upper < 0 or upper > 100:
+            raise ValueError("upper threshold must be between 0 and 100")
+
+        # Business logic validation
+        if lower >= upper:
+            raise ValueError(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
 
         # RSI Period validation
         if rsi_period < RSI_PERIOD_MIN_RECOMMENDED:

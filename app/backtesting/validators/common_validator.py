@@ -38,7 +38,7 @@ class CommonValidator(Validator):
             List of warning messages
 
         Raises:
-            ValueError: If rollover is not a boolean
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
 
@@ -48,6 +48,11 @@ class CommonValidator(Validator):
 
         # Trailing stop validation
         if trailing is not None:
+            if not isinstance(trailing, (int, float)):
+                raise ValueError(f"trailing must be None or a number, got {type(trailing).__name__}")
+            if trailing <= 0:
+                raise ValueError("trailing must be None or a positive number")
+            
             if trailing < TRAILING_STOP_MIN:
                 self.warnings.append(
                     f"Trailing stop {trailing}% is very tight and may be stopped out frequently. "
@@ -63,6 +68,11 @@ class CommonValidator(Validator):
 
         # Slippage validation
         if slippage is not None:
+            if not isinstance(slippage, (int, float)):
+                raise ValueError(f"slippage must be None or a number, got {type(slippage).__name__}")
+            if slippage < 0:
+                raise ValueError("slippage must be None or a non-negative number")
+            
             if slippage > SLIPPAGE_MAX:
                 self.warnings.append(
                     f"Slippage {slippage}% is very high and may significantly impact returns. "

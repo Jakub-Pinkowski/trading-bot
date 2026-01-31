@@ -34,8 +34,23 @@ class BollingerValidator(Validator):
 
         Returns:
             List of warning messages
+        
+        Raises:
+            ValueError: If parameters have invalid types or values
         """
         self.warnings = []
+
+        # Period type and value validation
+        if not isinstance(period, int):
+            raise ValueError(f"period must be a positive integer, got {type(period).__name__}")
+        if period <= 0:
+            raise ValueError("period must be a positive integer")
+
+        # Standard deviation type and value validation
+        if not isinstance(number_of_standard_deviations, (int, float)):
+            raise ValueError(f"number of standard deviations must be a positive number, got {type(number_of_standard_deviations).__name__}")
+        if number_of_standard_deviations <= 0:
+            raise ValueError("number of standard deviations must be positive")
 
         # Period validation
         if period < BB_PERIOD_MIN:
