@@ -929,10 +929,10 @@ class TestWarningConfiguration(unittest.TestCase):
         strategy_factory._log_warnings_enabled = self.original_warnings_enabled
         _logged_warnings.clear()
 
-    def test_warnings_disabled_by_default(self):
-        """Test that warnings are disabled by default."""
-        # The default state should be False (warnings disabled)
-        self.assertFalse(strategy_factory._log_warnings_enabled)
+    def test_warnings_enabled_by_default(self):
+        """Test that warnings are enabled by default."""
+        # The default state should be True (warnings enabled)
+        self.assertTrue(strategy_factory._log_warnings_enabled)
 
     @patch('app.backtesting.strategy_factory.logger')
     def test_warnings_disabled_no_logging(self, mock_logger):

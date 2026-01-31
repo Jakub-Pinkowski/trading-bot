@@ -185,10 +185,10 @@ def _prepare_test_combinations(
 
         # Check if this test has already been run
         if skip_existing and check_test_exists(existing_data,
-                                                  tested_month,
-                                                  symbol,
-                                                  interval,
-                                                  strategy_name):
+                                               tested_month,
+                                               symbol,
+                                               interval,
+                                               strategy_name):
             if verbose:
                 print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
             skipped_combinations += 1
@@ -318,13 +318,9 @@ def _report_cache_statistics(results):
 def _save_caches():
     """Save indicator and dataframe caches."""
     try:
-        indicator_cache_size = indicator_cache.size()
         indicator_cache.save_cache()
-        logger.info(f"Saved indicator cache with {indicator_cache_size} entries")
 
-        dataframe_cache_size = dataframe_cache.size()
         dataframe_cache.save_cache()
-        logger.info(f"Saved dataframe cache with {dataframe_cache_size} entries")
     except Exception as e:
         logger.error(f"Failed to save caches after test completion: {e}")
 

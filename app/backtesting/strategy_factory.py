@@ -24,7 +24,7 @@ STRATEGY_TYPES = ['bollinger', 'ema', 'ichimoku', 'macd', 'rsi']
 _logged_warnings = set()
 
 # Configuration variable to control whether warnings should be logged
-_log_warnings_enabled = False
+_log_warnings_enabled = True
 
 
 # ==================== Parameter Extraction & Validation ====================
