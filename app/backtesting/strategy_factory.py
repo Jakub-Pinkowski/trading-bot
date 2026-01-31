@@ -7,11 +7,6 @@ from app.backtesting.validators import CommonValidator
 from app.utils.logger import get_logger
 
 # Import all strategies to trigger registration
-from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
-from app.backtesting.strategies.macd import MACDStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
 
 logger = get_logger('backtesting/strategy_factory')
 
@@ -23,7 +18,6 @@ _logged_warnings = set()
 # Configuration variable to control whether warnings should be logged
 _log_warnings_enabled = True
 
-
 # ==================== Parameter Extraction & Validation ====================
 
 # Strategy name mappings for logging
@@ -34,6 +28,7 @@ STRATEGY_DISPLAY_NAMES = {
     'macd': 'MACD',
     'rsi': 'RSI'
 }
+
 
 def _log_warnings_once(warnings, strategy_type):
     """Log warnings only if they haven't been logged before and warnings are enabled."""
@@ -88,6 +83,7 @@ VALIDATOR_PARAM_MAPPING = {
     }
 }
 
+
 def _get_strategy_defaults(strategy_class):
     """
     Extract default parameter values from a strategy class's __init__ method.
@@ -108,19 +104,21 @@ def _get_strategy_defaults(strategy_class):
             defaults[param_name] = param.default
     return defaults
 
+
 def _map_params_for_validator(strategy_type, params):
     """Map strategy parameter names to validator parameter names."""
     if strategy_type not in VALIDATOR_PARAM_MAPPING:
         return params
-    
+
     mapping = VALIDATOR_PARAM_MAPPING[strategy_type]
     mapped_params = params.copy()
-    
+
     for strategy_param, validator_param in mapping.items():
         if strategy_param in mapped_params:
             mapped_params[validator_param] = mapped_params[strategy_param]
-    
+
     return mapped_params
+
 
 def create_strategy(strategy_type, **params):
     """
@@ -139,31 +137,32 @@ def create_strategy(strategy_type, **params):
         ValueError: If strategy type is unknown or parameters are invalid
     """
     strategy_type = strategy_type.lower()
-    
+
     # Get strategy class from registry
     strategy_class = get_strategy_class(strategy_type)
     if not strategy_class:
         available = ', '.join(list_strategies())
         logger.error(f"Unknown strategy: {strategy_type}. Available: {available}")
         raise ValueError(f"Unknown strategy type: {strategy_type}")
-    
+
     # Extract common parameters
     common_params = _extract_common_params(**params)
-    
+
     # Remove common params from strategy params to avoid duplication
-    strategy_params = {param_name: param_value for param_name, param_value in params.items() if param_name not in ['rollover', 'trailing', 'slippage']}
-    
+    strategy_params = {param_name: param_value for param_name, param_value in params.items() if
+                       param_name not in ['rollover', 'trailing', 'slippage']}
+
     # Get defaults from strategy class for validation purposes
     strategy_defaults = _get_strategy_defaults(strategy_class)
     params_with_defaults = {**strategy_defaults, **params}
-    
+
     # Get and run validators (which will raise ValueError for critical issues and return warnings)
     validator_class = get_validator_class(strategy_type)
-    
+
     # Always validate common parameters
     common_warnings = _validate_common_params(common_params)
     all_warnings = common_warnings
-    
+
     # Validate strategy-specific parameters
     if validator_class:
         validator = validator_class()
@@ -171,11 +170,11 @@ def create_strategy(strategy_type, **params):
         mapped_params = _map_params_for_validator(strategy_type, params_with_defaults)
         strategy_warnings = validator.validate(**mapped_params)
         all_warnings = strategy_warnings + common_warnings
-    
+
     # Log all warnings
     if all_warnings:
         _log_warnings_once(all_warnings, strategy_type)
-    
+
     # Create strategy instance
     return strategy_class(**strategy_params, **common_params)
 
