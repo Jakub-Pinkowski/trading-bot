@@ -3,7 +3,7 @@ import hashlib
 from app.backtesting.cache.indicators_cache import indicator_cache
 
 
-def calculate_ichimoku(
+def calculate_ichimoku_cloud(
     high, low, close, tenkan_period, kijun_period,
     senkou_span_b_period, displacement,
     high_hash, low_hash, close_hash
@@ -45,7 +45,7 @@ def calculate_ichimoku(
 
     # Check if we have this calculation cached in the global cache
     cache_key = (
-        'ichimoku',
+        'ichimoku_cloud',
         combined_hash,
         tenkan_period,
         kijun_period,

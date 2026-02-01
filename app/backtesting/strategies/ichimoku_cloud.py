@@ -1,4 +1,4 @@
-from app.backtesting.indicators import calculate_ichimoku
+from app.backtesting.indicators import calculate_ichimoku_cloud
 from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
                                                            precompute_hashes,
                                                            detect_crossover)
@@ -31,7 +31,7 @@ class IchimokuCloudStrategy(BaseStrategy):
         hashes = precompute_hashes(df)
 
         # Calculate Ichimoku using pre-computed hashes
-        ichimoku_data = calculate_ichimoku(
+        ichimoku_data = calculate_ichimoku_cloud(
             df['high'],
             df['low'],
             df['close'],

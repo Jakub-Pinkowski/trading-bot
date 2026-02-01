@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.backtesting.indicators import calculate_rsi, calculate_ema, calculate_macd, calculate_ichimoku
+from app.backtesting.indicators import calculate_rsi, calculate_ema, calculate_macd, calculate_ichimoku_cloud
 from app.backtesting.strategies.base.base_strategy import precompute_hashes
 from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
@@ -92,7 +92,7 @@ class TestHashOptimizationCorrectness:
         low_hash = hash_series(sample_dataframe['low'])
         close_hash = hash_series(sample_dataframe['close'])
 
-        result = calculate_ichimoku(
+        result = calculate_ichimoku_cloud(
             sample_dataframe['high'],
             sample_dataframe['low'],
             sample_dataframe['close'],

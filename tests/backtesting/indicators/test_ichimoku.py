@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from app.backtesting.indicators import calculate_ichimoku
+from app.backtesting.indicators import calculate_ichimoku_cloud
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 
@@ -26,16 +26,16 @@ def test_calculate_ichimoku_with_valid_prices():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # Check that all components are present
     assert 'tenkan_sen' in ichimoku
@@ -64,7 +64,7 @@ def test_calculate_ichimoku_with_custom_parameters():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(
+    ichimoku = calculate_ichimoku_cloud(
         high, low, close,
         tenkan_period=5,
         kijun_period=15,
@@ -94,16 +94,16 @@ def test_calculate_ichimoku_with_not_enough_data():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # Check that the components have the correct length
     assert len(ichimoku['tenkan_sen']) == len(close)
@@ -126,16 +126,16 @@ def test_calculate_ichimoku_with_constant_prices():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # Check that the components have constant values where not NaN
     non_nan_tenkan = ichimoku['tenkan_sen'].dropna()
@@ -156,16 +156,16 @@ def test_calculate_ichimoku_handles_empty_prices():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # Check that all components are empty
     assert ichimoku['tenkan_sen'].empty
@@ -187,16 +187,16 @@ def test_calculate_ichimoku_with_uptrend():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # In an uptrend, we expect:
     # 1. Tenkan-sen > Kijun-sen (faster line above slower line)
@@ -225,16 +225,16 @@ def test_calculate_ichimoku_with_downtrend():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # In a downtrend, we expect:
     # 1. Tenkan-sen < Kijun-sen (faster line below slower line)
@@ -285,16 +285,16 @@ def test_calculate_ichimoku_with_sideways_market():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # In a sideways market, we expect:
     # 1. Tenkan-sen and Kijun-sen to be close to each other
@@ -335,16 +335,16 @@ def test_calculate_ichimoku_with_market_reversal():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # At the reversal point, we expect:
     # 1. Tenkan-sen to cross below Kijun-sen
@@ -380,16 +380,16 @@ def test_calculate_ichimoku_with_high_volatility():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku = calculate_ichimoku(high,
-                                  low,
-                                  close,
-                                  tenkan_period=9,
-                                  kijun_period=26,
-                                  senkou_span_b_period=52,
-                                  displacement=26,
-                                  high_hash=high_hash,
-                                  low_hash=low_hash,
-                                  close_hash=close_hash)
+    ichimoku = calculate_ichimoku_cloud(high,
+                                        low,
+                                        close,
+                                        tenkan_period=9,
+                                        kijun_period=26,
+                                        senkou_span_b_period=52,
+                                        displacement=26,
+                                        high_hash=high_hash,
+                                        low_hash=low_hash,
+                                        close_hash=close_hash)
 
     # In high volatility, we expect:
     # 1. Wider cloud (larger difference between Senkou Span A and B)
@@ -419,29 +419,29 @@ def test_calculate_ichimoku_caching():
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku1 = calculate_ichimoku(high,
-                                   low,
-                                   close,
-                                   tenkan_period=9,
-                                   kijun_period=26,
-                                   senkou_span_b_period=52,
-                                   displacement=26,
-                                   high_hash=high_hash,
-                                   low_hash=low_hash,
-                                   close_hash=close_hash)
+    ichimoku1 = calculate_ichimoku_cloud(high,
+                                         low,
+                                         close,
+                                         tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         high_hash=high_hash,
+                                         low_hash=low_hash,
+                                         close_hash=close_hash)
     high_hash = hash_series(high)
     low_hash = hash_series(low)
     close_hash = hash_series(close)
-    ichimoku2 = calculate_ichimoku(high,
-                                   low,
-                                   close,
-                                   tenkan_period=9,
-                                   kijun_period=26,
-                                   senkou_span_b_period=52,
-                                   displacement=26,
-                                   high_hash=high_hash,
-                                   low_hash=low_hash,
-                                   close_hash=close_hash)
+    ichimoku2 = calculate_ichimoku_cloud(high,
+                                         low,
+                                         close,
+                                         tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         high_hash=high_hash,
+                                         low_hash=low_hash,
+                                         close_hash=close_hash)
 
     # The results should be identical (and the second call should use the cache)
     assert ichimoku1['tenkan_sen'].equals(ichimoku2['tenkan_sen'])
