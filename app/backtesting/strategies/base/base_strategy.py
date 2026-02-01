@@ -5,7 +5,8 @@ from app.backtesting.strategies.base.position_manager import PositionManager
 from app.backtesting.strategies.base.trailing_stop_manager import TrailingStopManager
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
-# Strategy Execution Constants
+# ==================== Strategy Execution Constants ====================
+
 # INDICATOR_WARMUP_PERIOD: Number of initial candles to skip before generating signals
 # Rationale:
 #   - Technical indicators (MA, EMA, RSI, etc.) need historical data to stabilize
@@ -117,13 +118,13 @@ def detect_threshold_cross(series, threshold, direction='below'):
 class BaseStrategy:
     # ==================== Initialization ====================
 
-    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
+    def __init__(self, rollover, trailing, slippage, symbol):
         """
         Initialize the base strategy.
 
         Args:
             rollover: Whether to handle contract rollovers
-            trailing: Trailing stop percentage (if used)
+            trailing: Trailing stop percentage (None = disabled)
             slippage: Slippage percentage (e.g., 0.05 = 0.05%)
             symbol: The futures symbol (e.g., 'ZC', 'GC')
         """

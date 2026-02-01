@@ -326,18 +326,30 @@ class TestPicklingValidation:
         from app.backtesting import create_strategy
 
         strategy_configs = [
-            ('rsi', {'rsi_period': 14, 'lower': 30, 'upper': 70, 'rollover': False, 'trailing': None, 'slippage': 0}),
-            ('ema', {'ema_short': 9, 'ema_long': 21, 'rollover': False, 'trailing': None, 'slippage': 0}),
+            (
+                'rsi',
+                {'rsi_period': 14, 'lower_threshold': 30, 'upper_threshold': 70, 'rollover': False, 'trailing': None,
+                 'slippage': 0, 'symbol': None}
+            ),
+            (
+                'ema',
+                {'short_ema_period': 9, 'long_ema_period': 21, 'rollover': False, 'trailing': None, 'slippage': 0,
+                 'symbol': None}
+            ),
             (
                 'macd',
                 {'fast_period': 12, 'slow_period': 26, 'signal_period': 9, 'rollover': False, 'trailing': None,
-                 'slippage': 0}
+                 'slippage': 0, 'symbol': None}
             ),
-            ('bollinger', {'period': 20, 'std_dev': 2, 'rollover': False, 'trailing': None, 'slippage': 0}),
+            (
+                'bollinger',
+                {'period': 20, 'number_of_standard_deviations': 2, 'rollover': False, 'trailing': None, 'slippage': 0,
+                 'symbol': None}
+            ),
             (
                 'ichimoku',
-                {'tenkan': 9, 'kijun': 26, 'senkou_b': 52, 'displacement': 26, 'rollover': False, 'trailing': None,
-                 'slippage': 0}
+                {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26,
+                 'rollover': False, 'trailing': None, 'slippage': 0, 'symbol': None}
             ),
         ]
 

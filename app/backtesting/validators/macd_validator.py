@@ -108,12 +108,4 @@ class MACDValidator(Validator):
                 f"Consider using {MACD_SIGNAL_MIN}-{MACD_SIGNAL_MAX} range ({MACD_SIGNAL_STANDARD} is standard)."
             )
 
-        # --- Standard Configuration Check ---
-
-        # Provide info when using standard MACD configuration
-        if (fast_period, slow_period, signal_period) == (MACD_FAST_STANDARD, MACD_SLOW_STANDARD, MACD_SIGNAL_STANDARD):
-            self.warnings.append(
-                f"Using standard MACD parameters ({MACD_FAST_STANDARD}/{MACD_SLOW_STANDARD}/{MACD_SIGNAL_STANDARD}) - widely tested and reliable."
-            )
-
         return self.warnings

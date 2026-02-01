@@ -175,6 +175,30 @@ class Validator:
         if value <= 0:
             raise ValueError(f"{param_name} must be positive")
 
+    def validate_non_negative_number(self, value, param_name):
+        """
+        Validate that a parameter is a non-negative number (int or float), zero allowed.
+
+        Args:
+            value: The value to validate
+            param_name: Parameter name for error messages
+
+        Raises:
+            ValueError: If value is not non-negative
+        """
+        # Explicitly exclude booleans since bool inherits from int in Python
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{param_name} must be a non-negative number")
+
+        # Reject infinity and NaN values for float inputs
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                raise ValueError(f"{param_name} must be a finite number")
+
+        # Validate value is non-negative (zero is allowed)
+        if value < 0:
+            raise ValueError(f"{param_name} must be a non-negative number")
+
     def validate_boolean(self, value, param_name):
         """
         Validate that a parameter is a boolean.

@@ -36,7 +36,7 @@ class CommonValidator(Validator):
         Args:
             rollover: Whether to use contract rollover
             trailing: Trailing stop percentage (or None)
-            slippage: Slippage percentage (or None)
+            slippage: Slippage percentage (0 = no slippage)
             **kwargs: Additional parameters (ignored)
 
         Returns:
@@ -51,10 +51,13 @@ class CommonValidator(Validator):
 
         # Validate rollover is a boolean value
         self.validate_boolean(rollover, "rollover")
+
         # Validate trailing is None or a positive number
-        self.validate_optional_positive_number(trailing, "trailing")
-        # Validate slippage is None or a non-negative number (zero allowed)
-        self.validate_optional_non_negative_number(slippage, "slippage")
+        if trailing is not None:
+            self.validate_positive_number(trailing, "trailing")
+
+        # Validate slippage is a non-negative number (zero allowed)
+        self.validate_non_negative_number(slippage, "slippage")
 
         # --- Trailing Stop Validation ---
 
@@ -77,20 +80,24 @@ class CommonValidator(Validator):
 
         # --- Slippage Validation ---
 
-        # Only validate slippage if it's provided
-        if slippage is not None:
-            # Warn if slippage is unrealistically high
-            if slippage > SLIPPAGE_MAX:
-                self.warnings.append(
-                    f"Slippage {slippage}% is too high and may significantly impact returns. "
-                    f"Consider using 0-{SLIPPAGE_MAX}% range "
-                    f"({SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% is typical for liquid futures)."
-                )
-            # Warn if slippage is unrealistically zero
-            elif slippage == 0:
-                self.warnings.append(
-                    f"Slippage {slippage}% is unrealistic - all orders experience some slippage. "
-                    f"Consider using {SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% for liquid futures."
-                )
+        # Warn if slippage is 0 (unrealistically low)
+        if slippage == 0:
+            self.warnings.append(
+                f"Slippage is set to 0% (no slippage). This is unrealistic for live trading. "
+                f"Consider using {SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% for liquid futures."
+            )
+        # Warn if slippage is unrealistically low
+        elif 0 < slippage < SLIPPAGE_TYPICAL_MIN:
+            self.warnings.append(
+                f"Slippage {slippage}% is very low and may be unrealistic. "
+                f"Typical range is {SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% for liquid futures."
+            )
+        # Warn if slippage is unrealistically high
+        elif slippage > SLIPPAGE_MAX:
+            self.warnings.append(
+                f"Slippage {slippage}% is too high and may significantly impact returns. "
+                f"Consider using 0-{SLIPPAGE_MAX}% range "
+                f"({SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% is typical for liquid futures)."
+            )
 
         return self.warnings

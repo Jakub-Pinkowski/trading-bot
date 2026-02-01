@@ -10,7 +10,13 @@ from tests.backtesting.strategies.conftest import create_test_df
 class TestMACDStrategy:
     def test_initialization(self):
         """Test that the MACD strategy initializes with correct default parameters."""
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
         assert strategy.fast_period == 12
         assert strategy.slow_period == 26
         assert strategy.signal_period == 9
@@ -22,7 +28,8 @@ class TestMACDStrategy:
             signal_period=5,
             rollover=True,
             trailing=2.0,
-            slippage=1.0
+            slippage=1.0,
+            symbol=None
         )
         assert strategy.fast_period == 8
         assert strategy.slow_period == 21
@@ -33,7 +40,13 @@ class TestMACDStrategy:
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds MACD indicators to the dataframe."""
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
 
         # Create a simple dataframe with a clear trend
         dates = [datetime.now() + timedelta(days=i) for i in range(100)]
@@ -92,7 +105,13 @@ class TestMACDStrategy:
 
     def test_generate_signals_default_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -130,7 +149,13 @@ class TestMACDStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use different periods
-        strategy = MACDStrategy(fast_period=8, slow_period=21, signal_period=5)
+        strategy = MACDStrategy(fast_period=8,
+                                slow_period=21,
+                                signal_period=5,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -157,7 +182,13 @@ class TestMACDStrategy:
 
     def test_run_end_to_end(self):
         """Test the full strategy workflow from data to trades."""
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -178,7 +209,13 @@ class TestMACDStrategy:
 
     def test_no_signals_with_flat_prices(self):
         """Test that no signals are generated with flat prices."""
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
 
         # Create a dataframe with constant prices
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -198,7 +235,13 @@ class TestMACDStrategy:
 
     def test_with_trailing_stop(self):
         """Test MACD strategy with trailing stop."""
-        strategy = MACDStrategy(trailing=2.0)
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=2.0,
+                                slippage=0,
+                                symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -218,7 +261,13 @@ class TestMACDStrategy:
 
     def test_with_contract_switch(self):
         """Test MACD strategy with a contract switch."""
-        strategy = MACDStrategy(rollover=True)
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=True,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
         df = create_test_df()
 
         # Create a switch date in the middle of the dataframe
@@ -248,7 +297,13 @@ class TestMACDStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the MACD strategy."""
         # Create a strategy with 2% slippage
-        strategy = MACDStrategy(slippage=2.0)
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=2.0,
+                                symbol=None)
         df = create_test_df()
 
         # Add indicators and generate signals
@@ -344,7 +399,13 @@ class TestMACDStrategy:
         df = pd.DataFrame(data, index=dates)
 
         # Create a strategy with default parameters
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
 
         # Run the strategy
         trades = strategy.run(df, [])
@@ -365,7 +426,13 @@ class TestMACDStrategy:
     def test_boundary_macd_values(self):
         """Test MACD strategy with MACD values at or near the crossover boundaries."""
         # Create a strategy with default parameters
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -468,7 +535,13 @@ class TestMACDStrategy:
     def test_macd_divergence_patterns(self):
         """Test MACD strategy with price-MACD divergence patterns."""
         # Create a strategy with default parameters
-        strategy = MACDStrategy()
+        strategy = MACDStrategy(fast_period=12,
+                                slow_period=26,
+                                signal_period=9,
+                                rollover=False,
+                                trailing=None,
+                                slippage=0,
+                                symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(100)]

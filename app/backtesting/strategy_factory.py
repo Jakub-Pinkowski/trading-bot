@@ -50,11 +50,12 @@ def _log_warnings_once(warnings, strategy_type):
 
 
 def _extract_common_params(**params):
-    """Extract common parameters used by all strategies."""
+    """Extract common parameters used by all strategies. All parameters are required."""
     return {
-        'rollover': params.get('rollover', False),
-        'trailing': params.get('trailing', None),
-        'slippage': params.get('slippage', None)
+        'rollover': params['rollover'],
+        'trailing': params['trailing'],
+        'slippage': params['slippage'],
+        'symbol': params['symbol']
     }
 
 
@@ -83,9 +84,9 @@ def create_strategy(strategy_type, **params):
 
 def _create_bollinger_strategy(**params):
     """Create a Bollinger Bands strategy instance."""
-    # Extract parameters with defaults
-    period = params.get('period', 20)
-    number_of_standard_deviations = params.get('number_of_standard_deviations', 2)
+    # Extract parameters
+    period = params['period']
+    number_of_standard_deviations = params['number_of_standard_deviations']
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -108,9 +109,9 @@ def _create_bollinger_strategy(**params):
 
 def _create_ema_strategy(**params):
     """Create an EMA Crossover strategy instance."""
-    # Extract parameters with defaults
-    short_ema_period = params.get('short_ema_period', 9)
-    long_ema_period = params.get('long_ema_period', 21)
+    # Extract parameters
+    short_ema_period = params['short_ema_period']
+    long_ema_period = params['long_ema_period']
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -133,11 +134,11 @@ def _create_ema_strategy(**params):
 
 def _create_ichimoku_strategy(**params):
     """Create an Ichimoku Cloud strategy instance."""
-    # Extract parameters with defaults
-    tenkan_period = params.get('tenkan_period', 9)
-    kijun_period = params.get('kijun_period', 26)
-    senkou_span_b_period = params.get('senkou_span_b_period', 52)
-    displacement = params.get('displacement', 26)
+    # Extract parameters (all required)
+    tenkan_period = params['tenkan_period']
+    kijun_period = params['kijun_period']
+    senkou_span_b_period = params['senkou_span_b_period']
+    displacement = params['displacement']
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -164,10 +165,10 @@ def _create_ichimoku_strategy(**params):
 
 def _create_macd_strategy(**params):
     """Create a MACD strategy instance."""
-    # Extract parameters with defaults
-    fast_period = params.get('fast_period', 12)
-    slow_period = params.get('slow_period', 26)
-    signal_period = params.get('signal_period', 9)
+    # Extract parameters
+    fast_period = params['fast_period']
+    slow_period = params['slow_period']
+    signal_period = params['signal_period']
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -192,10 +193,10 @@ def _create_macd_strategy(**params):
 
 def _create_rsi_strategy(**params):
     """Create an RSI strategy instance."""
-    # Extract parameters with defaults
-    rsi_period = params.get('rsi_period', 14)
-    lower_threshold = params.get('lower_threshold', 30)
-    upper_threshold = params.get('upper_threshold', 70)
+    # Extract parameters
+    rsi_period = params['rsi_period']
+    lower_threshold = params['lower_threshold']
+    upper_threshold = params['upper_threshold']
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -227,36 +228,36 @@ def _format_common_params(**params):
 
 
 def get_strategy_name(strategy_type, **params):
-    """ Get a standardized name for a strategy with the given parameters. """
+    """ Get a standardized name for a strategy with the given parameters. All parameters are required. """
     common_params_str = _format_common_params(**params)
 
     if strategy_type.lower() == 'bollinger':
-        period = params.get('period', 20)
-        number_of_standard_deviations = params.get('number_of_standard_deviations', 2)
+        period = params['period']
+        number_of_standard_deviations = params['number_of_standard_deviations']
         return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
 
     elif strategy_type.lower() == 'ema':
-        short_ema_period = params.get('short_ema_period', 9)
-        long_ema_period = params.get('long_ema_period', 21)
+        short_ema_period = params['short_ema_period']
+        long_ema_period = params['long_ema_period']
         return f'EMA(short={short_ema_period},long={long_ema_period},{common_params_str})'
 
     elif strategy_type.lower() == 'ichimoku':
-        tenkan_period = params.get('tenkan_period', 9)
-        kijun_period = params.get('kijun_period', 26)
-        senkou_span_b_period = params.get('senkou_span_b_period', 52)
-        displacement = params.get('displacement', 26)
+        tenkan_period = params['tenkan_period']
+        kijun_period = params['kijun_period']
+        senkou_span_b_period = params['senkou_span_b_period']
+        displacement = params['displacement']
         return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},{common_params_str})'
 
     elif strategy_type.lower() == 'macd':
-        fast_period = params.get('fast_period', 12)
-        slow_period = params.get('slow_period', 26)
-        signal_period = params.get('signal_period', 9)
+        fast_period = params['fast_period']
+        slow_period = params['slow_period']
+        signal_period = params['signal_period']
         return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},{common_params_str})'
 
     elif strategy_type.lower() == 'rsi':
-        rsi_period = params.get('rsi_period', 14)
-        lower_threshold = params.get('lower_threshold', 30)
-        upper_threshold = params.get('upper_threshold', 70)
+        rsi_period = params['rsi_period']
+        lower_threshold = params['lower_threshold']
+        upper_threshold = params['upper_threshold']
         return f'RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},{common_params_str})'
 
     else:

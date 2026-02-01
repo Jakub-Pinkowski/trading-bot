@@ -11,8 +11,8 @@ from tests.backtesting.strategies.conftest import create_test_df
 
 # Create a concrete implementation of BaseStrategy for testing
 class StrategyForTesting(BaseStrategy):
-    def __init__(self, rollover=False, trailing=None, slippage=0):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
 
     def add_indicators(self, df):
         # Simple implementation for testing
@@ -234,7 +234,12 @@ class TestSlippageScenarios:
         """Test that slippage works correctly in high volatility conditions."""
         # Create a strategy with slippage
         slippage = 2.0
-        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15, slippage=slippage)
+        strategy = EMACrossoverStrategy(short_ema_period=5,
+                                        long_ema_period=15,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=slippage,
+                                        symbol=None)
 
         # Create a dataframe with high volatility
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
@@ -306,7 +311,13 @@ class TestSlippageScenarios:
         """Test the impact of slippage on overall strategy performance."""
         # Create strategies with different slippage values
         slippage_values = [0.0, 0.5, 1.0, 2.0, 5.0]
-        strategies = [RSIStrategy(slippage=s) for s in slippage_values]
+        strategies = [RSIStrategy(rsi_period=14,
+                                  lower_threshold=30,
+                                  upper_threshold=70,
+                                  rollover=False,
+                                  trailing=None,
+                                  slippage=s,
+                                  symbol=None) for s in slippage_values]
 
         # Create a test dataframe
         df = create_test_df(length=100)

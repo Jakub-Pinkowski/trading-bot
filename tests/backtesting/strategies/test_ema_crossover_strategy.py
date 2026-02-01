@@ -9,19 +9,34 @@ from tests.backtesting.strategies.conftest import create_test_df, create_ema_tes
 class TestEMACrossoverStrategy:
     def test_initialization(self):
         """Test that the EMA Crossover strategy initializes with correct default parameters."""
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         assert strategy.short_ema_period == 9
         assert strategy.long_ema_period == 21
 
         # Test with custom parameters
-        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15)
+        strategy = EMACrossoverStrategy(short_ema_period=5,
+                                        long_ema_period=15,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         assert strategy.short_ema_period == 5
         assert strategy.long_ema_period == 15
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds EMAs to the dataframe."""
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         # Create a larger dataframe to ensure we have valid EMA values
         df = create_ema_test_df(length=100)
 
@@ -83,7 +98,12 @@ class TestEMACrossoverStrategy:
 
     def test_generate_signals_default_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -121,7 +141,12 @@ class TestEMACrossoverStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use different EMA periods
-        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15)
+        strategy = EMACrossoverStrategy(short_ema_period=5,
+                                        long_ema_period=15,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -148,7 +173,12 @@ class TestEMACrossoverStrategy:
 
     def test_run_end_to_end(self):
         """Test the full strategy workflow from data to trades."""
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -169,7 +199,12 @@ class TestEMACrossoverStrategy:
 
     def test_no_signals_with_flat_prices(self):
         """Test that no signals are generated with flat prices."""
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # Create a dataframe with constant prices
         dates = [datetime.now() + timedelta(days=i) for i in range(30)]
@@ -189,7 +224,12 @@ class TestEMACrossoverStrategy:
 
     def test_with_trailing_stop(self):
         """Test EMA Crossover strategy with trailing stop."""
-        strategy = EMACrossoverStrategy(trailing=2.0)
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=2.0,
+                                        slippage=0,
+                                        symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -209,7 +249,12 @@ class TestEMACrossoverStrategy:
 
     def test_with_contract_switch(self):
         """Test EMA Crossover strategy with contract switch."""
-        strategy = EMACrossoverStrategy(rollover=True)
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=True,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
         df = create_test_df()
 
         # Create a switch date in the middle of the dataframe
@@ -240,7 +285,12 @@ class TestEMACrossoverStrategy:
         """Test EMA Crossover strategy when EMA values are very close to each other."""
 
         # Create a strategy with custom parameters - use closer periods to ensure they can get close
-        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=7)
+        strategy = EMACrossoverStrategy(short_ema_period=5,
+                                        long_ema_period=7,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
@@ -324,7 +374,12 @@ class TestEMACrossoverStrategy:
                     trades.append(trade)
                 return trades
 
-        strategy = MultiSwitchTestStrategy(rollover=True)
+        strategy = MultiSwitchTestStrategy(short_ema_period=9,
+                                           long_ema_period=21,
+                                           rollover=True,
+                                           trailing=None,
+                                           slippage=0,
+                                           symbol=None)
         df = create_test_df(length=100)  # Longer dataframe for multiple switches
 
         # Create multiple switch dates
@@ -359,7 +414,12 @@ class TestEMACrossoverStrategy:
         """Test EMA Crossover strategy with price gaps, common in futures markets."""
 
         # Create a strategy with default parameters
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -430,7 +490,12 @@ class TestEMACrossoverStrategy:
         """Test EMA Crossover strategy vulnerability during future contract rollover periods."""
 
         # Create a strategy with rollover enabled
-        strategy = EMACrossoverStrategy(rollover=True)
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=True,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(60)]
@@ -484,7 +549,12 @@ class TestEMACrossoverStrategy:
         """Test EMA Crossover strategy with high volatility futures like energy or metals."""
 
         # Create a strategy with default parameters
-        strategy = EMACrossoverStrategy()
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -567,7 +637,14 @@ class TestEMACrossoverStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the EMA Crossover strategy."""
         # Create a strategy with 2% slippage
-        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15, slippage=2.0)
+        strategy = EMACrossoverStrategy(
+            short_ema_period=5,
+            long_ema_period=15,
+            rollover=False,
+            trailing=None,
+            slippage=2.0,
+            symbol=None
+        )
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
@@ -650,7 +727,12 @@ class TestEMACrossoverStrategy:
                        'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
 
         # Run the same strategy without slippage for comparison
-        strategy_no_slippage = EMACrossoverStrategy(slippage=0)
+        strategy_no_slippage = EMACrossoverStrategy(short_ema_period=9,
+                                                    long_ema_period=21,
+                                                    rollover=False,
+                                                    trailing=None,
+                                                    slippage=0,
+                                                    symbol=None)
         trades_no_slippage = strategy_no_slippage.run(df, [])
 
         # Verify that trades with slippage have different prices than trades without slippage

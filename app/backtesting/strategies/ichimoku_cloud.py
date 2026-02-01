@@ -1,7 +1,5 @@
 from app.backtesting.indicators import calculate_ichimoku_cloud
-from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
-                                                           precompute_hashes,
-                                                           detect_crossover)
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, precompute_hashes, detect_crossover
 
 
 class IchimokuCloudStrategy(BaseStrategy):
@@ -10,15 +8,16 @@ class IchimokuCloudStrategy(BaseStrategy):
 
     def __init__(
         self,
-        tenkan_period=9,
-        kijun_period=26,
-        senkou_span_b_period=52,
-        displacement=26,
-        rollover=False,
-        trailing=None,
-        slippage=0
+        tenkan_period,
+        kijun_period,
+        senkou_span_b_period,
+        displacement,
+        rollover,
+        trailing,
+        slippage,
+        symbol
     ):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
         self.tenkan_period = tenkan_period
         self.kijun_period = kijun_period
         self.senkou_span_b_period = senkou_span_b_period

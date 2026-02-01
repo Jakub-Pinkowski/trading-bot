@@ -1,27 +1,13 @@
 from app.backtesting.indicators import calculate_rsi
-from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
-                                                           precompute_hashes,
-                                                           detect_threshold_cross)
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, precompute_hashes, detect_threshold_cross
 
 
 class RSIStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(
-        self,
-        rsi_period=14,
-        lower_threshold=30,
-        upper_threshold=70,
-        rollover=False,
-        trailing=None,
-        slippage=0,
-        symbol=None
-    ):
-        super().__init__(rollover=rollover,
-                         trailing=trailing,
-                         slippage=slippage,
-                         symbol=symbol)
+    def __init__(self, rsi_period, lower_threshold, upper_threshold, rollover, trailing, slippage, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
         self.rsi_period = rsi_period
         self.lower_threshold = lower_threshold
         self.upper_threshold = upper_threshold

@@ -13,20 +13,38 @@ from tests.backtesting.strategies.conftest import create_test_df
 class TestRSIStrategy:
     def test_initialization(self):
         """Test that the RSI strategy initializes with correct default parameters."""
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         assert strategy.rsi_period == 14
         assert strategy.lower_threshold == 30
         assert strategy.upper_threshold == 70
 
         # Test with custom parameters
-        strategy = RSIStrategy(rsi_period=10, lower_threshold=20, upper_threshold=80)
+        strategy = RSIStrategy(rsi_period=10,
+                               lower_threshold=20,
+                               upper_threshold=80,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         assert strategy.rsi_period == 10
         assert strategy.lower_threshold == 20
         assert strategy.upper_threshold == 80
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds RSI to the dataframe."""
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         # Create a larger dataframe to ensure we have valid RSI values
         df = create_test_df(length=100)
 
@@ -49,7 +67,13 @@ class TestRSIStrategy:
 
     def test_generate_signals_default_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -87,7 +111,13 @@ class TestRSIStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use more extreme thresholds
-        strategy = RSIStrategy(rsi_period=7, lower_threshold=20, upper_threshold=80)
+        strategy = RSIStrategy(rsi_period=7,
+                               lower_threshold=20,
+                               upper_threshold=80,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -114,7 +144,13 @@ class TestRSIStrategy:
 
     def test_run_end_to_end(self):
         """Test the full strategy workflow from data to trades."""
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -135,7 +171,13 @@ class TestRSIStrategy:
 
     def test_no_signals_with_flat_prices(self):
         """Test that no signals are generated with flat prices."""
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with constant prices
         dates = [datetime.now() + timedelta(days=i) for i in range(30)]
@@ -155,7 +197,13 @@ class TestRSIStrategy:
 
     def test_with_trailing_stop(self):
         """Test RSI strategy with trailing stop."""
-        strategy = RSIStrategy(trailing=2.0)
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=2.0,
+                               slippage=0,
+                               symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -175,7 +223,13 @@ class TestRSIStrategy:
 
     def test_with_contract_switch(self):
         """Test RSI strategy with a contract switch."""
-        strategy = RSIStrategy(rollover=True)
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=True,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
         df = create_test_df()
 
         # Create a switch date in the middle of the dataframe
@@ -208,7 +262,13 @@ class TestRSIStrategy:
         # and trade extraction with manually set RSI values
         import numpy as np
 
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -276,7 +336,13 @@ class TestRSIStrategy:
         import numpy as np
 
         # Create a strategy with custom thresholds for easier testing
-        strategy = RSIStrategy(lower_threshold=30, upper_threshold=70)
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -349,7 +415,13 @@ class TestRSIStrategy:
         """Test RSI strategy with seasonal volatility patterns common in agricultural futures."""
 
         # Create a strategy with default parameters
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with dates covering a full year
         dates = [datetime(2023, 1, 1) + timedelta(days=i) for i in range(365)]
@@ -522,7 +594,13 @@ class TestRSIStrategy:
         import numpy as np
 
         # Create a strategy with default parameters
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -636,7 +714,13 @@ class TestRSIStrategy:
         """Test RSI strategy vulnerability to price-RSI divergence scenarios."""
 
         # Create a strategy with default parameters
-        strategy = RSIStrategy()
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(60)]
@@ -785,7 +869,13 @@ class TestRSIStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the RSI strategy."""
         # Create a strategy with 2% slippage
-        strategy = RSIStrategy(slippage=2.0)
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=2.0,
+                               symbol=None)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
@@ -887,7 +977,13 @@ class TestRSIStrategy:
                        'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
 
         # Run the same strategy without slippage for comparison
-        strategy_no_slippage = RSIStrategy(slippage=0)
+        strategy_no_slippage = RSIStrategy(rsi_period=14,
+                                           lower_threshold=30,
+                                           upper_threshold=70,
+                                           rollover=False,
+                                           trailing=None,
+                                           slippage=0,
+                                           symbol=None)
         trades_no_slippage = strategy_no_slippage.run(df, [])
 
         # Verify that trades with slippage have different prices than trades without slippage

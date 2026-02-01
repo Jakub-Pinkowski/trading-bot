@@ -8,19 +8,28 @@ from tests.backtesting.strategies.conftest import create_test_df
 class TestIchimokuCloudStrategy:
     def test_initialization(self):
         """Test that the Ichimoku Cloud strategy initializes with correct default parameters."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         assert strategy.tenkan_period == 9
         assert strategy.kijun_period == 26
         assert strategy.senkou_span_b_period == 52
         assert strategy.displacement == 26
 
         # Test with custom parameters
-        strategy = IchimokuCloudStrategy(
-            tenkan_period=5,
-            kijun_period=15,
-            senkou_span_b_period=30,
-            displacement=15
-        )
+        strategy = IchimokuCloudStrategy(tenkan_period=5,
+                                         kijun_period=15,
+                                         senkou_span_b_period=30,
+                                         displacement=15,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         assert strategy.tenkan_period == 5
         assert strategy.kijun_period == 15
         assert strategy.senkou_span_b_period == 30
@@ -28,7 +37,14 @@ class TestIchimokuCloudStrategy:
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds Ichimoku components to the dataframe."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         # Create a dataframe with enough data for Ichimoku calculations
         df = create_test_df(length=200)
 
@@ -56,7 +72,14 @@ class TestIchimokuCloudStrategy:
 
     def test_generate_signals_default_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         df = create_test_df(length=200)
         df = strategy.add_indicators(df)
 
@@ -105,12 +128,14 @@ class TestIchimokuCloudStrategy:
 
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
-        strategy = IchimokuCloudStrategy(
-            tenkan_period=5,
-            kijun_period=15,
-            senkou_span_b_period=30,
-            displacement=15
-        )
+        strategy = IchimokuCloudStrategy(tenkan_period=5,
+                                         kijun_period=15,
+                                         senkou_span_b_period=30,
+                                         displacement=15,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         df = create_test_df(length=200)
         df = strategy.add_indicators(df)
 
@@ -159,7 +184,14 @@ class TestIchimokuCloudStrategy:
 
     def test_run_end_to_end(self):
         """Test the full strategy workflow from data to trades."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
         df = create_test_df(length=200)
 
         # Run the strategy
@@ -170,7 +202,14 @@ class TestIchimokuCloudStrategy:
 
     def test_no_signals_with_flat_prices(self):
         """Test that no signals are generated when prices are flat."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
 
         # Create a dataframe with flat prices
         dates = pd.date_range(start='2020-01-01', periods=200)
@@ -191,7 +230,14 @@ class TestIchimokuCloudStrategy:
 
     def test_with_trailing_stop(self):
         """Test the strategy with trailing stop."""
-        strategy = IchimokuCloudStrategy(trailing=0.05)  # 5% trailing stop
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=0.05,
+                                         slippage=0,
+                                         symbol=None)  # 5% trailing stop
         df = create_test_df(length=200)
 
         # Run the strategy
@@ -224,7 +270,14 @@ class TestIchimokuCloudStrategy:
     def test_with_slippage(self):
         """Test the strategy with slippage."""
         slippage = 0.01  # 1% slippage
-        strategy = IchimokuCloudStrategy(slippage=slippage)
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=slippage,
+                                         symbol=None)
         df = create_test_df(length=200)
 
         # Run the strategy
@@ -256,7 +309,11 @@ class TestIchimokuCloudStrategy:
             tenkan_period=5,  # Use shorter periods to generate more signals
             kijun_period=10,
             senkou_span_b_period=20,
-            displacement=10
+            displacement=10,
+            rollover=False,
+            trailing=None,
+            slippage=0,
+            symbol=None
         )
 
         # Create a dataframe with extreme market conditions
@@ -335,7 +392,14 @@ class TestIchimokuCloudStrategy:
 
     def test_ichimoku_cloud_color(self):
         """Test the Ichimoku cloud color (bullish/bearish) under different market conditions."""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
 
         # Create a dataframe with different market conditions
         dates = pd.date_range(start='2020-01-01', periods=200)

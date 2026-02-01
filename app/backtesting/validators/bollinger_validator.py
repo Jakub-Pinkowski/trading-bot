@@ -82,12 +82,4 @@ class BollingerValidator(Validator):
                 f"Consider using {BB_STD_MIN}-{BB_STD_MAX} range ({BB_STD_STANDARD} is standard)."
             )
 
-        # --- Standard Configuration Check ---
-
-        # Provide info when using standard Bollinger Bands configuration
-        if (period, number_of_standard_deviations) == (BB_PERIOD_STANDARD, BB_STD_STANDARD):
-            self.warnings.append(
-                f"Using standard Bollinger Bands parameters ({BB_PERIOD_STANDARD}/{BB_STD_STANDARD}) - captures ~95% of price action."
-            )
-
         return self.warnings

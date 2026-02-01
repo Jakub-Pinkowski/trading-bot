@@ -102,7 +102,8 @@ class TestMassTester:
                     'upper_threshold': upper_thresholds,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages
+                    'slippage': slippages,
+                    'symbol': [None]
                 }
             )
 
@@ -129,7 +130,8 @@ class TestMassTester:
                     'long_ema_period': long_ema_periods,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages
+                    'slippage': slippages,
+                    'symbol': [None]
                 }
             )
 
@@ -248,7 +250,8 @@ class TestMassTester:
                     'number_of_standard_deviations': number_of_standard_deviations_list,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages
+                    'slippage': slippages,
+                    'symbol': [None]
                 }
             )
 
@@ -328,7 +331,8 @@ class TestMassTester:
                     'displacement': displacements,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages
+                    'slippage': slippages,
+                    'symbol': [None]
                 }
             )
 
@@ -452,7 +456,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['MCL', 'MGC', 'MNG'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
@@ -545,7 +550,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['CL', 'GC'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
@@ -624,7 +630,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['UNKNOWN'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
@@ -701,7 +708,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests
@@ -758,7 +766,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests with verbose=True
@@ -797,7 +806,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         results = tester.run_tests(verbose=False)
@@ -821,7 +831,8 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': [9], 'ema_long': [21], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
+                        'slippage': [0], 'symbol': [None]}
         )
 
         results = tester.run_tests(verbose=True)
@@ -1503,7 +1514,8 @@ class TestMassTesterPerformanceOptimizations:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': list(range(1, 201)), 'long_ema_period': [250], 'rollover': [True],
+                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests
@@ -1571,7 +1583,8 @@ class TestMassTesterPerformanceOptimizations:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': list(range(1, 201)), 'ema_long': [250], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': list(range(1, 201)), 'long_ema_period': [250], 'rollover': [True],
+                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
         )
 
         # Run tests
@@ -1627,7 +1640,8 @@ class TestMassTesterPerformanceOptimizations:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester._add_strategy_tests(
             strategy_type='ema',
-            param_grid={'ema_short': list(range(1, 1501)), 'ema_long': [1600], 'rollover': [True], 'trailing': [None]}
+            param_grid={'short_ema_period': list(range(1, 1501)), 'long_ema_period': [1600], 'rollover': [True],
+                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
         )
 
         # Mock the save_results function to track calls

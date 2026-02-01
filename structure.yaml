@@ -150,15 +150,12 @@ trading-bot/
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# BUG [LOW]: Slippage is sometimes None and sometimes 0
 # TODO [HIGH]: Ensure we use consistent naming across all backtesting module, especially method parameters for strategies/indicators
-# TODO [MEDIUM]: Add comments to all validator files
 # TODO [MEDIUM]: Backtesting_architecture should use real-life data for examples instead of synthetic data
 # TODO [MEDIUM]: Strategy and indicator names should match
 # TODO [MEDIUM]: Make the whole module lighter, remove unnecessary logic
 # TODO [MEDIUM]: Add tick-based slippage instead of percentage
 # TODO [MEDIUM]: Revise whether I'm not overengineering anything
-# TODO [MEDIUM]: Check test coverage after refactoring
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
@@ -176,6 +173,8 @@ trading-bot/
 # Tests
 # TODO [HIGH]: Split tests according to the new backtesting module structure
 # TODO [HIGH]: Verify all tests in a separate file to look for any tests testing themselves rather than testing the app's logic'
+# TODO [HIGH]: Create some multi-use fixtures instead of repeating logic
+# TODO [MEDIUM]: Check test coverage after refactoring
 # TODO [MEDIUM]: Add more real data tests in general
 # TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add e2e tests

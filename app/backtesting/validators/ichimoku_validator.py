@@ -37,12 +37,12 @@ class IchimokuValidator(Validator):
         """
         Enhanced validation for Ichimoku parameters with guidance on reasonable ranges.
 
-        Reasonable ranges based6 on traditional Ichimoku settings:
+        Reasonable ranges based on traditional Ichimoku settings:
         - Tenkan-sen: 7-12 (9 is traditional)
         - Kijun-sen: 22-30 (26 is traditional)
         - Senkou Span B: 44-60 (52 is traditional)
         - Displacement: 22-30 (26 is traditional, should match Kijun-sen)
-        - Traditional Ichimoku: 9/2/52/26 based on Japanese market cycles
+        - Traditional Ichimoku: 9/26/52/26 based on Japanese market cycles
 
         Args:
             tenkan_period: Tenkan-sen (conversion line) period
@@ -151,19 +151,6 @@ class IchimokuValidator(Validator):
             self.warnings.append(
                 f"Ichimoku displacement ({displacement}) differs from Kijun period ({kijun_period}). "
                 f"Traditional Ichimoku uses same value for both (typically {ICHIMOKU_DISPLACEMENT_STANDARD})."
-            )
-
-        # --- Traditional Configuration Check ---
-
-        # Provide info when using traditional Ichimoku configuration
-        if (tenkan_period, kijun_period, senkou_span_b_period, displacement) == (
-                ICHIMOKU_TENKAN_STANDARD,
-                ICHIMOKU_KIJUN_STANDARD,
-                ICHIMOKU_SENKOU_B_STANDARD,
-                ICHIMOKU_DISPLACEMENT_STANDARD
-        ):
-            self.warnings.append(
-                f"Using traditional Ichimoku parameters ({ICHIMOKU_TENKAN_STANDARD}/{ICHIMOKU_KIJUN_STANDARD}/{ICHIMOKU_SENKOU_B_STANDARD}/{ICHIMOKU_DISPLACEMENT_STANDARD}) - based on Japanese market cycles."
             )
 
         return self.warnings

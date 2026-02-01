@@ -9,16 +9,24 @@ from tests.backtesting.strategies.conftest import create_test_df
 class TestBollingerBandsStrategy:
     def test_initialization(self):
         """Test that the Bollinger Bands strategy initializes with correct default parameters."""
-        strategy = BollingerBandsStrategy()
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         assert strategy.period == 20
         assert strategy.number_of_standard_deviations == 2
 
         # Test with custom parameters
-        strategy = BollingerBandsStrategy(period=10,
-                                          number_of_standard_deviations=3,
-                                          rollover=True,
-                                          trailing=2.0,
-                                          slippage=1.0)
+        strategy = BollingerBandsStrategy(
+            period=10,
+            number_of_standard_deviations=3,
+            rollover=True,
+            trailing=2.0,
+            slippage=1.0,
+            symbol=None
+        )
         assert strategy.period == 10
         assert strategy.number_of_standard_deviations == 3
         assert strategy.rollover == True
@@ -27,7 +35,12 @@ class TestBollingerBandsStrategy:
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds Bollinger Bands to the dataframe."""
-        strategy = BollingerBandsStrategy()
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         # Create a larger dataframe to ensure we have valid Bollinger Bands values
         df = create_test_df(length=100)
 
@@ -65,7 +78,12 @@ class TestBollingerBandsStrategy:
 
     def test_generate_signals_default_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = BollingerBandsStrategy()
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -103,7 +121,12 @@ class TestBollingerBandsStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use more extreme thresholds
-        strategy = BollingerBandsStrategy(period=10, number_of_standard_deviations=3)
+        strategy = BollingerBandsStrategy(period=10,
+                                          number_of_standard_deviations=3,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -130,7 +153,12 @@ class TestBollingerBandsStrategy:
 
     def test_run_end_to_end(self):
         """Test the full strategy workflow from data to trades."""
-        strategy = BollingerBandsStrategy()
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -151,7 +179,12 @@ class TestBollingerBandsStrategy:
 
     def test_no_signals_with_flat_prices(self):
         """Test that no signals are generated with flat prices."""
-        strategy = BollingerBandsStrategy()
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
 
         # Create a dataframe with constant prices
         dates = [datetime.now() + timedelta(days=i) for i in range(30)]
@@ -171,7 +204,12 @@ class TestBollingerBandsStrategy:
 
     def test_with_trailing_stop(self):
         """Test Bollinger Bands strategy with trailing stop."""
-        strategy = BollingerBandsStrategy(trailing=2.0)
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=2.0,
+                                          slippage=0,
+                                          symbol=None)
         df = create_test_df()
 
         # Run the strategy
@@ -191,7 +229,12 @@ class TestBollingerBandsStrategy:
 
     def test_with_contract_switch(self):
         """Test Bollinger Bands strategy with a contract switch."""
-        strategy = BollingerBandsStrategy(rollover=True)
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=True,
+                                          trailing=None,
+                                          slippage=0,
+                                          symbol=None)
         df = create_test_df()
 
         # Create a switch date in the middle of the dataframe
@@ -221,7 +264,12 @@ class TestBollingerBandsStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the Bollinger Bands strategy."""
         # Create a strategy with 2% slippage
-        strategy = BollingerBandsStrategy(slippage=2.0)
+        strategy = BollingerBandsStrategy(period=20,
+                                          number_of_standard_deviations=2,
+                                          rollover=False,
+                                          trailing=None,
+                                          slippage=2.0,
+                                          symbol=None)
         df = create_test_df()
 
         # Add indicators and generate signals

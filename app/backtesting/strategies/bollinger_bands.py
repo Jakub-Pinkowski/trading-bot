@@ -1,26 +1,13 @@
 from app.backtesting.indicators import calculate_bollinger_bands
-from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
-                                                           precompute_hashes,
-                                                           detect_crossover)
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, precompute_hashes, detect_crossover
 
 
 class BollingerBandsStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(
-        self,
-        period=20,
-        number_of_standard_deviations=2,
-        rollover=False,
-        trailing=None,
-        slippage=0,
-        symbol=None
-    ):
-        super().__init__(rollover=rollover,
-                         trailing=trailing,
-                         slippage=slippage,
-                         symbol=symbol)
+    def __init__(self, period, number_of_standard_deviations, rollover, trailing, slippage, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
         self.period = period
         self.number_of_standard_deviations = number_of_standard_deviations
 

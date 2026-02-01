@@ -39,7 +39,7 @@ class MassTester:
         number_of_standard_deviations_list,
         rollovers,
         trailing_stops,
-        slippages=None
+        slippages
     ):
         """Add Bollinger Bands strategy tests with all parameter combinations."""
         self._add_strategy_tests(
@@ -49,11 +49,12 @@ class MassTester:
                 'number_of_standard_deviations': number_of_standard_deviations_list,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages
+                'slippage': slippages,
+                'symbol': [None]
             }
         )
 
-    def add_ema_crossover_tests(self, short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages=None):
+    def add_ema_crossover_tests(self, short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages):
         """Add EMA Crossover strategy tests with all parameter combinations."""
         self._add_strategy_tests(
             strategy_type='ema',
@@ -62,7 +63,8 @@ class MassTester:
                 'long_ema_period': long_ema_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages
+                'slippage': slippages,
+                'symbol': [None]
             }
         )
 
@@ -74,7 +76,7 @@ class MassTester:
         displacements,
         rollovers,
         trailing_stops,
-        slippages=None
+        slippages
     ):
         """Add Ichimoku Cloud strategy tests with all parameter combinations."""
         self._add_strategy_tests(
@@ -86,11 +88,12 @@ class MassTester:
                 'displacement': displacements,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages
+                'slippage': slippages,
+                'symbol': [None]
             }
         )
 
-    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages=None):
+    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages):
         """Add MACD strategy tests with all parameter combinations."""
         self._add_strategy_tests(
             strategy_type='macd',
@@ -100,11 +103,12 @@ class MassTester:
                 'signal_period': signal_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages
+                'slippage': slippages,
+                'symbol': [None]
             }
         )
 
-    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages=None):
+    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages):
         """Add RSI strategy tests with all parameter combinations."""
         self._add_strategy_tests(
             strategy_type='rsi',
@@ -114,7 +118,8 @@ class MassTester:
                 'upper_threshold': upper_thresholds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages
+                'slippage': slippages,
+                'symbol': [None]
             }
         )
 

@@ -142,7 +142,13 @@ class TestStrategyHashOptimization:
 
     def test_rsi_strategy_uses_precomputed_hash(self, sample_dataframe):
         """Test that RSIStrategy uses _precompute_hashes()"""
-        strategy = RSIStrategy(rsi_period=14, lower_threshold=30, upper_threshold=70)
+        strategy = RSIStrategy(rsi_period=14,
+                               lower_threshold=30,
+                               upper_threshold=70,
+                               rollover=False,
+                               trailing=None,
+                               slippage=0,
+                               symbol=None)
 
         # add_indicators should work without errors
         df_with_indicators = strategy.add_indicators(sample_dataframe.copy())
@@ -153,7 +159,12 @@ class TestStrategyHashOptimization:
 
     def test_ema_strategy_uses_precomputed_hash(self, sample_dataframe):
         """Test that EMACrossoverStrategy uses _precompute_hashes()"""
-        strategy = EMACrossoverStrategy(short_ema_period=9, long_ema_period=21)
+        strategy = EMACrossoverStrategy(short_ema_period=9,
+                                        long_ema_period=21,
+                                        rollover=False,
+                                        trailing=None,
+                                        slippage=0,
+                                        symbol=None)
 
         # add_indicators should work without errors
         df_with_indicators = strategy.add_indicators(sample_dataframe.copy())
@@ -164,7 +175,14 @@ class TestStrategyHashOptimization:
 
     def test_ichimoku_strategy_uses_precomputed_hashes(self, sample_dataframe):
         """Test that IchimokuCloudStrategy uses _precompute_hashes()"""
-        strategy = IchimokuCloudStrategy()
+        strategy = IchimokuCloudStrategy(tenkan_period=9,
+                                         kijun_period=26,
+                                         senkou_span_b_period=52,
+                                         displacement=26,
+                                         rollover=False,
+                                         trailing=None,
+                                         slippage=0,
+                                         symbol=None)
 
         # add_indicators should work without errors
         df_with_indicators = strategy.add_indicators(sample_dataframe.copy())

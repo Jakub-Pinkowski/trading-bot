@@ -1,26 +1,13 @@
 from app.backtesting.indicators import calculate_ema
-from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
-                                                           precompute_hashes,
-                                                           detect_crossover)
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, precompute_hashes, detect_crossover
 
 
 class EMACrossoverStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(
-        self,
-        short_ema_period=9,
-        long_ema_period=21,
-        rollover=False,
-        trailing=None,
-        slippage=0,
-        symbol=None
-    ):
-        super().__init__(rollover=rollover,
-                         trailing=trailing,
-                         slippage=slippage,
-                         symbol=symbol)
+    def __init__(self, short_ema_period, long_ema_period, rollover, trailing, slippage, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
         self.short_ema_period = short_ema_period
         self.long_ema_period = long_ema_period
 

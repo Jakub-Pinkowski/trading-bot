@@ -1,23 +1,13 @@
 from app.backtesting.indicators import calculate_macd
-from app.backtesting.strategies.base.base_strategy import (BaseStrategy,
-                                                           precompute_hashes,
-                                                           detect_crossover)
+from app.backtesting.strategies.base.base_strategy import BaseStrategy, precompute_hashes, detect_crossover
 
 
 class MACDStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(
-        self,
-        fast_period=12,
-        slow_period=26,
-        signal_period=9,
-        rollover=False,
-        trailing=None,
-        slippage=0
-    ):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage)
+    def __init__(self, fast_period, slow_period, signal_period, rollover, trailing, slippage, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
