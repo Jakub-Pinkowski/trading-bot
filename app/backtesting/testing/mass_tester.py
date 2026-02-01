@@ -33,26 +33,33 @@ class MassTester:
 
     # ==================== Public API - Strategy Configuration ====================
 
-    def add_bollinger_bands_tests(self, periods, num_stds, rollovers, trailing_stops, slippages=None):
+    def add_bollinger_bands_tests(
+        self,
+        periods,
+        number_of_standard_deviations_list,
+        rollovers,
+        trailing_stops,
+        slippages=None
+    ):
         """Add Bollinger Bands strategy tests with all parameter combinations."""
         self._add_strategy_tests(
             strategy_type='bollinger',
             param_grid={
                 'period': periods,
-                'num_std': num_stds,
+                'number_of_standard_deviations': number_of_standard_deviations_list,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages
             }
         )
 
-    def add_ema_crossover_tests(self, ema_shorts, ema_longs, rollovers, trailing_stops, slippages=None):
+    def add_ema_crossover_tests(self, short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages=None):
         """Add EMA Crossover strategy tests with all parameter combinations."""
         self._add_strategy_tests(
             strategy_type='ema',
             param_grid={
-                'ema_short': ema_shorts,
-                'ema_long': ema_longs,
+                'short_ema_period': short_ema_periods,
+                'long_ema_period': long_ema_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages
@@ -103,8 +110,8 @@ class MassTester:
             strategy_type='rsi',
             param_grid={
                 'rsi_period': rsi_periods,
-                'lower': lower_thresholds,
-                'upper': upper_thresholds,
+                'lower_threshold': lower_thresholds,
+                'upper_threshold': upper_thresholds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
                 'slippage': slippages

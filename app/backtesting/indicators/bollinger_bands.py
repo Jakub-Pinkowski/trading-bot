@@ -3,14 +3,14 @@ import pandas as pd
 from app.backtesting.cache.indicators_cache import indicator_cache
 
 
-def calculate_bollinger_bands(prices, period, num_std, prices_hash):
+def calculate_bollinger_bands(prices, period, number_of_standard_deviations, prices_hash):
     """
     Calculate Bollinger Bands indicator.
 
     Args:
         prices: pandas Series of prices
         period: Moving average period (e.g., 20)
-        num_std: Number of standard deviations (e.g., 2)
+        number_of_standard_deviations: Number of standard deviations (e.g., 2)
         prices_hash: Pre-computed hash of prices series (use hash_series() or
                     BaseStrategy._precompute_hashes())
 
@@ -22,12 +22,12 @@ def calculate_bollinger_bands(prices, period, num_std, prices_hash):
         hashes = strategy._precompute_hashes(df)
 
         # Pass to indicator
-        bb = calculate_bollinger_bands(df['close'], period=20, num_std=2,
+        bb = calculate_bollinger_bands(df['close'], period=20, number_of_standard_deviations=2,
                                       prices_hash=hashes['close'])
     """
 
     # Check if we have this calculation cached in the global cache
-    cache_key = ('bb', prices_hash, period, num_std)
+    cache_key = ('bb', prices_hash, period, number_of_standard_deviations)
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
@@ -38,8 +38,8 @@ def calculate_bollinger_bands(prices, period, num_std, prices_hash):
     std = prices.rolling(window=period).std(ddof=0)
 
     # Calculate upper and lower bands
-    upper_band = middle_band + (std * num_std)
-    lower_band = middle_band - (std * num_std)
+    upper_band = middle_band + (std * number_of_standard_deviations)
+    lower_band = middle_band - (std * number_of_standard_deviations)
 
     # Create result DataFrame
     result = pd.DataFrame({

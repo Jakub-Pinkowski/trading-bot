@@ -12,7 +12,7 @@ def test_calculate_bollinger_bands_with_valid_prices():
         102, 105, 108, 110, 112, 115, 118, 120, 122, 125
     ])
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Check that the result is a DataFrame with the expected columns
     assert isinstance(bb, pd.DataFrame)
@@ -36,7 +36,7 @@ def test_calculate_bollinger_bands_with_not_enough_data():
     """Test Bollinger Bands calculation with price data less than the default period"""
     prices = pd.Series([44, 47, 45, 50, 55])
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # All values should be NaN
     assert bb.isna().all().all()
@@ -48,7 +48,7 @@ def test_calculate_bollinger_bands_with_custom_period():
 
     # Test with a custom period
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=10, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=10, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Check that the first period-1 values are NaN
     assert bb.iloc[:9].isna().all().all()
@@ -66,11 +66,14 @@ def test_calculate_bollinger_bands_with_different_std_values():
 
     # Calculate Bollinger Bands with different standard deviation values
     prices_hash = hash_series(prices)
-    bb_1std = calculate_bollinger_bands(prices, period=20, num_std=1, prices_hash=prices_hash)
+    bb_1std = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=1, prices_hash=prices_hash)
     prices_hash = hash_series(prices)
-    bb_2std = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)  # Default
+    bb_2std = calculate_bollinger_bands(prices,
+                                        period=20,
+                                        number_of_standard_deviations=2,
+                                        prices_hash=prices_hash)  # Default
     prices_hash = hash_series(prices)
-    bb_3std = calculate_bollinger_bands(prices, period=20, num_std=3, prices_hash=prices_hash)
+    bb_3std = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=3, prices_hash=prices_hash)
 
     # Find valid indices (where all calculations have non-NaN values)
     valid_idx = ~bb_1std.isna().all(axis=1) & ~bb_2std.isna().all(axis=1) & ~bb_3std.isna().all(axis=1)
@@ -108,7 +111,7 @@ def test_calculate_bollinger_bands_with_constant_prices():
     """Test Bollinger Bands calculation with constant prices"""
     prices = pd.Series([100] * 30)
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices
     valid_idx = ~bb.isna().all(axis=1)
@@ -132,7 +135,7 @@ def test_calculate_bollinger_bands_with_uptrend():
     """Test Bollinger Bands calculation with consistently increasing prices"""
     prices = pd.Series(np.linspace(100, 200, 50))  # Linear uptrend
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices
     valid_idx = ~bb.isna().all(axis=1)
@@ -150,7 +153,7 @@ def test_calculate_bollinger_bands_with_downtrend():
     """Test Bollinger Bands calculation with consistently decreasing prices"""
     prices = pd.Series(np.linspace(200, 100, 50))  # Linear downtrend
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices
     valid_idx = ~bb.isna().all(axis=1)
@@ -172,7 +175,7 @@ def test_calculate_bollinger_bands_with_volatility_change():
     prices = pd.Series(np.concatenate([low_vol, high_vol]))
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices
     valid_idx = ~bb.isna().all(axis=1)
@@ -190,7 +193,7 @@ def test_calculate_bollinger_bands_with_empty_prices():
     """Test Bollinger Bands calculation with empty price data"""
     prices = pd.Series(dtype='float64')
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Result should be an empty DataFrame with the expected columns
     assert isinstance(bb, pd.DataFrame)
@@ -210,7 +213,10 @@ def test_calculate_bollinger_bands_calculation_correctness():
     period = 5
     num_std = 2
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=period, num_std=num_std, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices,
+                                   period=period,
+                                   number_of_standard_deviations=num_std,
+                                   prices_hash=prices_hash)
 
     # Manually calculate the expected values
     expected_middle_band = prices.rolling(window=period).mean()
@@ -248,7 +254,7 @@ def test_calculate_bollinger_bands_price_relationship():
     prices = pd.Series(base + noise)
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices
     valid_idx = ~bb.isna().all(axis=1)
@@ -279,9 +285,15 @@ def test_calculate_bollinger_bands_with_nan_values():
 
     # Calculate Bollinger Bands for both series
     prices_hash = hash_series(prices)
-    bb_with_nans = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb_with_nans = calculate_bollinger_bands(prices,
+                                             period=20,
+                                             number_of_standard_deviations=2,
+                                             prices_hash=prices_hash)
     clean_prices_hash = hash_series(clean_prices)
-    bb_clean = calculate_bollinger_bands(clean_prices, period=20, num_std=2, prices_hash=clean_prices_hash)
+    bb_clean = calculate_bollinger_bands(clean_prices,
+                                         period=20,
+                                         number_of_standard_deviations=2,
+                                         prices_hash=clean_prices_hash)
 
     # Check that the result is a DataFrame with the expected columns
     assert isinstance(bb_with_nans, pd.DataFrame)
@@ -311,7 +323,7 @@ def test_calculate_bollinger_bands_with_market_crash():
     prices = pd.Series(np.concatenate([stable_period, crash_period]))
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices (after the initial NaN period)
     valid_idx = ~bb.isna().all(axis=1)
@@ -362,7 +374,7 @@ def test_calculate_bollinger_bands_with_market_bubble():
     prices = pd.Series(np.concatenate([normal_growth, bubble_growth]))
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices (after the initial NaN period)
     valid_idx = ~bb.isna().all(axis=1)
@@ -403,7 +415,7 @@ def test_calculate_bollinger_bands_squeeze():
     prices = pd.Series(np.concatenate([squeeze_period, expansion_period]))
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices (after the initial NaN period)
     valid_idx = ~bb.isna().all(axis=1)
@@ -444,7 +456,7 @@ def test_calculate_bollinger_bands_width_as_volatility_indicator():
     prices = pd.Series(np.concatenate([low_vol_prices, med_vol_prices, high_vol_prices]))
 
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Find valid indices (after the initial NaN period)
     valid_idx = ~bb.isna().all(axis=1)

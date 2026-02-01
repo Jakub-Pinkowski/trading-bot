@@ -142,7 +142,7 @@ class TestStrategyHashOptimization:
 
     def test_rsi_strategy_uses_precomputed_hash(self, sample_dataframe):
         """Test that RSIStrategy uses _precompute_hashes()"""
-        strategy = RSIStrategy(rsi_period=14, lower=30, upper=70)
+        strategy = RSIStrategy(rsi_period=14, lower_threshold=30, upper_threshold=70)
 
         # add_indicators should work without errors
         df_with_indicators = strategy.add_indicators(sample_dataframe.copy())
@@ -153,7 +153,7 @@ class TestStrategyHashOptimization:
 
     def test_ema_strategy_uses_precomputed_hash(self, sample_dataframe):
         """Test that EMACrossoverStrategy uses _precompute_hashes()"""
-        strategy = EMACrossoverStrategy(ema_short=9, ema_long=21)
+        strategy = EMACrossoverStrategy(short_ema_period=9, long_ema_period=21)
 
         # add_indicators should work without errors
         df_with_indicators = strategy.add_indicators(sample_dataframe.copy())

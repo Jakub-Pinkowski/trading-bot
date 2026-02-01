@@ -43,10 +43,6 @@ def calculate_ichimoku(
         f"{high_hash}{low_hash}{close_hash}".encode()
     ).hexdigest()
 
-    combined_hash = hashlib.md5(
-        f"{high_hash}{low_hash}{close_hash}".encode()
-    ).hexdigest()
-
     # Check if we have this calculation cached in the global cache
     cache_key = (
         'ichimoku',

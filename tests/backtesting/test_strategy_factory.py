@@ -29,8 +29,8 @@ class TestStrategyFactory(unittest.TestCase):
 
         self.assertIsInstance(strategy, RSIStrategy)
         self.assertEqual(strategy.rsi_period, 14)
-        self.assertEqual(strategy.lower, 30)
-        self.assertEqual(strategy.upper, 70)
+        self.assertEqual(strategy.lower_threshold, 30)
+        self.assertEqual(strategy.upper_threshold, 70)
         self.assertEqual(strategy.rollover, False)
         self.assertIsNone(strategy.trailing)
 
@@ -38,16 +38,16 @@ class TestStrategyFactory(unittest.TestCase):
         strategy = create_strategy(
             'rsi',
             rsi_period=21,
-            lower=35,
-            upper=75,
+            lower_threshold=35,
+            upper_threshold=75,
             rollover=True,
             trailing=2.0
         )
 
         self.assertIsInstance(strategy, RSIStrategy)
         self.assertEqual(strategy.rsi_period, 21)
-        self.assertEqual(strategy.lower, 35)
-        self.assertEqual(strategy.upper, 75)
+        self.assertEqual(strategy.lower_threshold, 35)
+        self.assertEqual(strategy.upper_threshold, 75)
         self.assertEqual(strategy.rollover, True)
         self.assertEqual(strategy.trailing, 2.0)
 
@@ -57,23 +57,23 @@ class TestStrategyFactory(unittest.TestCase):
         strategy = create_strategy('ema')
 
         self.assertIsInstance(strategy, EMACrossoverStrategy)
-        self.assertEqual(strategy.ema_short, 9)
-        self.assertEqual(strategy.ema_long, 21)
+        self.assertEqual(strategy.short_ema_period, 9)
+        self.assertEqual(strategy.long_ema_period, 21)
         self.assertEqual(strategy.rollover, False)
         self.assertIsNone(strategy.trailing)
 
         # Test with custom parameters
         strategy = create_strategy(
             'ema',
-            ema_short=12,
-            ema_long=26,
+            short_ema_period=12,
+            long_ema_period=26,
             rollover=True,
             trailing=2.0
         )
 
         self.assertIsInstance(strategy, EMACrossoverStrategy)
-        self.assertEqual(strategy.ema_short, 12)
-        self.assertEqual(strategy.ema_long, 26)
+        self.assertEqual(strategy.short_ema_period, 12)
+        self.assertEqual(strategy.long_ema_period, 26)
         self.assertEqual(strategy.rollover, True)
         self.assertEqual(strategy.trailing, 2.0)
 
@@ -113,7 +113,7 @@ class TestStrategyFactory(unittest.TestCase):
 
         self.assertIsInstance(strategy, BollingerBandsStrategy)
         self.assertEqual(strategy.period, 20)
-        self.assertEqual(strategy.num_std, 2)
+        self.assertEqual(strategy.number_of_standard_deviations, 2)
         self.assertEqual(strategy.rollover, False)
         self.assertIsNone(strategy.trailing)
 
@@ -121,14 +121,14 @@ class TestStrategyFactory(unittest.TestCase):
         strategy = create_strategy(
             'bollinger',
             period=15,
-            num_std=2.5,
+            number_of_standard_deviations=2.5,
             rollover=True,
             trailing=2.0
         )
 
         self.assertIsInstance(strategy, BollingerBandsStrategy)
         self.assertEqual(strategy.period, 15)
-        self.assertEqual(strategy.num_std, 2.5)
+        self.assertEqual(strategy.number_of_standard_deviations, 2.5)
         self.assertEqual(strategy.rollover, True)
         self.assertEqual(strategy.trailing, 2.0)
 
@@ -153,29 +153,29 @@ class TestStrategyFactory(unittest.TestCase):
 
         # Invalid lower threshold
         with pytest.raises(ValueError, match="lower threshold must be between 0 and 100"):
-            create_strategy('rsi', lower=-10)
+            create_strategy('rsi', lower_threshold=-10)
 
         # Invalid upper threshold
         with pytest.raises(ValueError, match="upper threshold must be between 0 and 100"):
-            create_strategy('rsi', upper=110)
+            create_strategy('rsi', upper_threshold=110)
 
         # Lower >= upper
         with pytest.raises(ValueError, match="Lower threshold .* must be less than upper threshold"):
-            create_strategy('rsi', lower=70, upper=30)
+            create_strategy('rsi', lower_threshold=70, upper_threshold=30)
 
     def test_create_ema_strategy_invalid_parameters(self):
         """Test creating an EMA strategy with invalid parameters."""
         # Invalid short EMA period
         with pytest.raises(ValueError, match="short EMA period must be a positive integer"):
-            create_strategy('ema', ema_short=-1)
+            create_strategy('ema', short_ema_period=-1)
 
         # Invalid long EMA period
         with pytest.raises(ValueError, match="long EMA period must be a positive integer"):
-            create_strategy('ema', ema_long=-1)
+            create_strategy('ema', long_ema_period=-1)
 
         # Short >= long
         with pytest.raises(ValueError, match="Short EMA period .* must be less than long EMA period"):
-            create_strategy('ema', ema_short=21, ema_long=9)
+            create_strategy('ema', short_ema_period=21, long_ema_period=9)
 
     def test_create_macd_strategy_invalid_parameters(self):
         """Test creating a MACD strategy with invalid parameters."""
@@ -203,7 +203,7 @@ class TestStrategyFactory(unittest.TestCase):
 
         # Invalid number of standard deviations
         with pytest.raises(ValueError, match="number of standard deviations must be positive"):
-            create_strategy('bollinger', num_std=-1)
+            create_strategy('bollinger', number_of_standard_deviations=-1)
 
     def test_create_strategy_ichimoku(self):
         """Test creating an Ichimoku Cloud strategy."""
@@ -460,59 +460,59 @@ class TestParameterValidation(unittest.TestCase):
         """Test RSI parameter validation with optimal parameters."""
         # Standard parameters should generate no warnings
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=30, upper=70)
+        warnings = validator.validate(rsi_period=14, lower_threshold=30, upper_threshold=70)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_rsi_parameters_warnings(self):
         """Test RSI parameter validation with parameters that generate warnings."""
         # Very short period
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=5, lower=30, upper=70)
+        warnings = validator.validate(rsi_period=5, lower_threshold=30, upper_threshold=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too short", warnings[0])
 
         # Very long period
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=35, lower=30, upper=70)
+        warnings = validator.validate(rsi_period=35, lower_threshold=30, upper_threshold=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too long", warnings[0])
 
         # Very aggressive lower threshold
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=15, upper=70)
+        warnings = validator.validate(rsi_period=14, lower_threshold=15, upper_threshold=70)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too aggressive" in w for w in warnings))
         self.assertTrue(any("too wide" in w for w in warnings))
 
         # Very conservative lower threshold
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=45, upper=70)
+        warnings = validator.validate(rsi_period=14, lower_threshold=45, upper_threshold=70)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too conservative", warnings[0])
 
         # Very aggressive upper threshold
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=30, upper=55)
+        warnings = validator.validate(rsi_period=14, lower_threshold=30, upper_threshold=55)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too aggressive", warnings[0])
 
         # Very conservative upper threshold
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=30, upper=85)
+        warnings = validator.validate(rsi_period=14, lower_threshold=30, upper_threshold=85)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too conservative" in w for w in warnings))
         self.assertTrue(any("too wide" in w for w in warnings))
 
         # Very narrow gap
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=40, upper=50)
+        warnings = validator.validate(rsi_period=14, lower_threshold=40, upper_threshold=50)
         self.assertEqual(len(warnings), 2)
         self.assertTrue(any("too aggressive" in w for w in warnings))
         self.assertTrue(any("too narrow" in w for w in warnings))
 
         # Very wide gap
         validator = RSIValidator()
-        warnings = validator.validate(rsi_period=14, lower=20, upper=80)
+        warnings = validator.validate(rsi_period=14, lower_threshold=20, upper_threshold=80)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too wide", warnings[0])
 
@@ -744,17 +744,17 @@ class TestParameterValidation(unittest.TestCase):
         # We can't easily test the logging output, but we can verify strategies are still created
 
         # RSI with suboptimal parameters should still create strategy
-        strategy = create_strategy('rsi', rsi_period=5, lower=15, upper=85)
+        strategy = create_strategy('rsi', rsi_period=5, lower_threshold=15, upper_threshold=85)
         self.assertIsInstance(strategy, RSIStrategy)
         self.assertEqual(strategy.rsi_period, 5)
-        self.assertEqual(strategy.lower, 15)
-        self.assertEqual(strategy.upper, 85)
+        self.assertEqual(strategy.lower_threshold, 15)
+        self.assertEqual(strategy.upper_threshold, 85)
 
         # EMA with suboptimal parameters should still create strategy
-        strategy = create_strategy('ema', ema_short=3, ema_long=60)
+        strategy = create_strategy('ema', short_ema_period=3, long_ema_period=60)
         self.assertIsInstance(strategy, EMACrossoverStrategy)
-        self.assertEqual(strategy.ema_short, 3)
-        self.assertEqual(strategy.ema_long, 60)
+        self.assertEqual(strategy.short_ema_period, 3)
+        self.assertEqual(strategy.long_ema_period, 60)
 
         # MACD with suboptimal parameters should still create strategy
         strategy = create_strategy('macd', fast_period=5, slow_period=35, signal_period=15)
@@ -764,10 +764,10 @@ class TestParameterValidation(unittest.TestCase):
         self.assertEqual(strategy.signal_period, 15)
 
         # Bollinger with suboptimal parameters should still create strategy
-        strategy = create_strategy('bollinger', period=10, num_std=3.0)
+        strategy = create_strategy('bollinger', period=10, number_of_standard_deviations=3.0)
         self.assertIsInstance(strategy, BollingerBandsStrategy)
         self.assertEqual(strategy.period, 10)
-        self.assertEqual(strategy.num_std, 3.0)
+        self.assertEqual(strategy.number_of_standard_deviations, 3.0)
 
         # Ichimoku with suboptimal parameters should still create strategy
         strategy = create_strategy('ichimoku', tenkan_period=5, kijun_period=20,
@@ -862,11 +862,11 @@ class TestWarningDeduplication(unittest.TestCase):
     def test_mixed_strategy_creation_warning_deduplication(self, mock_logger):
         """Test warning deduplication across different strategy types."""
         # Create strategies with parameters that trigger warnings
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
-        create_strategy('ema', ema_short=5, ema_long=18)
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)  # Same as first
-        create_strategy('bollinger', period=10, num_std=3)
-        create_strategy('ema', ema_short=5, ema_long=18)  # Same as second
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)
+        create_strategy('ema', short_ema_period=5, long_ema_period=18)
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)  # Same as first
+        create_strategy('bollinger', period=10, number_of_standard_deviations=3)
+        create_strategy('ema', short_ema_period=5, long_ema_period=18)  # Same as second
 
         # Count warnings for each type
         rsi_warnings = [call for call in mock_logger.warning.call_args_list
@@ -931,9 +931,9 @@ class TestWarningConfiguration(unittest.TestCase):
         strategy_factory._log_warnings_enabled = False
 
         # Create strategies with parameters that would normally trigger warnings
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
-        create_strategy('ema', ema_short=5, ema_long=18)
-        create_strategy('bollinger', period=10, num_std=3)
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)
+        create_strategy('ema', short_ema_period=5, long_ema_period=18)
+        create_strategy('bollinger', period=10, number_of_standard_deviations=3)
 
         # Verify no warnings were logged
         self.assertEqual(mock_logger.warning.call_count, 0)
@@ -977,7 +977,7 @@ class TestWarningConfiguration(unittest.TestCase):
         strategy_factory._log_warnings_enabled = True
 
         # Create another strategy - should log warnings again
-        create_strategy('bollinger', period=10, num_std=3)
+        create_strategy('bollinger', period=10, number_of_standard_deviations=3)
         self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
 
     @patch('app.backtesting.strategy_factory.logger')
@@ -1006,22 +1006,22 @@ class TestWarningConfiguration(unittest.TestCase):
         """Test that warning deduplication works correctly when toggling the enabled / disabled state."""
         # Enable warnings and create a strategy
         strategy_factory._log_warnings_enabled = True
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)
         initial_warning_count = mock_logger.warning.call_count
         self.assertGreater(initial_warning_count, 0)
 
         # Disable warnings and create the same strategy - no new warnings
         strategy_factory._log_warnings_enabled = False
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)
         self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
 
         # Re-enable warnings and create the same strategy - still no new warnings (deduplication)
         strategy_factory._log_warnings_enabled = True
-        create_strategy('rsi', rsi_period=7, lower=30, upper=70)
+        create_strategy('rsi', rsi_period=7, lower_threshold=30, upper_threshold=70)
         self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
 
         # Create a different strategy - should log new warnings
-        create_strategy('ema', ema_short=5, ema_long=18)
+        create_strategy('ema', short_ema_period=5, long_ema_period=18)
         self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
 
 

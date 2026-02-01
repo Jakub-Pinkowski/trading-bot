@@ -15,14 +15,14 @@ class TestRSIStrategy:
         """Test that the RSI strategy initializes with correct default parameters."""
         strategy = RSIStrategy()
         assert strategy.rsi_period == 14
-        assert strategy.lower == 30
-        assert strategy.upper == 70
+        assert strategy.lower_threshold == 30
+        assert strategy.upper_threshold == 70
 
         # Test with custom parameters
-        strategy = RSIStrategy(rsi_period=10, lower=20, upper=80)
+        strategy = RSIStrategy(rsi_period=10, lower_threshold=20, upper_threshold=80)
         assert strategy.rsi_period == 10
-        assert strategy.lower == 20
-        assert strategy.upper == 80
+        assert strategy.lower_threshold == 20
+        assert strategy.upper_threshold == 80
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds RSI to the dataframe."""
@@ -61,14 +61,14 @@ class TestRSIStrategy:
 
         # Find where RSI crosses below a lower threshold (buy signals)
         buy_signals = df_with_signals[
-            (df_with_signals['rsi'].shift(1) > strategy.lower) &
-            (df_with_signals['rsi'] <= strategy.lower)
+            (df_with_signals['rsi'].shift(1) > strategy.lower_threshold) &
+            (df_with_signals['rsi'] <= strategy.lower_threshold)
             ]
 
         # Find where RSI crosses above an upper threshold (sell signals)
         sell_signals = df_with_signals[
-            (df_with_signals['rsi'].shift(1) < strategy.upper) &
-            (df_with_signals['rsi'] >= strategy.upper)
+            (df_with_signals['rsi'].shift(1) < strategy.upper_threshold) &
+            (df_with_signals['rsi'] >= strategy.upper_threshold)
             ]
 
         # Verify all buy signals have signal value of 1
@@ -87,7 +87,7 @@ class TestRSIStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use more extreme thresholds
-        strategy = RSIStrategy(rsi_period=7, lower=20, upper=80)
+        strategy = RSIStrategy(rsi_period=7, lower_threshold=20, upper_threshold=80)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -96,14 +96,14 @@ class TestRSIStrategy:
 
         # Find where RSI crosses below a lower threshold (buy signals)
         buy_signals = df_with_signals[
-            (df_with_signals['rsi'].shift(1) > strategy.lower) &
-            (df_with_signals['rsi'] <= strategy.lower)
+            (df_with_signals['rsi'].shift(1) > strategy.lower_threshold) &
+            (df_with_signals['rsi'] <= strategy.lower_threshold)
             ]
 
         # Find where RSI crosses above an upper threshold (sell signals)
         sell_signals = df_with_signals[
-            (df_with_signals['rsi'].shift(1) < strategy.upper) &
-            (df_with_signals['rsi'] >= strategy.upper)
+            (df_with_signals['rsi'].shift(1) < strategy.upper_threshold) &
+            (df_with_signals['rsi'] >= strategy.upper_threshold)
             ]
 
         # Verify all buy signals have signal value of 1
@@ -276,7 +276,7 @@ class TestRSIStrategy:
         import numpy as np
 
         # Create a strategy with custom thresholds for easier testing
-        strategy = RSIStrategy(lower=30, upper=70)
+        strategy = RSIStrategy(lower_threshold=30, upper_threshold=70)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(50)]
@@ -433,9 +433,10 @@ class TestRSIStrategy:
             if early_sept:
                 # Set RSI values to create a crossover
                 idx = df.index.get_loc(early_sept[0])
-                df.loc[early_sept[0], 'rsi'] = strategy.lower - 5  # Below lower threshold
+                df.loc[early_sept[0], 'rsi'] = strategy.lower_threshold - 5  # Below lower threshold
                 if idx > 0:
-                    df.loc[df.index[idx - 1], 'rsi'] = strategy.lower + 5  # Previous day above lower threshold
+                    df.loc[
+                        df.index[idx - 1], 'rsi'] = strategy.lower_threshold + 5  # Previous day above lower threshold
 
             # Create a sell signal (RSI crossing above upper threshold)
             # Find a day in early October
@@ -443,25 +444,26 @@ class TestRSIStrategy:
             if early_oct:
                 # Set RSI values to create a crossover
                 idx = df.index.get_loc(early_oct[0])
-                df.loc[early_oct[0], 'rsi'] = strategy.upper + 5  # Above upper threshold
+                df.loc[early_oct[0], 'rsi'] = strategy.upper_threshold + 5  # Above upper threshold
                 if idx > 0:
-                    df.loc[df.index[idx - 1], 'rsi'] = strategy.upper - 5  # Previous day below upper threshold
+                    df.loc[
+                        df.index[idx - 1], 'rsi'] = strategy.upper_threshold - 5  # Previous day below upper threshold
 
         # Check if there are any RSI crossovers in the planting and harvest seasons
         prev_rsi = df['rsi'].shift(1)
         buy_signals_planting = df[(df.index.month.isin([4, 5])) &
-                                  (prev_rsi > strategy.lower) &
-                                  (df['rsi'] <= strategy.lower)]
+                                  (prev_rsi > strategy.lower_threshold) &
+                                  (df['rsi'] <= strategy.lower_threshold)]
         sell_signals_planting = df[(df.index.month.isin([4, 5])) &
-                                   (prev_rsi < strategy.upper) &
-                                   (df['rsi'] >= strategy.upper)]
+                                   (prev_rsi < strategy.upper_threshold) &
+                                   (df['rsi'] >= strategy.upper_threshold)]
 
         buy_signals_harvest = df[(df.index.month.isin([9, 10])) &
-                                 (prev_rsi > strategy.lower) &
-                                 (df['rsi'] <= strategy.lower)]
+                                 (prev_rsi > strategy.lower_threshold) &
+                                 (df['rsi'] <= strategy.lower_threshold)]
         sell_signals_harvest = df[(df.index.month.isin([9, 10])) &
-                                  (prev_rsi < strategy.upper) &
-                                  (df['rsi'] >= strategy.upper)]
+                                  (prev_rsi < strategy.upper_threshold) &
+                                  (df['rsi'] >= strategy.upper_threshold)]
 
         # Generate signals
         df = strategy.generate_signals(df)
@@ -687,10 +689,10 @@ class TestRSIStrategy:
 
         # Ensure there's a crossover at the second peak
         # Set the previous day's RSI below the upper threshold
-        rsi_values.iloc[second_peak_idx - 1] = strategy.upper - 5  # Below upper threshold
+        rsi_values.iloc[second_peak_idx - 1] = strategy.upper_threshold - 5  # Below upper threshold
 
         # Set the current day's RSI above the upper threshold
-        rsi_values.iloc[second_peak_idx] = strategy.upper + 5  # Above upper threshold
+        rsi_values.iloc[second_peak_idx] = strategy.upper_threshold + 5  # Above upper threshold
 
         # This creates a crossover: RSI crosses from below to above the upper threshold
 
@@ -710,12 +712,12 @@ class TestRSIStrategy:
         # Debug: Check RSI values around the second peak
 
         # Check if the RSI at the second peak is above the upper threshold
-        is_above_upper = df['rsi'].iloc[second_peak_idx] >= strategy.upper
+        is_above_upper = df['rsi'].iloc[second_peak_idx] >= strategy.upper_threshold
 
         # Check if there's a crossover at the second peak
         prev_rsi = df['rsi'].shift(1)
-        is_crossover = (prev_rsi.iloc[second_peak_idx] < strategy.upper) and (
-                df['rsi'].iloc[second_peak_idx] >= strategy.upper)
+        is_crossover = (prev_rsi.iloc[second_peak_idx] < strategy.upper_threshold) and (
+                df['rsi'].iloc[second_peak_idx] >= strategy.upper_threshold)
 
         # Generate signals
         df = strategy.generate_signals(df)
@@ -759,7 +761,7 @@ class TestRSIStrategy:
         # In a basic RSI strategy without divergence detection:
         # 1. If RSI is above the upper threshold at the second peak, we expect a sell signal
         # 2. If RSI is below the upper threshold at the second peak, we don't expect a sell signal
-        if df['rsi'].iloc[second_peak_idx] >= strategy.upper:
+        if df['rsi'].iloc[second_peak_idx] >= strategy.upper_threshold:
             assert has_sell_signal, "When RSI is above upper threshold at divergence, strategy should generate a sell signal"
         else:
             assert not has_sell_signal, "When RSI is below upper threshold at divergence, strategy should not generate a sell signal"

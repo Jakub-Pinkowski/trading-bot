@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 
 from app.backtesting import MassTester
-from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
+from app.backtesting.testing.reporting import results_to_dataframe, save_results
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.dataframe_validators import validate_dataframe
-from app.backtesting.testing.reporting import results_to_dataframe, save_results
+from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from config import HISTORICAL_DATA_DIR
 
 
@@ -98,8 +98,8 @@ class TestMassTester:
                 strategy_type='rsi',
                 param_grid={
                     'rsi_period': rsi_periods,
-                    'lower': lower_thresholds,
-                    'upper': upper_thresholds,
+                    'lower_threshold': lower_thresholds,
+                    'upper_threshold': upper_thresholds,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
                     'slippage': slippages
@@ -111,22 +111,22 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         # Add EMA tests with various parameters
-        ema_shorts = [9, 12]
-        ema_longs = [21, 26]
+        short_ema_periods = [9, 12]
+        long_ema_periods = [21, 26]
         rollovers = [True]
         trailing_stops = [None, 2.0]
         slippages = [0.0]
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_ema_crossover_tests(ema_shorts, ema_longs, rollovers, trailing_stops, slippages)
+            tester.add_ema_crossover_tests(short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages)
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
                 strategy_type='ema',
                 param_grid={
-                    'ema_short': ema_shorts,
-                    'ema_long': ema_longs,
+                    'short_ema_period': short_ema_periods,
+                    'long_ema_period': long_ema_periods,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
                     'slippage': slippages
@@ -185,18 +185,22 @@ class TestMassTester:
 
         # Add Bollinger Bands tests with various parameters
         periods = [20, 50]
-        num_stds = [2.0, 3.0]
+        number_of_standard_deviations_list = [2.0, 3.0]
         rollovers = [True, False]
         trailing_stops = [None, 2.0]
         slippages = [0.0, 1.0]
 
         # Test with direct call
-        tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
+        tester.add_bollinger_bands_tests(periods,
+                                         number_of_standard_deviations_list,
+                                         rollovers,
+                                         trailing_stops,
+                                         slippages)
 
         # Calculate the expected number of strategies
         expected_count = (
                 len(periods) *
-                len(num_stds) *
+                len(number_of_standard_deviations_list) *
                 len(rollovers) *
                 len(trailing_stops) *
                 len(slippages)
@@ -212,7 +216,7 @@ class TestMassTester:
 
             # Check that strategy parameters are within the expected ranges
             assert strategy_instance.period in periods
-            assert strategy_instance.num_std in num_stds
+            assert strategy_instance.number_of_standard_deviations in number_of_standard_deviations_list
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
             assert strategy_instance.position_manager.slippage in slippages
@@ -223,21 +227,25 @@ class TestMassTester:
 
         # Add Bollinger Bands tests with various parameters
         periods = [20, 50]
-        num_stds = [2.0, 3.0]
+        number_of_standard_deviations_list = [2.0, 3.0]
         rollovers = [True]
         trailing_stops = [None, 2.0]
         slippages = [0.0]
 
         # Mock the add_strategy_tests method
         with patch.object(tester, '_add_strategy_tests') as mock_add_strategy:
-            tester.add_bollinger_bands_tests(periods, num_stds, rollovers, trailing_stops, slippages)
+            tester.add_bollinger_bands_tests(periods,
+                                             number_of_standard_deviations_list,
+                                             rollovers,
+                                             trailing_stops,
+                                             slippages)
 
             # Verify add_strategy_tests was called with correct parameters
             mock_add_strategy.assert_called_once_with(
                 strategy_type='bollinger',
                 param_grid={
                     'period': periods,
-                    'num_std': num_stds,
+                    'number_of_standard_deviations': number_of_standard_deviations_list,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
                     'slippage': slippages

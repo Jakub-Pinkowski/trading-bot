@@ -10,8 +10,8 @@ class EMACrossoverStrategy(BaseStrategy):
 
     def __init__(
         self,
-        ema_short=9,
-        ema_long=21,
+        short_ema_period=9,
+        long_ema_period=21,
         rollover=False,
         trailing=None,
         slippage=0,
@@ -21,8 +21,8 @@ class EMACrossoverStrategy(BaseStrategy):
                          trailing=trailing,
                          slippage=slippage,
                          symbol=symbol)
-        self.ema_short = ema_short
-        self.ema_long = ema_long
+        self.short_ema_period = short_ema_period
+        self.long_ema_period = long_ema_period
 
     # ==================== Public Methods ====================
 
@@ -31,9 +31,9 @@ class EMACrossoverStrategy(BaseStrategy):
         hashes = precompute_hashes(df)
 
         # Calculate both EMAs using pre-computed hash
-        df['ema_short'] = calculate_ema(df['close'], period=self.ema_short,
+        df['ema_short'] = calculate_ema(df['close'], period=self.short_ema_period,
                                         prices_hash=hashes['close'])
-        df['ema_long'] = calculate_ema(df['close'], period=self.ema_long,
+        df['ema_long'] = calculate_ema(df['close'], period=self.long_ema_period,
                                        prices_hash=hashes['close'])
         return df
 

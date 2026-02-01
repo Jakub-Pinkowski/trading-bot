@@ -262,7 +262,7 @@ def test_bollinger_bands_caching():
 
     # Calculate Bollinger Bands
     prices_hash = hash_series(prices)
-    bb1 = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb1 = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Get the cache key
     prices_hash = hash_series(prices)
@@ -276,7 +276,7 @@ def test_bollinger_bands_caching():
     # Calculate again and verify it uses the cached value
     with patch('pandas.Series.rolling') as mock_rolling:
         prices_hash = hash_series(prices)
-        bb2 = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+        bb2 = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
         # The rolling function should not be called again
         mock_rolling.assert_not_called()
 
@@ -361,7 +361,7 @@ def test_integration_with_real_calculations():
     prices_hash = hash_series(prices)
     macd = calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9, prices_hash=prices_hash)
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
 
     # Verify all calculations are in the cache
     prices_hash = hash_series(prices)
@@ -390,7 +390,10 @@ def test_integration_with_real_calculations():
                                         signal_period=9,
                                         prices_hash=prices_hash)
             prices_hash = hash_series(prices)
-            bb_again = calculate_bollinger_bands(prices, period=20, num_std=2, prices_hash=prices_hash)
+            bb_again = calculate_bollinger_bands(prices,
+                                                 period=20,
+                                                 number_of_standard_deviations=2,
+                                                 prices_hash=prices_hash)
 
             # The rolling and ewm functions should not be called again
             mock_rolling.assert_not_called()

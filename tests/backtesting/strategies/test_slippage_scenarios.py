@@ -234,7 +234,7 @@ class TestSlippageScenarios:
         """Test that slippage works correctly in high volatility conditions."""
         # Create a strategy with slippage
         slippage = 2.0
-        strategy = EMACrossoverStrategy(ema_short=5, ema_long=15, slippage=slippage)
+        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15, slippage=slippage)
 
         # Create a dataframe with high volatility
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]

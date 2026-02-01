@@ -11,8 +11,8 @@ class RSIStrategy(BaseStrategy):
     def __init__(
         self,
         rsi_period=14,
-        lower=30,
-        upper=70,
+        lower_threshold=30,
+        upper_threshold=70,
         rollover=False,
         trailing=None,
         slippage=0,
@@ -23,8 +23,8 @@ class RSIStrategy(BaseStrategy):
                          slippage=slippage,
                          symbol=symbol)
         self.rsi_period = rsi_period
-        self.lower = lower
-        self.upper = upper
+        self.lower_threshold = lower_threshold
+        self.upper_threshold = upper_threshold
 
     # ==================== Public Methods ====================
 
@@ -47,9 +47,9 @@ class RSIStrategy(BaseStrategy):
         df['signal'] = 0
 
         # Buy signal: RSI crosses below a lower threshold
-        df.loc[detect_threshold_cross(df['rsi'], self.lower, 'below'), 'signal'] = 1
+        df.loc[detect_threshold_cross(df['rsi'], self.lower_threshold, 'below'), 'signal'] = 1
 
         # Sell signal: RSI crosses above an upper threshold
-        df.loc[detect_threshold_cross(df['rsi'], self.upper, 'above'), 'signal'] = -1
+        df.loc[detect_threshold_cross(df['rsi'], self.upper_threshold, 'above'), 'signal'] = -1
 
         return df

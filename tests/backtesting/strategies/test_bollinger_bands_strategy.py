@@ -11,12 +11,16 @@ class TestBollingerBandsStrategy:
         """Test that the Bollinger Bands strategy initializes with correct default parameters."""
         strategy = BollingerBandsStrategy()
         assert strategy.period == 20
-        assert strategy.num_std == 2
+        assert strategy.number_of_standard_deviations == 2
 
         # Test with custom parameters
-        strategy = BollingerBandsStrategy(period=10, num_std=3, rollover=True, trailing=2.0, slippage=1.0)
+        strategy = BollingerBandsStrategy(period=10,
+                                          number_of_standard_deviations=3,
+                                          rollover=True,
+                                          trailing=2.0,
+                                          slippage=1.0)
         assert strategy.period == 10
-        assert strategy.num_std == 3
+        assert strategy.number_of_standard_deviations == 3
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
         assert strategy.position_manager.slippage == 1.0
@@ -99,7 +103,7 @@ class TestBollingerBandsStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use more extreme thresholds
-        strategy = BollingerBandsStrategy(period=10, num_std=3)
+        strategy = BollingerBandsStrategy(period=10, number_of_standard_deviations=3)
         df = create_test_df()
         df = strategy.add_indicators(df)
 

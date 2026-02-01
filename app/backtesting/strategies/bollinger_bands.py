@@ -11,7 +11,7 @@ class BollingerBandsStrategy(BaseStrategy):
     def __init__(
         self,
         period=20,
-        num_std=2,
+        number_of_standard_deviations=2,
         rollover=False,
         trailing=None,
         slippage=0,
@@ -22,7 +22,7 @@ class BollingerBandsStrategy(BaseStrategy):
                          slippage=slippage,
                          symbol=symbol)
         self.period = period
-        self.num_std = num_std
+        self.number_of_standard_deviations = number_of_standard_deviations
 
     # ==================== Public Methods ====================
 
@@ -32,7 +32,7 @@ class BollingerBandsStrategy(BaseStrategy):
 
         # Calculate Bollinger Bands using pre-computed hash
         bb_data = calculate_bollinger_bands(df['close'], period=self.period,
-                                            num_std=self.num_std,
+                                            number_of_standard_deviations=self.number_of_standard_deviations,
                                             prices_hash=hashes['close'])
 
         df['middle_band'] = bb_data['middle_band']

@@ -85,7 +85,7 @@ def _create_bollinger_strategy(**params):
     """Create a Bollinger Bands strategy instance."""
     # Extract parameters with defaults
     period = params.get('period', 20)
-    number_of_standard_deviations = params.get('num_std', 2)
+    number_of_standard_deviations = params.get('number_of_standard_deviations', 2)
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -101,7 +101,7 @@ def _create_bollinger_strategy(**params):
     # Create and return strategy
     return BollingerBandsStrategy(
         period=period,
-        num_std=number_of_standard_deviations,
+        number_of_standard_deviations=number_of_standard_deviations,
         **common_params
     )
 
@@ -109,8 +109,8 @@ def _create_bollinger_strategy(**params):
 def _create_ema_strategy(**params):
     """Create an EMA Crossover strategy instance."""
     # Extract parameters with defaults
-    short_ema_period = params.get('ema_short', 9)
-    long_ema_period = params.get('ema_long', 21)
+    short_ema_period = params.get('short_ema_period', 9)
+    long_ema_period = params.get('long_ema_period', 21)
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
@@ -125,8 +125,8 @@ def _create_ema_strategy(**params):
 
     # Create and return strategy
     return EMACrossoverStrategy(
-        ema_short=short_ema_period,
-        ema_long=long_ema_period,
+        short_ema_period=short_ema_period,
+        long_ema_period=long_ema_period,
         **common_params
     )
 
@@ -194,15 +194,15 @@ def _create_rsi_strategy(**params):
     """Create an RSI strategy instance."""
     # Extract parameters with defaults
     rsi_period = params.get('rsi_period', 14)
-    lower = params.get('lower', 30)
-    upper = params.get('upper', 70)
+    lower_threshold = params.get('lower_threshold', 30)
+    upper_threshold = params.get('upper_threshold', 70)
     common_params = _extract_common_params(**params)
 
     # Validate all parameters using singleton validators
     rsi_warnings = _RSI_VALIDATOR.validate(
         rsi_period=rsi_period,
-        lower=lower,
-        upper=upper
+        lower_threshold=lower_threshold,
+        upper_threshold=upper_threshold
     )
     common_warnings = _COMMON_VALIDATOR.validate(**common_params)
 
@@ -212,8 +212,8 @@ def _create_rsi_strategy(**params):
     # Create and return strategy
     return RSIStrategy(
         rsi_period=rsi_period,
-        lower=lower,
-        upper=upper,
+        lower_threshold=lower_threshold,
+        upper_threshold=upper_threshold,
         **common_params
     )
 
@@ -232,12 +232,12 @@ def get_strategy_name(strategy_type, **params):
 
     if strategy_type.lower() == 'bollinger':
         period = params.get('period', 20)
-        number_of_standard_deviations = params.get('num_std', 2)
+        number_of_standard_deviations = params.get('number_of_standard_deviations', 2)
         return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
 
     elif strategy_type.lower() == 'ema':
-        short_ema_period = params.get('ema_short', 9)
-        long_ema_period = params.get('ema_long', 21)
+        short_ema_period = params.get('short_ema_period', 9)
+        long_ema_period = params.get('long_ema_period', 21)
         return f'EMA(short={short_ema_period},long={long_ema_period},{common_params_str})'
 
     elif strategy_type.lower() == 'ichimoku':
@@ -255,9 +255,9 @@ def get_strategy_name(strategy_type, **params):
 
     elif strategy_type.lower() == 'rsi':
         rsi_period = params.get('rsi_period', 14)
-        lower = params.get('lower', 30)
-        upper = params.get('upper', 70)
-        return f'RSI(period={rsi_period},lower={lower},upper={upper},{common_params_str})'
+        lower_threshold = params.get('lower_threshold', 30)
+        upper_threshold = params.get('upper_threshold', 70)
+        return f'RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},{common_params_str})'
 
     else:
         return f'Unknown({strategy_type})'

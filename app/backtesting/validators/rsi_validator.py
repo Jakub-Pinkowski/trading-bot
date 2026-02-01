@@ -27,7 +27,7 @@ class RSIValidator(Validator):
     """Validator for RSI strategy parameters."""
 
     # ==================== Validation Method ====================
-    def validate(self, rsi_period, lower, upper, **kwargs):
+    def validate(self, rsi_period, lower_threshold, upper_threshold, **kwargs):
         """
         Enhanced validation for RSI parameters with guidance on reasonable ranges.
 
@@ -39,8 +39,8 @@ class RSIValidator(Validator):
 
         Args:
             rsi_period: RSI calculation period
-            lower: Lower oversold threshold
-            upper: Upper overbought threshold
+            lower_threshold: Lower oversold threshold
+            upper_threshold: Upper overbought threshold
             **kwargs: Additional parameters (ignored)
 
         Returns:
@@ -56,14 +56,14 @@ class RSIValidator(Validator):
         # Validate RSI period is a positive integer
         self.validate_positive_integer(rsi_period, "rsi period")
         # Validate thresholds are numbers between 0 and 100
-        self.validate_type_and_range(lower, "lower threshold", 0, 100)
-        self.validate_type_and_range(upper, "upper threshold", 0, 100)
+        self.validate_type_and_range(lower_threshold, "lower threshold", 0, 100)
+        self.validate_type_and_range(upper_threshold, "upper threshold", 0, 100)
 
         # --- Threshold Relationship Validation ---
 
         # Ensure lower threshold is below upper threshold
-        if lower >= upper:
-            raise ValueError(f"Lower threshold ({lower}) must be less than upper threshold ({upper})")
+        if lower_threshold >= upper_threshold:
+            raise ValueError(f"Lower threshold ({lower_threshold}) must be less than upper threshold ({upper_threshold})")
 
         # --- RSI Period Range Validation ---
 
@@ -85,33 +85,33 @@ class RSIValidator(Validator):
         # --- Lower Threshold Range Validation ---
 
         # Warn if lower threshold is too aggressive
-        if lower < RSI_LOWER_MIN_AGGRESSIVE:
+        if lower_threshold < RSI_LOWER_MIN_AGGRESSIVE:
             self.warnings.append(
-                f"RSI lower threshold {lower} is too aggressive and may generate false signals. "
+                f"RSI lower threshold {lower_threshold} is too aggressive and may generate false signals. "
                 f"Consider using {RSI_LOWER_MIN_AGGRESSIVE}-{RSI_LOWER_MAX_CONSERVATIVE} range "
                 f"({RSI_LOWER_STANDARD} is standard)."
             )
-        # Warn if lower threshold is too conservative
-        elif lower > RSI_LOWER_MAX_CONSERVATIVE:
+        # Warn if the lower threshold is too conservative
+        elif lower_threshold > RSI_LOWER_MAX_CONSERVATIVE:
             self.warnings.append(
-                f"RSI lower threshold {lower} is too conservative and may miss opportunities. "
+                f"RSI lower threshold {lower_threshold} is too conservative and may miss opportunities. "
                 f"Consider using {RSI_LOWER_MIN_AGGRESSIVE}-{RSI_LOWER_MAX_CONSERVATIVE} range "
                 f"({RSI_LOWER_STANDARD} is standard)."
             )
 
         # --- Upper Threshold Range Validation ---
 
-        # Warn if upper threshold is too aggressive
-        if upper < RSI_UPPER_MIN_AGGRESSIVE:
+        # Warn if the upper threshold is too aggressive
+        if upper_threshold < RSI_UPPER_MIN_AGGRESSIVE:
             self.warnings.append(
-                f"RSI upper threshold {upper} is too aggressive and may generate false signals. "
+                f"RSI upper threshold {upper_threshold} is too aggressive and may generate false signals. "
                 f"Consider using {RSI_UPPER_MIN_AGGRESSIVE}-{RSI_UPPER_MAX_CONSERVATIVE} range "
                 f"({RSI_UPPER_STANDARD} is standard)."
             )
-        # Warn if upper threshold is too conservative
-        elif upper > RSI_UPPER_MAX_CONSERVATIVE:
+        # Warn if the upper threshold is too conservative
+        elif upper_threshold > RSI_UPPER_MAX_CONSERVATIVE:
             self.warnings.append(
-                f"RSI upper threshold {upper} is too conservative and may miss opportunities. "
+                f"RSI upper threshold {upper_threshold} is too conservative and may miss opportunities. "
                 f"Consider using {RSI_UPPER_MIN_AGGRESSIVE}-{RSI_UPPER_MAX_CONSERVATIVE} range "
                 f"({RSI_UPPER_STANDARD} is standard)."
             )
@@ -119,15 +119,15 @@ class RSIValidator(Validator):
         # --- Threshold Gap Validation ---
 
         # Calculate gap between thresholds
-        gap = upper - lower
+        gap = upper_threshold - lower_threshold
 
-        # Warn if gap is too narrow
+        # Warn if the gap is too narrow
         if gap < RSI_GAP_MIN:
             self.warnings.append(
                 f"RSI threshold gap ({gap}) is too narrow and may generate excessive signals. "
                 f"Consider using a gap of at least {RSI_GAP_MIN} points (e.g., {RSI_LOWER_STANDARD}/{RSI_UPPER_STANDARD})."
             )
-        # Warn if gap is too wide
+        # Warn if tgap is too wide
         elif gap > RSI_GAP_MAX:
             self.warnings.append(
                 f"RSI threshold gap ({gap}) is too wide and may miss opportunities. "

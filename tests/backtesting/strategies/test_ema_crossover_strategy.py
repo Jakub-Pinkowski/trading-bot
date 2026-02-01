@@ -10,13 +10,14 @@ class TestEMACrossoverStrategy:
     def test_initialization(self):
         """Test that the EMA Crossover strategy initializes with correct default parameters."""
         strategy = EMACrossoverStrategy()
-        assert strategy.ema_short == 9
-        assert strategy.ema_long == 21
+
+        assert strategy.short_ema_period == 9
+        assert strategy.long_ema_period == 21
 
         # Test with custom parameters
-        strategy = EMACrossoverStrategy(ema_short=5, ema_long=15)
-        assert strategy.ema_short == 5
-        assert strategy.ema_long == 15
+        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15)
+        assert strategy.short_ema_period == 5
+        assert strategy.long_ema_period == 15
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds EMAs to the dataframe."""
@@ -34,18 +35,18 @@ class TestEMACrossoverStrategy:
         # It's normal for the first few values of an EMA to be NaN
         # Verify that most rows have valid EMA values
         # For short EMA, we expect at least (length - short_period) valid values
-        min_valid_short = len(df) - strategy.ema_short
+        min_valid_short = len(df) - strategy.short_ema_period
         assert df_with_indicators['ema_short'].notna().sum() >= min_valid_short, \
             f"Not enough valid short EMA values. Expected at least {min_valid_short}, got {df_with_indicators['ema_short'].notna().sum()}"
 
         # For long EMA, we expect at least (length - long_period) valid values
-        min_valid_long = len(df) - strategy.ema_long
+        min_valid_long = len(df) - strategy.long_ema_period
         assert df_with_indicators['ema_long'].notna().sum() >= min_valid_long, \
             f"Not enough valid long EMA values. Expected at least {min_valid_long}, got {df_with_indicators['ema_long'].notna().sum()}"
 
         # Manually calculate the EMAs to verify correctness
-        manual_ema_short = df['close'].ewm(span=strategy.ema_short, adjust=False).mean()
-        manual_ema_long = df['close'].ewm(span=strategy.ema_long, adjust=False).mean()
+        manual_ema_short = df['close'].ewm(span=strategy.short_ema_period, adjust=False).mean()
+        manual_ema_long = df['close'].ewm(span=strategy.long_ema_period, adjust=False).mean()
 
         # Verify the calculated EMAs match the manually calculated ones
         pd.testing.assert_series_equal(
@@ -120,7 +121,7 @@ class TestEMACrossoverStrategy:
     def test_generate_signals_custom_params(self):
         """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
         # Use different EMA periods
-        strategy = EMACrossoverStrategy(ema_short=5, ema_long=15)
+        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15)
         df = create_test_df()
         df = strategy.add_indicators(df)
 
@@ -239,7 +240,7 @@ class TestEMACrossoverStrategy:
         """Test EMA Crossover strategy when EMA values are very close to each other."""
 
         # Create a strategy with custom parameters - use closer periods to ensure they can get close
-        strategy = EMACrossoverStrategy(ema_short=5, ema_long=7)
+        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=7)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
@@ -272,7 +273,7 @@ class TestEMACrossoverStrategy:
         assert 'ema_long' in df.columns
 
         # Skip the initial NaN values
-        valid_df = df.iloc[strategy.ema_long:].copy()
+        valid_df = df.iloc[strategy.long_ema_period:].copy()
 
         # Find where EMAs are very close (difference < 0.1)
         # With the flat price series and close EMA periods, they should be very close
@@ -400,7 +401,7 @@ class TestEMACrossoverStrategy:
         assert 'ema_long' in df.columns
 
         # Skip the initial NaN values
-        valid_df = df.iloc[strategy.ema_long:].copy()
+        valid_df = df.iloc[strategy.long_ema_period:].copy()
 
         # Check that there are valid EMA values
         assert not valid_df['ema_short'].isnull().all(), "No valid short EMA values"
@@ -566,7 +567,7 @@ class TestEMACrossoverStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the EMA Crossover strategy."""
         # Create a strategy with 2% slippage
-        strategy = EMACrossoverStrategy(ema_short=5, ema_long=15, slippage=2.0)
+        strategy = EMACrossoverStrategy(short_ema_period=5, long_ema_period=15, slippage=2.0)
 
         # Create a dataframe with dates
         dates = [datetime.now() + timedelta(days=i) for i in range(150)]
