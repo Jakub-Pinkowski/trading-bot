@@ -106,8 +106,8 @@ tester = MassTester(
 
 ```python
 tester.add_bollinger_bands_tests(
-  periods=[20, 25],
-  num_stds=[2.0, 2.5],
+    periods=[20, 25],
+    num_stds=[2.0, 2.5],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
     slippages=[0.05]
@@ -130,13 +130,13 @@ tester.add_ema_crossover_tests(
 
 ```python
 tester.add_ichimoku_cloud_tests(
-  tenkan_periods=[9, 12],
-  kijun_periods=[26, 30],
-  senkou_span_b_periods=[52, 60],
-  displacements=[26, 30],
-  rollovers=[False],
-  trailing_stops=[None, 1, 2, 3],
-  slippages=[0.05]
+    tenkan_periods=[9, 12],
+    kijun_periods=[26, 30],
+    senkou_span_b_periods=[52, 60],
+    displacements=[26, 30],
+    rollovers=[False],
+    trailing_stops=[None, 1, 2, 3],
+    slippages=[0.05]
 )
 ```
 
@@ -157,9 +157,9 @@ tester.add_macd_tests(
 
 ```python
 tester.add_rsi_tests(
-  rsi_periods=[13, 14, 21],
-  lower_thresholds=[20, 30, 40],
-  upper_thresholds=[60, 70, 80],
+    rsi_periods=[13, 14, 21],
+    lower_thresholds=[20, 30, 40],
+    upper_thresholds=[60, 70, 80],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
     slippages=[0.05]
@@ -188,8 +188,8 @@ def main():
 
     # Bollinger Bands measure volatility
     tester.add_bollinger_bands_tests(
-      periods=[20],
-      num_stds=[2.0],
+        periods=[20],
+        num_stds=[2.0],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
         slippages=[0.05]
@@ -206,9 +206,9 @@ def main():
 
     # RSI is a momentum oscillator
     tester.add_rsi_tests(
-      rsi_periods=[13],
-      lower_thresholds=[20, 30, 40],
-      upper_thresholds=[60, 70, 80],
+        rsi_periods=[13],
+        lower_thresholds=[20, 30, 40],
+        upper_thresholds=[60, 70, 80],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
         slippages=[0.05]

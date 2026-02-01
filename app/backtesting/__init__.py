@@ -7,9 +7,9 @@ This module provides tools for backtesting trading strategies including
 - Strategy creation utilities: create_strategy, get_strategy_name
 """
 
-from app.backtesting.testing import MassTester
 from app.backtesting.strategy_analysis import StrategyAnalyzer
 from app.backtesting.strategy_factory import create_strategy, get_strategy_name
+from app.backtesting.testing import MassTester
 
 __all__ = [
     'MassTester',
