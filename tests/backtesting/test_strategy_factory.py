@@ -536,9 +536,9 @@ class TestStrategyFactory(unittest.TestCase):
                                  symbol=None)
         self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=None)')
 
-        # Unknown strategy type
-        name = get_strategy_name('unknown', rollover=False, trailing=None, slippage=0, symbol=None)
-        self.assertEqual(name, 'Unknown(unknown)')
+        # Unknown strategy type should raise ValueError
+        with pytest.raises(ValueError, match="Unknown strategy type"):
+            get_strategy_name('unknown', rollover=False, trailing=None, slippage=0, symbol=None)
 
 
 class TestPrivateHelperFunctions(unittest.TestCase):

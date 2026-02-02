@@ -155,22 +155,12 @@ def get_strategy_name(strategy_type, **params):
     strategy_key = strategy_type.lower()
 
     if strategy_key not in STRATEGY_MAP:
-        logger.warning(f"Unknown strategy type: {strategy_type}")
-        return f'Unknown({strategy_type})'
+        logger.error(f"Unknown strategy type: {strategy_type}")
+        raise ValueError(f"Unknown strategy type: {strategy_type}")
 
     strategy_class, _, _ = STRATEGY_MAP[strategy_key]
 
-    # Use strategy's format_name method if available
-    if hasattr(strategy_class, 'format_name'):
-        try:
-            return strategy_class.format_name(**params)
-        except Exception as e:
-            logger.warning(f"Error formatting name for {strategy_type}: {e}")
-            return f'{strategy_type}(error)'
-
-    # Fallback to simple format
-    logger.warning(f"Strategy {strategy_type} missing format_name method")
-    return f'{strategy_type}(params)'
+    return strategy_class.format_name(**params)
 
 
 def get_available_strategies():
