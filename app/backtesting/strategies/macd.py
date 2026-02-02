@@ -12,6 +12,13 @@ class MACDStrategy(BaseStrategy):
         self.slow_period = slow_period
         self.signal_period = signal_period
 
+    # ==================== Name Formatting ====================
+
+    @staticmethod
+    def format_name(fast_period, slow_period, signal_period, rollover, trailing, slippage, **kwargs):
+        """Generate standardized strategy name."""
+        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage={slippage})'
+
     # ==================== Public Methods ====================
 
     def add_indicators(self, df):

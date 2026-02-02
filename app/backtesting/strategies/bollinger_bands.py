@@ -11,6 +11,13 @@ class BollingerBandsStrategy(BaseStrategy):
         self.period = period
         self.number_of_standard_deviations = number_of_standard_deviations
 
+    # ==================== Name Formatting ====================
+
+    @staticmethod
+    def format_name(period, number_of_standard_deviations, rollover, trailing, slippage, **kwargs):
+        """Generate standardized strategy name."""
+        return f'BB(period={period},std={number_of_standard_deviations},rollover={rollover},trailing={trailing},slippage={slippage})'
+
     # ==================== Public Methods ====================
 
     def add_indicators(self, df):

@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -33,14 +32,14 @@ def calculate_macd(prices, fast_period, slow_period, signal_period, prices_hash)
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
-    # Calculate fast and slow EMAs
-    fast_ema = prices.ewm(span=fast_period, adjust=False).mean()
-    slow_ema = prices.ewm(span=slow_period, adjust=False).mean()
+    # Calculate fast and slow EMAs with min_periods to naturally produce NaN
+    fast_ema = prices.ewm(span=fast_period, min_periods=fast_period, adjust=False).mean()
+    slow_ema = prices.ewm(span=slow_period, min_periods=slow_period, adjust=False).mean()
 
     # Calculate MACD line
     macd_line = fast_ema - slow_ema
 
-    # Calculate signal line
+    # Calculate signal line (no min_periods - starts when macd_line has values)
     signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
 
     # Calculate histogram
@@ -53,8 +52,6 @@ def calculate_macd(prices, fast_period, slow_period, signal_period, prices_hash)
         'histogram': histogram
     })
 
-    # The first points are undefined
-    result.iloc[:slow_period - 1] = np.nan
 
     # Cache the result
     indicator_cache.set(cache_key, result)

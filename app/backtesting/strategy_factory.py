@@ -1,10 +1,15 @@
-from app.backtesting.strategies import (
-    BollingerBandsStrategy,
-    EMACrossoverStrategy,
-    IchimokuCloudStrategy,
-    MACDStrategy,
-    RSIStrategy,
-)
+"""
+Strategy Factory
+
+Simple dict-based factory for creating strategy instances.
+Maps strategy types to (class, validator, param_names).
+"""
+
+from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
+from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
+from app.backtesting.strategies.macd import MACDStrategy
+from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.validators import (
     BollingerValidator,
     CommonValidator,
@@ -17,30 +22,48 @@ from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/strategy_factory')
 
-# ==================== Module Configuration ====================
+# ==================== Configuration ====================
 
-# Define strategy types
-STRATEGY_TYPES = ['bollinger', 'ema', 'ichimoku', 'macd', 'rsi']
+# Strategy mapping: type -> (class, validator, param_names)
+STRATEGY_MAP = {
+    'bollinger': (
+        BollingerBandsStrategy,
+        BollingerValidator(),
+        ['period', 'number_of_standard_deviations']
+    ),
+    'ema': (
+        EMACrossoverStrategy,
+        EMAValidator(),
+        ['short_ema_period', 'long_ema_period']
+    ),
+    'ichimoku': (
+        IchimokuCloudStrategy,
+        IchimokuValidator(),
+        ['tenkan_period', 'kijun_period', 'senkou_span_b_period', 'displacement']
+    ),
+    'macd': (
+        MACDStrategy,
+        MACDValidator(),
+        ['fast_period', 'slow_period', 'signal_period']
+    ),
+    'rsi': (
+        RSIStrategy,
+        RSIValidator(),
+        ['rsi_period', 'lower_threshold', 'upper_threshold']
+    ),
+}
 
-# Set to track already logged warnings to prevent duplicates
+COMMON_PARAMS = ['rollover', 'trailing', 'slippage', 'symbol']
+COMMON_VALIDATOR = CommonValidator()
+
 _logged_warnings = set()
-
-# Configuration variable to control whether warnings should be logged
 _log_warnings_enabled = True
 
-# Create singleton validator instances
-_BOLLINGER_VALIDATOR = BollingerValidator()
-_COMMON_VALIDATOR = CommonValidator()
-_EMA_VALIDATOR = EMAValidator()
-_ICHIMOKU_VALIDATOR = IchimokuValidator()
-_MACD_VALIDATOR = MACDValidator()
-_RSI_VALIDATOR = RSIValidator()
 
-
-# ==================== Utility Functions ====================
+# ==================== Helper Functions ====================
 
 def _log_warnings_once(warnings, strategy_type):
-    """Log warnings only if they haven't been logged before and warnings are enabled."""
+    """Log warnings only once per unique warning."""
     if not _log_warnings_enabled:
         return
 
@@ -51,216 +74,121 @@ def _log_warnings_once(warnings, strategy_type):
             _logged_warnings.add(warning_key)
 
 
-def _extract_common_params(**params):
-    """Extract common parameters used by all strategies. All parameters are required."""
-    return {
-        'rollover': params['rollover'],
-        'trailing': params['trailing'],
-        'slippage': params['slippage'],
-        'symbol': params['symbol']
-    }
+def _extract_params(param_names, all_params):
+    """Extract specific parameters from params dict."""
+    extracted = {}
+    missing = []
+
+    for name in param_names:
+        if name in all_params:
+            extracted[name] = all_params[name]
+        else:
+            missing.append(name)
+
+    return extracted, missing
 
 
-# ==================== Strategy Creation ====================
+# ==================== Public API ====================
 
 def create_strategy(strategy_type, **params):
-    """ Create a strategy instance based on a strategy type and parameters. """
-    # Validate strategy type
-    if strategy_type.lower() not in STRATEGY_TYPES:
-        logger.error(f"Unknown strategy type: {strategy_type}")
+    """
+    Create a strategy instance based on type and parameters.
+
+    Args:
+        strategy_type: Type of strategy to create (e.g., 'bollinger', 'ema')
+        **params: Strategy parameters (strategy-specific + common params)
+
+    Returns:
+        Instantiated strategy object
+
+    Raises:
+        ValueError: If strategy_type is unknown
+        KeyError: If required parameters are missing
+    """
+    strategy_key = strategy_type.lower()
+
+    # Check if strategy exists
+    if strategy_key not in STRATEGY_MAP:
+        available = ', '.join(STRATEGY_MAP.keys())
+        logger.error(f"Unknown strategy type: {strategy_type}. Available: {available}")
         raise ValueError(f"Unknown strategy type: {strategy_type}")
 
-    # Create a strategy based on type
-    if strategy_type.lower() == 'bollinger':
-        return _create_bollinger_strategy(**params)
-    elif strategy_type.lower() == 'ema':
-        return _create_ema_strategy(**params)
-    elif strategy_type.lower() == 'ichimoku':
-        return _create_ichimoku_strategy(**params)
-    elif strategy_type.lower() == 'macd':
-        return _create_macd_strategy(**params)
-    elif strategy_type.lower() == 'rsi':
-        return _create_rsi_strategy(**params)
-    return None
+    strategy_class, validator, param_names = STRATEGY_MAP[strategy_key]
 
+    # Extract strategy-specific parameters
+    strategy_params, missing_strategy = _extract_params(param_names, params)
+    if missing_strategy:
+        logger.error(f"Missing parameters for {strategy_type}: {missing_strategy}")
+        raise KeyError(f"Missing required parameters for {strategy_type}: {missing_strategy}")
 
-def _create_bollinger_strategy(**params):
-    """Create a Bollinger Bands strategy instance."""
-    # Extract parameters
-    period = params['period']
-    number_of_standard_deviations = params['number_of_standard_deviations']
-    common_params = _extract_common_params(**params)
+    # Extract common parameters
+    common_params, missing_common = _extract_params(COMMON_PARAMS, params)
+    if missing_common:
+        logger.error(f"Missing common parameters: {missing_common}")
+        raise KeyError(f"Missing required common parameters: {missing_common}")
 
-    # Validate all parameters using singleton validators
-    bollinger_warnings = _BOLLINGER_VALIDATOR.validate(
-        period=period,
-        number_of_standard_deviations=number_of_standard_deviations
-    )
-    common_warnings = _COMMON_VALIDATOR.validate(**common_params)
+    # Validate parameters
+    strategy_warnings = validator.validate(**strategy_params)
+    common_warnings = COMMON_VALIDATOR.validate(**common_params)
 
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(bollinger_warnings + common_warnings, "Bollinger Bands")
+    # Log warnings
+    all_warnings = strategy_warnings + common_warnings
+    if all_warnings:
+        _log_warnings_once(all_warnings, strategy_type)
 
     # Create and return strategy
-    return BollingerBandsStrategy(
-        period=period,
-        number_of_standard_deviations=number_of_standard_deviations,
-        **common_params
-    )
-
-
-def _create_ema_strategy(**params):
-    """Create an EMA Crossover strategy instance."""
-    # Extract parameters
-    short_ema_period = params['short_ema_period']
-    long_ema_period = params['long_ema_period']
-    common_params = _extract_common_params(**params)
-
-    # Validate all parameters using singleton validators
-    ema_warnings = _EMA_VALIDATOR.validate(
-        short_ema_period=short_ema_period,
-        long_ema_period=long_ema_period
-    )
-    common_warnings = _COMMON_VALIDATOR.validate(**common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(ema_warnings + common_warnings, "EMA")
-
-    # Create and return strategy
-    return EMACrossoverStrategy(
-        short_ema_period=short_ema_period,
-        long_ema_period=long_ema_period,
-        **common_params
-    )
-
-
-def _create_ichimoku_strategy(**params):
-    """Create an Ichimoku Cloud strategy instance."""
-    # Extract parameters (all required)
-    tenkan_period = params['tenkan_period']
-    kijun_period = params['kijun_period']
-    senkou_span_b_period = params['senkou_span_b_period']
-    displacement = params['displacement']
-    common_params = _extract_common_params(**params)
-
-    # Validate all parameters using singleton validators
-    ichimoku_warnings = _ICHIMOKU_VALIDATOR.validate(
-        tenkan_period=tenkan_period,
-        kijun_period=kijun_period,
-        senkou_span_b_period=senkou_span_b_period,
-        displacement=displacement
-    )
-    common_warnings = _COMMON_VALIDATOR.validate(**common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(ichimoku_warnings + common_warnings, "Ichimoku")
-
-    # Create and return strategy
-    return IchimokuCloudStrategy(
-        tenkan_period=tenkan_period,
-        kijun_period=kijun_period,
-        senkou_span_b_period=senkou_span_b_period,
-        displacement=displacement,
-        **common_params
-    )
-
-
-def _create_macd_strategy(**params):
-    """Create a MACD strategy instance."""
-    # Extract parameters
-    fast_period = params['fast_period']
-    slow_period = params['slow_period']
-    signal_period = params['signal_period']
-    common_params = _extract_common_params(**params)
-
-    # Validate all parameters using singleton validators
-    macd_warnings = _MACD_VALIDATOR.validate(
-        fast_period=fast_period,
-        slow_period=slow_period,
-        signal_period=signal_period
-    )
-    common_warnings = _COMMON_VALIDATOR.validate(**common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(macd_warnings + common_warnings, "MACD")
-
-    # Create and return strategy
-    return MACDStrategy(
-        fast_period=fast_period,
-        slow_period=slow_period,
-        signal_period=signal_period,
-        **common_params
-    )
-
-
-def _create_rsi_strategy(**params):
-    """Create an RSI strategy instance."""
-    # Extract parameters
-    rsi_period = params['rsi_period']
-    lower_threshold = params['lower_threshold']
-    upper_threshold = params['upper_threshold']
-    common_params = _extract_common_params(**params)
-
-    # Validate all parameters using singleton validators
-    rsi_warnings = _RSI_VALIDATOR.validate(
-        rsi_period=rsi_period,
-        lower_threshold=lower_threshold,
-        upper_threshold=upper_threshold
-    )
-    common_warnings = _COMMON_VALIDATOR.validate(**common_params)
-
-    # Log all warnings (only once per unique warning)
-    _log_warnings_once(rsi_warnings + common_warnings, "RSI")
-
-    # Create and return strategy
-    return RSIStrategy(
-        rsi_period=rsi_period,
-        lower_threshold=lower_threshold,
-        upper_threshold=upper_threshold,
-        **common_params
-    )
-
-
-# ==================== Utility Functions ====================
-
-def _format_common_params(**params):
-    """Format common parameters for the strategy name."""
-    common_params = _extract_common_params(**params)
-    return f"rollover={common_params['rollover']},trailing={common_params['trailing']},slippage={common_params['slippage']}"
+    logger.debug(f"Creating {strategy_type} strategy with params: {strategy_params}")
+    return strategy_class(**strategy_params, **common_params)
 
 
 def get_strategy_name(strategy_type, **params):
-    """ Get a standardized name for a strategy with the given parameters. All parameters are required. """
-    common_params_str = _format_common_params(**params)
+    """
+    Get standardized name for a strategy.
 
-    if strategy_type.lower() == 'bollinger':
-        period = params['period']
-        number_of_standard_deviations = params['number_of_standard_deviations']
-        return f'BB(period={period},std={number_of_standard_deviations},{common_params_str})'
+    Args:
+        strategy_type: Type of strategy
+        **params: Strategy parameters
 
-    elif strategy_type.lower() == 'ema':
-        short_ema_period = params['short_ema_period']
-        long_ema_period = params['long_ema_period']
-        return f'EMA(short={short_ema_period},long={long_ema_period},{common_params_str})'
+    Returns:
+        Formatted strategy name string
+    """
+    strategy_key = strategy_type.lower()
 
-    elif strategy_type.lower() == 'ichimoku':
-        tenkan_period = params['tenkan_period']
-        kijun_period = params['kijun_period']
-        senkou_span_b_period = params['senkou_span_b_period']
-        displacement = params['displacement']
-        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},{common_params_str})'
+    if strategy_key not in STRATEGY_MAP:
+        logger.error(f"Unknown strategy type: {strategy_type}")
+        raise ValueError(f"Unknown strategy type: {strategy_type}")
 
-    elif strategy_type.lower() == 'macd':
-        fast_period = params['fast_period']
-        slow_period = params['slow_period']
-        signal_period = params['signal_period']
-        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},{common_params_str})'
+    strategy_class, _, _ = STRATEGY_MAP[strategy_key]
 
-    elif strategy_type.lower() == 'rsi':
-        rsi_period = params['rsi_period']
-        lower_threshold = params['lower_threshold']
-        upper_threshold = params['upper_threshold']
-        return f'RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},{common_params_str})'
+    return strategy_class.format_name(**params)
 
-    else:
-        return f'Unknown({strategy_type})'
+
+def get_available_strategies():
+    """Get list of all available strategy types."""
+    return sorted(STRATEGY_MAP.keys())
+
+
+def get_strategy_params(strategy_type):
+    """
+    Get required parameters for a strategy type.
+
+    Args:
+        strategy_type: Type of strategy
+
+    Returns:
+        Dict with strategy_params and common_params lists
+
+    Raises:
+        ValueError: If strategy_type is unknown
+    """
+    strategy_key = strategy_type.lower()
+
+    if strategy_key not in STRATEGY_MAP:
+        raise ValueError(f"Unknown strategy type: {strategy_type}")
+
+    _, _, param_names = STRATEGY_MAP[strategy_key]
+
+    return {
+        'strategy_params': param_names,
+        'common_params': COMMON_PARAMS
+    }

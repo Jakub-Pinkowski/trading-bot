@@ -23,6 +23,16 @@ class IchimokuCloudStrategy(BaseStrategy):
         self.senkou_span_b_period = senkou_span_b_period
         self.displacement = displacement
 
+    # ==================== Name Formatting ====================
+
+    @staticmethod
+    def format_name(
+        tenkan_period, kijun_period, senkou_span_b_period, displacement,
+        rollover, trailing, slippage, **kwargs
+    ):
+        """Generate standardized strategy name."""
+        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},rollover={rollover},trailing={trailing},slippage={slippage})'
+
     # ==================== Public Methods ====================
 
     def add_indicators(self, df):
