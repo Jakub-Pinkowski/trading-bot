@@ -3,6 +3,7 @@ import pandas as pd
 from app.backtesting.cache.indicators_cache import indicator_cache
 
 
+# TODO [MEDIUM]: Compare results between ddof=0 and ddof=1
 def calculate_bollinger_bands(prices, period, number_of_standard_deviations, prices_hash):
     """
     Calculate Bollinger Bands indicator.
