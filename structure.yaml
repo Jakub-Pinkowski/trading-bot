@@ -60,11 +60,16 @@ trading-bot/
 │   │   │   ├── ichimoku_validator.py            # Ichimoku Cloud parameter validator
 │   │   │   ├── macd_validator.py                # MACD parameter validator
 │   │   │   └── rsi_validator.py                 # RSI parameter validator
+│   │   ├── analysis/                             # Strategy analysis module
+│   │   │   ├── __init__.py
+│   │   │   ├── constants.py                      # Analysis constants
+│   │   │   ├── data_helpers.py                   # DataFrame filtering & calculations
+│   │   │   ├── formatters.py                     # CSV formatting helpers
+│   │   │   └── strategy_analyzer.py              # Main StrategyAnalyzer class
 │   │   ├── __init__.py
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
 │   │   ├── BACKTESTING_USER_GUIDE.md             # User guide
-│   │   ├── strategy_analysis.py                  # Strategy analysis utilities
 │   │   └── strategy_factory.py                   # Strategy creation factory
 │   ├── routes/
 │   │   ├── __init__.py
