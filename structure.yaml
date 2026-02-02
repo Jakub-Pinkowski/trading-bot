@@ -9,6 +9,12 @@ trading-bot/
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
+│   │   ├── analysis/                             # Strategy analysis module
+│   │   │   ├── __init__.py
+│   │   │   ├── constants.py                      # Analysis constants
+│   │   │   ├── data_helpers.py                   # DataFrame filtering & calculations
+│   │   │   ├── formatters.py                     # CSV formatting helpers
+│   │   │   └── strategy_analyzer.py              # Main StrategyAnalyzer class
 │   │   ├── cache/                                # Caching system for backtesting
 │   │   │   ├── __init__.py
 │   │   │   ├── cache_base.py                     # Base cache class
@@ -64,7 +70,6 @@ trading-bot/
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
 │   │   ├── BACKTESTING_USER_GUIDE.md             # User guide
-│   │   ├── strategy_analysis.py                  # Strategy analysis utilities
 │   │   └── strategy_factory.py                   # Strategy creation factory
 │   ├── routes/
 │   │   ├── __init__.py

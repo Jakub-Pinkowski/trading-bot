@@ -3,20 +3,22 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from app.backtesting import StrategyAnalyzer
-from app.backtesting.strategy_analysis import (
-    _format_column_name,
-    _filter_dataframe,
-    _calculate_weighted_win_rate,
-    _calculate_trade_weighted_average,
-    _calculate_average_trade_return,
-    _calculate_profit_ratio,
-    _parse_strategy_name
+from app.backtesting.analysis import StrategyAnalyzer
+from app.backtesting.analysis.data_helpers import (
+    filter_dataframe,
+    calculate_weighted_win_rate,
+    calculate_trade_weighted_average,
+    calculate_average_trade_return,
+    calculate_profit_ratio
+)
+from app.backtesting.analysis.formatters import (
+    format_column_name,
+    parse_strategy_name
 )
 
 
 class TestFormatColumnName(unittest.TestCase):
-    """Tests for the _format_column_name function."""
+    """Tests for the format_column_name function."""
 
     def test_special_case_column_names(self):
         """Test formatting of special case column names."""
@@ -42,7 +44,7 @@ class TestFormatColumnName(unittest.TestCase):
         }
 
         for column_name, expected_formatted_name in special_cases.items():
-            formatted_name = _format_column_name(column_name)
+            formatted_name = format_column_name(column_name)
             self.assertEqual(formatted_name, expected_formatted_name)
 
     def test_regular_column_names(self):
@@ -56,7 +58,7 @@ class TestFormatColumnName(unittest.TestCase):
         }
 
         for column_name, expected_formatted_name in test_cases.items():
-            formatted_name = _format_column_name(column_name)
+            formatted_name = format_column_name(column_name)
             self.assertEqual(formatted_name, expected_formatted_name)
 
     def test_multi_word_column_names(self):
@@ -67,12 +69,12 @@ class TestFormatColumnName(unittest.TestCase):
         }
 
         for column_name, expected_formatted_name in test_cases.items():
-            formatted_name = _format_column_name(column_name)
+            formatted_name = format_column_name(column_name)
             self.assertEqual(formatted_name, expected_formatted_name)
 
 
 class TestFilterDataframe(unittest.TestCase):
-    """Tests for the _filter_dataframe function."""
+    """Tests for the filter_dataframe function."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -116,7 +118,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Based on debug output: RSI=15.0, EMA=22.5, MACD=50.0 avg trades per combination
         # Filter with min_avg_trades_per_combination=25 (should keep only MACD)
-        result = _filter_dataframe(test_data, min_avg_trades_per_combination=25)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=25)
         self.assertEqual(len(result), 1)  # Only MACD
         strategies = result['strategy'].unique()
         self.assertTrue(any('MACD' in s for s in strategies))
@@ -124,7 +126,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('EMA' in s for s in strategies))
 
         # Filter with min_avg_trades_per_combination=20 (should keep EMA and MACD)
-        result = _filter_dataframe(test_data, min_avg_trades_per_combination=20)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=20)
         self.assertEqual(len(result), 3)  # EMA (2 rows) + MACD (1 row)
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
@@ -134,47 +136,47 @@ class TestFilterDataframe(unittest.TestCase):
     def test_filter_by_interval(self):
         """Test filtering by interval."""
         # Filter by '1d' interval
-        result = _filter_dataframe(self.sample_data, interval='1d')
+        result = filter_dataframe(self.sample_data, interval='1d')
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['interval'] == '1d'))
 
         # Filter by '4h' interval
-        result = _filter_dataframe(self.sample_data, interval='4h')
+        result = filter_dataframe(self.sample_data, interval='4h')
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['interval'] == '4h'))
 
         # Filter by a non-existent interval
-        result = _filter_dataframe(self.sample_data, interval='5m')
+        result = filter_dataframe(self.sample_data, interval='5m')
         self.assertEqual(len(result), 0)
 
     def test_filter_by_symbol(self):
         """Test filtering by symbol."""
         # Filter by 'ES' symbol
-        result = _filter_dataframe(self.sample_data, symbol='ES')
+        result = filter_dataframe(self.sample_data, symbol='ES')
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['symbol'] == 'ES'))
 
         # Filter by 'NQ' symbol
-        result = _filter_dataframe(self.sample_data, symbol='NQ')
+        result = filter_dataframe(self.sample_data, symbol='NQ')
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['symbol'] == 'NQ'))
 
         # Filter by non-existent symbol
-        result = _filter_dataframe(self.sample_data, symbol='BTC')
+        result = filter_dataframe(self.sample_data, symbol='BTC')
         self.assertEqual(len(result), 0)
 
     def test_filter_by_min_slippage(self):
         """Test filtering by minimum slippage."""
         # Filter with min_slippage=0.1
-        result = _filter_dataframe(self.sample_data, min_slippage=0.1)
+        result = filter_dataframe(self.sample_data, min_slippage=0.1)
         self.assertEqual(len(result), 4)  # slippage >= 0.1: 0.1, 0.2, 0.15, 0.3
 
         # Filter with min_slippage=0.2
-        result = _filter_dataframe(self.sample_data, min_slippage=0.2)
+        result = filter_dataframe(self.sample_data, min_slippage=0.2)
         self.assertEqual(len(result), 2)  # slippage >= 0.2: 0.2, 0.3
 
         # Filter with min_slippage=0.5 (higher than any slippage)
-        result = _filter_dataframe(self.sample_data, min_slippage=0.5)
+        result = filter_dataframe(self.sample_data, min_slippage=0.5)
         self.assertEqual(len(result), 0)
 
     def test_filter_combined_criteria(self):
@@ -198,27 +200,27 @@ class TestFilterDataframe(unittest.TestCase):
         })
 
         # Filter by min_avg_trades_per_combination=35 and interval='4h'
-        result = _filter_dataframe(test_data, min_avg_trades_per_combination=35, interval='4h')
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=35, interval='4h')
         self.assertEqual(len(result), 2)  # Only EMA strategy (45 avg trades per combination)
         self.assertTrue(all(result['interval'] == '4h'))
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
 
         # Filter by symbol='ES' and min_slippage=0.15
-        result = _filter_dataframe(self.sample_data, symbol='ES', min_slippage=0.15)
+        result = filter_dataframe(self.sample_data, symbol='ES', min_slippage=0.15)
         self.assertEqual(len(result), 1)  # Only EMA with slippage=0.2
         self.assertTrue(all(result['symbol'] == 'ES'))
 
     def test_filter_no_criteria(self):
         """Test filtering with no criteria (should return all data)."""
-        result = _filter_dataframe(self.sample_data)
+        result = filter_dataframe(self.sample_data)
         self.assertEqual(len(result), len(self.sample_data))
         pd.testing.assert_frame_equal(result, self.sample_data)
 
     def test_filter_empty_dataframe(self):
         """Test filtering an empty DataFrame."""
         empty_df = pd.DataFrame(columns=self.sample_data.columns)
-        result = _filter_dataframe(empty_df, min_avg_trades_per_combination=10)
+        result = filter_dataframe(empty_df, min_avg_trades_per_combination=10)
         self.assertEqual(len(result), 0)
         self.assertEqual(list(result.columns), list(empty_df.columns))
 
@@ -245,11 +247,11 @@ class TestFilterDataframe(unittest.TestCase):
         })
 
         # Filter with min_symbol_count=1 (should keep all strategies)
-        result = _filter_dataframe(test_data, min_symbol_count=1)
+        result = filter_dataframe(test_data, min_symbol_count=1)
         self.assertEqual(len(result), 6)  # All strategies
 
         # Filter with min_symbol_count=2 (should keep RSI and EMA)
-        result = _filter_dataframe(test_data, min_symbol_count=2)
+        result = filter_dataframe(test_data, min_symbol_count=2)
         self.assertEqual(len(result), 5)  # RSI (3 rows) + EMA (2 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -257,7 +259,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('MACD' in s for s in strategies))
 
         # Filter with min_symbol_count=3 (should keep only RSI)
-        result = _filter_dataframe(test_data, min_symbol_count=3)
+        result = filter_dataframe(test_data, min_symbol_count=3)
         self.assertEqual(len(result), 3)  # Only RSI (3 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -265,7 +267,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('MACD' in s for s in strategies))
 
         # Filter with min_symbol_count=4 (should keep no strategies)
-        result = _filter_dataframe(test_data, min_symbol_count=4)
+        result = filter_dataframe(test_data, min_symbol_count=4)
         self.assertEqual(len(result), 0)
 
     def test_filter_by_min_symbol_count_combined_with_other_filters(self):
@@ -291,7 +293,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Filter with min_symbol_count=2 and min_avg_trades_per_combination=35
         # Should keep only EMA (2 symbols, 45 avg trades per combination)
-        result = _filter_dataframe(test_data, min_symbol_count=2, min_avg_trades_per_combination=35)
+        result = filter_dataframe(test_data, min_symbol_count=2, min_avg_trades_per_combination=35)
         self.assertEqual(len(result), 2)  # Only EMA (2 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
@@ -299,7 +301,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Filter with min_symbol_count=3 and interval='1d'
         # Should keep only RSI (3 symbols, all in 1d interval)
-        result = _filter_dataframe(test_data, min_symbol_count=3, interval='1d')
+        result = filter_dataframe(test_data, min_symbol_count=3, interval='1d')
         self.assertEqual(len(result), 3)  # Only RSI (3 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -307,7 +309,7 @@ class TestFilterDataframe(unittest.TestCase):
 
 
 class TestCalculateWeightedWinRate(unittest.TestCase):
-    """Tests for the _calculate_weighted_win_rate function."""
+    """Tests for the calculate_weighted_win_rate function."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -320,7 +322,7 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
 
     def test_weighted_win_rate_calculation(self):
         """Test weighted win rate calculation."""
-        result = _calculate_weighted_win_rate(self.sample_data, self.grouped)
+        result = calculate_weighted_win_rate(self.sample_data, self.grouped)
 
         # Strategy_A: (60*10 + 80*20) / (10+20) = (600 + 1600) / 30 = 73.33%
         # Strategy_B: (40*15 + 60*25) / (15+25) = (600 + 1500) / 40 = 52.5%
@@ -338,7 +340,7 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
             'win_rate': [60.0, 80.0]
         })
         grouped = single_strategy_data.groupby('strategy')
-        result = _calculate_weighted_win_rate(single_strategy_data, grouped)
+        result = calculate_weighted_win_rate(single_strategy_data, grouped)
 
         expected = round((60 * 10 + 80 * 20) / (10 + 20), 2)
         self.assertEqual(result['Strategy_A'], expected)
@@ -351,7 +353,7 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
             'win_rate': [60.0, 80.0]
         })
         grouped = equal_trades_data.groupby('strategy')
-        result = _calculate_weighted_win_rate(equal_trades_data, grouped)
+        result = calculate_weighted_win_rate(equal_trades_data, grouped)
 
         expected = round((60.0 + 80.0) / 2, 2)
         self.assertEqual(result['Strategy_A'], expected)
@@ -364,14 +366,14 @@ class TestCalculateWeightedWinRate(unittest.TestCase):
             'win_rate': [0.0, 50.0]
         })
         grouped = zero_win_data.groupby('strategy')
-        result = _calculate_weighted_win_rate(zero_win_data, grouped)
+        result = calculate_weighted_win_rate(zero_win_data, grouped)
 
         expected = round((0 * 10 + 50 * 20) / (10 + 20), 2)
         self.assertEqual(result['Strategy_A'], expected)
 
 
 class TestCalculateTradeWeightedAverage(unittest.TestCase):
-    """Tests for the _calculate_trade_weighted_average function."""
+    """Tests for the calculate_trade_weighted_average function."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -385,7 +387,7 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
 
     def test_trade_weighted_average_sharpe(self):
         """Test trade-weighted average for the Sharpe ratio."""
-        result = _calculate_trade_weighted_average(
+        result = calculate_trade_weighted_average(
             self.sample_data, 'sharpe_ratio', self.total_trades_by_strategy
         )
 
@@ -399,7 +401,7 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
 
     def test_trade_weighted_average_drawdown(self):
         """Test trade-weighted average for maximum drawdown."""
-        result = _calculate_trade_weighted_average(
+        result = calculate_trade_weighted_average(
             self.sample_data, 'maximum_drawdown_percentage', self.total_trades_by_strategy
         )
 
@@ -419,7 +421,7 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
             'sharpe_ratio': [1.5, 2.0]
         })
         total_trades = single_entry_data.groupby('strategy')['total_trades'].sum()
-        result = _calculate_trade_weighted_average(single_entry_data, 'sharpe_ratio', total_trades)
+        result = calculate_trade_weighted_average(single_entry_data, 'sharpe_ratio', total_trades)
 
         # Should return the original values since there's only one entry per strategy
         self.assertEqual(result['Strategy_A'], 1.5)
@@ -433,21 +435,21 @@ class TestCalculateTradeWeightedAverage(unittest.TestCase):
             'sharpe_ratio': [0.0, 1.5]
         })
         total_trades = zero_data.groupby('strategy')['total_trades'].sum()
-        result = _calculate_trade_weighted_average(zero_data, 'sharpe_ratio', total_trades)
+        result = calculate_trade_weighted_average(zero_data, 'sharpe_ratio', total_trades)
 
         expected = round((0.0 * 10 + 1.5 * 20) / 30, 2)
         self.assertEqual(result['Strategy_A'], expected)
 
 
 class TestCalculateAverageTradeReturn(unittest.TestCase):
-    """Tests for the _calculate_average_trade_return function."""
+    """Tests for the calculate_average_trade_return function."""
 
     def test_basic_calculation(self):
         """Test basic average trade return calculation."""
         total_return = pd.Series([100.0, 200.0], index=['Strategy_A', 'Strategy_B'])
         total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         self.assertEqual(result['Strategy_A'], 10.0)  # 100/10
         self.assertEqual(result['Strategy_B'], 10.0)  # 200/20
@@ -457,7 +459,7 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         total_return = pd.Series([50.0, 75.0], index=['Strategy_A', 'Strategy_B'])
         total_trades = pd.Series([5, 15], index=['Strategy_A', 'Strategy_B'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         self.assertEqual(result['Strategy_A'], 10.0)  # 50/5
         self.assertEqual(result['Strategy_B'], 5.0)  # 75/15
@@ -467,7 +469,7 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         total_return = pd.Series([-50.0, 100.0], index=['Strategy_A', 'Strategy_B'])
         total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         self.assertEqual(result['Strategy_A'], -5.0)  # -50/10
         self.assertEqual(result['Strategy_B'], 5.0)  # 100/20
@@ -477,7 +479,7 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         total_return = pd.Series([0.0, 100.0], index=['Strategy_A', 'Strategy_B'])
         total_trades = pd.Series([10, 20], index=['Strategy_A', 'Strategy_B'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         self.assertEqual(result['Strategy_A'], 0.0)  # 0/10
         self.assertEqual(result['Strategy_B'], 5.0)  # 100/20
@@ -487,7 +489,7 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         total_return = pd.Series([150.0], index=['Strategy_A'])
         total_trades = pd.Series([30], index=['Strategy_A'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         self.assertEqual(result['Strategy_A'], 5.0)  # 150/30
 
@@ -496,21 +498,21 @@ class TestCalculateAverageTradeReturn(unittest.TestCase):
         total_return = pd.Series([100.0], index=['Strategy_A'])
         total_trades = pd.Series([3], index=['Strategy_A'])
 
-        result = _calculate_average_trade_return(total_return, total_trades)
+        result = calculate_average_trade_return(total_return, total_trades)
 
         # 100/3 = 33.333... should be rounded to 33.33
         self.assertEqual(result['Strategy_A'], 33.33)
 
 
 class TestCalculateProfitRatio(unittest.TestCase):
-    """Tests for the _calculate_profit_ratio function."""
+    """Tests for the calculate_profit_ratio function."""
 
     def test_basic_calculation(self):
         """Test basic profit ratio calculation."""
         total_wins = pd.Series([10.0])
         total_losses = pd.Series([5.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 10/5 = 2.0
         self.assertEqual(result.iloc[0], 2.0)
@@ -520,7 +522,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([15.0, 8.0, 12.0])
         total_losses = pd.Series([5.0, 4.0, 3.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 15/5 = 3.0, 8/4 = 2.0, 12/3 = 4.0
         self.assertEqual(result.iloc[0], 3.0)
@@ -532,7 +534,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([7.0])
         total_losses = pd.Series([3.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 7/3 = 2.333... should be rounded to 2.33
         self.assertEqual(result.iloc[0], 2.33)
@@ -542,7 +544,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([10.0])
         total_losses = pd.Series([0.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 10/0 should be handled as infinity
         self.assertEqual(result.iloc[0], float('inf'))
@@ -552,7 +554,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([0.0])
         total_losses = pd.Series([5.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 0/5 = 0.0
         self.assertEqual(result.iloc[0], 0.0)
@@ -562,7 +564,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([10.0])
         total_losses = pd.Series([-5.0])  # Losses are typically negative
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # abs(10/-5) = abs(-2) = 2.0
         self.assertEqual(result.iloc[0], 2.0)
@@ -572,7 +574,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([-10.0])
         total_losses = pd.Series([-5.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # abs(-10/-5) = abs(2) = 2.0
         self.assertEqual(result.iloc[0], 2.0)
@@ -582,7 +584,7 @@ class TestCalculateProfitRatio(unittest.TestCase):
         total_wins = pd.Series([10.0])
         total_losses = pd.Series([3.0])
 
-        result = _calculate_profit_ratio(total_wins, total_losses)
+        result = calculate_profit_ratio(total_wins, total_losses)
 
         # 10/3 = 3.333... should be rounded to 3.33
         self.assertEqual(result.iloc[0], 3.33)
@@ -906,7 +908,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
             analyzer.get_top_strategies('win_rate', 0, min_symbol_count=None)
 
     @patch('pandas.read_parquet')
-    @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
+    @patch('app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv')
     def test_get_top_strategies_basic(self, mock_save_results, mock_read_parquet):
         """Test the basic functionality of get_top_strategies with both weighted and non-weighted approaches."""
         # Setup mocks
@@ -959,7 +961,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertFalse(weighted_aggregated.equals(non_weighted_aggregated))
 
     @patch('pandas.read_parquet')
-    @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
+    @patch('app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv')
     def test_get_top_strategies_with_filters(self, mock_save_results, mock_read_parquet):
         """Test get_top_strategies with various filters for both weighted and non-weighted approaches."""
         # Setup mocks
@@ -1292,7 +1294,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
             self.assertTrue(strategy.startswith('EMA'))
 
     @patch('pandas.read_parquet')
-    @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
+    @patch('app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv')
     def test_get_top_strategies_with_min_slippage(self, mock_save_results, mock_read_parquet):
         """Test get_top_strategies with min_slippage filter for both weighted and non-weighted approaches."""
         # Setup mocks
@@ -1407,7 +1409,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
             self.assertTrue(strategy.startswith('EMA'))
 
     @patch('pandas.read_parquet')
-    @patch('app.backtesting.strategy_analysis.StrategyAnalyzer._save_results_to_csv')
+    @patch('app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv')
     def test_get_top_strategies_with_min_symbol_count(self, mock_save_results, mock_read_parquet):
         """Test get_top_strategies with min_symbol_count filter for both weighted and non-weighted approaches."""
         # Create test data with strategies having different symbol counts
@@ -1505,12 +1507,12 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
 
 class TestParseStrategyName(unittest.TestCase):
-    """Tests for the _parse_strategy_name function."""
+    """Tests for the parse_strategy_name function."""
 
     def test_parse_ichimoku_strategy(self):
         """Test parsing of Ichimoku strategy names."""
         strategy_name = "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26,rollover=False,trailing=1,slippage=0.05)"
-        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+        clean_strategy, rollover, trailing, slippage = parse_strategy_name(strategy_name)
 
         self.assertEqual(clean_strategy, "Ichimoku(tenkan=7,kijun=30,senkou_b=52,displacement=26)")
         self.assertEqual(rollover, False)
@@ -1520,7 +1522,7 @@ class TestParseStrategyName(unittest.TestCase):
     def test_parse_rsi_strategy(self):
         """Test parsing of RSI strategy names."""
         strategy_name = "RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0.1)"
-        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+        clean_strategy, rollover, trailing, slippage = parse_strategy_name(strategy_name)
 
         self.assertEqual(clean_strategy, "RSI(period=14,lower=30,upper=70)")
         self.assertEqual(rollover, False)
@@ -1530,7 +1532,7 @@ class TestParseStrategyName(unittest.TestCase):
     def test_parse_ema_strategy(self):
         """Test parsing of EMA strategy names."""
         strategy_name = "EMA(short=9,long=21,rollover=True,trailing=2.5,slippage=0.2)"
-        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+        clean_strategy, rollover, trailing, slippage = parse_strategy_name(strategy_name)
 
         self.assertEqual(clean_strategy, "EMA(short=9,long=21)")
         self.assertEqual(rollover, True)
@@ -1540,7 +1542,7 @@ class TestParseStrategyName(unittest.TestCase):
     def test_parse_strategy_with_missing_params(self):
         """Test parsing of strategy names with missing common parameters."""
         strategy_name = "MACD(fast=12,slow=26,signal=9)"
-        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+        clean_strategy, rollover, trailing, slippage = parse_strategy_name(strategy_name)
 
         self.assertEqual(clean_strategy, "MACD(fast=12,slow=26,signal=9)")
         self.assertEqual(rollover, False)  # Default value
@@ -1550,7 +1552,7 @@ class TestParseStrategyName(unittest.TestCase):
     def test_parse_strategy_different_parameter_order(self):
         """Test parsing of strategy names with different parameter order."""
         strategy_name = "BB(period=20,std=2,slippage=0.15,rollover=True,trailing=1.5)"
-        clean_strategy, rollover, trailing, slippage = _parse_strategy_name(strategy_name)
+        clean_strategy, rollover, trailing, slippage = parse_strategy_name(strategy_name)
 
         self.assertEqual(clean_strategy, "BB(period=20,std=2)")
         self.assertEqual(rollover, True)

@@ -52,7 +52,6 @@ def calculate_macd(prices, fast_period, slow_period, signal_period, prices_hash)
         'histogram': histogram
     })
 
-
     # Cache the result
     indicator_cache.set(cache_key, result)
 
