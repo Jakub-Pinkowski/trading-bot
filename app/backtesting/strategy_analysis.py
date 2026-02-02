@@ -36,7 +36,32 @@ def _filter_dataframe(
     min_slippage=None,
     min_symbol_count=None
 ):
-    """Filter DataFrame based on common criteria."""
+    """
+    Filter DataFrame based on common criteria.
+
+    Args:
+        df: DataFrame containing strategy results
+        min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
+        interval: Filter by specific interval (e.g., '1h', '4h')
+        symbol: Filter by specific symbol (e.g., 'ES', 'NQ')
+        min_slippage: Minimum slippage value to filter by
+        min_symbol_count: Minimum number of unique symbols per strategy
+
+    Returns:
+        Filtered DataFrame
+
+    Raises:
+        ValueError: If required columns are missing
+    """
+    # Validate required columns exist
+    missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    # Handle empty DataFrame
+    if df.empty:
+        logger.warning("Empty DataFrame passed to _filter_dataframe")
+        return df.copy()
 
     # Filter by minimum average trades per combination or minimum symbol count
     if min_avg_trades_per_combination > 0 or min_symbol_count is not None:
@@ -120,35 +145,45 @@ def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_
 
 
 def _parse_strategy_name(strategy_name):
-    """ Parse strategy name to extract common parameters and clean the strategy name. """
-    # Extract common parameters using regex
-    rollover_match = re.search(r'rollover=([^,)]+)', strategy_name)
-    trailing_match = re.search(r'trailing=([^,)]+)', strategy_name)
-    slippage_match = re.search(r'slippage=([^,)]+)', strategy_name)
+    """
+    Parse strategy name to extract common parameters and clean the strategy name.
 
-    # Extract values or set defaults
-    rollover = rollover_match.group(1) if rollover_match else 'False'
-    trailing = trailing_match.group(1) if trailing_match else 'None'
-    slippage = slippage_match.group(1) if slippage_match else '0'
+    Strategy names are created by strategy_factory.get_strategy_name()
+    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X,trailing=Y,slippage=Z)"
 
-    # Convert string values to appropriate types
-    rollover = rollover == 'True'
-    trailing = None if trailing == 'None' else float(trailing)
-    slippage = float(slippage)
+    Args:
+        strategy_name: Full strategy name with parameters
 
-    # Remove common parameters from the strategy name
-    clean_strategy = strategy_name
-    for param in ['rollover', 'trailing', 'slippage']:
-        clean_strategy = re.sub(f',{param}=[^,)]+', '', clean_strategy)
-        clean_strategy = re.sub(f'{param}=[^,)]+,', '', clean_strategy)
-        clean_strategy = re.sub(f'{param}=[^,)]+', '', clean_strategy)
+    Returns:
+        Tuple of (clean_name, rollover, trailing, slippage)
+    """
+    # Initialize parameters with defaults
+    params = {
+        'rollover': False,
+        'trailing': None,
+        'slippage': 0.0
+    }
 
-    # Clean up any double commas or trailing commas
-    clean_strategy = re.sub(r',,+', ',', clean_strategy)
-    clean_strategy = re.sub(r',\)', ')', clean_strategy)
-    clean_strategy = re.sub(r'\(,', '(', clean_strategy)
+    # Extract all param=value pairs with single regex iteration
+    for match in re.finditer(r'(\w+)=([^,)]+)', strategy_name):
+        key, value = match.groups()
+        if key in params:
+            if key == 'rollover':
+                params[key] = value == 'True'
+            elif key == 'trailing':
+                params[key] = None if value == 'None' else float(value)
+            elif key == 'slippage':
+                params[key] = float(value)
 
-    return clean_strategy, rollover, trailing, slippage
+    # Remove common parameters from name with single regex
+    clean_name = re.sub(r',?(rollover|trailing|slippage)=[^,)]+,?', '', strategy_name)
+    # Clean up any leftover commas
+    clean_name = re.sub(r',+', ',', clean_name).strip(',')
+    # Clean up comma before closing parenthesis or after opening
+    clean_name = re.sub(r',\)', ')', clean_name)
+    clean_name = re.sub(r'\(,', '(', clean_name)
+
+    return clean_name, params['rollover'], params['trailing'], params['slippage']
 
 
 def _format_column_name(column_name):
