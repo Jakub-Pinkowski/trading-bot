@@ -28,6 +28,8 @@ AGG_FUNCTIONS = {
 
 # ==================== Helper Functions ====================
 
+# --- DataFrame Operations ---
+
 def _filter_dataframe(
     df,
     min_avg_trades_per_combination=0,
@@ -117,6 +119,8 @@ def _filter_dataframe(
     return filtered_df
 
 
+# --- Calculation Helpers ---
+
 def _calculate_weighted_win_rate(filtered_df, grouped):
     """Calculate win rate weighted by total trades."""
     total_trades_by_strategy = grouped['total_trades'].sum()
@@ -144,12 +148,14 @@ def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_
     return (weighted_sum / total_trades_by_strategy).round(DECIMAL_PLACES)
 
 
+# --- Parsing Helpers ---
+
 def _parse_strategy_name(strategy_name):
     """
     Parse strategy name to extract common parameters and clean the strategy name.
 
     Strategy names are created by strategy_factory.get_strategy_name()
-    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X,trailing=Y,slippage=Z)"
+    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X, trailing=Y, slippage=Z)"
 
     Args:
         strategy_name: Full strategy name with parameters
@@ -186,6 +192,8 @@ def _parse_strategy_name(strategy_name):
     return clean_name, params['rollover'], params['trailing'], params['slippage']
 
 
+# --- Formatting Helpers ---
+
 def _format_column_name(column_name):
     """Convert snake_case column names to Title Case with spaces for better readability.
     Also provides shorter names for specific long column names."""
@@ -220,6 +228,96 @@ def _format_column_name(column_name):
     return ' '.join(word.capitalize() for word in column_name.split('_'))
 
 
+# --- File Helpers ---
+
+def _build_filename(metric, aggregate, interval=None, symbol=None, weighted=True):
+    """
+    Build CSV filename with appropriate suffixes.
+
+    Args:
+        metric: Metric name for sorting
+        aggregate: Whether results are aggregated
+        interval: Optional interval filter
+        symbol: Optional symbol filter
+        weighted: Whether aggregation is weighted
+
+    Returns:
+        Filename string
+    """
+    # Create a timestamp in the format YYYY-MM-DD HH:MM
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    # Build filename with conditional suffixes
+    agg_suffix = "_aggregated" if aggregate else ""
+    weighted_suffix = "_weighted" if aggregate and weighted else "_simple" if aggregate else ""
+    interval_suffix = f"_{interval}" if interval else ""
+    symbol_suffix = f"_{symbol}" if symbol else ""
+
+    return f"{timestamp} top_strategies_by_{metric}{interval_suffix}{symbol_suffix}{agg_suffix}{weighted_suffix}.csv"
+
+
+def _reorder_columns(df):
+    """
+    Reorder DataFrame columns to place common parameters after strategy.
+
+    Args:
+        df: DataFrame with strategy column
+
+    Returns:
+        DataFrame with reordered columns
+    """
+    cols = list(df.columns)
+    if 'strategy' not in cols:
+        return df
+
+    try:
+        strategy_idx = cols.index('strategy')
+        # Remove parameter columns from their current positions
+        cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
+        # Insert parameter columns immediately after the strategy column
+        cols.insert(strategy_idx + 1, 'rollover')
+        cols.insert(strategy_idx + 2, 'trailing')
+        cols.insert(strategy_idx + 3, 'slippage')
+        return df[cols]
+    except (ValueError, IndexError) as e:
+        # Log warning if column reordering fails and continue with the original order
+        logger.warning(f"Could not reorder columns: {e}. Using original column order.")
+        return df
+
+
+def _format_dataframe_for_export(df):
+    """
+    Format DataFrame for CSV export by parsing strategy names and formatting columns.
+
+    Args:
+        df: DataFrame to format
+
+    Returns:
+        Formatted DataFrame ready for export
+    """
+    formatted_df = df.copy()
+
+    # Parse strategy names to extract common parameters
+    if 'strategy' in formatted_df.columns:
+        strategy_data = formatted_df['strategy'].apply(_parse_strategy_name)
+        formatted_df['strategy'] = [data[0] for data in strategy_data]  # Clean strategy name
+        formatted_df['rollover'] = [data[1] for data in strategy_data]  # Rollover parameter
+        formatted_df['trailing'] = [data[2] for data in strategy_data]  # Trailing parameter
+        formatted_df['slippage'] = [data[3] for data in strategy_data]  # Slippage parameter
+
+        # Reorder columns to place rollover, trailing, and slippage after strategy
+        formatted_df = _reorder_columns(formatted_df)
+
+    # Format all numeric columns to configured decimal places
+    numeric_cols = formatted_df.select_dtypes(include='number').columns
+    formatted_df[numeric_cols] = formatted_df[numeric_cols].round(DECIMAL_PLACES)
+
+    # Rename columns for better readability
+    formatted_df.columns = [_format_column_name(col) for col in formatted_df.columns]
+
+    return formatted_df
+
+
 class StrategyAnalyzer:
     """A class for analyzing and processing trading strategy results."""
 
@@ -243,7 +341,7 @@ class StrategyAnalyzer:
         min_slippage=None,
         min_symbol_count=None
     ):
-        """  Get top-performing strategies based on a specific metric. """
+        """ Get top-performing strategies based on a specific metric. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
@@ -298,7 +396,7 @@ class StrategyAnalyzer:
         min_slippage=None,
         min_symbol_count=None
     ):
-        """  Aggregate strategy results across different symbols and intervals. """
+        """ Aggregate strategy results across different symbols and intervals. """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
@@ -401,72 +499,46 @@ class StrategyAnalyzer:
         return aggregated_df
 
     def _save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval=None, symbol=None, weighted=True):
-        """  Save results to a human-readable CSV file with formatted column names. """
-        if df_to_save is None:
+        """
+        Save results to a human-readable CSV file with formatted column names.
+
+        Args:
+            metric: Metric name used for sorting
+            limit: Maximum number of rows to save
+            df_to_save: DataFrame to save
+            aggregate: Whether results are aggregated
+            interval: Optional interval filter
+            symbol: Optional symbol filter
+            weighted: Whether aggregation is weighted
+
+        Raises:
+            ValueError: If no data available to save
+        """
+        # Validate input
+        if df_to_save is None or df_to_save.empty:
             if self.results_df is None or self.results_df.empty:
                 logger.error('No results available to save. Load results first.')
                 raise ValueError('No results available to save. Load results first.')
             df_to_save = self.results_df
 
         try:
-            # Create a copy of the DataFrame to avoid modifying the original
-            formatted_df = df_to_save.copy()
-
             # Limit the number of rows
-            if limit and limit > 0:
-                formatted_df = formatted_df.head(limit)
+            limited_df = df_to_save.head(limit) if limit and limit > 0 else df_to_save
 
-            # Parse strategy names to extract common parameters
-            if 'strategy' in formatted_df.columns:
-                strategy_data = formatted_df['strategy'].apply(_parse_strategy_name)
-                formatted_df['strategy'] = [data[0] for data in strategy_data]  # Clean strategy name
-                formatted_df['rollover'] = [data[1] for data in strategy_data]  # Rollover parameter
-                formatted_df['trailing'] = [data[2] for data in strategy_data]  # Trailing parameter
-                formatted_df['slippage'] = [data[3] for data in strategy_data]  # Slippage parameter
+            # Prepare data for export
+            formatted_df = _format_dataframe_for_export(limited_df)
 
-                # Reorder columns to place rollover, trailing, and slippage after strategy
-                cols = list(formatted_df.columns)
-                if 'strategy' in cols:
-                    try:
-                        strategy_idx = cols.index('strategy')
-                        # Remove parameter columns from their current positions
-                        cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
-                        # Insert parameter columns immediately after the strategy column
-                        cols.insert(strategy_idx + 1, 'rollover')
-                        cols.insert(strategy_idx + 2, 'trailing')
-                        cols.insert(strategy_idx + 3, 'slippage')
-                        formatted_df = formatted_df[cols]
-                    except (ValueError, IndexError) as e:
-                        # Log warning if column reordering fails and continue with the original order
-                        logger.warning(f"Could not reorder columns: {e}. Using original column order.")
+            # Generate filename
+            filename = _build_filename(metric, aggregate, interval, symbol, weighted)
 
-            # Format all numeric columns to configured decimal places
-            numeric_cols = formatted_df.select_dtypes(include='number').columns
-            formatted_df[numeric_cols] = formatted_df[numeric_cols].round(DECIMAL_PLACES)
-
-            # Rename columns for better readability
-            formatted_df.columns = [_format_column_name(col) for col in formatted_df.columns]
-
-            # Create a timestamp in the format YYYY-MM-DD HH:MM
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
-
-            # Create a filename based on the metric, interval, symbol, and whether it's aggregated
-            agg_suffix = "_aggregated" if aggregate else ""
-            weighted_suffix = "_weighted" if aggregate and weighted else "_simple" if aggregate else ""
-            interval_suffix = f"_{interval}" if interval else ""
-            symbol_suffix = f"_{symbol}" if symbol else ""
-            filename = f"{timestamp} top_strategies_by_{metric}{interval_suffix}{symbol_suffix}{agg_suffix}{weighted_suffix}.csv"
-
-            # Create the csv_results directory if it doesn't exist
+            # Create output directory and save
             csv_dir = os.path.join(BACKTESTING_DIR, 'csv_results')
             os.makedirs(csv_dir, exist_ok=True)
 
-            # Create the full file path
             file_path = os.path.join(csv_dir, filename)
-
-            # Save to CSV
             formatted_df.to_csv(file_path, index=False)
-            print(f'Results saved to {file_path} (limited to {limit} rows)')
+
+            logger.info(f'Results saved to {file_path} (limited to {limit} rows)')
         except Exception as error:
             logger.error(f'Failed to save results to CSV: {error}')
             raise
