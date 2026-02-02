@@ -8,10 +8,12 @@ import pandas as pd
 import pytest
 
 from app.backtesting.indicators import calculate_rsi, calculate_ema, calculate_macd, calculate_ichimoku_cloud
+from app.backtesting.strategies import (
+    EMACrossoverStrategy,
+    IchimokuCloudStrategy,
+    RSIStrategy,
+)
 from app.backtesting.strategies.base.base_strategy import precompute_hashes
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
 from app.utils.backtesting_utils.indicators_utils import hash_series
 
 

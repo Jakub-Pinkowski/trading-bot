@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
+from app.backtesting.strategies import IchimokuCloudStrategy
 from tests.backtesting.strategies.conftest import create_test_df
 
 

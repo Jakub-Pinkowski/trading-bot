@@ -4,11 +4,13 @@ from unittest.mock import patch
 import pytest
 
 import app.backtesting.strategy_factory as strategy_factory
-from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
-from app.backtesting.strategies.macd import MACDStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
+from app.backtesting.strategies import (
+    BollingerBandsStrategy,
+    EMACrossoverStrategy,
+    IchimokuCloudStrategy,
+    MACDStrategy,
+    RSIStrategy,
+)
 from app.backtesting.strategy_factory import (
     create_strategy, get_strategy_name, _extract_common_params,
     _format_common_params, _log_warnings_once, _logged_warnings

@@ -3,9 +3,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
+from app.backtesting.strategies import EMACrossoverStrategy, RSIStrategy
 from app.backtesting.strategies.base.base_strategy import BaseStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
-from app.backtesting.strategies.rsi import RSIStrategy
 from tests.backtesting.strategies.conftest import create_test_df
 
 

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
+from app.backtesting.strategies import BollingerBandsStrategy
 from tests.backtesting.strategies.conftest import create_test_df
 
 

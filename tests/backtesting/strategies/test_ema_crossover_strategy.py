@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies import EMACrossoverStrategy
 from tests.backtesting.strategies.conftest import create_test_df, create_ema_test_df
 
 

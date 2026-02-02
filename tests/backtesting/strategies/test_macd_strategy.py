@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from app.backtesting.strategies.macd import MACDStrategy
+from app.backtesting.strategies import MACDStrategy
 from tests.backtesting.strategies.conftest import create_test_df
 
 
