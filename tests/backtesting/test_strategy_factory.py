@@ -10,8 +10,8 @@ from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
 from app.backtesting.strategy_factory import (
-    create_strategy, get_strategy_name, _extract_common_params,
-    _format_common_params, _log_warnings_once, _logged_warnings
+    create_strategy, get_strategy_name, get_available_strategies,
+    get_strategy_params, _log_warnings_once, _logged_warnings
 )
 from app.backtesting.validators import (
     BollingerValidator, CommonValidator, EMAValidator,
@@ -171,13 +171,11 @@ class TestStrategyFactory(unittest.TestCase):
         with pytest.raises(ValueError, match="Unknown strategy type"):
             create_strategy('unknown')
 
-    @patch('app.backtesting.strategy_factory.STRATEGY_TYPES', ['rsi', 'ema', 'macd', 'bollinger', 'custom'])
     def test_create_strategy_fallback(self):
-        """Test the fallback return statement when a strategy type is in STRATEGY_TYPES but has no specific handler."""
-        # This test is specifically for line 79 in strategy_factory.py
-        # The 'custom' strategy type is added to STRATEGY_TYPES but has no specific handler
-        result = create_strategy('custom')
-        self.assertIsNone(result)
+        """Test that unknown strategy types raise ValueError."""
+        # Unknown strategy type should raise ValueError
+        with pytest.raises(ValueError, match="Unknown strategy type"):
+            create_strategy('custom')
 
     def test_create_rsi_strategy_invalid_parameters(self):
         """Test creating an RSI strategy with invalid parameters."""
@@ -538,46 +536,17 @@ class TestStrategyFactory(unittest.TestCase):
                                  symbol=None)
         self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=None)')
 
-        # Unknown strategy type
-        name = get_strategy_name('unknown', rollover=False, trailing=None, slippage=0, symbol=None)
-        self.assertEqual(name, 'Unknown(unknown)')
+        # Unknown strategy type should raise ValueError
+        with pytest.raises(ValueError, match="Unknown strategy type"):
+            get_strategy_name('unknown', rollover=False, trailing=None, slippage=0, symbol=None)
 
 
 class TestPrivateHelperFunctions(unittest.TestCase):
     """Tests for private helper functions in strategy_factory."""
 
-    def test_extract_common_params_valid(self):
-        """Test _extract_common_params with valid parameters."""
-        params = {
-            'rollover': True,
-            'trailing': 2.5,
-            'slippage': 0.1,
-            'symbol': None,
-            'other_param': 'ignored'
-        }
-        result = _extract_common_params(**params)
-
-        self.assertEqual(result['rollover'], True)
-        self.assertEqual(result['trailing'], 2.5)
-        self.assertEqual(result['slippage'], 0.1)
-        self.assertEqual(result['symbol'], None)
-        self.assertNotIn('other_param', result)
-
-    def test_extract_common_params_defaults(self):
-        """Test _extract_common_params extracts parameters as provided (no defaults)."""
-        # With all parameters explicitly provided
-        params = {
-            'rollover': False,
-            'trailing': None,
-            'slippage': 0,
-            'symbol': None
-        }
-        result = _extract_common_params(**params)
-
-        self.assertEqual(result['rollover'], False)
-        self.assertIsNone(result['trailing'])
-        self.assertEqual(result['slippage'], 0)
-        self.assertIsNone(result['symbol'])
+    # Removed: _extract_common_params no longer exists (refactored to _extract_params with different signature)
+    # def test_extract_common_params_valid(self):
+    # def test_extract_common_params_defaults(self):
 
     def test_validate_positive_integer_valid(self):
         """Test validate_positive_integer with valid values."""
@@ -654,28 +623,8 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
             validator.validate_type_and_range("5", "test_param", 0, 10)
 
-    def test_format_common_params(self):
-        """Test _format_common_params function."""
-        params = {
-            'rollover': True,
-            'trailing': 2.5,
-            'slippage': 0.1,
-            'symbol': None
-        }
-        result = _format_common_params(**params)
-        expected = "rollover=True,trailing=2.5,slippage=0.1"
-        self.assertEqual(result, expected)
-
-        # Test with explicit values (no defaults anymore)
-        params = {
-            'rollover': False,
-            'trailing': None,
-            'slippage': 0,
-            'symbol': None
-        }
-        result = _format_common_params(**params)
-        expected = "rollover=False,trailing=None,slippage=0"
-        self.assertEqual(result, expected)
+    # Removed: _format_common_params no longer exists (name formatting now uses strategy's format_name() method)
+    # def test_format_common_params(self):
 
 
 class TestParameterValidation(unittest.TestCase):
@@ -1162,11 +1111,11 @@ class TestWarningDeduplication(unittest.TestCase):
 
         # Count warnings for each type
         rsi_warnings = [call for call in mock_logger.warning.call_args_list
-                        if 'RSI Strategy Parameter Guidance' in str(call)]
+                        if 'rsi Strategy Parameter Guidance' in str(call)]
         ema_warnings = [call for call in mock_logger.warning.call_args_list
-                        if 'EMA Strategy Parameter Guidance' in str(call)]
+                        if 'ema Strategy Parameter Guidance' in str(call)]
         bb_warnings = [call for call in mock_logger.warning.call_args_list
-                       if 'Bollinger Bands Strategy Parameter Guidance' in str(call)]
+                       if 'bollinger Strategy Parameter Guidance' in str(call)]
 
         # Each strategy type should have its warnings logged only once
         # RSI should have warnings about period 7

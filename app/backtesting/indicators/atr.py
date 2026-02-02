@@ -1,6 +1,5 @@
 import hashlib
 
-import numpy as np
 import pandas as pd
 
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -52,8 +51,8 @@ def calculate_atr(df, period, high_hash, low_hash, close_hash):
 
     true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    atr = true_range.ewm(span=period, adjust=False).mean()
-    atr[:period - 1] = np.nan  # First period points are undefined
+    # Use min_periods to naturally produce NaN for first period-1 values
+    atr = true_range.ewm(span=period, min_periods=period, adjust=False).mean()
 
     # Cache the result
     indicator_cache.set(cache_key, atr)
