@@ -45,8 +45,8 @@ def run_tests(
 
     # --- Test Preparation ---
 
-    # Preprocess switch dates for all symbols at once
-    preprocessed_switch_dates = _preprocess_switch_dates(tester.symbols, tester.switch_dates_dict)
+    # Get switch dates for all symbols (handles symbol mappings for mini/micro contracts)
+    switch_dates_by_symbol = _get_switch_dates_for_symbols(tester.symbols, tester.switch_dates_dict)
 
     # Generate all combinations
     all_combinations = _generate_all_combinations(
@@ -62,7 +62,7 @@ def run_tests(
         existing_data,
         skip_existing,
         verbose,
-        preprocessed_switch_dates
+        switch_dates_by_symbol
     )
 
     print(f'Skipped {skipped_combinations} already run test combinations.')
@@ -108,11 +108,23 @@ def run_tests(
 
 # ==================== Helper Functions ====================
 
-# --- Switch Dates Preprocessing ---
+# --- Switch Dates Mapping ---
 
-def _preprocess_switch_dates(symbols, switch_dates_dict):
-    """Preprocess switch dates for all symbols at once."""
-    preprocessed_switch_dates = {}
+def _get_switch_dates_for_symbols(symbols, switch_dates_dict):
+    """
+    Get switch dates for all symbols, handling mini/micro contract mappings.
+
+    Maps mini/micro symbols (e.g., MCL, MGC) to their main contract symbols (CL, GC)
+    and converts date strings to datetime objects for strategy consumption.
+
+    Args:
+        symbols: List of symbol strings
+        switch_dates_dict: Dict with switch dates and optional _symbol_mappings
+
+    Returns:
+        Dict mapping each symbol to list of datetime objects
+    """
+    switch_dates_by_symbol = {}
     for symbol in symbols:
         # Check if the symbol has direct switch dates
         if symbol in switch_dates_dict:
@@ -124,9 +136,9 @@ def _preprocess_switch_dates(symbols, switch_dates_dict):
         else:
             switch_dates = []
 
-        preprocessed_switch_dates[symbol] = [pd.to_datetime(switch_date) for switch_date in switch_dates]
+        switch_dates_by_symbol[symbol] = [pd.to_datetime(switch_date) for switch_date in switch_dates]
 
-    return preprocessed_switch_dates
+    return switch_dates_by_symbol
 
 
 
@@ -148,7 +160,7 @@ def _prepare_test_combinations(
     existing_data,
     skip_existing,
     verbose,
-    preprocessed_switch_dates
+    switch_dates_by_symbol
 ):
     """Prepare all test combinations, filtering out already run tests."""
     test_combinations = []
@@ -175,10 +187,10 @@ def _prepare_test_combinations(
             skipped_combinations += 1
             continue
 
-        # Build filepath
+        # Build filepath on-demand (string interpolation is negligible overhead)
         filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
 
-        # Add preprocessed switch dates and filepath to the test parameters
+        # Add switch dates and filepath to the test parameters
         test_combinations.append((
             tested_month,
             symbol,
@@ -186,7 +198,7 @@ def _prepare_test_combinations(
             strategy_name,
             strategy_instance,
             verbose,
-            preprocessed_switch_dates[symbol],  # Pass preprocessed switch dates
+            switch_dates_by_symbol[symbol],
             filepath
         ))
 
