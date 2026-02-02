@@ -48,9 +48,6 @@ def run_tests(
     # Preprocess switch dates for all symbols at once
     preprocessed_switch_dates = _preprocess_switch_dates(tester.symbols, tester.switch_dates_dict)
 
-    # Cache filepath patterns for faster construction
-    filepath_patterns = _build_filepath_patterns(tester.tested_months, tester.symbols, tester.intervals)
-
     # Generate all combinations
     all_combinations = _generate_all_combinations(
         tester.tested_months,
@@ -65,8 +62,7 @@ def run_tests(
         existing_data,
         skip_existing,
         verbose,
-        preprocessed_switch_dates,
-        filepath_patterns
+        preprocessed_switch_dates
     )
 
     print(f'Skipped {skipped_combinations} already run test combinations.')
@@ -133,20 +129,6 @@ def _preprocess_switch_dates(symbols, switch_dates_dict):
     return preprocessed_switch_dates
 
 
-# --- Filepath Pattern Caching ---
-
-def _build_filepath_patterns(tested_months, symbols, intervals):
-    """Cache filepath patterns for faster construction."""
-    filepath_patterns = {}
-    for tested_month in tested_months:
-        for symbol in symbols:
-            for interval in intervals:
-                filepath_patterns[(
-                    tested_month, symbol, interval
-                )] = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
-
-    return filepath_patterns
-
 
 # --- Combination Generation ---
 
@@ -166,8 +148,7 @@ def _prepare_test_combinations(
     existing_data,
     skip_existing,
     verbose,
-    preprocessed_switch_dates,
-    filepath_patterns
+    preprocessed_switch_dates
 ):
     """Prepare all test combinations, filtering out already run tests."""
     test_combinations = []
@@ -194,6 +175,9 @@ def _prepare_test_combinations(
             skipped_combinations += 1
             continue
 
+        # Build filepath
+        filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
+
         # Add preprocessed switch dates and filepath to the test parameters
         test_combinations.append((
             tested_month,
@@ -203,7 +187,7 @@ def _prepare_test_combinations(
             strategy_instance,
             verbose,
             preprocessed_switch_dates[symbol],  # Pass preprocessed switch dates
-            filepath_patterns[(tested_month, symbol, interval)]  # Pass cached filepath
+            filepath
         ))
 
     return test_combinations, skipped_combinations
