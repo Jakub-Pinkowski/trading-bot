@@ -33,23 +33,18 @@ def calculate_rsi(prices, period, prices_hash):
     if indicator_cache.contains(cache_key):
         return indicator_cache.get(cache_key)
 
-    # Calculate RSI
+    # ==================== Vectorized RSI Calculation ====================
+    # Calculate price changes
     delta = prices.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
-    avg_gain = gain.rolling(window=period, min_periods=period).mean()
-    avg_loss = loss.rolling(window=period, min_periods=period).mean()
+    # Use EWM (Exponential Weighted Moving Average) for Wilder's smoothing
+    # alpha = 1/period gives Wilder's smoothing, adjust=False for recursive formula
+    avg_gain = gain.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
 
-    # Initialize the recursive values with the rolling mean at index `period`
-    for i in range(period, len(prices)):
-        if i == period:
-            # For the very first point, leave as is (already set by rolling)
-            continue
-        # Recursive calculation, starting after the first rolling value
-        avg_gain.iat[i] = (avg_gain.iat[i - 1] * (period - 1) + gain.iat[i]) / period
-        avg_loss.iat[i] = (avg_loss.iat[i - 1] * (period - 1) + loss.iat[i]) / period
-
+    # Calculate RSI
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 
