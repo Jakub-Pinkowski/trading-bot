@@ -9,6 +9,22 @@ from config import BACKTESTING_DIR
 
 logger = get_logger('backtesting/strategy_analysis')
 
+# ==================== Module Constants ====================
+
+# Default values
+DEFAULT_LIMIT = 30
+DECIMAL_PLACES = 2
+
+# Required DataFrame columns
+REQUIRED_COLUMNS = ['strategy', 'total_trades', 'symbol', 'interval']
+
+# Column aggregation mappings
+AGG_FUNCTIONS = {
+    'total_trades': 'sum',
+    'symbol': 'nunique',
+    'interval': 'nunique'
+}
+
 
 # ==================== Helper Functions ====================
 
@@ -24,11 +40,7 @@ def _filter_dataframe(
 
     # Filter by minimum average trades per combination or minimum symbol count
     if min_avg_trades_per_combination > 0 or min_symbol_count is not None:
-        strategy_stats = df.groupby('strategy').agg({
-            'total_trades': 'sum',
-            'symbol': 'nunique',
-            'interval': 'nunique'
-        }).reset_index()
+        strategy_stats = df.groupby('strategy').agg(AGG_FUNCTIONS).reset_index()
 
         # Calculate combinations (symbol × interval)
         strategy_stats['combination_count'] = strategy_stats['symbol'] * strategy_stats['interval']
@@ -85,26 +97,26 @@ def _calculate_weighted_win_rate(filtered_df, grouped):
     total_trades_by_strategy = grouped['total_trades'].sum()
     winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
         filtered_df['strategy']).sum()
-    return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(2)
+    return (winning_trades_by_strategy / total_trades_by_strategy * 100).round(DECIMAL_PLACES)
 
 
 def _calculate_average_trade_return(total_return, total_trades):
     """Calculate average trade return from total return and total trades."""
-    return (total_return / total_trades).round(2)
+    return (total_return / total_trades).round(DECIMAL_PLACES)
 
 
 def _calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
     """Calculate a profit factor from total wins and losses percentages."""
     return abs(
         total_wins_percentage / total_losses_percentage
-    ).replace([float('inf'), float('-inf')], float('inf')).round(2)
+    ).replace([float('inf'), float('-inf')], float('inf')).round(DECIMAL_PLACES)
 
 
 def _calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
     """Calculate trade-weighted average for a given metric."""
     weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
         filtered_df['strategy']).sum()
-    return (weighted_sum / total_trades_by_strategy).round(2)
+    return (weighted_sum / total_trades_by_strategy).round(DECIMAL_PLACES)
 
 
 def _parse_strategy_name(strategy_name):
@@ -188,7 +200,7 @@ class StrategyAnalyzer:
         self,
         metric,
         min_avg_trades_per_combination,
-        limit=30,
+        limit=DEFAULT_LIMIT,
         aggregate=False,
         interval=None,
         symbol=None,
@@ -229,12 +241,6 @@ class StrategyAnalyzer:
                                   weighted=weighted,
                                   interval=interval,
                                   symbol=symbol)
-
-        # Create a message with interval and symbol information
-        interval_msg = f" for {interval} interval" if interval else ""
-        symbol_msg = f" and {symbol} symbol" if symbol else ""
-        weighted_msg = " with weighted aggregation" if aggregate and weighted else ""
-        weighted_msg = " with simple aggregation" if aggregate and not weighted else weighted_msg
 
         return sorted_df
 
@@ -283,9 +289,9 @@ class StrategyAnalyzer:
             'symbol_count': symbol_count,
             'interval_count': interval_count,
             'total_trades': total_trades,
-            'avg_trades_per_combination': (total_trades / (symbol_count * interval_count)).round(2),
-            'avg_trades_per_symbol': (total_trades / symbol_count).round(2),
-            'avg_trades_per_interval': (total_trades / interval_count).round(2),
+            'avg_trades_per_combination': (total_trades / (symbol_count * interval_count)).round(DECIMAL_PLACES),
+            'avg_trades_per_symbol': (total_trades / symbol_count).round(DECIMAL_PLACES),
+            'avg_trades_per_interval': (total_trades / interval_count).round(DECIMAL_PLACES),
         }
 
         if weighted:
@@ -399,9 +405,9 @@ class StrategyAnalyzer:
                         # Log warning if column reordering fails and continue with the original order
                         logger.warning(f"Could not reorder columns: {e}. Using original column order.")
 
-            # Format all numeric columns to 2 decimal places
+            # Format all numeric columns to configured decimal places
             numeric_cols = formatted_df.select_dtypes(include='number').columns
-            formatted_df[numeric_cols] = formatted_df[numeric_cols].round(2)
+            formatted_df[numeric_cols] = formatted_df[numeric_cols].round(DECIMAL_PLACES)
 
             # Rename columns for better readability
             formatted_df.columns = [_format_column_name(col) for col in formatted_df.columns]
