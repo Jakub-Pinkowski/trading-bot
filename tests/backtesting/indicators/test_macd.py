@@ -205,9 +205,9 @@ def test_calculate_macd_calculation_correctness():
     prices_hash = hash_series(prices)
     macd = calculate_macd(prices, fast_period, slow_period, signal_period, prices_hash=prices_hash)
 
-    # Manually calculate the expected values
-    fast_ema = prices.ewm(span=fast_period, adjust=False).mean()
-    slow_ema = prices.ewm(span=slow_period, adjust=False).mean()
+    # Manually calculate the expected values (with min_periods to match implementation)
+    fast_ema = prices.ewm(span=fast_period, min_periods=fast_period, adjust=False).mean()
+    slow_ema = prices.ewm(span=slow_period, min_periods=slow_period, adjust=False).mean()
     expected_macd_line = fast_ema - slow_ema
     expected_signal_line = expected_macd_line.ewm(span=signal_period, adjust=False).mean()
     expected_histogram = expected_macd_line - expected_signal_line
