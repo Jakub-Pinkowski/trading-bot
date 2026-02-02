@@ -141,7 +141,6 @@ def _get_switch_dates_for_symbols(symbols, switch_dates_dict):
     return switch_dates_by_symbol
 
 
-
 # --- Combination Generation ---
 
 def _generate_all_combinations(tested_months, symbols, intervals, strategies):
