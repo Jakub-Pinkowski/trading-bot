@@ -11,6 +11,13 @@ class EMACrossoverStrategy(BaseStrategy):
         self.short_ema_period = short_ema_period
         self.long_ema_period = long_ema_period
 
+    # ==================== Name Formatting ====================
+
+    @staticmethod
+    def format_name(short_ema_period, long_ema_period, rollover, trailing, slippage, **kwargs):
+        """Generate standardized strategy name."""
+        return f'EMA(short={short_ema_period},long={long_ema_period},rollover={rollover},trailing={trailing},slippage={slippage})'
+
     # ==================== Public Methods ====================
 
     def add_indicators(self, df):

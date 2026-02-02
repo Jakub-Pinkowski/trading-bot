@@ -1111,11 +1111,11 @@ class TestWarningDeduplication(unittest.TestCase):
 
         # Count warnings for each type
         rsi_warnings = [call for call in mock_logger.warning.call_args_list
-                        if 'RSI Strategy Parameter Guidance' in str(call)]
+                        if 'rsi Strategy Parameter Guidance' in str(call)]
         ema_warnings = [call for call in mock_logger.warning.call_args_list
-                        if 'EMA Strategy Parameter Guidance' in str(call)]
+                        if 'ema Strategy Parameter Guidance' in str(call)]
         bb_warnings = [call for call in mock_logger.warning.call_args_list
-                       if 'Bollinger Bands Strategy Parameter Guidance' in str(call)]
+                       if 'bollinger Strategy Parameter Guidance' in str(call)]
 
         # Each strategy type should have its warnings logged only once
         # RSI should have warnings about period 7
