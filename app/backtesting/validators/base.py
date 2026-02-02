@@ -134,6 +134,24 @@ class Validator:
         """
         self.warnings.append(message)
 
+    # ==================== Type Checking Helpers ====================
+
+    def _is_bool_or_not_type(self, value, *types):
+        """
+        Check if value is boolean or not one of the given types.
+
+        This helper prevents booleans from passing type checks since
+        bool inherits from int in Python (True == 1, False == 0).
+
+        Args:
+            value: The value to check
+            *types: One or more types to check against
+
+        Returns:
+            True if value is a boolean or not an instance of any given type
+        """
+        return isinstance(value, bool) or not isinstance(value, types)
+
     # ==================== Type Validation ====================
 
     def validate_positive_integer(self, value, param_name):
@@ -147,8 +165,7 @@ class Validator:
         Raises:
             ValueError: If value is not a positive integer
         """
-        # Explicitly exclude booleans since bool inherits from int in Python
-        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        if self._is_bool_or_not_type(value, int) or value <= 0:
             raise ValueError(f"{param_name} must be a positive integer")
 
     def validate_positive_number(self, value, param_name):
@@ -162,8 +179,7 @@ class Validator:
         Raises:
             ValueError: If value is not positive
         """
-        # Explicitly exclude booleans since bool inherits from int in Python
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
+        if self._is_bool_or_not_type(value, int, float):
             raise ValueError(f"{param_name} must be positive")
 
         # Reject infinity and NaN values for float inputs
@@ -186,8 +202,7 @@ class Validator:
         Raises:
             ValueError: If value is not non-negative
         """
-        # Explicitly exclude booleans since bool inherits from int in Python
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
+        if self._is_bool_or_not_type(value, int, float):
             raise ValueError(f"{param_name} must be a non-negative number")
 
         # Reject infinity and NaN values for float inputs
@@ -226,8 +241,7 @@ class Validator:
         Raises:
             ValueError: If value is not a number or is outside the range
         """
-        # Explicitly exclude booleans since bool inherits from int in Python
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
+        if self._is_bool_or_not_type(value, int, float):
             raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
 
         # Reject infinity and NaN values for float inputs
@@ -254,8 +268,7 @@ class Validator:
         """
         # Only validate if value is provided
         if value is not None:
-            # Explicitly exclude booleans since bool inherits from int in Python
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
+            if self._is_bool_or_not_type(value, int, float):
                 raise ValueError(f"{param_name} must be None or a positive number")
 
             # Reject infinity and NaN values for float inputs
@@ -280,8 +293,7 @@ class Validator:
         """
         # Only validate if value is provided
         if value is not None:
-            # Explicitly exclude booleans since bool inherits from int in Python
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
+            if self._is_bool_or_not_type(value, int, float):
                 raise ValueError(f"{param_name} must be None or a non-negative number")
 
             # Reject infinity and NaN values for float inputs
