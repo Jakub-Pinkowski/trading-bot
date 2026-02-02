@@ -8,7 +8,7 @@ preparing it for CSV export.
 import re
 from datetime import datetime
 
-from app.backtesting.analysis.strategy_analyzer import DECIMAL_PLACES
+from app.backtesting.analysis.constants import DECIMAL_PLACES
 from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/analysis/formatters')

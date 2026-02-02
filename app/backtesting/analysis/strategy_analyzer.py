@@ -8,28 +8,7 @@ import os
 
 import pandas as pd
 
-from app.utils.logger import get_logger
-from config import BACKTESTING_DIR
-
-logger = get_logger('backtesting/analysis')
-
-# ==================== Constants ====================
-
-# Default values
-DEFAULT_LIMIT = 30
-DECIMAL_PLACES = 2
-
-# Required columns that must be present in strategy results DataFrames
-REQUIRED_COLUMNS = ['strategy', 'total_trades', 'symbol', 'interval']
-
-# Column aggregation mappings for groupby operations
-AGG_FUNCTIONS = {
-    'total_trades': 'sum',
-    'symbol': 'nunique',
-    'interval': 'nunique'
-}
-
-# Import after constants to avoid circular import
+from app.backtesting.analysis.constants import DEFAULT_LIMIT, DECIMAL_PLACES
 from app.backtesting.analysis.data_helpers import (
     filter_dataframe,
     calculate_weighted_win_rate,
@@ -41,6 +20,10 @@ from app.backtesting.analysis.formatters import (
     format_dataframe_for_export,
     build_filename
 )
+from app.utils.logger import get_logger
+from config import BACKTESTING_DIR
+
+logger = get_logger('backtesting/analysis')
 
 
 class StrategyAnalyzer:

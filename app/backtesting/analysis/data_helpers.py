@@ -5,16 +5,10 @@ This module contains helper functions for filtering DataFrames and calculating
 metrics for strategy analysis.
 """
 
+from app.backtesting.analysis.constants import REQUIRED_COLUMNS, AGG_FUNCTIONS, DECIMAL_PLACES
 from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/analysis/helpers')
-
-# Import constants from the main module
-from app.backtesting.analysis.strategy_analyzer import (
-    REQUIRED_COLUMNS,
-    AGG_FUNCTIONS,
-    DECIMAL_PLACES
-)
 
 
 # ==================== DataFrame Operations ====================
