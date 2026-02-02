@@ -9,6 +9,12 @@ trading-bot/
 │   │   ├── per_trade_metrics.py                  # Per trade metrics
 │   │   └── trades_matching.py                    # Matching trades
 │   ├── backtesting/
+│   │   ├── analysis/                             # Strategy analysis module
+│   │   │   ├── __init__.py
+│   │   │   ├── constants.py                      # Analysis constants
+│   │   │   ├── data_helpers.py                   # DataFrame filtering & calculations
+│   │   │   ├── formatters.py                     # CSV formatting helpers
+│   │   │   └── strategy_analyzer.py              # Main StrategyAnalyzer class
 │   │   ├── cache/                                # Caching system for backtesting
 │   │   │   ├── __init__.py
 │   │   │   ├── cache_base.py                     # Base cache class
@@ -60,12 +66,6 @@ trading-bot/
 │   │   │   ├── ichimoku_validator.py            # Ichimoku Cloud parameter validator
 │   │   │   ├── macd_validator.py                # MACD parameter validator
 │   │   │   └── rsi_validator.py                 # RSI parameter validator
-│   │   ├── analysis/                             # Strategy analysis module
-│   │   │   ├── __init__.py
-│   │   │   ├── constants.py                      # Analysis constants
-│   │   │   ├── data_helpers.py                   # DataFrame filtering & calculations
-│   │   │   ├── formatters.py                     # CSV formatting helpers
-│   │   │   └── strategy_analyzer.py              # Main StrategyAnalyzer class
 │   │   ├── __init__.py
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
