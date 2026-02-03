@@ -136,8 +136,6 @@ def create_strategy(strategy_type, **params):
     if all_warnings:
         _log_warnings_once(all_warnings, strategy_type)
 
-    # Create and return strategy
-    logger.debug(f"Creating {strategy_type} strategy with params: {strategy_params}")
     return strategy_class(**strategy_params, **common_params)
 
 
