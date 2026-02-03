@@ -41,7 +41,22 @@ class MassTester:
         trailing_stops,
         slippages
     ):
-        """Add Bollinger Bands strategy tests with all parameter combinations."""
+        """
+        Add Bollinger Bands strategy tests with all parameter combinations.
+
+        Creates test instances for every possible combination of the provided parameters.
+        Bollinger Bands uses price volatility to identify potential entry/exit points.
+
+        Args:
+            periods: List of moving average periods (e.g., [10, 20, 30])
+            number_of_standard_deviations_list: List of standard deviation multipliers (e.g., [1.5, 2.0, 2.5])
+            rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
+            trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
+            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+
+        Returns:
+            None. Strategies are added to self.strategies list for later execution
+        """
         self._add_strategy_tests(
             strategy_type='bollinger',
             param_grid={
@@ -55,7 +70,22 @@ class MassTester:
         )
 
     def add_ema_crossover_tests(self, short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages):
-        """Add EMA Crossover strategy tests with all parameter combinations."""
+        """
+        Add EMA Crossover strategy tests with all parameter combinations.
+
+        Creates test instances for every possible combination of the provided parameters.
+        EMA Crossover generates signals when a fast EMA crosses above/below a slow EMA.
+
+        Args:
+            short_ema_periods: List of short (fast) EMA periods (e.g., [5, 9, 12])
+            long_ema_periods: List of long (slow) EMA periods (e.g., [21, 26, 50])
+            rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
+            trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
+            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+
+        Returns:
+            None. Strategies are added to self.strategies list for later execution
+        """
         self._add_strategy_tests(
             strategy_type='ema',
             param_grid={
@@ -78,7 +108,24 @@ class MassTester:
         trailing_stops,
         slippages
     ):
-        """Add Ichimoku Cloud strategy tests with all parameter combinations."""
+        """
+        Add Ichimoku Cloud strategy tests with all parameter combinations.
+
+        Creates test instances for every possible combination of the provided parameters.
+        Ichimoku Cloud is a comprehensive indicator showing support/resistance, momentum, and trend direction.
+
+        Args:
+            tenkan_periods: List of Tenkan-sen (conversion line) periods (e.g., [7, 9, 11])
+            kijun_periods: List of Kijun-sen (base line) periods (e.g., [22, 26, 30])
+            senkou_span_b_periods: List of Senkou Span B (leading span B) periods (e.g., [44, 52, 60])
+            displacements: List of cloud displacement periods (e.g., [22, 26, 30])
+            rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
+            trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
+            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+
+        Returns:
+            None. Strategies are added to self.strategies list for later execution
+        """
         self._add_strategy_tests(
             strategy_type='ichimoku',
             param_grid={
@@ -94,7 +141,23 @@ class MassTester:
         )
 
     def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages):
-        """Add MACD strategy tests with all parameter combinations."""
+        """
+        Add MACD strategy tests with all parameter combinations.
+
+        Creates test instances for every possible combination of the provided parameters.
+        MACD (Moving Average Convergence Divergence) identifies changes in momentum, direction, and strength.
+
+        Args:
+            fast_periods: List of fast EMA periods (e.g., [8, 12, 16])
+            slow_periods: List of slow EMA periods (e.g., [21, 26, 30])
+            signal_periods: List of signal line periods (e.g., [6, 9, 12])
+            rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
+            trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
+            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+
+        Returns:
+            None. Strategies are added to self.strategies list for later execution
+        """
         self._add_strategy_tests(
             strategy_type='macd',
             param_grid={
@@ -109,7 +172,23 @@ class MassTester:
         )
 
     def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages):
-        """Add RSI strategy tests with all parameter combinations."""
+        """
+        Add RSI strategy tests with all parameter combinations.
+
+        Creates test instances for every possible combination of the provided parameters.
+        RSI (Relative Strength Index) is a momentum oscillator measuring overbought/oversold conditions.
+
+        Args:
+            rsi_periods: List of RSI calculation periods (e.g., [7, 14, 21])
+            lower_thresholds: List of oversold thresholds for buy signals (e.g., [20, 30, 40])
+            upper_thresholds: List of overbought thresholds for sell signals (e.g., [60, 70, 80])
+            rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
+            trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
+            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+
+        Returns:
+            None. Strategies are added to self.strategies list for later execution
+        """
         self._add_strategy_tests(
             strategy_type='rsi',
             param_grid={
@@ -126,7 +205,30 @@ class MassTester:
     # ==================== Public API - Execution ====================
 
     def run_tests(self, verbose=True, max_workers=None, skip_existing=True):
-        """Run all tests with the configured parameters in parallel."""
+        """
+        Run all configured strategy tests in parallel across symbols, intervals, and months.
+
+        Executes all strategies added via add_*_tests() methods using multiprocessing
+        for parallel execution. Results are saved incrementally and can be analyzed later.
+
+        Args:
+            verbose: If True, print detailed progress information during execution.
+                    If False, only print summary statistics
+            max_workers: Maximum number of parallel worker processes. None = use all CPU cores.
+                        Lower values reduce memory usage but increase execution time
+            skip_existing: If True, skip tests that already have results in the database.
+                          If False, re-run all tests (useful for parameter changes)
+
+        Returns:
+            List of result dictionaries. Each dict contains:
+            - month: Tested month (e.g., '1!')
+            - symbol: Tested symbol (e.g., 'ZS', 'CL', 'GC')
+            - interval: Tested timeframe (e.g., '15m', '1h', '4h')
+            - strategy: Strategy name with parameters
+            - metrics: Dict of performance metrics (profit_factor, win_rate, etc.)
+            - timestamp: ISO format timestamp of test execution
+            - cache_stats: Cache hit/miss statistics
+        """
         return orchestrator_run_tests(
             self,
             verbose=verbose,

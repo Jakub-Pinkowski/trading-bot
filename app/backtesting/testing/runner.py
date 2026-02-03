@@ -13,7 +13,41 @@ logger = get_logger('backtesting/testing/runner')
 # ==================== Single Test Execution ====================
 
 def run_single_test(test_params):
-    """Run a single test with the given parameters."""
+    """
+    Execute a single backtest for one strategy on one symbol/interval/month combination.
+
+    This is the core worker function called by each parallel process. It handles the complete
+    test lifecycle: loading historical data (with caching), running the strategy to generate
+    trades, calculating performance metrics, and tracking cache statistics.
+
+    Args:
+        test_params: Tuple containing 8 elements in this order:
+            - tested_month: Month identifier (e.g., '1!', '2!')
+            - symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+            - interval: Timeframe (e.g., '15m', '1h', '4h', '1d')
+            - strategy_name: Full strategy name with parameters
+            - strategy_instance: Instantiated strategy object ready to run
+            - verbose: If True, print progress messages
+            - switch_dates: List of datetime objects for contract rollover dates
+            - filepath: Path to parquet file with historical price data
+
+    Returns:
+        Dictionary with test results, or None if the test failed.
+        Success dict contains:
+        - month: Tested month identifier
+        - symbol: Tested symbol
+        - interval: Tested timeframe
+        - strategy: Strategy name with parameters
+        - metrics: Dict of performance metrics (profit_factor, win_rate, etc.)
+                  Empty dict if no trades were generated
+        - timestamp: ISO format timestamp of test execution
+        - cache_stats: Dict with cache hit/miss counts for this specific test
+                      (ind_hits, ind_misses, df_hits, df_misses)
+
+        Returns None if:
+        - Failed to load historical data file
+        - DataFrame validation failed (missing columns, too many NaN values, etc.)
+    """
     # Unpack parameters
     tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath = test_params
 

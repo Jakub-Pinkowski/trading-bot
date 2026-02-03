@@ -49,7 +49,31 @@ class StrategyAnalyzer:
         min_slippage=None,
         min_symbol_count=None
     ):
-        """ Get top-performing strategies based on a specific metric. """
+        """
+        Get top-performing strategies based on a specific metric.
+
+        Args:
+            metric: Metric to rank strategies by (e.g., 'profit_factor', 'win_rate',
+                   'average_trade_return_percentage_of_margin', 'sharpe_ratio')
+            min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
+                   to filter out strategies with insufficient data
+            limit: Maximum number of top strategies to return
+            aggregate: If True, aggregate results across all symbols and intervals.
+                      If False, return individual results per symbol/interval
+            interval: Filter by specific interval (e.g., '1h', '4h', '1d'). None = all intervals
+            symbol: Filter by specific symbol (e.g., 'ES', 'NQ', 'ZS'). None = all symbols
+            weighted: If True and aggregate=True, use trade-weighted averages.
+                     If False, use simple averages
+            min_slippage: Minimum slippage value to filter by. None = no filter
+            min_symbol_count: Minimum number of unique symbols per strategy. None = no filter
+
+        Returns:
+            DataFrame with top strategies sorted by metric in descending order.
+            Columns include strategy name, metrics, symbol counts, trade counts, etc.
+
+        Raises:
+            ValueError: If no results are loaded or results DataFrame is empty
+        """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')
@@ -104,7 +128,28 @@ class StrategyAnalyzer:
         min_slippage=None,
         min_symbol_count=None
     ):
-        """ Aggregate strategy results across different symbols and intervals. """
+        """
+        Aggregate strategy results across different symbols and intervals.
+
+        Combines results from multiple test runs (different symbols/intervals) into
+        single metrics per strategy. Supports both simple and trade-weighted averaging.
+
+        Args:
+            min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
+            interval: Filter by specific interval before aggregation. None = all intervals
+            symbol: Filter by specific symbol before aggregation. None = all symbols
+            weighted: If True, use trade-weighted averages (strategies with more trades
+                     have greater influence). If False, use simple averages
+            min_slippage: Minimum slippage value to filter by. None = no filter
+            min_symbol_count: Minimum number of unique symbols per strategy. None = no filter
+
+        Returns:
+            DataFrame with aggregated metrics per strategy. Each row represents one strategy
+            with combined performance across all matching symbols/intervals.
+
+        Raises:
+            ValueError: If no results are loaded or results DataFrame is empty
+        """
         if self.results_df is None or self.results_df.empty:
             logger.error('No results available. Load results first.')
             raise ValueError('No results available. Load results first.')

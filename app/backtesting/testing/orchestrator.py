@@ -23,7 +23,40 @@ def run_tests(
     max_workers=None,
     skip_existing=True
 ):
-    """Run all tests with the configured parameters in parallel."""
+    """
+    Core orchestration function that executes all configured backtests in parallel.
+
+    This is the main entry point for running mass backtests. It coordinates test preparation,
+    parallel execution across multiple worker processes, result aggregation, cache management,
+    and result persistence. Handles thousands of test combinations efficiently through
+    intelligent caching and multiprocessing.
+
+    Args:
+        tester: MassTester instance containing configured strategies, symbols, intervals,
+               and months to test
+        verbose: If True, print detailed progress for each test combination.
+                If False, only show summary statistics and progress every 100 tests
+        max_workers: Maximum number of parallel worker processes for test execution.
+                    None = use all available CPU cores.
+                    Lower values reduce memory usage but increase execution time
+        skip_existing: If True, check database for existing results and skip already-run tests.
+                      If False, re-run all tests regardless of existing results.
+                      Useful when parameters or logic have changed
+
+    Returns:
+        List of test result dictionaries stored in tester.results. Each dict contains:
+        - month: Tested month identifier (e.g., '1!', '2!')
+        - symbol: Tested futures symbol (e.g., 'ZS', 'CL', 'GC')
+        - interval: Tested timeframe (e.g., '15m', '1h', '4h', '1d')
+        - strategy: Strategy name with full parameter specification
+        - metrics: Dict of performance metrics (profit_factor, win_rate, sharpe_ratio, etc.)
+        - timestamp: ISO format timestamp of when test was executed
+        - cache_stats: Dict with indicator and dataframe cache hit/miss statistics
+
+    Raises:
+        ValueError: If no strategies have been added to the tester
+                   (strategies list is empty or not configured)
+    """
     start_time = time.time()  # Track the start time of the entire process
 
     # Reset cache statistics at the start of the run
