@@ -18,7 +18,7 @@ def filter_dataframe(
     min_avg_trades_per_combination=0,
     interval=None,
     symbol=None,
-    min_slippage=None,
+    min_slippage_ticks=None,
     min_symbol_count=None
 ):
     """
@@ -29,7 +29,7 @@ def filter_dataframe(
         min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
         interval: Filter by specific interval (e.g., '1h', '4h')
         symbol: Filter by specific symbol (e.g., 'ES', 'NQ')
-        min_slippage: Minimum slippage value to filter by
+        min_slippage_ticks: Minimum slippage_ticks value to filter by
         min_symbol_count: Minimum number of unique symbols per strategy
 
     Returns:
@@ -93,11 +93,11 @@ def filter_dataframe(
     if symbol:
         filtered_df = filtered_df[filtered_df['symbol'] == symbol]
 
-    # Filter by minimum slippage if provided
-    if min_slippage is not None:
-        # Extract slippage from the strategy name
+    # Filter by minimum slippage_ticks if provided
+    if min_slippage_ticks is not None:
+        # Extract slippage_ticks from the strategy name
         filtered_df = filtered_df[
-            filtered_df['strategy'].str.extract(r'slippage=([^,\)]+)')[0].astype(float) >= min_slippage]
+            filtered_df['strategy'].str.extract(r'slippage_ticks=([^,\)]+)')[0].astype(float) >= min_slippage_ticks]
 
     return filtered_df
 

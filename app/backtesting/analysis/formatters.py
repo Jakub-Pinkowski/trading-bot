@@ -20,13 +20,13 @@ def parse_strategy_name(strategy_name):
     """
     Parse strategy name to extract common parameters and clean the strategy name.
     Strategy names are created by strategy_factory.get_strategy_name()
-    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X,trailing=Y,slippage=Z)"
+    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X,trailing=Y,slippage_ticks=Z)"
     Args:
         strategy_name: Full strategy name with parameters
     Returns:
-        Tuple of (clean_name, rollover, trailing, slippage)
+        Tuple of (clean_name, rollover, trailing, slippage_ticks)
     """
-    params = {'rollover': False, 'trailing': None, 'slippage': 0.0}
+    params = {'rollover': False, 'trailing': None, 'slippage_ticks': 0.0}
     # Extract all param=value pairs with single regex iteration
     for match in re.finditer(r'(\w+)=([^,)]+)', strategy_name):
         key, value = match.groups()
@@ -35,14 +35,14 @@ def parse_strategy_name(strategy_name):
                 params[key] = value == 'True'
             elif key == 'trailing':
                 params[key] = None if value == 'None' else float(value)
-            elif key == 'slippage':
+            elif key == 'slippage_ticks':
                 params[key] = float(value)
     # Remove common parameters from name with single regex
-    clean_name = re.sub(r',?(rollover|trailing|slippage)=[^,)]+,?', '', strategy_name)
+    clean_name = re.sub(r',?(rollover|trailing|slippage_ticks)=[^,)]+,?', '', strategy_name)
     clean_name = re.sub(r',+', ',', clean_name).strip(',')
     clean_name = re.sub(r',\)', ')', clean_name)
     clean_name = re.sub(r'\(,', '(', clean_name)
-    return clean_name, params['rollover'], params['trailing'], params['slippage']
+    return clean_name, params['rollover'], params['trailing'], params['slippage_ticks']
 
 
 # ==================== Column Formatting ====================
