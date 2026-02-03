@@ -269,14 +269,16 @@ class TestIchimokuCloudStrategy:
 
     def test_with_slippage(self):
         """Test the strategy with slippage."""
-        slippage = 0.01  # 1% slippage
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
+        slippage_ticks = 1  # 1 tick slippage
         strategy = IchimokuCloudStrategy(tenkan_period=9,
                                          kijun_period=26,
                                          senkou_span_b_period=52,
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage_ticks=slippage,
+                                         slippage_ticks=slippage_ticks,
                                          symbol=None)
         df = create_test_df(length=200)
 
@@ -286,22 +288,28 @@ class TestIchimokuCloudStrategy:
         # Verify the strategy ran without errors
         assert isinstance(trades, list)
 
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
+
         # If there are trades, verify slippage is applied
         for trade in trades:
             if trade['side'] == 'long':
-                # For long trades, entry price should be higher than the close price
+                # For long trades, entry price should be higher than the open price
                 entry_time = trade['entry_time']
                 entry_price = trade['entry_price']
-                close_price = df.loc[entry_time, 'close']
-                assert entry_price >= close_price
-                assert entry_price <= close_price * (1 + slippage)
+                open_price = df.loc[entry_time, 'open']
+                # Entry price should be open + slippage_amount
+                expected_entry = round(open_price + slippage_amount, 2)
+                assert entry_price == expected_entry, f"Expected {expected_entry}, got {entry_price}"
             else:  # short
-                # For short trades, entry price should be lower than the close price
+                # For short trades, entry price should be lower than the open price
                 entry_time = trade['entry_time']
                 entry_price = trade['entry_price']
-                close_price = df.loc[entry_time, 'close']
-                assert entry_price <= close_price
-                assert entry_price >= close_price * (1 - slippage)
+                open_price = df.loc[entry_time, 'open']
+                # Entry price should be open - slippage_amount
+                expected_entry = round(open_price - slippage_amount, 2)
+                assert entry_price == expected_entry, f"Expected {expected_entry}, got {entry_price}"
 
     def test_extreme_market_conditions(self):
         """Test the strategy under extreme market conditions."""
