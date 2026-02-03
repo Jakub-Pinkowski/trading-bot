@@ -1,6 +1,6 @@
 # Backtesting User Guide
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** February 3, 2026  
 **For Version:** 1.0  
 **Module:** `app/backtesting/`
 

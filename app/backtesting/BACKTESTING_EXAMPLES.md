@@ -1,6 +1,6 @@
 # Backtesting Examples - Real Trade Entry/Exit Scenarios
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** February 3, 2026  
 **Symbol Used:** ZS (Soybean Futures - CBOT:ZS1!)  
 **Contract Size:** 5,000 bushels  
 **Price Format:** Cents per bushel (e.g., 1053.75 = $10.5375/bushel)

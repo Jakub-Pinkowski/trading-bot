@@ -63,7 +63,7 @@ def main():
     #     num_stds=[1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3],
     #     rollovers=[False],
     #     trailing_stops=[None, 1, 2, 3],
-    #     slippages=[0.05]
+    #     slippage_ticks_list=[2]
     # )
 
     # EMA Crossover uses two moving averages to identify trend changes
@@ -72,7 +72,7 @@ def main():
     #     ema_longs=[16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
     #     rollovers=[False],
     #     trailing_stops=[None, 1, 2, 3],
-    #     slippages=[0.05]
+    #     slippage_ticks_list=[2]
     # )
 
     # Ichimoku Cloud is a comprehensive indicator that provides information on support/resistance, trend direction, and momentum
@@ -83,7 +83,7 @@ def main():
     #     displacements=[10, 22, 26, 30],
     #     rollovers=[False],
     #     trailing_stops=[None, 1, 2, 3],
-    #     slippages=[0.05]
+    #     slippage_ticks_list=[2]
     # )
 
     # MACD identifies changes in momentum, direction, and strength
@@ -93,7 +93,7 @@ def main():
     #     signal_periods=[6, 7, 8, 9, 10, 11, 12, 13],
     #     rollovers=[False],
     #     trailing_stops=[None, 1, 2, 3],
-    #     slippages=[0.05]
+    #     slippage_ticks_list=[2]
     # )
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
@@ -103,7 +103,7 @@ def main():
         upper_thresholds=[60, 70, 80],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
-        slippages=[0.05]
+        slippage_ticks_list=[2, 3, 4, 5]
     )
 
     # Run all tests
