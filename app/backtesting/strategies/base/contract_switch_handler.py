@@ -8,7 +8,14 @@ reopening positions on the new contract.
 
 
 class ContractSwitchHandler:
-    """Manages contract rollover logic for futures backtesting."""
+    """
+    Manage contract rollover logic for futures backtesting.
+
+    Tracks contract expiration dates and determines when positions need to be
+    closed or rolled over to the next contract. Supports both rollover mode
+    (reopens positions on new contracts) and non-rollover mode (closes positions
+    at expiration). Prevents look-ahead bias by processing switches at bar open.
+    """
 
     # ==================== Initialization ====================
 
@@ -17,8 +24,9 @@ class ContractSwitchHandler:
         Initialize the contract switch handler.
 
         Args:
-            switch_dates: List of contract rollover dates
-            rollover: Whether to reopen positions on new contracts
+            switch_dates: List of contract rollover dates (datetime objects)
+            rollover: If True, reopen positions on new contracts after closing.
+                     If False, simply close positions at contract expiration
         """
         self.switch_dates = switch_dates
         self.rollover = rollover

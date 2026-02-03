@@ -22,7 +22,13 @@ from app.backtesting.validators.constants import (
 
 
 class MACDValidator(Validator):
-    """Validator for MACD strategy parameters."""
+    """
+    Validator for MACD (Moving Average Convergence Divergence) strategy parameters.
+
+    Validates fast EMA, slow EMA, and signal line periods. Ensures fast period is
+    shorter than slow period with adequate separation, and signal period is reasonable
+    for smoothing the MACD line. Also validates common parameters.
+    """
 
     # ==================== Validation Method ====================
 

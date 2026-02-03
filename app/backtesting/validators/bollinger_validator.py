@@ -19,7 +19,13 @@ from app.backtesting.validators.constants import (
 
 
 class BollingerValidator(Validator):
-    """Validator for Bollinger Bands strategy parameters."""
+    """
+    Validator for Bollinger Bands strategy parameters.
+
+    Validates period and standard deviation multiplier for Bollinger Bands calculation.
+    Ensures period is sufficient for meaningful volatility measurement and standard
+    deviation multiplier is within reasonable bounds for band width.
+    """
 
     # ==================== Validation Method ====================
 

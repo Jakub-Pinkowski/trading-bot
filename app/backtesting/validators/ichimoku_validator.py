@@ -29,7 +29,14 @@ from app.backtesting.validators.constants import (
 
 
 class IchimokuValidator(Validator):
-    """Validator for Ichimoku Cloud strategy parameters."""
+    """
+    Validator for Ichimoku Cloud strategy parameters.
+
+    Validates all Ichimoku component periods (Tenkan-sen, Kijun-sen, Senkou Span B)
+    and displacement. Ensures periods are properly ordered and within traditional
+    ratios for Ichimoku calculations. Most complex validator due to multiple
+    interdependent parameters.
+    """
 
     # ==================== Validation Method ====================
 

@@ -13,7 +13,14 @@ import math
 
 
 class Validator:
-    """Base class for parameter validators with reusable validation methods."""
+    """
+    Base class for strategy parameter validators with reusable validation methods.
+
+    Provides common validation patterns including range checking, gap validation,
+    ratio verification, and warning management. Subclasses implement strategy-specific
+    validation rules by calling these reusable methods. Validators collect warnings
+    without raising exceptions, allowing users to proceed with cautionary parameters.
+    """
 
     # ==================== Initialization ====================
 

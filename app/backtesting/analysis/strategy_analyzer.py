@@ -27,7 +27,14 @@ logger = get_logger('backtesting/analysis')
 
 
 class StrategyAnalyzer:
-    """A class for analyzing and processing trading strategy results."""
+    """
+    Analyze and process trading strategy backtest results.
+
+    Provides methods to filter, aggregate, rank, and export strategy performance data.
+    Automatically loads results from the default parquet file on initialization and
+    offers various analysis options including weighted averaging, metric-based ranking,
+    and filtered views by symbol/interval.
+    """
 
     def __init__(self):
         """Initialize the strategy analyzer and load results from the default file."""

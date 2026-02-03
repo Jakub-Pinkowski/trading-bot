@@ -24,7 +24,14 @@ from app.backtesting.validators.constants import (
 
 
 class RSIValidator(Validator):
-    """Validator for RSI strategy parameters."""
+    """
+    Validator for RSI (Relative Strength Index) strategy parameters.
+
+    Validates RSI period, overbought/oversold thresholds, and common parameters.
+    Ensures period is within reasonable range, thresholds are properly ordered
+    with adequate separation, and common parameters (rollover, trailing, slippage)
+    meet requirements.
+    """
 
     # ==================== Validation Method ====================
     def validate(self, rsi_period, lower_threshold, upper_threshold, **kwargs):

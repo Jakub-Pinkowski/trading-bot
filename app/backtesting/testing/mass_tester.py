@@ -13,12 +13,29 @@ logger = get_logger('backtesting/testing/mass_tester')
 # ==================== MassTester Class ====================
 
 class MassTester:
-    """A framework for mass-testing trading strategies with different parameter combinations."""
+    """
+    Framework for mass-testing trading strategies across multiple parameters and timeframes.
+
+    Orchestrates large-scale backtesting by generating all combinations of strategies,
+    symbols, intervals, and months, then executing them in parallel. Manages strategy
+    configuration, test execution coordination, and result aggregation. Supports skipping
+    already-run tests for efficient incremental testing.
+    """
 
     # ==================== Initialization ====================
 
     def __init__(self, tested_months, symbols, intervals):
-        """Initialize the mass tester with lists of months, symbols, and intervals to test."""
+        """
+        Initialize the mass tester with test parameters.
+
+        Loads contract switch dates from YAML configuration and prepares
+        the testing framework for strategy addition and execution.
+
+        Args:
+            tested_months: List of month identifiers to test (e.g., ['1!', '2!'])
+            symbols: List of futures symbols to test (e.g., ['ZS', 'CL', 'GC'])
+            intervals: List of timeframes to test (e.g., ['15m', '1h', '4h', '1d'])
+        """
         self.strategies = []
         self.tested_months = tested_months
         self.symbols = symbols

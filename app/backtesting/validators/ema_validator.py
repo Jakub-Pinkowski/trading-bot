@@ -23,7 +23,13 @@ from app.backtesting.validators.constants import (
 
 
 class EMAValidator(Validator):
-    """Validator for EMA crossover strategy parameters."""
+    """
+    Validator for EMA (Exponential Moving Average) crossover strategy parameters.
+
+    Validates short and long EMA periods ensuring they are properly ordered
+    (short < long) with adequate separation for meaningful crossover signals.
+    Also validates common parameters (rollover, trailing, slippage).
+    """
 
     # ==================== Validation Method ====================
 

@@ -9,7 +9,14 @@ This module manages position state and lifecycle during backtesting, including:
 
 
 class PositionManager:
-    """Manages position state and lifecycle during backtesting."""
+    """
+    Manage position state and lifecycle during backtesting.
+
+    Tracks open positions, handles slippage application, manages trade records,
+    and integrates with trailing stop functionality. Maintains position direction
+    (long/short), entry details, and completed trade history. Applies realistic
+    slippage to entry and exit prices based on position direction.
+    """
 
     # ==================== Initialization ====================
 
@@ -18,9 +25,9 @@ class PositionManager:
         Initialize the position manager.
 
         Args:
-            slippage: Slippage percentage (e.g., 0.05 = 0.05%)
-            symbol: The futures symbol (e.g., 'ZC', 'GC')
-            trailing: Trailing stop percentage (if used)
+            slippage: Slippage percentage applied to all entries/exits (e.g., 0.05 = 0.05%)
+            symbol: Futures symbol for contract specifications (e.g., 'ZC', 'GC')
+            trailing: Trailing stop percentage if enabled (None = disabled)
         """
         self.slippage = slippage
         self.symbol = symbol
@@ -70,7 +77,20 @@ class PositionManager:
     # ==================== Slippage Calculations ====================
 
     def apply_slippage_to_entry_price(self, direction, price):
-        """Apply slippage to entry price based on a position direction"""
+        """
+        Apply slippage to entry price based on position direction.
+
+        Long positions pay more on entry (higher price), short positions receive
+        less on entry (lower price). Simulates realistic market impact and
+        execution costs.
+
+        Args:
+            direction: Position direction (1 = long, -1 = short)
+            price: Base entry price before slippage
+
+        Returns:
+            Adjusted entry price with slippage applied
+        """
         if direction == 1:  # Long position
             # For long positions, pay more on entry (higher price)
             adjusted_price = price * (1 + self.slippage / 100)
@@ -81,7 +101,20 @@ class PositionManager:
         return round(adjusted_price, 2)
 
     def apply_slippage_to_exit_price(self, direction, price):
-        """Apply slippage to exit price based on a position direction"""
+        """
+        Apply slippage to exit price based on position direction.
+
+        Long positions receive less on exit (lower price), short positions pay
+        more on exit (higher price). Simulates realistic market impact when
+        closing positions.
+
+        Args:
+            direction: Position direction being closed (1 = long, -1 = short)
+            price: Base exit price before slippage
+
+        Returns:
+            Adjusted exit price with slippage applied, rounded to 2 decimal places
+        """
         if direction == 1:  # Long position
             # For long positions, receive less on exit (lower price)
             adjusted_price = price * (1 - self.slippage / 100)
