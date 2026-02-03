@@ -14,7 +14,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         assert strategy.tenkan_period == 9
         assert strategy.kijun_period == 26
@@ -28,7 +28,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=15,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         assert strategy.tenkan_period == 5
         assert strategy.kijun_period == 15
@@ -43,7 +43,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         # Create a dataframe with enough data for Ichimoku calculations
         df = create_test_df(length=200)
@@ -78,7 +78,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         df = create_test_df(length=200)
         df = strategy.add_indicators(df)
@@ -134,7 +134,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=15,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         df = create_test_df(length=200)
         df = strategy.add_indicators(df)
@@ -190,7 +190,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
         df = create_test_df(length=200)
 
@@ -208,7 +208,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
 
         # Create a dataframe with flat prices
@@ -236,7 +236,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=0.05,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)  # 5% trailing stop
         df = create_test_df(length=200)
 
@@ -276,7 +276,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=slippage,
+                                         slippage_ticks=slippage,
                                          symbol=None)
         df = create_test_df(length=200)
 
@@ -312,7 +312,7 @@ class TestIchimokuCloudStrategy:
             displacement=10,
             rollover=False,
             trailing=None,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -398,7 +398,7 @@ class TestIchimokuCloudStrategy:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
 
         # Create a dataframe with different market conditions

@@ -18,7 +18,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         assert strategy.rsi_period == 14
         assert strategy.lower_threshold == 30
@@ -30,7 +30,7 @@ class TestRSIStrategy:
                                upper_threshold=80,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         assert strategy.rsi_period == 10
         assert strategy.lower_threshold == 20
@@ -43,7 +43,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         # Create a larger dataframe to ensure we have valid RSI values
         df = create_test_df(length=100)
@@ -72,7 +72,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -116,7 +116,7 @@ class TestRSIStrategy:
                                upper_threshold=80,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -149,7 +149,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         df = create_test_df()
 
@@ -176,7 +176,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with constant prices
@@ -202,7 +202,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=2.0,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         df = create_test_df()
 
@@ -228,7 +228,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=True,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
         df = create_test_df()
 
@@ -267,7 +267,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with dates
@@ -341,7 +341,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with dates
@@ -420,7 +420,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with dates covering a full year
@@ -599,7 +599,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with dates
@@ -719,7 +719,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # Create a dataframe with dates
@@ -874,7 +874,7 @@ class TestRSIStrategy:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=2.0,
+                               slippage_ticks=2.0,
                                symbol=None)
 
         # Create a dataframe with dates
@@ -982,7 +982,7 @@ class TestRSIStrategy:
                                            upper_threshold=70,
                                            rollover=False,
                                            trailing=None,
-                                           slippage=0,
+                                           slippage_ticks=0,
                                            symbol=None)
         trades_no_slippage = strategy_no_slippage.run(df, [])
 
