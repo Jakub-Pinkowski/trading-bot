@@ -26,7 +26,19 @@ MARGIN_RATIOS = {
 # ==================== Helper Functions ====================
 
 def get_symbol_category(symbol):
-    """Categorize symbols into asset classes to apply appropriate margin ratios."""
+    """
+    Categorize futures symbols into asset classes for margin calculation.
+
+    Maps each symbol to its asset class category (energies, metals, indices, etc.)
+    which determines the appropriate margin ratio to use for estimating requirements.
+
+    Args:
+        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC', 'ES')
+
+    Returns:
+        String category name: 'energies', 'metals', 'indices', 'forex', 'crypto',
+        'grains', 'softs', or 'default' if symbol not found in mapping
+    """
     categories = {
         'energies': ['CL', 'NG', 'MCL', 'MNG', 'HO', 'RB'],
         'metals': ['GC', 'SI', 'HG', 'PL', 'MGC', 'MHG', 'SIL'],
@@ -44,7 +56,21 @@ def get_symbol_category(symbol):
 
 def estimate_margin(symbol, entry_price, contract_multiplier):
     """
-    Estimate the margin requirement for a symbol at any given time based on its contract value.
+    Estimate margin requirement for a futures contract based on historical market ratios.
+
+    Calculates approximate margin needed to trade one contract by applying asset-class-specific
+    ratios to the contract value. Uses historical ratios from Jan 2026 market data to estimate
+    margin requirements for backtesting periods where actual margin data is unavailable.
+
+    Args:
+        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC')
+        entry_price: Contract entry price in symbol's quote units
+        contract_multiplier: Number of units per contract (e.g., 5000 for ZS bushels)
+
+    Returns:
+        Float representing estimated margin requirement in dollars.
+        Calculated as: contract_value * category_margin_ratio
+        where contract_value = entry_price * contract_multiplier
     """
     category = get_symbol_category(symbol)
     ratio = MARGIN_RATIOS.get(category, MARGIN_RATIOS['default'])
@@ -55,7 +81,37 @@ def estimate_margin(symbol, entry_price, contract_multiplier):
 # ==================== Public API ====================
 
 def calculate_trade_metrics(trade, symbol):
-    """Calculate metrics for a single trade"""
+    """
+    Calculate comprehensive performance metrics for a single completed trade.
+
+    Computes P&L, returns, duration, and other metrics needed for strategy evaluation.
+    Applies commission costs and calculates returns both as percentage of margin (for
+    risk-adjusted comparison) and percentage of contract value (for understanding leverage).
+
+    Args:
+        trade: Dictionary containing trade details:
+              - entry_time: Datetime of entry
+              - exit_time: Datetime of exit
+              - entry_price: Entry price in symbol units
+              - exit_price: Exit price in symbol units
+              - side: 'long' or 'short'
+        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC') for looking up contract specs
+
+    Returns:
+        Dictionary with calculated metrics:
+        - entry_time, exit_time, entry_price, exit_price, side: Original trade data
+        - duration: Timedelta object of trade duration
+        - duration_hours: Trade duration in hours (float)
+        - return_percentage_of_margin: Return as % of estimated margin (risk-adjusted)
+        - return_percentage_of_contract: Return as % of contract value (leverage-aware)
+        - net_pnl: Net profit/loss in dollars after commission
+        - margin_requirement: Estimated margin in dollars
+        - commission: Commission cost in dollars
+
+    Raises:
+        ValueError: If symbol not found in CONTRACT_MULTIPLIERS, margin requirement is invalid,
+                   or trade side is not 'long' or 'short'
+    """
 
     # Create a copy of the trade to avoid modifying the original
     trade = trade.copy()
@@ -127,7 +183,25 @@ def calculate_trade_metrics(trade, symbol):
 
 
 def print_trade_metrics(trade):
-    """Print metrics for a single trade in a formatted way"""
+    """
+    Print formatted trade metrics to console with color-coded profit/loss.
+
+    Displays human-readable trade information including entry/exit details, duration,
+    prices, side, and return percentages. Uses ANSI color codes to highlight profitable
+    (green) vs losing (red) trades.
+
+    Args:
+        trade: Dictionary with trade metrics from calculate_trade_metrics().
+              Expected keys: entry_time, exit_time, duration, duration_hours,
+              entry_price, exit_price, side, return_percentage_of_margin,
+              return_percentage_of_contract
+
+    Returns:
+        None. Outputs formatted text directly to stdout
+
+    Side Effects:
+        Prints formatted trade information to console with ANSI color codes
+    """
     # Define colors for better visualization
     green = '\033[92m'
     red = '\033[91m'

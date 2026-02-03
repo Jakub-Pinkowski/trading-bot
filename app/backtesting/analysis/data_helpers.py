@@ -105,7 +105,22 @@ def filter_dataframe(
 # ==================== Calculation Helpers ====================
 
 def calculate_weighted_win_rate(filtered_df, grouped):
-    """Calculate win rate weighted by total trades."""
+    """
+    Calculate win rate weighted by total trades across multiple test results.
+
+    Computes an overall win rate by weighting each strategy's win rate by the number
+    of trades it executed. This gives more importance to strategies with more trades,
+    providing a more accurate representation of overall performance.
+
+    Args:
+        filtered_df: DataFrame containing strategy results with 'win_rate', 'total_trades',
+                    and 'strategy' columns
+        grouped: GroupBy object of filtered_df grouped by 'strategy'
+
+    Returns:
+        Series with weighted win rate percentages for each strategy, rounded to DECIMAL_PLACES.
+        Index is strategy names, values are win rate percentages (0-100)
+    """
     total_trades_by_strategy = grouped['total_trades'].sum()
     winning_trades_by_strategy = (filtered_df['win_rate'] * filtered_df['total_trades'] / 100).groupby(
         filtered_df['strategy']).sum()
@@ -113,19 +128,63 @@ def calculate_weighted_win_rate(filtered_df, grouped):
 
 
 def calculate_average_trade_return(total_return, total_trades):
-    """Calculate average trade return from total return and total trades."""
+    """
+    Calculate average return per trade from total return and total trades.
+
+    Divides cumulative return by number of trades to determine the average
+    performance per trade. Used for comparing strategies with different trade counts.
+
+    Args:
+        total_return: Series or scalar of total return values (can be percentage or dollar amount)
+        total_trades: Series or scalar of total trade counts (must be > 0 to avoid division errors)
+
+    Returns:
+        Series or scalar with average return per trade, rounded to DECIMAL_PLACES.
+        Same type as input (Series if inputs are Series, scalar if inputs are scalars)
+    """
     return (total_return / total_trades).round(DECIMAL_PLACES)
 
 
 def calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
-    """Calculate a profit factor from total wins and losses percentages."""
+    """
+    Calculate profit factor from total wins and losses percentages.
+
+    Computes the ratio of total winning percentage to total losing percentage.
+    A ratio > 1 indicates profitable performance. Handles division by zero by
+    replacing infinity values with positive infinity.
+
+    Args:
+        total_wins_percentage: Series or scalar of total winning percentage across all winning trades
+        total_losses_percentage: Series or scalar of total losing percentage across all losing trades.
+                                If zero, result will be infinity (perfectly profitable)
+
+    Returns:
+        Series or scalar with profit ratios (absolute value), rounded to DECIMAL_PLACES.
+        Values > 1 indicate profitable strategies, < 1 indicate losing strategies.
+        Infinity indicates no losses (all trades profitable)
+    """
     return abs(
         total_wins_percentage / total_losses_percentage
     ).replace([float('inf'), float('-inf')], float('inf')).round(DECIMAL_PLACES)
 
 
 def calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
-    """Calculate trade-weighted average for a given metric."""
+    """
+    Calculate trade-weighted average for a given metric across multiple test results.
+
+    Computes a weighted average where each value is weighted by the number of trades
+    that produced it. This ensures strategies with more trades have proportionally
+    more influence on the average, providing a more accurate aggregate metric.
+
+    Args:
+        filtered_df: DataFrame containing strategy results with the metric column and 'total_trades' column
+        metric_name: Name of the column to calculate weighted average for (e.g., 'profit_factor', 'sharpe_ratio')
+        total_trades_by_strategy: Series with total trade counts per strategy (from groupby sum)
+
+    Returns:
+        Series with trade-weighted average values for each strategy, rounded to DECIMAL_PLACES.
+        Index is strategy names, values are weighted averages of the specified metric
+    """
     weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
         filtered_df['strategy']).sum()
     return (weighted_sum / total_trades_by_strategy).round(DECIMAL_PLACES)

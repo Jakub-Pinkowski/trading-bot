@@ -11,7 +11,30 @@ logger = get_logger('backtesting/testing/reporting')
 # ==================== Results Conversion & Saving ====================
 
 def results_to_dataframe(results):
-    """Convert results to a pandas DataFrame."""
+    """
+    Convert list of test result dictionaries to a structured pandas DataFrame.
+
+    Transforms raw backtest results into a tabular format with standardized columns
+    for analysis. Performs validation on all numeric metrics and handles missing/invalid
+    values gracefully by replacing with 0.
+
+    Args:
+        results: List of result dictionaries from run_single_test(). Each dict contains:
+                - month: Month identifier (e.g., '1!')
+                - symbol: Futures symbol (e.g., 'ZS', 'CL')
+                - interval: Timeframe (e.g., '15m', '1h')
+                - strategy: Strategy name with parameters
+                - metrics: Dict of performance metrics
+
+    Returns:
+        DataFrame with standardized columns including:
+        - Basic identifiers: month, symbol, interval, strategy
+        - Trade statistics: total_trades, win_rate, average_trade_duration_hours
+        - Return metrics: profit_factor, average/total returns (percentage of contract)
+        - Risk metrics: maximum_drawdown, sharpe_ratio, sortino_ratio, calmar_ratio,
+                       value_at_risk, expected_shortfall, ulcer_index
+        Returns empty DataFrame if results list is empty
+    """
 
     if not results:
         logger.warning('No results available to convert to DataFrame.')
@@ -124,7 +147,26 @@ def results_to_dataframe(results):
 
 
 def save_results(results):
-    """Save results to one big parquet file."""
+    """
+    Save test results to parquet file for persistent storage and analysis.
+
+    Converts result dictionaries to DataFrame and saves to a single aggregated
+    parquet file. Uses file locking to prevent conflicts during concurrent writes.
+    Automatically appends to existing results while maintaining unique entries.
+
+    Args:
+        results: List of result dictionaries from run_single_test(). Each dict should
+                contain month, symbol, interval, strategy, and metrics fields
+
+    Returns:
+        None. Prints success/failure messages to console.
+        Saves to: {BACKTESTING_DIR}/mass_test_results_all.parquet
+
+    Side Effects:
+        - Creates or appends to parquet file on disk
+        - Logs errors if save operation fails
+        - Prints status messages to stdout
+    """
     try:
         # Convert results to DataFrame
         results_df = results_to_dataframe(results)
