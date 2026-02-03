@@ -8,7 +8,7 @@ All strategies inherit from BaseStrategy and implement the template methods:
 """
 
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
-from app.backtesting.strategies.ema_crossover import EMACrossoverStrategy
+from app.backtesting.strategies.ema import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy

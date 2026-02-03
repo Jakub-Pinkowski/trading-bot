@@ -1135,7 +1135,7 @@ app/backtesting/
 ├── strategies/
 │   ├── base_strategy.py          # Base class with trade extraction
 │   ├── rsi.py                    # RSI strategy implementation
-│   ├── ema_crossover.py          # EMA crossover strategy
+│   ├── ema.py                    # EMA crossover strategy
 │   ├── macd.py                   # MACD strategy
 │   ├── bollinger_bands.py        # Bollinger Bands strategy
 │   └── ichimoku_cloud.py         # Ichimoku strategy
