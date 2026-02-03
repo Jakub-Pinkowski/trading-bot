@@ -111,6 +111,100 @@ CONTRACT_MULTIPLIERS = {
     'ZW': 50,
 }
 
+# ==================== Tick Sizes ====================
+
+# Minimum tick sizes for futures contracts (in price points)
+# Organized by asset class for easy maintenance
+
+# Grains
+TICK_SIZES_GRAINS = {
+    'ZC': 0.25,  # Corn
+    'MZC': 0.50,  # Micro Corn
+    'XC': 0.125,  # Mini Corn
+    'YC': 0.125,  # Mini Corn (e-Corn)
+    'QC': 0.125,  # Mini-sized Corn
+    'ZW': 0.25,  # Wheat
+    'MZW': 0.50,  # Micro Wheat
+    'XW': 0.125,  # Mini Wheat
+    'ZS': 0.25,  # Soybeans
+    'MZS': 0.50,  # Micro Soybeans
+    'XK': 0.125,  # Mini Soybeans
+    'ZL': 0.01,  # Soybean Oil
+    'MZL': 0.02,  # Micro Soybean Oil
+}
+
+# Softs
+TICK_SIZES_SOFTS = {
+    'SB': 0.01,  # Sugar
+    'KC': 0.05,  # Coffee
+    'CC': 1.00,  # Cocoa
+}
+
+# Energy
+TICK_SIZES_ENERGY = {
+    'CL': 0.01,  # Crude Oil
+    'MCL': 0.01,  # Micro Crude Oil
+    'NG': 0.001,  # Natural Gas
+    'MNG': 0.001,  # Micro Natural Gas
+}
+
+# Metals
+TICK_SIZES_METALS = {
+    'GC': 0.10,  # Gold
+    'MGC': 0.10,  # Micro Gold
+    'SI': 0.005,  # Silver
+    'SIL': 0.005,  # Micro Silver
+    'HG': 0.0005,  # Copper
+    'MHG': 0.0005,  # Micro Copper
+    'PL': 0.10,  # Platinum
+    'PLM': 0.10,  # Micro Platinum
+}
+
+# Crypto
+TICK_SIZES_CRYPTO = {
+    'BTC': 5.00,  # Bitcoin
+    'MBT': 5.00,  # Micro Bitcoin
+    'ETH': 0.50,  # Ethereum
+    'MET': 0.50,  # Micro Ethereum
+}
+
+# Indices
+TICK_SIZES_INDICES = {
+    'ES': 0.25,  # E-mini S&P 500
+    'MES': 0.25,  # Micro E-mini S&P 500
+    'NQ': 0.25,  # E-mini NASDAQ-100
+    'MNQ': 0.25,  # Micro E-mini NASDAQ-100
+    'YM': 1.00,  # E-mini Dow
+    'MYM': 1.00,  # Micro E-mini Dow
+    'RTY': 0.10,  # E-mini Russell 2000
+    'M2K': 0.10,  # Micro E-mini Russell 2000
+    'ZB': 0.03125,  # 30-Year T-Bond (1/32)
+}
+
+# Forex
+TICK_SIZES_FOREX = {
+    '6E': 0.00005,  # Euro FX
+    '6J': 0.0000005,  # Japanese Yen
+    '6B': 0.0001,  # British Pound
+    '6A': 0.00005,  # Australian Dollar
+    '6C': 0.00005,  # Canadian Dollar
+    '6S': 0.00005,  # Swiss Franc
+}
+
+# Combined tick sizes dictionary
+TICK_SIZES = {
+    **TICK_SIZES_GRAINS,
+    **TICK_SIZES_SOFTS,
+    **TICK_SIZES_ENERGY,
+    **TICK_SIZES_METALS,
+    **TICK_SIZES_CRYPTO,
+    **TICK_SIZES_INDICES,
+    **TICK_SIZES_FOREX,
+}
+
+# Default tick size for unknown symbols
+DEFAULT_TICK_SIZE = 0.01
+
 # NOTE: Only used once to calculate the average margin as a percent of the contract value
 MARGIN_REQUIREMENTS = {
     '6A': 2344.58,
