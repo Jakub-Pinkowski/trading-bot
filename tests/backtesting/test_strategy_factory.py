@@ -33,7 +33,7 @@ class TestStrategyFactory(unittest.TestCase):
                                    upper_threshold=70,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
 
         self.assertIsInstance(strategy, RSIStrategy)
@@ -51,7 +51,7 @@ class TestStrategyFactory(unittest.TestCase):
             upper_threshold=75,
             rollover=True,
             trailing=2.0,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -70,7 +70,7 @@ class TestStrategyFactory(unittest.TestCase):
                                    long_ema_period=21,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
 
         self.assertIsInstance(strategy, EMACrossoverStrategy)
@@ -86,7 +86,7 @@ class TestStrategyFactory(unittest.TestCase):
             long_ema_period=26,
             rollover=True,
             trailing=2.0,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -105,7 +105,7 @@ class TestStrategyFactory(unittest.TestCase):
                                    signal_period=9,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
 
         self.assertIsInstance(strategy, MACDStrategy)
@@ -123,7 +123,7 @@ class TestStrategyFactory(unittest.TestCase):
             signal_period=7,
             rollover=True,
             trailing=2.0,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -142,7 +142,7 @@ class TestStrategyFactory(unittest.TestCase):
                                    number_of_standard_deviations=2,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
 
         self.assertIsInstance(strategy, BollingerBandsStrategy)
@@ -158,7 +158,7 @@ class TestStrategyFactory(unittest.TestCase):
             number_of_standard_deviations=2.5,
             rollover=True,
             trailing=2.0,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -189,7 +189,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid lower threshold
@@ -200,7 +200,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid upper threshold
@@ -211,7 +211,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=110,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Lower >= upper
@@ -222,7 +222,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=30,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
     def test_create_ema_strategy_invalid_parameters(self):
@@ -234,7 +234,7 @@ class TestStrategyFactory(unittest.TestCase):
                             long_ema_period=21,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid long EMA period
@@ -244,7 +244,7 @@ class TestStrategyFactory(unittest.TestCase):
                             long_ema_period=-1,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Short >= long
@@ -254,7 +254,7 @@ class TestStrategyFactory(unittest.TestCase):
                             long_ema_period=9,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
     def test_create_macd_strategy_invalid_parameters(self):
@@ -267,7 +267,7 @@ class TestStrategyFactory(unittest.TestCase):
                             signal_period=9,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid slow period
@@ -278,7 +278,7 @@ class TestStrategyFactory(unittest.TestCase):
                             signal_period=9,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid signal period
@@ -289,7 +289,7 @@ class TestStrategyFactory(unittest.TestCase):
                             signal_period=-1,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Fast >= slow
@@ -300,7 +300,7 @@ class TestStrategyFactory(unittest.TestCase):
                             signal_period=9,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
     def test_create_bollinger_strategy_invalid_parameters(self):
@@ -312,7 +312,7 @@ class TestStrategyFactory(unittest.TestCase):
                             number_of_standard_deviations=2,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid number of standard deviations
@@ -322,7 +322,7 @@ class TestStrategyFactory(unittest.TestCase):
                             number_of_standard_deviations=-1,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
     def test_create_strategy_ichimoku(self):
@@ -335,7 +335,7 @@ class TestStrategyFactory(unittest.TestCase):
                                    displacement=26,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
 
         self.assertIsInstance(strategy, IchimokuCloudStrategy)
@@ -355,7 +355,7 @@ class TestStrategyFactory(unittest.TestCase):
             displacement=22,
             rollover=True,
             trailing=2.0,
-            slippage=0,
+            slippage_ticks=0,
             symbol=None
         )
 
@@ -378,7 +378,7 @@ class TestStrategyFactory(unittest.TestCase):
                             displacement=26,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid kijun period
@@ -390,7 +390,7 @@ class TestStrategyFactory(unittest.TestCase):
                             displacement=26,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid senkou span B period
@@ -402,7 +402,7 @@ class TestStrategyFactory(unittest.TestCase):
                             displacement=26,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Invalid displacement
@@ -414,7 +414,7 @@ class TestStrategyFactory(unittest.TestCase):
                             displacement=-1,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
     def test_create_strategy_invalid_common_parameters(self):
@@ -427,7 +427,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover="True",
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)  # String instead of boolean
 
         # Invalid trailing (not a positive number)
@@ -438,7 +438,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing=0,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)  # Zero is not positive
 
         with pytest.raises(ValueError, match="trailing must be positive"):
@@ -448,7 +448,7 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing=-1,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)  # Negative number
 
         with pytest.raises(ValueError, match="trailing must be positive"):
@@ -458,28 +458,28 @@ class TestStrategyFactory(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing="2.0",
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)  # String instead of number
 
         # Invalid slippage (not a non-negative number)
-        with pytest.raises(ValueError, match="slippage must be a non-negative number"):
+        with pytest.raises(ValueError, match="slippage_ticks must be a non-negative number"):
             create_strategy('rsi',
                             rsi_period=14,
                             lower_threshold=30,
                             upper_threshold=70,
                             rollover=False,
                             trailing=None,
-                            slippage=-1,
+                            slippage_ticks=-1,
                             symbol=None)  # Negative number
 
-        with pytest.raises(ValueError, match="slippage must be a non-negative number"):
+        with pytest.raises(ValueError, match="slippage_ticks must be a non-negative number"):
             create_strategy('rsi',
                             rsi_period=14,
                             lower_threshold=30,
                             upper_threshold=70,
                             rollover=False,
                             trailing=None,
-                            slippage="0.5",
+                            slippage_ticks="0.5",
                             symbol=None)  # String instead of number
     def test_get_strategy_name(self):
         """Test getting a standardized name for a strategy."""
@@ -489,9 +489,9 @@ class TestStrategyFactory(unittest.TestCase):
                                  number_of_standard_deviations=2,
                                  rollover=True,
                                  trailing=None,
-                                 slippage=None,
+                                 slippage_ticks=None,
                                  symbol=None)
-        self.assertEqual(name, 'BB(period=20,std=2,rollover=True,trailing=None,slippage=None)')
+        self.assertEqual(name, 'BB(period=20,std=2,rollover=True,trailing=None,slippage_ticks=None)')
 
         # EMA strategy
         name = get_strategy_name('ema',
@@ -499,9 +499,9 @@ class TestStrategyFactory(unittest.TestCase):
                                  long_ema_period=21,
                                  rollover=True,
                                  trailing=2.0,
-                                 slippage=None,
+                                 slippage_ticks=None,
                                  symbol=None)
-        self.assertEqual(name, 'EMA(short=9,long=21,rollover=True,trailing=2.0,slippage=None)')
+        self.assertEqual(name, 'EMA(short=9,long=21,rollover=True,trailing=2.0,slippage_ticks=None)')
 
         # Ichimoku strategy
         name = get_strategy_name('ichimoku',
@@ -511,10 +511,10 @@ class TestStrategyFactory(unittest.TestCase):
                                  displacement=26,
                                  rollover=False,
                                  trailing=None,
-                                 slippage=None,
+                                 slippage_ticks=None,
                                  symbol=None)
         self.assertEqual(name,
-                         'Ichimoku(tenkan=9,kijun=26,senkou_b=52,displacement=26,rollover=False,trailing=None,slippage=None)')
+                         'Ichimoku(tenkan=9,kijun=26,senkou_b=52,displacement=26,rollover=False,trailing=None,slippage_ticks=None)')
 
         # MACD strategy
         name = get_strategy_name('macd',
@@ -523,9 +523,9 @@ class TestStrategyFactory(unittest.TestCase):
                                  signal_period=9,
                                  rollover=False,
                                  trailing=None,
-                                 slippage=None,
+                                 slippage_ticks=None,
                                  symbol=None)
-        self.assertEqual(name, 'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage=None)')
+        self.assertEqual(name, 'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage_ticks=None)')
 
         # RSI strategy
         name = get_strategy_name('rsi',
@@ -534,13 +534,13 @@ class TestStrategyFactory(unittest.TestCase):
                                  upper_threshold=70,
                                  rollover=False,
                                  trailing=None,
-                                 slippage=None,
+                                 slippage_ticks=None,
                                  symbol=None)
-        self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=None)')
+        self.assertEqual(name, 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=None)')
 
         # Unknown strategy type should raise ValueError
         with pytest.raises(ValueError, match="Unknown strategy type"):
-            get_strategy_name('unknown', rollover=False, trailing=None, slippage=0, symbol=None)
+            get_strategy_name('unknown', rollover=False, trailing=None, slippage_ticks=0, symbol=None)
 
 
 class TestPrivateHelperFunctions(unittest.TestCase):
@@ -865,51 +865,56 @@ class TestParameterValidation(unittest.TestCase):
         """Test common parameter validation with optimal parameters."""
         # Reasonable parameters should generate no warnings
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=2.5, slippage=0.15)
+        warnings = validator.validate(rollover=False, trailing=2.5, slippage_ticks=0.15)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_common_parameters_warnings(self):
         """Test common parameter validation with parameters that generate warnings."""
         # Very tight trailing stop
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=0.5, slippage=0.1)
+        warnings = validator.validate(rollover=False, trailing=0.5, slippage_ticks=0.1)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too tight", warnings[0])
 
         # Very wide trailing stop
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=8.0, slippage=0.1)
+        warnings = validator.validate(rollover=False, trailing=8.0, slippage_ticks=0.1)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too wide", warnings[0])
 
-        # Zero slippage
+        # Zero slippage (acceptable in testing - no warning expected)
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=None, slippage=0.0)
-        self.assertEqual(len(warnings), 1)
-        self.assertIn("unrealistic", warnings[0])
+        warnings = validator.validate(rollover=False, trailing=None, slippage_ticks=0.0)
+        self.assertEqual(len(warnings), 0)
 
-        # Very high slippage
+        # High slippage (6 ticks)
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=None, slippage=0.8)
+        warnings = validator.validate(rollover=False, trailing=None, slippage_ticks=6)
         self.assertEqual(len(warnings), 1)
-        self.assertIn("too high", warnings[0])
+        self.assertIn("high", warnings[0].lower())
+
+        # Very high slippage (12 ticks)
+        validator = CommonValidator()
+        warnings = validator.validate(rollover=False, trailing=None, slippage_ticks=12)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("high", warnings[0].lower())
 
     def test_validate_common_parameters_invalid_rollover_type(self):
         """Test that CommonValidator raises ValueError for non-boolean rollover."""
         # String instead of boolean
         validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validator.validate(rollover="true", trailing=None, slippage=None)
+            validator.validate(rollover="true", trailing=None, slippage_ticks=None)
 
         # Integer instead of boolean
         validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validator.validate(rollover=1, trailing=None, slippage=None)
+            validator.validate(rollover=1, trailing=None, slippage_ticks=None)
 
         # None instead of boolean
         validator = CommonValidator()
         with pytest.raises(ValueError, match="rollover must be a boolean"):
-            validator.validate(rollover=None, trailing=None, slippage=None)
+            validator.validate(rollover=None, trailing=None, slippage_ticks=None)
 
     def test_validation_integration_with_strategy_creation(self):
         """Test that validation warnings are properly logged during strategy creation."""
@@ -923,7 +928,7 @@ class TestParameterValidation(unittest.TestCase):
                                    upper_threshold=85,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
         self.assertIsInstance(strategy, RSIStrategy)
         self.assertEqual(strategy.rsi_period, 5)
@@ -936,7 +941,7 @@ class TestParameterValidation(unittest.TestCase):
                                    long_ema_period=60,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
         self.assertIsInstance(strategy, EMACrossoverStrategy)
         self.assertEqual(strategy.short_ema_period, 3)
@@ -949,7 +954,7 @@ class TestParameterValidation(unittest.TestCase):
                                    signal_period=15,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
         self.assertIsInstance(strategy, MACDStrategy)
         self.assertEqual(strategy.fast_period, 5)
@@ -962,7 +967,7 @@ class TestParameterValidation(unittest.TestCase):
                                    number_of_standard_deviations=3.0,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
         self.assertIsInstance(strategy, BollingerBandsStrategy)
         self.assertEqual(strategy.period, 10)
@@ -974,7 +979,7 @@ class TestParameterValidation(unittest.TestCase):
                                    displacement=20,
                                    rollover=False,
                                    trailing=None,
-                                   slippage=0,
+                                   slippage_ticks=0,
                                    symbol=None)
         self.assertIsInstance(strategy, IchimokuCloudStrategy)
         self.assertEqual(strategy.tenkan_period, 5)
@@ -1059,7 +1064,7 @@ class TestWarningDeduplication(unittest.TestCase):
                             upper_threshold=70,
                             rollover=False,
                             trailing=None,
-                            slippage=0,
+                            slippage_ticks=0,
                             symbol=None)
 
         # Count how many times warnings about RSI period 7 were logged
@@ -1079,14 +1084,14 @@ class TestWarningDeduplication(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         create_strategy('ema',
                         short_ema_period=5,
                         long_ema_period=18,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         create_strategy('rsi',
                         rsi_period=7,
@@ -1094,21 +1099,21 @@ class TestWarningDeduplication(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)  # Same as first
         create_strategy('bollinger',
                         period=10,
                         number_of_standard_deviations=3,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         create_strategy('ema',
                         short_ema_period=5,
                         long_ema_period=18,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)  # Same as second
 
         # Count warnings for each type
@@ -1180,21 +1185,21 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         create_strategy('ema',
                         short_ema_period=5,
                         long_ema_period=18,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         create_strategy('bollinger',
                         period=10,
                         number_of_standard_deviations=3,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
 
         # Verify no warnings were logged
@@ -1213,7 +1218,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
 
         # Verify warnings were logged
@@ -1237,7 +1242,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         initial_warning_count = mock_logger.warning.call_count
         self.assertGreater(initial_warning_count, 0)
@@ -1251,7 +1256,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         long_ema_period=18,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
 
@@ -1264,7 +1269,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         number_of_standard_deviations=3,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
 
@@ -1300,7 +1305,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         initial_warning_count = mock_logger.warning.call_count
         self.assertGreater(initial_warning_count, 0)
@@ -1313,7 +1318,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
 
@@ -1325,7 +1330,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         upper_threshold=70,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         self.assertEqual(mock_logger.warning.call_count, initial_warning_count)
 
@@ -1335,7 +1340,7 @@ class TestWarningConfiguration(unittest.TestCase):
                         long_ema_period=18,
                         rollover=False,
                         trailing=None,
-                        slippage=0,
+                        slippage_ticks=0,
                         symbol=None)
         self.assertGreater(mock_logger.warning.call_count, initial_warning_count)
 

@@ -16,7 +16,7 @@ class BollingerBandsStrategy(BaseStrategy):
     @staticmethod
     def format_name(period, number_of_standard_deviations, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'BB(period={period},std={number_of_standard_deviations},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
+        return f'BB(period={period},std={number_of_standard_deviations},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

@@ -53,7 +53,7 @@ STRATEGY_MAP = {
     ),
 }
 
-COMMON_PARAMS = ['rollover', 'trailing', 'slippage', 'symbol']
+COMMON_PARAMS = ['rollover', 'trailing', 'slippage_ticks', 'symbol']
 COMMON_VALIDATOR = CommonValidator()
 
 _logged_warnings = set()

@@ -17,7 +17,7 @@ class RSIStrategy(BaseStrategy):
     @staticmethod
     def format_name(rsi_period, lower_threshold, upper_threshold, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
+        return f'RSI(period={rsi_period},lower={lower_threshold},upper={upper_threshold},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 
