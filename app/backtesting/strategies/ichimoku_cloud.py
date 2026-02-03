@@ -14,10 +14,10 @@ class IchimokuCloudStrategy(BaseStrategy):
         displacement,
         rollover,
         trailing,
-        slippage,
+        slippage_ticks,
         symbol
     ):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
         self.tenkan_period = tenkan_period
         self.kijun_period = kijun_period
         self.senkou_span_b_period = senkou_span_b_period
@@ -28,10 +28,10 @@ class IchimokuCloudStrategy(BaseStrategy):
     @staticmethod
     def format_name(
         tenkan_period, kijun_period, senkou_span_b_period, displacement,
-        rollover, trailing, slippage, **kwargs
+        rollover, trailing, slippage_ticks, **kwargs
     ):
         """Generate standardized strategy name."""
-        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},rollover={rollover},trailing={trailing},slippage={slippage})'
+        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

@@ -56,7 +56,7 @@ class MassTester:
         number_of_standard_deviations_list,
         rollovers,
         trailing_stops,
-        slippages
+        slippage_ticks_list
     ):
         """
         Add Bollinger Bands strategy tests with all parameter combinations.
@@ -69,7 +69,7 @@ class MassTester:
             number_of_standard_deviations_list: List of standard deviation multipliers (e.g., [1.5, 2.0, 2.5])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
             trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
-            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+            slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
             None. Strategies are added to self.strategies list for later execution
@@ -81,12 +81,19 @@ class MassTester:
                 'number_of_standard_deviations': number_of_standard_deviations_list,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages,
+                'slippage_ticks': slippage_ticks_list,
                 'symbol': [None]
             }
         )
 
-    def add_ema_crossover_tests(self, short_ema_periods, long_ema_periods, rollovers, trailing_stops, slippages):
+    def add_ema_crossover_tests(
+        self,
+        short_ema_periods,
+        long_ema_periods,
+        rollovers,
+        trailing_stops,
+        slippage_ticks_list
+    ):
         """
         Add EMA Crossover strategy tests with all parameter combinations.
 
@@ -98,7 +105,7 @@ class MassTester:
             long_ema_periods: List of long (slow) EMA periods (e.g., [21, 26, 50])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
             trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
-            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+            slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
             None. Strategies are added to self.strategies list for later execution
@@ -110,7 +117,7 @@ class MassTester:
                 'long_ema_period': long_ema_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages,
+                'slippage_ticks': slippage_ticks_list,
                 'symbol': [None]
             }
         )
@@ -123,7 +130,7 @@ class MassTester:
         displacements,
         rollovers,
         trailing_stops,
-        slippages
+        slippage_ticks_list
     ):
         """
         Add Ichimoku Cloud strategy tests with all parameter combinations.
@@ -138,7 +145,7 @@ class MassTester:
             displacements: List of cloud displacement periods (e.g., [22, 26, 30])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
             trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
-            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+            slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
             None. Strategies are added to self.strategies list for later execution
@@ -152,12 +159,20 @@ class MassTester:
                 'displacement': displacements,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages,
+                'slippage_ticks': slippage_ticks_list,
                 'symbol': [None]
             }
         )
 
-    def add_macd_tests(self, fast_periods, slow_periods, signal_periods, rollovers, trailing_stops, slippages):
+    def add_macd_tests(
+        self,
+        fast_periods,
+        slow_periods,
+        signal_periods,
+        rollovers,
+        trailing_stops,
+        slippage_ticks_list
+    ):
         """
         Add MACD strategy tests with all parameter combinations.
 
@@ -170,7 +185,7 @@ class MassTester:
             signal_periods: List of signal line periods (e.g., [6, 9, 12])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
             trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
-            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+            slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
             None. Strategies are added to self.strategies list for later execution
@@ -183,12 +198,20 @@ class MassTester:
                 'signal_period': signal_periods,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages,
+                'slippage_ticks': slippage_ticks_list,
                 'symbol': [None]
             }
         )
 
-    def add_rsi_tests(self, rsi_periods, lower_thresholds, upper_thresholds, rollovers, trailing_stops, slippages):
+    def add_rsi_tests(
+        self,
+        rsi_periods,
+        lower_thresholds,
+        upper_thresholds,
+        rollovers,
+        trailing_stops,
+        slippage_ticks_list
+    ):
         """
         Add RSI strategy tests with all parameter combinations.
 
@@ -201,7 +224,7 @@ class MassTester:
             upper_thresholds: List of overbought thresholds for sell signals (e.g., [60, 70, 80])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
             trailing_stops: List of trailing stop percentages (e.g., [None, 1, 2, 3]). None = disabled
-            slippages: List of slippage percentages (e.g., [0.05, 0.1]). Applied to entry/exit prices
+            slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
             None. Strategies are added to self.strategies list for later execution
@@ -214,7 +237,7 @@ class MassTester:
                 'upper_threshold': upper_thresholds,
                 'rollover': rollovers,
                 'trailing': trailing_stops,
-                'slippage': slippages,
+                'slippage_ticks': slippage_ticks_list,
                 'symbol': [None]
             }
         )
