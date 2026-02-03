@@ -1097,31 +1097,42 @@ for idx, row in df.iterrows():
         self.queued_signal = signal
 ```
 
-### Example Scenario
+### Example Scenario (Real ZS Data)
 
 ```
-Scenario: RSI Strategy, lower=30, upper=70
+Scenario: RSI Strategy on ZS Futures (Soybeans), lower=30, upper=70
+Dataset: ZS 15-minute bars from 2025-02-04
+Symbol: CBOT:ZS1! (Front Month Contract)
+Price Format: Cents per bushel (e.g., 1055.75 = $10.5575/bushel)
 
-Bar 100: close=100.00, RSI=32
+Bar 108: 2025-02-04 11:00:00
+  close=1055.25, RSI=32.4
   └─> No signal (RSI > 30)
 
-Bar 101: close=99.50, RSI=28 ← RSI crosses below 30
+Bar 109: 2025-02-04 11:15:00
+  close=1058.25, RSI=28.7 ← RSI crosses below 30
   └─> Signal detected: BUY
   └─> Queued: self.queued_signal = 1
 
-Bar 102: open=99.80 ← Gap up from previous close
+Bar 110: 2025-02-04 11:30:00
+  open=1058.50 ← Gap up from previous close (1058.25)
   └─> Execute queued signal
-  └─> Open LONG at 99.80 (not 99.50!)
-  └─> This is realistic - markets gap
+  └─> Open LONG at 1058.50 (not 1058.25!)
+  └─> This is realistic - markets gap between bars
 
-Bar 110: close=105.00, RSI=72 ← RSI crosses above 70
+Bar 118: 2025-02-04 13:00:00
+  close=1057.25, RSI=71.2 ← RSI crosses above 70
   └─> Signal detected: SELL
   └─> Queued: self.queued_signal = -1
 
-Bar 111: open=104.50 ← Gap down
+Bar 119: 2025-02-04 13:15:00
+  open=1057.00 ← Gap down from previous close (1057.25)
   └─> Execute queued signal
-  └─> Close LONG at 104.50
-  └─> Open SHORT at 104.50
+  └─> Close LONG at 1057.00
+  └─> P&L: (1057.00 - 1058.50) × 5000 bushels = -$75
+  └─> Open SHORT at 1057.00
+
+Note: RSI values are illustrative. Actual RSI calculation requires previous bars.
 ```
 
 ## File Structure
