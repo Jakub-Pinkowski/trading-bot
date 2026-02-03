@@ -159,7 +159,6 @@ trading-bot/
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
-# TODO [MEDIUM]: Add docstrings everywhere
 # TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.01.10]

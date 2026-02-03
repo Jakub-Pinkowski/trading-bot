@@ -48,7 +48,22 @@ class Cache:
     # ==================== Initialization ====================
 
     def __init__(self, cache_name, max_size=DEFAULT_CACHE_MAX_SIZE, max_age=DEFAULT_CACHE_MAX_AGE):
-        """ Initialize a cache instance. """
+        """
+        Initialize a cache instance with LRU eviction and TTL expiration.
+
+        Creates an in-memory cache with file persistence, file locking for
+        concurrent access, and automatic loading of existing cache data.
+
+        Args:
+            cache_name: Identifier for this cache (used for file naming)
+            max_size: Maximum number of items to store (LRU eviction when exceeded)
+            max_age: Maximum age in seconds before items expire (TTL)
+
+        Side Effects:
+            - Creates cache file and lock file in CACHE_DIR
+            - Loads existing cache data from disk if available
+            - Initializes hit/miss counters to zero
+        """
         self.cache_name = cache_name
         self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
         self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")  # Add a lockfile path
@@ -106,7 +121,20 @@ class Cache:
         return False
 
     def get(self, key, default=None):
-        """ Get a value from the cache. """
+        """
+        Get a value from the cache with LRU ordering update.
+
+        Retrieves the cached value for the given key if it exists and is not expired.
+        Updates the LRU ordering by moving the accessed item to the most recently used
+        position. Automatically increments cache hit/miss statistics.
+
+        Args:
+            key: Cache key to retrieve
+            default: Value to return if key not found or expired
+
+        Returns:
+            Cached value if key exists and not expired, otherwise the default value
+        """
         if not self.contains(key):
             return default
 
@@ -117,7 +145,22 @@ class Cache:
         return value
 
     def set(self, key, value):
-        """ Set a value in the cache. """
+        """
+        Set a value in the cache with current timestamp.
+
+        Stores the value with a timestamp for TTL checking. Automatically enforces
+        the maximum cache size by evicting the least recently used items when the
+        cache is full. Updates LRU ordering.
+
+        Args:
+            key: Cache key to store
+            value: Value to cache (must be picklable for disk persistence)
+
+        Side Effects:
+            - May evict old items if cache is at max_size
+            - Updates cache statistics
+            - Marks item as most recently used
+        """
 
         # Store the value with the current timestamp
         self.cache_data[key] = (time.time(), value)
@@ -126,7 +169,24 @@ class Cache:
         self._enforce_size_limit()
 
     def contains(self, key):
-        """ Check if a key exists in the cache """
+        """
+        Check if a key exists in the cache and is not expired.
+
+        Validates both key presence and TTL expiration. Automatically removes
+        expired entries from the cache. Updates hit/miss statistics based on
+        the result.
+
+        Args:
+            key: Cache key to check
+
+        Returns:
+            Boolean. True if key exists and is not expired, False otherwise
+
+        Side Effects:
+            - Increments hits counter if key exists and is valid
+            - Increments misses counter if key not found or expired
+            - Removes expired items from cache
+        """
         if key not in self.cache_data:
             self.misses += 1
             return False
@@ -144,11 +204,30 @@ class Cache:
         return True
 
     def clear(self):
-        """Clear the cache."""
+        """
+        Clear all items from the cache.
+
+        Removes all cached entries from memory. Cache statistics (hits/misses)
+        are preserved. Use this to free memory or reset the cache between test runs.
+
+        Side Effects:
+            - Removes all items from cache_data
+            - Does not affect hit/miss counters
+            - Does not delete the cache file on disk (call save_cache() after to persist)
+        """
         self.cache_data.clear()
 
     def size(self):
-        """Get the number of items in the cache."""
+        """
+        Get the current number of items in the cache.
+
+        Returns the count of cached items currently stored in memory. This count
+        excludes expired items that have already been removed but includes items
+        that have expired but not yet been accessed (and thus not yet removed).
+
+        Returns:
+            Integer count of items currently in the cache
+        """
         return len(self.cache_data)
 
     def get_stats(self):
@@ -167,7 +246,18 @@ class Cache:
         }
 
     def reset_stats(self):
-        """Reset cache statistics."""
+        """
+        Reset cache performance statistics to zero.
+
+        Clears the hit and miss counters. Typically called at the start of
+        backtest runs to measure cache performance for that specific test session.
+        Does not affect the cached data itself.
+
+        Side Effects:
+            - Sets hits counter to 0
+            - Sets misses counter to 0
+            - Does not clear cached items
+        """
         self.hits = 0
         self.misses = 0
 
