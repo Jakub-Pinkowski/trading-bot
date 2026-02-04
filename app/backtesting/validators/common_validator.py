@@ -21,7 +21,7 @@ class CommonValidator(Validator):
 
     # ==================== Validation Method ====================
 
-    def validate(self, rollover, trailing, slippage_ticks, **kwargs):
+    def validate(self, **kwargs):
         """
         Enhanced validation for common strategy parameters with guidance.
 
@@ -31,10 +31,10 @@ class CommonValidator(Validator):
         - Slippage ticks: 0-10 ticks (1-3 ticks is typical for liquid futures)
 
         Args:
-            rollover: Whether to use contract rollover
-            trailing: Trailing stop percentage (or None)
-            slippage_ticks: Slippage in ticks (0 = no slippage)
-            **kwargs: Additional parameters (ignored)
+            **kwargs: Common parameters including:
+                - rollover: Whether to use contract rollover
+                - trailing: Trailing stop percentage (or None)
+                - slippage_ticks: Slippage in ticks (0 = no slippage)
 
         Returns:
             List of warning messages
@@ -43,6 +43,11 @@ class CommonValidator(Validator):
             ValueError: If parameters have invalid types or values
         """
         self.reset_warnings()
+
+        # Extract parameters from kwargs
+        rollover = kwargs.get('rollover')
+        trailing = kwargs.get('trailing')
+        slippage_ticks = kwargs.get('slippage_ticks')
 
         # --- Type Validation ---
 
