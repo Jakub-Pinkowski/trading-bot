@@ -63,15 +63,6 @@ class PositionManager:
         """Check if there is an open position"""
         return self.position is not None
 
-    def get_position_details(self):
-        """Get current position details"""
-        return {
-            'position': self.position,
-            'entry_time': self.entry_time,
-            'entry_price': self.entry_price,
-            'trailing_stop': self.trailing_stop
-        }
-
     def get_trades(self):
         """Get list of completed trades"""
         return self.trades
