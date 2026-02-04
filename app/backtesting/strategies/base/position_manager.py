@@ -22,7 +22,7 @@ class PositionManager:
 
     # ==================== Initialization ====================
 
-    def __init__(self, slippage_ticks=1, symbol=None, trailing=None):
+    def __init__(self, slippage_ticks, symbol, trailing):
         """
         Initialize the position manager.
 
