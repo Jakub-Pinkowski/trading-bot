@@ -509,20 +509,11 @@ Unlike percentage-based slippage, **tick-based slippage** uses the minimum price
 
 ```python
 # Example tick sizes (in price points)
-ZS(Soybeans): 0.25
-cents / bushel
-ZC(Corn): 0.25
-cents / bushel
-CL(Crude
-Oil): 0.01
-dollars / barrel
-GC(Gold): 0.10
-dollars / troy
-oz
-ES(E - mini
-S & P): 0.25
-index
-points
+# ZS (Soybeans): 0.25 cents / bushel
+# ZC (Corn): 0.25 cents / bushel
+# CL (Crude Oil): 0.01 dollars / barrel
+# GC (Gold): 0.10 dollars / troy oz
+# ES (E-mini S&P 500): 0.25 index points
 ```
 
 ### Slippage Calculation
