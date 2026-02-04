@@ -28,7 +28,7 @@ class TestMACDStrategy:
             signal_period=5,
             rollover=True,
             trailing=2.0,
-            slippage_ticks=1.0,
+            slippage_ticks=1,
             symbol=None
         )
         assert strategy.fast_period == 8

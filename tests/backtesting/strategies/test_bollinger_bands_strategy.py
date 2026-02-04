@@ -24,7 +24,7 @@ class TestBollingerBandsStrategy:
             number_of_standard_deviations=3,
             rollover=True,
             trailing=2.0,
-            slippage_ticks=1.0,
+            slippage_ticks=1,
             symbol=None
         )
         assert strategy.period == 10

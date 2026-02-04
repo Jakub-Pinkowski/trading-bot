@@ -295,7 +295,7 @@ class TestBaseStrategy:
         # let's directly test the _handle_contract_switch method
 
         # Create a simple strategy instance
-        strategy = BaseStrategy(rollover=True, trailing=None, slippage_ticks=1.0, symbol=None)
+        strategy = BaseStrategy(rollover=True, trailing=None, slippage_ticks=1, symbol=None)
 
         # Create a test dataframe
         df = create_test_df(length=150)
@@ -652,7 +652,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_above(self):
         """Test _detect_crossover method for bullish crossover."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = pd.DataFrame({
             'series1': [1.0, 2.0, 3.0, 4.0, 5.0],
             'series2': [5.0, 4.0, 3.0, 2.0, 1.0],
@@ -663,7 +662,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_below(self):
         """Test _detect_crossover method for bearish crossover."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = pd.DataFrame({
             'series1': [5.0, 4.0, 3.0, 2.0, 1.0],
             'series2': [1.0, 2.0, 3.0, 4.0, 5.0],
@@ -674,7 +672,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_threshold_cross_below(self):
         """Test _detect_threshold_cross for crossing below a threshold."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = pd.DataFrame({'series': [40.0, 35.0, 30.0, 25.0, 20.0]})
         result = detect_threshold_cross(df['series'], 30.0, 'below')
         expected = pd.Series([False, False, True, False, False])
@@ -682,7 +679,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_threshold_cross_above(self):
         """Test _detect_threshold_cross for crossing above a threshold."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = pd.DataFrame({'series': [20.0, 25.0, 30.0, 35.0, 40.0]})
         result = detect_threshold_cross(df['series'], 30.0, 'above')
         expected = pd.Series([False, False, True, False, False])
@@ -690,7 +686,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_and_threshold_integration(self):
         """Test helper methods work correctly with actual strategy patterns."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         # Test RSI-like threshold crossing
         df = pd.DataFrame({'rsi': [50.0, 40.0, 30.0, 25.0, 35.0, 70.0, 75.0, 65.0]})
         crosses_below_30 = detect_threshold_cross(df['rsi'], 30.0, 'below')

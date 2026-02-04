@@ -865,20 +865,20 @@ class TestParameterValidation(unittest.TestCase):
         """Test common parameter validation with optimal parameters."""
         # Reasonable parameters should generate no warnings
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=2.5, slippage_ticks=0.15)
+        warnings = validator.validate(rollover=False, trailing=2.5, slippage_ticks=1)
         self.assertEqual(len(warnings), 0)
 
     def testvalidate_common_parameters_warnings(self):
         """Test common parameter validation with parameters that generate warnings."""
         # Very tight trailing stop
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=0.5, slippage_ticks=0.1)
+        warnings = validator.validate(rollover=False, trailing=0.5, slippage_ticks=1)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too tight", warnings[0])
 
         # Very wide trailing stop
         validator = CommonValidator()
-        warnings = validator.validate(rollover=False, trailing=8.0, slippage_ticks=0.1)
+        warnings = validator.validate(rollover=False, trailing=8.0, slippage_ticks=1)
         self.assertEqual(len(warnings), 1)
         self.assertIn("too wide", warnings[0])
 
