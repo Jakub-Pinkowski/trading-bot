@@ -12,8 +12,8 @@ from app.backtesting.analysis.data_helpers import (
     calculate_profit_ratio
 )
 from app.backtesting.analysis.formatters import (
-    format_column_name,
-    parse_strategy_name
+    _format_column_name as format_column_name,
+    _parse_strategy_name as parse_strategy_name
 )
 
 
