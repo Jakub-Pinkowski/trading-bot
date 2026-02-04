@@ -70,7 +70,7 @@ def precompute_hashes(df):
     return hashes
 
 
-def detect_crossover(series1, series2, direction='above'):
+def detect_crossover(series1, series2, direction):
     """
     Detect when series1 crosses series2.
 
@@ -93,7 +93,7 @@ def detect_crossover(series1, series2, direction='above'):
         return (prev_series1 >= prev_series2) & (series1 < series2)
 
 
-def detect_threshold_cross(series, threshold, direction='below'):
+def detect_threshold_cross(series, threshold, direction):
     """
     Detect when a series crosses a threshold value.
 

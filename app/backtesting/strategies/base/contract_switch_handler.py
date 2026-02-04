@@ -62,7 +62,7 @@ class ContractSwitchHandler:
         """
         return self.next_switch is not None and current_time >= self.next_switch
 
-    def handle_contract_switch(self, current_time, position_manager, idx, price_open, prev_time=None, prev_row=None):
+    def handle_contract_switch(self, current_time, position_manager, idx, price_open, prev_time, prev_row):
         """
         Handle contract switch logic including closing positions at switch and reopening.
 

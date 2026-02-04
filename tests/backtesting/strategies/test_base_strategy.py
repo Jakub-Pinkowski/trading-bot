@@ -348,7 +348,7 @@ class TestBaseStrategy:
         assert strategy.position_manager.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.position_manager.entry_price}"
 
         # Close the position to create a trade
-        strategy.position_manager.close_position(df.index[104], df.iloc[104]['close'])
+        strategy.position_manager.close_position(df.index[104], df.iloc[104]['close'], switch=False)
 
         # Verify we have a trade with the correct entry price
         assert len(strategy.position_manager.trades) > 0, "Should have at least one trade"

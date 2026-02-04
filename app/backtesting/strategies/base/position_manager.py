@@ -153,7 +153,7 @@ class PositionManager:
             else:  # Short position
                 self.trailing_stop = round(self.entry_price * (1 + self.trailing / 100), 2)
 
-    def close_position(self, exit_time, exit_price, switch=False):
+    def close_position(self, exit_time, exit_price, switch):
         """
         Close the current position and record the trade.
 
