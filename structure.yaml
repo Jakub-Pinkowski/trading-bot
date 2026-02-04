@@ -156,6 +156,7 @@ trading-bot/
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Add tick-based slippage instead of percentage
+# TODO [MEDIUM]: Validate should validate common parameters first and only pass strategy-specific parameters to the sub-classes
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
