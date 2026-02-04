@@ -25,7 +25,7 @@ MARGIN_RATIOS = {
 
 # ==================== Helper Functions ====================
 
-def get_symbol_category(symbol):
+def _get_symbol_category(symbol):
     """
     Categorize futures symbols into asset classes for margin calculation.
 
@@ -54,7 +54,7 @@ def get_symbol_category(symbol):
     return 'default'
 
 
-def estimate_margin(symbol, entry_price, contract_multiplier):
+def _estimate_margin(symbol, entry_price, contract_multiplier):
     """
     Estimate margin requirement for a futures contract based on historical market ratios.
 
@@ -72,7 +72,7 @@ def estimate_margin(symbol, entry_price, contract_multiplier):
         Calculated as: contract_value * category_margin_ratio
         where contract_value = entry_price * contract_multiplier
     """
-    category = get_symbol_category(symbol)
+    category = _get_symbol_category(symbol)
     ratio = MARGIN_RATIOS.get(category, MARGIN_RATIOS['default'])
     contract_value = entry_price * contract_multiplier
     return contract_value * ratio
@@ -123,7 +123,7 @@ def calculate_trade_metrics(trade, symbol):
         raise ValueError(f'No contract multiplier found for symbol: {symbol}')
 
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
-    margin_requirement = estimate_margin(symbol, trade['entry_price'], contract_multiplier)
+    margin_requirement = _estimate_margin(symbol, trade['entry_price'], contract_multiplier)
 
     # Validate margin requirement
     if margin_requirement <= 0:
