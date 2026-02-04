@@ -4,7 +4,10 @@ Common Parameters Validator
 This module contains the validator for common strategy parameters shared across all strategies.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import (Validator,
+                                             validate_boolean,
+                                             validate_non_negative_number,
+                                             validate_positive_number)
 from app.backtesting.validators.constants import (
     TRAILING_STOP_MIN,
     TRAILING_STOP_MAX,
@@ -47,14 +50,14 @@ class CommonValidator(Validator):
         # --- Type Validation ---
 
         # Validate rollover is a boolean value
-        self.validate_boolean(rollover, "rollover")
+        validate_boolean(rollover, "rollover")
 
         # Validate trailing is None or a positive number
         if trailing is not None:
-            self.validate_positive_number(trailing, "trailing")
+            validate_positive_number(trailing, "trailing")
 
         # Validate slippage_ticks is a non-negative number (zero allowed)
-        self.validate_non_negative_number(slippage_ticks, "slippage_ticks")
+        validate_non_negative_number(slippage_ticks, "slippage_ticks")
 
         # --- Trailing Stop Validation ---
 

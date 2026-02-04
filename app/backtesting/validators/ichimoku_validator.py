@@ -4,7 +4,7 @@ Ichimoku Cloud Parameter Validator
 This module contains the Ichimoku Cloud strategy parameter validator.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import Validator, validate_positive_integer
 from app.backtesting.validators.constants import (
     ICHIMOKU_TENKAN_MIN,
     ICHIMOKU_TENKAN_MAX,
@@ -69,10 +69,10 @@ class IchimokuValidator(Validator):
         # --- Type Validation ---
 
         # Validate all Ichimoku periods are positive integers
-        self.validate_positive_integer(tenkan_period, "tenkan period")
-        self.validate_positive_integer(kijun_period, "kijun period")
-        self.validate_positive_integer(senkou_span_b_period, "senkou span B period")
-        self.validate_positive_integer(displacement, "displacement")
+        validate_positive_integer(tenkan_period, "tenkan period")
+        validate_positive_integer(kijun_period, "kijun period")
+        validate_positive_integer(senkou_span_b_period, "senkou span B period")
+        validate_positive_integer(displacement, "displacement")
 
         # --- Tenkan Period Range Validation ---
 

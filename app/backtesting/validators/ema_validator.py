@@ -4,7 +4,7 @@ EMA Crossover Parameter Validator
 This module contains the EMA crossover strategy parameter validator.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import Validator, validate_positive_integer
 from app.backtesting.validators.constants import (
     EMA_SHORT_MIN,
     EMA_SHORT_MAX,
@@ -58,8 +58,8 @@ class EMAValidator(Validator):
         # --- Type Validation ---
 
         # Validate both EMA periods are positive integers
-        self.validate_positive_integer(short_ema_period, "short EMA period")
-        self.validate_positive_integer(long_ema_period, "long EMA period")
+        validate_positive_integer(short_ema_period, "short EMA period")
+        validate_positive_integer(long_ema_period, "long EMA period")
 
         # --- Period Relationship Validation ---
 

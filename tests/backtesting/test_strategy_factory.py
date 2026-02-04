@@ -12,8 +12,7 @@ from app.backtesting.strategies import (
     RSIStrategy,
 )
 from app.backtesting.strategy_factory import (
-    create_strategy, get_strategy_name, get_available_strategies,
-    get_strategy_params, _log_warnings_once, _logged_warnings
+    create_strategy, get_strategy_name, _log_warnings_once, _logged_warnings
 )
 from app.backtesting.validators import (
     BollingerValidator, CommonValidator, EMAValidator,
@@ -555,8 +554,8 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         from app.backtesting.validators import Validator
         validator = Validator()
         # Should not raise any exception
-        validator.validate_positive_integer(1, "test_param")
-        validator.validate_positive_integer(100, "test_param")
+        validate_positive_integer(1, "test_param")
+        validate_positive_integer(100, "test_param")
 
     def test_validate_positive_integer_invalid(self):
         """Test validate_positive_integer with invalid values."""
@@ -564,25 +563,25 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            validator.validate_positive_integer(0, "test_param")
+            validate_positive_integer(0, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            validator.validate_positive_integer(-1, "test_param")
+            validate_positive_integer(-1, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            validator.validate_positive_integer(1.5, "test_param")
+            validate_positive_integer(1.5, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be a positive integer"):
-            validator.validate_positive_integer("1", "test_param")
+            validate_positive_integer("1", "test_param")
 
     def test_validate_positive_number_valid(self):
         """Test validate_positive_number with valid values."""
         from app.backtesting.validators import Validator
         validator = Validator()
         # Should not raise any exception
-        validator.validate_positive_number(1, "test_param")
-        validator.validate_positive_number(1.5, "test_param")
-        validator.validate_positive_number(100.0, "test_param")
+        validate_positive_number(1, "test_param")
+        validate_positive_number(1.5, "test_param")
+        validate_positive_number(100.0, "test_param")
 
     def test_validate_positive_number_invalid(self):
         """Test validate_positive_number with invalid values."""
@@ -590,26 +589,26 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            validator.validate_positive_number(0, "test_param")
+            validate_positive_number(0, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            validator.validate_positive_number(-1, "test_param")
+            validate_positive_number(-1, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            validator.validate_positive_number(-1.5, "test_param")
+            validate_positive_number(-1.5, "test_param")
 
         with pytest.raises(ValueError, match="test_param must be positive"):
-            validator.validate_positive_number("1", "test_param")
+            validate_positive_number("1", "test_param")
 
     def test_validate_range_valid(self):
         """Test validate_type_and_range with valid values."""
         from app.backtesting.validators import Validator
         validator = Validator()
         # Should not raise any exception
-        validator.validate_type_and_range(5, "test_param", 0, 10)
-        validator.validate_type_and_range(0, "test_param", 0, 10)
-        validator.validate_type_and_range(10, "test_param", 0, 10)
-        validator.validate_type_and_range(5.5, "test_param", 0, 10)
+        validate_type_and_range(5, "test_param", 0, 10)
+        validate_type_and_range(0, "test_param", 0, 10)
+        validate_type_and_range(10, "test_param", 0, 10)
+        validate_type_and_range(5.5, "test_param", 0, 10)
 
     def test_validate_range_invalid(self):
         """Test validate_type_and_range with invalid values."""
@@ -617,13 +616,13 @@ class TestPrivateHelperFunctions(unittest.TestCase):
         validator = Validator()
 
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            validator.validate_type_and_range(-1, "test_param", 0, 10)
+            validate_type_and_range(-1, "test_param", 0, 10)
 
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            validator.validate_type_and_range(11, "test_param", 0, 10)
+            validate_type_and_range(11, "test_param", 0, 10)
 
         with pytest.raises(ValueError, match="test_param must be between 0 and 10"):
-            validator.validate_type_and_range("5", "test_param", 0, 10)
+            validate_type_and_range("5", "test_param", 0, 10)
 
     # Removed: _format_common_params no longer exists (name formatting now uses strategy's format_name() method)
     # def test_format_common_params(self):
