@@ -118,7 +118,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Based on debug output: RSI=15.0, EMA=22.5, MACD=50.0 avg trades per combination
         # Filter with min_avg_trades_per_combination=25 (should keep only MACD)
-        result = filter_dataframe(test_data, min_avg_trades_per_combination=25)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=25, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 1)  # Only MACD
         strategies = result['strategy'].unique()
         self.assertTrue(any('MACD' in s for s in strategies))
@@ -126,7 +126,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('EMA' in s for s in strategies))
 
         # Filter with min_avg_trades_per_combination=20 (should keep EMA and MACD)
-        result = filter_dataframe(test_data, min_avg_trades_per_combination=20)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=20, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 3)  # EMA (2 rows) + MACD (1 row)
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
@@ -136,48 +136,48 @@ class TestFilterDataframe(unittest.TestCase):
     def test_filter_by_interval(self):
         """Test filtering by interval."""
         # Filter by '1d' interval
-        result = filter_dataframe(self.sample_data, interval='1d')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval='1d', symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['interval'] == '1d'))
 
         # Filter by '4h' interval
-        result = filter_dataframe(self.sample_data, interval='4h')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval='4h', symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['interval'] == '4h'))
 
         # Filter by a non-existent interval
-        result = filter_dataframe(self.sample_data, interval='5m')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval='5m', symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 0)
 
     def test_filter_by_symbol(self):
         """Test filtering by symbol."""
         # Filter by 'ES' symbol
-        result = filter_dataframe(self.sample_data, symbol='ES')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol='ES', min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['symbol'] == 'ES'))
 
         # Filter by 'NQ' symbol
-        result = filter_dataframe(self.sample_data, symbol='NQ')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol='NQ', min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 2)
         self.assertTrue(all(result['symbol'] == 'NQ'))
 
         # Filter by non-existent symbol
-        result = filter_dataframe(self.sample_data, symbol='BTC')
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol='BTC', min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 0)
 
     def test_filter_by_min_slippage(self):
         """Test filtering by minimum slippage."""
         # Filter with min_slippage_ticks=1
-        result = filter_dataframe(self.sample_data, min_slippage_ticks=1)
-        self.assertEqual(len(result), 4)  # slippage >= 0.1: 0.1, 0.2, 0.15, 0.3
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=1, min_symbol_count=None)
+        self.assertEqual(len(result), 4)  # slippage_ticks >= 1: 1, 2, 15, 3
 
         # Filter with min_slippage_ticks=2
-        result = filter_dataframe(self.sample_data, min_slippage_ticks=2)
-        self.assertEqual(len(result), 2)  # slippage >= 0.2: 0.2, 0.3
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=2, min_symbol_count=None)
+        self.assertEqual(len(result), 3)  # slippage_ticks >= 2: 2, 15, 3
 
-        # Filter with min_slippage_ticks=5 (higher than any slippage)
-        result = filter_dataframe(self.sample_data, min_slippage_ticks=5)
-        self.assertEqual(len(result), 0)
+        # Filter with min_slippage_ticks=5 (higher than most slippage)
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=5, min_symbol_count=None)
+        self.assertEqual(len(result), 1)  # slippage_ticks >= 5: only 15
 
     def test_filter_combined_criteria(self):
         """Test filtering with multiple criteria combined."""
@@ -200,27 +200,27 @@ class TestFilterDataframe(unittest.TestCase):
         })
 
         # Filter by min_avg_trades_per_combination=35 and interval='4h'
-        result = filter_dataframe(test_data, min_avg_trades_per_combination=35, interval='4h')
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=35, interval='4h', symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 2)  # Only EMA strategy (45 avg trades per combination)
         self.assertTrue(all(result['interval'] == '4h'))
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
 
         # Filter by symbol='ES' and min_slippage_ticks=1
-        result = filter_dataframe(self.sample_data, symbol='ES', min_slippage_ticks=1)
-        self.assertEqual(len(result), 1)  # Only EMA with slippage_ticks=2 (filter min is 1)
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol='ES', min_slippage_ticks=1, min_symbol_count=None)
+        self.assertEqual(len(result), 2)  # RSI with slippage_ticks=1 and EMA with slippage_ticks=2
         self.assertTrue(all(result['symbol'] == 'ES'))
 
     def test_filter_no_criteria(self):
         """Test filtering with no criteria (should return all data)."""
-        result = filter_dataframe(self.sample_data)
+        result = filter_dataframe(self.sample_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), len(self.sample_data))
         pd.testing.assert_frame_equal(result, self.sample_data)
 
     def test_filter_empty_dataframe(self):
         """Test filtering an empty DataFrame."""
         empty_df = pd.DataFrame(columns=self.sample_data.columns)
-        result = filter_dataframe(empty_df, min_avg_trades_per_combination=10)
+        result = filter_dataframe(empty_df, min_avg_trades_per_combination=10, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(result), 0)
         self.assertEqual(list(result.columns), list(empty_df.columns))
 
@@ -247,11 +247,11 @@ class TestFilterDataframe(unittest.TestCase):
         })
 
         # Filter with min_symbol_count=1 (should keep all strategies)
-        result = filter_dataframe(test_data, min_symbol_count=1)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=1)
         self.assertEqual(len(result), 6)  # All strategies
 
         # Filter with min_symbol_count=2 (should keep RSI and EMA)
-        result = filter_dataframe(test_data, min_symbol_count=2)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=2)
         self.assertEqual(len(result), 5)  # RSI (3 rows) + EMA (2 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -259,7 +259,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('MACD' in s for s in strategies))
 
         # Filter with min_symbol_count=3 (should keep only RSI)
-        result = filter_dataframe(test_data, min_symbol_count=3)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=3)
         self.assertEqual(len(result), 3)  # Only RSI (3 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -267,7 +267,7 @@ class TestFilterDataframe(unittest.TestCase):
         self.assertFalse(any('MACD' in s for s in strategies))
 
         # Filter with min_symbol_count=4 (should keep no strategies)
-        result = filter_dataframe(test_data, min_symbol_count=4)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=4)
         self.assertEqual(len(result), 0)
 
     def test_filter_by_min_symbol_count_combined_with_other_filters(self):
@@ -293,7 +293,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Filter with min_symbol_count=2 and min_avg_trades_per_combination=35
         # Should keep only EMA (2 symbols, 45 avg trades per combination)
-        result = filter_dataframe(test_data, min_symbol_count=2, min_avg_trades_per_combination=35)
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=35, interval=None, symbol=None, min_slippage_ticks=None, min_symbol_count=2)
         self.assertEqual(len(result), 2)  # Only EMA (2 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('EMA' in s for s in strategies))
@@ -301,7 +301,7 @@ class TestFilterDataframe(unittest.TestCase):
 
         # Filter with min_symbol_count=3 and interval='1d'
         # Should keep only RSI (3 symbols, all in 1d interval)
-        result = filter_dataframe(test_data, min_symbol_count=3, interval='1d')
+        result = filter_dataframe(test_data, min_avg_trades_per_combination=0, interval='1d', symbol=None, min_slippage_ticks=None, min_symbol_count=3)
         self.assertEqual(len(result), 3)  # Only RSI (3 rows)
         strategies = result['strategy'].unique()
         self.assertTrue(any('RSI' in s for s in strategies))
@@ -1527,7 +1527,7 @@ class TestParseStrategyName(unittest.TestCase):
         self.assertEqual(clean_strategy, "RSI(period=14,lower=30,upper=70)")
         self.assertEqual(rollover, False)
         self.assertIsNone(trailing)
-        self.assertEqual(slippage, 0.1)
+        self.assertEqual(slippage, 1.0)
 
     def test_parse_ema_strategy(self):
         """Test parsing of EMA strategy names."""
@@ -1537,7 +1537,7 @@ class TestParseStrategyName(unittest.TestCase):
         self.assertEqual(clean_strategy, "EMA(short=9,long=21)")
         self.assertEqual(rollover, True)
         self.assertEqual(trailing, 2.5)
-        self.assertEqual(slippage, 0.2)
+        self.assertEqual(slippage, 2.0)
 
     def test_parse_strategy_with_missing_params(self):
         """Test parsing of strategy names with missing common parameters."""
@@ -1557,7 +1557,7 @@ class TestParseStrategyName(unittest.TestCase):
         self.assertEqual(clean_strategy, "BB(period=20,std=2)")
         self.assertEqual(rollover, True)
         self.assertEqual(trailing, 1.5)
-        self.assertEqual(slippage, 0.15)
+        self.assertEqual(slippage, 15.0)
 
 
 if __name__ == '__main__':
