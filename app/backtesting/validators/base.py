@@ -287,12 +287,18 @@ class Validator:
 
     # ==================== Abstract Method ====================
 
-    def validate(self, **kwargs):
+    def validate(self, *args, **kwargs):
         """
         Validate parameters. Must be implemented by subclasses.
 
+        Subclasses override this method with their own specific signature.
+        For example:
+        - CommonValidator.validate(rollover, trailing, slippage_ticks, **kwargs)
+        - RSIValidator.validate(rsi_period, lower_threshold, upper_threshold, **kwargs)
+
         Args:
-            **kwargs: Strategy-specific parameters
+            *args: Positional arguments (defined by subclass)
+            **kwargs: Additional keyword arguments (defined by subclass)
 
         Returns:
             List of warning messages
