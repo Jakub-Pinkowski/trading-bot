@@ -9,8 +9,8 @@ from tests.backtesting.strategies.conftest import create_test_df
 
 # Create a concrete implementation of BaseStrategy for testing
 class StrategyForTesting(BaseStrategy):
-    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, rollover=False, trailing=None, slippage_ticks=0, symbol=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
 
     def add_indicators(self, df):
         # Simple implementation for testing
@@ -34,7 +34,7 @@ class StrategyForTesting(BaseStrategy):
 class TestBaseStrategy:
     def test_abstract_methods(self):
         """Test that abstract methods raise NotImplementedError when not implemented."""
-        strategy = BaseStrategy(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = BaseStrategy(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
 
         # Test add_indicators abstract method
         df = create_test_df()
@@ -47,7 +47,7 @@ class TestBaseStrategy:
 
     def test_initialization(self):
         """Test that the strategy initializes correctly."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         assert strategy.position_manager.position is None
         assert strategy.position_manager.entry_time is None
         assert strategy.position_manager.entry_price is None
@@ -56,13 +56,13 @@ class TestBaseStrategy:
         assert strategy.trailing is None
 
         # Test with parameters
-        strategy = StrategyForTesting(rollover=True, trailing=2.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=True, trailing=2.0, slippage_ticks=0, symbol=None)
         assert strategy.rollover is True
         assert strategy.trailing == 2.0
 
     def test_run_method(self):
         """Test the run method executes the full workflow."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = create_test_df()
         switch_dates = []
 
@@ -98,7 +98,7 @@ class TestBaseStrategy:
 
     def test_extract_trades_basic(self):
         """Test that trades are extracted correctly from signals."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 
@@ -118,7 +118,7 @@ class TestBaseStrategy:
 
     def test_trailing_stop_long(self):
         """Test trailing stop functionality for long positions."""
-        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage_ticks=0, symbol=None)
         df = create_test_df()
 
         # Modify prices to test trailing stop
@@ -146,7 +146,7 @@ class TestBaseStrategy:
 
     def test_trailing_stop_short(self):
         """Test trailing stop functionality for short positions."""
-        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage_ticks=0, symbol=None)
         df = create_test_df()
 
         # Modify signals to create a short position
@@ -201,7 +201,7 @@ class TestBaseStrategy:
                 return [trade]
 
         # Use the simple test strategy
-        strategy = SwitchTestStrategy(rollover=True, trailing=None, slippage=0, symbol=None)
+        strategy = SwitchTestStrategy(rollover=True, trailing=None, slippage_ticks=0, symbol=None)
         df = create_test_df(length=150)
 
         # Run the strategy
@@ -242,7 +242,7 @@ class TestBaseStrategy:
         switch_dates = [df.index[i] for i in range(101, 110)]
 
         # Create the strategy
-        strategy = MultiSwitchStrategy(rollover=True, trailing=None, slippage=0, symbol=None)
+        strategy = MultiSwitchStrategy(rollover=True, trailing=None, slippage_ticks=0, symbol=None)
 
         # Run the strategy - this should process all switch dates
         trades = strategy.run(df, switch_dates)
@@ -278,7 +278,7 @@ class TestBaseStrategy:
         switch_dates = [df.index[103]]  # Switch after the signal at index 101
 
         # Create the strategy with rollover=False
-        strategy = NoRolloverSwitchStrategy(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = NoRolloverSwitchStrategy(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
 
         # Run the strategy
         trades = strategy.run(df, switch_dates)
@@ -295,7 +295,7 @@ class TestBaseStrategy:
         # let's directly test the _handle_contract_switch method
 
         # Create a simple strategy instance
-        strategy = BaseStrategy(rollover=True, trailing=None, slippage=1.0, symbol=None)
+        strategy = BaseStrategy(rollover=True, trailing=None, slippage_ticks=1, symbol=None)
 
         # Create a test dataframe
         df = create_test_df(length=150)
@@ -341,7 +341,10 @@ class TestBaseStrategy:
         assert strategy.position_manager.position == -1, "Position should be reopened as short"
 
         # Verify slippage was applied correctly
-        expected_price = round(price_open * (1 - strategy.position_manager.slippage / 100), 2)
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = strategy.position_manager.slippage_ticks * tick_size
+        expected_price = round(price_open - slippage_amount, 2)
         assert strategy.position_manager.entry_price == expected_price, f"Entry price should be {expected_price} with slippage, got {strategy.position_manager.entry_price}"
 
         # Close the position to create a trade
@@ -378,7 +381,7 @@ class TestBaseStrategy:
         switch_dates = [df.index[102]]  # Switch after the warm-up period
 
         # Create the strategy with rollover=True
-        strategy = RolloverSwitchStrategy(rollover=True, trailing=None, slippage=0, symbol=None)
+        strategy = RolloverSwitchStrategy(rollover=True, trailing=None, slippage_ticks=0, symbol=None)
 
         # Manually set up the state to test the specific code path
         # This simulates the state after a position has been closed due to a switch
@@ -420,7 +423,7 @@ class TestBaseStrategy:
         df = create_test_df(length=150)
 
         # Create the strategy
-        strategy = SwitchTestStrategy(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = SwitchTestStrategy(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
 
         # Set up the state to simulate an open position
         strategy.position_manager.reset()
@@ -468,7 +471,7 @@ class TestBaseStrategy:
         df = create_test_df(length=150)
 
         # Create the strategy
-        strategy = TimingTestStrategy(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = TimingTestStrategy(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
 
         # Set the switch date to be 2 candles after the signal
         switch_date = df.index[103]  # Switch occurs at candle 103
@@ -499,7 +502,7 @@ class TestBaseStrategy:
 
     def test_no_signals(self):
         """Test behavior when there are no signals."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=0, symbol=None)
         df = create_test_df()
 
         # Override generate_signals to return no signals
@@ -517,7 +520,7 @@ class TestBaseStrategy:
     def test_trailing_stop_same_bar_movement(self):
         """Test trailing stop functionality when price moves favorably and then unfavorably within the same bar."""
         # Create a strategy with 2% trailing stop
-        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=2.0, slippage_ticks=0, symbol=None)
 
         # Create a test dataframe with controlled price movements
         # First create 100 candles for warm-up
@@ -582,8 +585,11 @@ class TestBaseStrategy:
 
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices."""
-        # Create a strategy with 2% slippage
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=2.0, symbol=None)
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
+        # Create a strategy with 2 ticks slippage
+        slippage_ticks = 2
+        strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=slippage_ticks, symbol=None)
         df = create_test_df()
         df = strategy.generate_signals(df)  # Add signals
 
@@ -591,6 +597,10 @@ class TestBaseStrategy:
 
         # Should have at least one trade
         assert len(trades) > 0
+
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
 
         # Find long and short trades
         long_trades = [t for t in trades if t['side'] == 'long']
@@ -608,8 +618,8 @@ class TestBaseStrategy:
             # For long positions:
             # - Entry price should be higher than the original price (pay more on entry)
             # - Exit price should be lower than the original price (receive less on exit)
-            expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price + slippage_amount, 2)
+            expected_exit_price = round(original_exit_price - slippage_amount, 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -628,8 +638,8 @@ class TestBaseStrategy:
             # For short positions:
             # - Entry price should be lower than the original price (receive less on entry)
             # - Exit price should be higher than the original price (pay more on exit)
-            expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
-            expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
+            expected_entry_price = round(original_entry_price - slippage_amount, 2)
+            expected_exit_price = round(original_exit_price + slippage_amount, 2)
 
             assert trade[
                        'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -642,7 +652,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_above(self):
         """Test _detect_crossover method for bullish crossover."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
         df = pd.DataFrame({
             'series1': [1.0, 2.0, 3.0, 4.0, 5.0],
             'series2': [5.0, 4.0, 3.0, 2.0, 1.0],
@@ -653,7 +662,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_below(self):
         """Test _detect_crossover method for bearish crossover."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
         df = pd.DataFrame({
             'series1': [5.0, 4.0, 3.0, 2.0, 1.0],
             'series2': [1.0, 2.0, 3.0, 4.0, 5.0],
@@ -664,7 +672,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_threshold_cross_below(self):
         """Test _detect_threshold_cross for crossing below a threshold."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
         df = pd.DataFrame({'series': [40.0, 35.0, 30.0, 25.0, 20.0]})
         result = detect_threshold_cross(df['series'], 30.0, 'below')
         expected = pd.Series([False, False, True, False, False])
@@ -672,7 +679,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_threshold_cross_above(self):
         """Test _detect_threshold_cross for crossing above a threshold."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
         df = pd.DataFrame({'series': [20.0, 25.0, 30.0, 35.0, 40.0]})
         result = detect_threshold_cross(df['series'], 30.0, 'above')
         expected = pd.Series([False, False, True, False, False])
@@ -680,7 +686,6 @@ class TestBaseStrategyHelperMethods:
 
     def test_detect_crossover_and_threshold_integration(self):
         """Test helper methods work correctly with actual strategy patterns."""
-        strategy = StrategyForTesting(rollover=False, trailing=None, slippage=0, symbol=None)
         # Test RSI-like threshold crossing
         df = pd.DataFrame({'rsi': [50.0, 40.0, 30.0, 25.0, 35.0, 70.0, 75.0, 65.0]})
         crosses_below_30 = detect_threshold_cross(df['rsi'], 30.0, 'below')
@@ -733,7 +738,7 @@ class TestTrailingStopEdgeCases:
         This would give unrealistic backtest results by benefiting from favorable
         movement AFTER the stop was already hit.
         """
-        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage=0, symbol=None)  # 5% trailing stop
+        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)  # 5% trailing stop
 
         # Create a simple dataframe for this test
         dates = pd.date_range(start='2024-01-01', periods=110, freq='1h')
@@ -797,7 +802,7 @@ class TestTrailingStopEdgeCases:
         Conservative assumption: if stop would be triggered by bar's extreme,
         assume it was filled at stop level (not at a worse price).
         """
-        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)
 
         dates = pd.date_range(start='2024-01-01', periods=110, freq='1h')
         df = pd.DataFrame({
@@ -847,7 +852,7 @@ class TestTrailingStopEdgeCases:
         - Bars where low > stop: Stop gets updated (tightened)
         - Bar where low <= stop: Position closed, no further updates
         """
-        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)
 
         dates = pd.date_range(start='2024-01-01', periods=115, freq='1h')
         df = pd.DataFrame({
@@ -907,8 +912,8 @@ class TestTrailingStopEdgeCases:
 
         # Create a simple strategy that doesn't override our signals
         class SimpleShortStrategy(BaseStrategy):
-            def __init__(self, rollover, trailing, slippage, symbol):
-                super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+            def __init__(self, rollover, trailing, slippage_ticks, symbol):
+                super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
 
             def add_indicators(self, df):
                 return df
@@ -917,7 +922,7 @@ class TestTrailingStopEdgeCases:
                 # Just return the dataframe with existing signals
                 return df
 
-        strategy = SimpleShortStrategy(rollover=False, trailing=5.0, slippage=0, symbol=None)
+        strategy = SimpleShortStrategy(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)
 
         dates = pd.date_range(start='2024-01-01', periods=115, freq='1h')
         df = pd.DataFrame({
@@ -964,7 +969,7 @@ class TestTrailingStopEdgeCases:
 
         This verifies the helper method works correctly for both long and short positions.
         """
-        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)
 
         # Test long position
         new_stop_long = strategy.trailing_stop_manager.calculate_new_trailing_stop(
@@ -1007,7 +1012,7 @@ class TestTrailingStopEdgeCases:
         - Stop updated from $95 to $99.75 ($105 * 0.95)
         - Position remains open
         """
-        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage=0, symbol=None)
+        strategy = StrategyForTesting(rollover=False, trailing=5.0, slippage_ticks=0, symbol=None)
 
         dates = pd.date_range(start='2024-01-01', periods=115, freq='1h')
         df = pd.DataFrame({

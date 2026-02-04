@@ -149,7 +149,7 @@ class TestStrategyHashOptimization:
                                upper_threshold=70,
                                rollover=False,
                                trailing=None,
-                               slippage=0,
+                               slippage_ticks=0,
                                symbol=None)
 
         # add_indicators should work without errors
@@ -165,7 +165,7 @@ class TestStrategyHashOptimization:
                                         long_ema_period=21,
                                         rollover=False,
                                         trailing=None,
-                                        slippage=0,
+                                        slippage_ticks=0,
                                         symbol=None)
 
         # add_indicators should work without errors
@@ -183,7 +183,7 @@ class TestStrategyHashOptimization:
                                          displacement=26,
                                          rollover=False,
                                          trailing=None,
-                                         slippage=0,
+                                         slippage_ticks=0,
                                          symbol=None)
 
         # add_indicators should work without errors

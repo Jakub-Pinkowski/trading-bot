@@ -9,8 +9,8 @@ from tests.backtesting.strategies.conftest import create_test_df
 
 # Create a concrete implementation of BaseStrategy for testing
 class StrategyForTesting(BaseStrategy):
-    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, rollover=False, trailing=None, slippage_ticks=0, symbol=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
 
     def add_indicators(self, df):
         # Simple implementation for testing
@@ -153,7 +153,7 @@ class TestTrailingScenarios:
         # Create a custom strategy that generates short signals
         class ShortStrategy(BaseStrategy):
             def __init__(self, trailing=None):
-                super().__init__(rollover=False, trailing=trailing, slippage=0, symbol=None)
+                super().__init__(rollover=False, trailing=trailing, slippage_ticks=0, symbol=None)
 
             def add_indicators(self, df):
                 return df
@@ -313,7 +313,7 @@ class TestTrailingScenarios:
         # Create a simple test strategy that directly returns trades with the switch flag
         class SwitchTestStrategy(BaseStrategy):
             def __init__(self, rollover=True, trailing=None):
-                super().__init__(rollover=rollover, trailing=trailing, slippage=0, symbol=None)
+                super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=0, symbol=None)
                 self.trailing_stop_value = None
 
             def add_indicators(self, df):
@@ -399,7 +399,7 @@ class TestTrailingScenarios:
         # Create a custom strategy that simulates high volatility trades
         class VolatilityTestStrategy(BaseStrategy):
             def __init__(self, trailing=None):
-                super().__init__(rollover=False, trailing=trailing, slippage=0, symbol=None)
+                super().__init__(rollover=False, trailing=trailing, slippage_ticks=0, symbol=None)
                 self.trailing_stops_triggered = 0
 
             def add_indicators(self, df):
@@ -486,7 +486,7 @@ class TestTrailingScenarios:
                 self.trailing_stops_triggered = 0
 
                 # Call parent init
-                super().__init__(rollover=False, trailing=trailing, slippage=0, symbol=None)
+                super().__init__(rollover=False, trailing=trailing, slippage_ticks=0, symbol=None)
 
                 # Set callback on trailing_stop_manager to count triggers
                 if self.trailing_stop_manager:

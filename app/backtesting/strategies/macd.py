@@ -17,7 +17,7 @@ class MACDStrategy(BaseStrategy):
     @staticmethod
     def format_name(fast_period, slow_period, signal_period, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
+        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

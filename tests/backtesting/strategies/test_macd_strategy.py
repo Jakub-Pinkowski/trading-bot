@@ -15,7 +15,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         assert strategy.fast_period == 12
         assert strategy.slow_period == 26
@@ -28,7 +28,7 @@ class TestMACDStrategy:
             signal_period=5,
             rollover=True,
             trailing=2.0,
-            slippage=1.0,
+            slippage_ticks=1,
             symbol=None
         )
         assert strategy.fast_period == 8
@@ -36,7 +36,7 @@ class TestMACDStrategy:
         assert strategy.signal_period == 5
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
-        assert strategy.position_manager.slippage == 1.0
+        assert strategy.position_manager.slippage_ticks == 1.0
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds MACD indicators to the dataframe."""
@@ -45,7 +45,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
 
         # Create a simple dataframe with a clear trend
@@ -110,7 +110,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -154,7 +154,7 @@ class TestMACDStrategy:
                                 signal_period=5,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -187,7 +187,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         df = create_test_df()
 
@@ -214,7 +214,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
 
         # Create a dataframe with constant prices
@@ -240,7 +240,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=2.0,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         df = create_test_df()
 
@@ -266,7 +266,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=True,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
         df = create_test_df()
 
@@ -296,13 +296,16 @@ class TestMACDStrategy:
 
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the MACD strategy."""
-        # Create a strategy with 2% slippage
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
+        # Create a strategy with 2 ticks slippage
+        slippage_ticks = 2
         strategy = MACDStrategy(fast_period=12,
                                 slow_period=26,
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=2.0,
+                                slippage_ticks=slippage_ticks,
                                 symbol=None)
         df = create_test_df()
 
@@ -312,6 +315,10 @@ class TestMACDStrategy:
 
         # Extract trades
         trades = strategy._extract_trades(df, [])
+
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
 
         # Should have at least one trade
         if len(trades) > 0:
@@ -331,8 +338,8 @@ class TestMACDStrategy:
                 # For long positions:
                 # - Entry price should be higher than the original price (pay more on entry)
                 # - Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
+                expected_exit_price = round(original_exit_price - slippage_amount, 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price
@@ -349,8 +356,8 @@ class TestMACDStrategy:
                 # For short positions:
                 # - Entry price should be lower than the original price (receive less on entry)
                 # - Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
+                expected_exit_price = round(original_exit_price + slippage_amount, 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price
@@ -404,7 +411,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
 
         # Run the strategy
@@ -431,7 +438,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
 
         # Create a dataframe with dates
@@ -540,7 +547,7 @@ class TestMACDStrategy:
                                 signal_period=9,
                                 rollover=False,
                                 trailing=None,
-                                slippage=0,
+                                slippage_ticks=0,
                                 symbol=None)
 
         # Create a dataframe with dates

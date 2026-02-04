@@ -135,7 +135,7 @@ class TestMultiprocessingIntegration:
                 upper_thresholds=[70],
                 rollovers=[False],
                 trailing_stops=[None],
-                slippages=[0]
+                slippage_ticks_list=[0]
             )
 
             # Run tests with real multiprocessing
@@ -329,27 +329,27 @@ class TestPicklingValidation:
             (
                 'rsi',
                 {'rsi_period': 14, 'lower_threshold': 30, 'upper_threshold': 70, 'rollover': False, 'trailing': None,
-                 'slippage': 0, 'symbol': None}
+                 'slippage_ticks': 0, 'symbol': None}
             ),
             (
                 'ema',
-                {'short_ema_period': 9, 'long_ema_period': 21, 'rollover': False, 'trailing': None, 'slippage': 0,
+                {'short_ema_period': 9, 'long_ema_period': 21, 'rollover': False, 'trailing': None, 'slippage_ticks': 0,
                  'symbol': None}
             ),
             (
                 'macd',
                 {'fast_period': 12, 'slow_period': 26, 'signal_period': 9, 'rollover': False, 'trailing': None,
-                 'slippage': 0, 'symbol': None}
+                 'slippage_ticks': 0, 'symbol': None}
             ),
             (
                 'bollinger',
-                {'period': 20, 'number_of_standard_deviations': 2, 'rollover': False, 'trailing': None, 'slippage': 0,
+                {'period': 20, 'number_of_standard_deviations': 2, 'rollover': False, 'trailing': None, 'slippage_ticks': 0,
                  'symbol': None}
             ),
             (
                 'ichimoku',
                 {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26,
-                 'rollover': False, 'trailing': None, 'slippage': 0, 'symbol': None}
+                 'rollover': False, 'trailing': None, 'slippage_ticks': 0, 'symbol': None}
             ),
         ]
 
@@ -627,7 +627,7 @@ class TestRealDataMultiprocessing:
                         upper_thresholds=[70, 75],
                         rollovers=[False],
                         trailing_stops=[None],
-                        slippages=[0]
+                        slippage_ticks_list=[0]
                     )
 
                     # Should create 3 * 2 * 2 = 12 combinations

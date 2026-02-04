@@ -10,8 +10,8 @@ from tests.backtesting.strategies.conftest import create_test_df
 
 # Create a concrete implementation of BaseStrategy for testing
 class StrategyForTesting(BaseStrategy):
-    def __init__(self, rollover=False, trailing=None, slippage=0, symbol=None):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, rollover=False, trailing=None, slippage_ticks=1, symbol=None):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
 
     def add_indicators(self, df):
         # Simple implementation for testing
@@ -34,13 +34,15 @@ class StrategyForTesting(BaseStrategy):
 
 class TestSlippageScenarios:
     def test_different_slippage_values(self):
-        """Test that different slippage percentages are correctly applied."""
-        # Test with multiple slippage values
-        slippage_values = [0.5, 1.0, 2.0, 5.0]
+        """Test that different slippage tick values are correctly applied."""
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
+        # Test with multiple slippage tick values
+        slippage_tick_values = [1, 2, 3, 5]
 
-        for slippage in slippage_values:
+        for slippage_ticks in slippage_tick_values:
             # Create a strategy with the current slippage value
-            strategy = StrategyForTesting(slippage=slippage)
+            strategy = StrategyForTesting(slippage_ticks=slippage_ticks, symbol=None)
             df = create_test_df()
             df = strategy.generate_signals(df)  # Add signals
 
@@ -48,6 +50,10 @@ class TestSlippageScenarios:
 
             # Should have at least one trade
             assert len(trades) > 0
+
+            # Get tick size for the symbol (None uses DEFAULT_TICK_SIZE)
+            tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+            slippage_amount = slippage_ticks * tick_size
 
             # Find long and short trades
             long_trades = [t for t in trades if t['side'] == 'long']
@@ -65,13 +71,13 @@ class TestSlippageScenarios:
                 # For long positions:
                 # - Entry price should be higher than the original price (pay more on entry)
                 # - Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price * (1 + slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 - slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
+                expected_exit_price = round(original_exit_price - slippage_amount, 2)
 
                 assert trade[
-                           'entry_price'] == expected_entry_price, f"Long entry price with {slippage}% slippage should be {expected_entry_price}, got {trade['entry_price']}"
+                           'entry_price'] == expected_entry_price, f"Long entry price with {slippage_ticks} ticks slippage should be {expected_entry_price}, got {trade['entry_price']}"
                 assert trade[
-                           'exit_price'] == expected_exit_price, f"Long exit price with {slippage}% slippage should be {expected_exit_price}, got {trade['exit_price']}"
+                           'exit_price'] == expected_exit_price, f"Long exit price with {slippage_ticks} ticks slippage should be {expected_exit_price}, got {trade['exit_price']}"
 
             # Verify slippage is applied correctly for short trades
             for trade in short_trades:
@@ -85,20 +91,22 @@ class TestSlippageScenarios:
                 # For short positions:
                 # - Entry price should be lower than the original price (receive less on entry)
                 # - Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price * (1 - slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 + slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
+                expected_exit_price = round(original_exit_price + slippage_amount, 2)
 
                 assert trade[
-                           'entry_price'] == expected_entry_price, f"Short entry price with {slippage}% slippage should be {expected_entry_price}, got {trade['entry_price']}"
+                           'entry_price'] == expected_entry_price, f"Short entry price with {slippage_ticks} ticks slippage should be {expected_entry_price}, got {trade['entry_price']}"
                 assert trade[
-                           'exit_price'] == expected_exit_price, f"Short exit price with {slippage}% slippage should be {expected_exit_price}, got {trade['exit_price']}"
+                           'exit_price'] == expected_exit_price, f"Short exit price with {slippage_ticks} ticks slippage should be {expected_exit_price}, got {trade['exit_price']}"
 
     def test_slippage_with_trailing_stop(self):
         """Test that slippage works correctly when combined with trailing stops."""
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
         # Create a strategy with both slippage and trailing stop
-        slippage = 2.0
+        slippage_ticks = 2
         trailing = 3.0
-        strategy = StrategyForTesting(slippage=slippage, trailing=trailing)
+        strategy = StrategyForTesting(slippage_ticks=slippage_ticks, trailing=trailing, symbol=None)
 
         # Create a dataframe with a price pattern that will trigger a trailing stop
         df = create_test_df(length=150)
@@ -115,6 +123,10 @@ class TestSlippageScenarios:
         # Should have at least one trade
         assert len(trades) > 0
 
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
+
         # Find trades that were closed by trailing stop
         # These would be trades where the exit price is the trailing stop price
         # For simplicity, we'll just verify that slippage is applied to all trades
@@ -128,7 +140,7 @@ class TestSlippageScenarios:
             # For long positions:
             if trade['side'] == 'long':
                 # Entry price should be higher than the original price (pay more on entry)
-                expected_entry_price = round(original_entry_price * (1 + slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
 
@@ -150,7 +162,7 @@ class TestSlippageScenarios:
             # For short positions:
             elif trade['side'] == 'short':
                 # Entry price should be lower than the original price (receive less on entry)
-                expected_entry_price = round(original_entry_price * (1 - slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
 
@@ -171,9 +183,11 @@ class TestSlippageScenarios:
 
     def test_slippage_with_contract_rollover(self):
         """Test that slippage is applied correctly during contract rollovers."""
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
         # Create a strategy with rollover and slippage
-        slippage = 2.0
-        strategy = StrategyForTesting(rollover=True, slippage=slippage)
+        slippage_ticks = 2
+        strategy = StrategyForTesting(rollover=True, slippage_ticks=slippage_ticks, symbol=None)
 
         # Create a dataframe with 150 bars
         df = create_test_df(length=150)
@@ -187,6 +201,10 @@ class TestSlippageScenarios:
 
         # Should have at least one trade
         assert len(trades) > 0
+
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
 
         # Find trades that were closed due to rollover
         rollover_trades = [trade for trade in trades if trade.get('switch')]
@@ -206,7 +224,7 @@ class TestSlippageScenarios:
             # For long positions:
             if trade['side'] == 'long':
                 # Entry price should be higher than the original price (pay more on entry)
-                expected_entry_price = round(original_entry_price * (1 + slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
 
@@ -219,7 +237,7 @@ class TestSlippageScenarios:
             # For short positions:
             elif trade['side'] == 'short':
                 # Entry price should be lower than the original price (receive less on entry)
-                expected_entry_price = round(original_entry_price * (1 - slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
 
@@ -231,13 +249,15 @@ class TestSlippageScenarios:
 
     def test_slippage_with_high_volatility(self):
         """Test that slippage works correctly in high volatility conditions."""
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
         # Create a strategy with slippage
-        slippage = 2.0
+        slippage_ticks = 2
         strategy = EMACrossoverStrategy(short_ema_period=5,
                                         long_ema_period=15,
                                         rollover=False,
                                         trailing=None,
-                                        slippage=slippage,
+                                        slippage_ticks=slippage_ticks,
                                         symbol=None)
 
         # Create a dataframe with high volatility
@@ -273,6 +293,10 @@ class TestSlippageScenarios:
         # Should have at least one trade
         assert len(trades) > 0
 
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
+
         # Verify slippage is applied correctly to all trades
         for trade in trades:
             # Get the original entry and exit prices from the dataframe
@@ -286,8 +310,8 @@ class TestSlippageScenarios:
             if trade['side'] == 'long':
                 # Entry price should be higher than the original price (pay more on entry)
                 # Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price * (1 + slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 - slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
+                expected_exit_price = round(original_exit_price - slippage_amount, 2)
 
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -298,8 +322,8 @@ class TestSlippageScenarios:
             elif trade['side'] == 'short':
                 # Entry price should be lower than the original price (receive less on entry)
                 # Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price * (1 - slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 + slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
+                expected_exit_price = round(original_exit_price + slippage_amount, 2)
 
                 assert trade[
                            'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
@@ -308,15 +332,15 @@ class TestSlippageScenarios:
 
     def test_slippage_impact_on_performance(self):
         """Test the impact of slippage on overall strategy performance."""
-        # Create strategies with different slippage values
-        slippage_values = [0.0, 0.5, 1.0, 2.0, 5.0]
+        # Create strategies with different slippage tick values
+        slippage_tick_values = [0, 1, 2, 3, 5]
         strategies = [RSIStrategy(rsi_period=14,
                                   lower_threshold=30,
                                   upper_threshold=70,
                                   rollover=False,
                                   trailing=None,
-                                  slippage=s,
-                                  symbol=None) for s in slippage_values]
+                                  slippage_ticks=s,
+                                  symbol=None) for s in slippage_tick_values]
 
         # Create a test dataframe
         df = create_test_df(length=100)
@@ -336,7 +360,7 @@ class TestSlippageScenarios:
                 total_return += trade_return
 
             results.append({
-                'slippage': slippage_values[i],
+                'slippage_ticks': slippage_tick_values[i],
                 'num_trades': len(trades),
                 'total_return': total_return
             })
@@ -344,4 +368,4 @@ class TestSlippageScenarios:
         # Verify that higher slippage leads to lower returns
         for i in range(1, len(results)):
             assert results[i]['total_return'] <= results[i - 1][
-                'total_return'], f"Higher slippage ({results[i]['slippage']}%) should lead to lower or equal returns than lower slippage ({results[i - 1]['slippage']}%)"
+                'total_return'], f"Higher slippage ({results[i]['slippage_ticks']} ticks) should lead to lower or equal returns than lower slippage ({results[i - 1]['slippage_ticks']} ticks)"

@@ -53,7 +53,7 @@ class StrategyAnalyzer:
         interval=None,
         symbol=None,
         weighted=True,
-        min_slippage=None,
+        min_slippage_ticks=None,
         min_symbol_count=None
     ):
         """
@@ -71,7 +71,7 @@ class StrategyAnalyzer:
             symbol: Filter by specific symbol (e.g., 'ES', 'NQ', 'ZS'). None = all symbols
             weighted: If True and aggregate=True, use trade-weighted averages.
                      If False, use simple averages
-            min_slippage: Minimum slippage value to filter by. None = no filter
+            min_slippage_ticks: Minimum slippage value to filter by. None = no filter
             min_symbol_count: Minimum number of unique symbols per strategy. None = no filter
 
         Returns:
@@ -132,7 +132,7 @@ class StrategyAnalyzer:
         interval=None,
         symbol=None,
         weighted=True,
-        min_slippage=None,
+        min_slippage_ticks=None,
         min_symbol_count=None
     ):
         """
@@ -147,7 +147,7 @@ class StrategyAnalyzer:
             symbol: Filter by specific symbol before aggregation. None = all symbols
             weighted: If True, use trade-weighted averages (strategies with more trades
                      have greater influence). If False, use simple averages
-            min_slippage: Minimum slippage value to filter by. None = no filter
+            min_slippage_ticks: Minimum slippage value to filter by. None = no filter
             min_symbol_count: Minimum number of unique symbols per strategy. None = no filter
 
         Returns:

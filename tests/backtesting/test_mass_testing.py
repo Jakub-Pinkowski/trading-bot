@@ -1827,7 +1827,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1852,7 +1852,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1883,7 +1883,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1917,7 +1917,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1948,7 +1948,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1978,7 +1978,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     # Missing 'total_trades', 'win_rate', 'total_return_percentage_of_contract'
                     'sharpe_ratio': 1.5,
@@ -2016,7 +2016,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 'not_a_number',  # Should be int
                     'win_rate': [50.0],  # Should be float, not list
@@ -2057,7 +2057,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': float('nan'),  # NaN value
@@ -2098,7 +2098,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': 60.0,
@@ -2141,7 +2141,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 'invalid',  # Type mismatch
                     'sharpe_ratio': 1.5,
@@ -2152,7 +2152,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'NQ',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     # Missing total_trades
                     'win_rate': 50.0,
@@ -2163,7 +2163,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'YM',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': float('nan'),  # NaN value
                     'win_rate': float('inf'),  # Inf value

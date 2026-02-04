@@ -16,7 +16,7 @@ class EMACrossoverStrategy(BaseStrategy):
     @staticmethod
     def format_name(short_ema_period, long_ema_period, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'EMA(short={short_ema_period},long={long_ema_period},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
+        return f'EMA(short={short_ema_period},long={long_ema_period},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

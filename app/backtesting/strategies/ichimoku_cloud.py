@@ -31,7 +31,7 @@ class IchimokuCloudStrategy(BaseStrategy):
         rollover, trailing, slippage_ticks, **kwargs
     ):
         """Generate standardized strategy name."""
-        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},rollover={rollover},trailing={trailing},slippage={slippage_ticks})'
+        return f'Ichimoku(tenkan={tenkan_period},kijun={kijun_period},senkou_b={senkou_span_b_period},displacement={displacement},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 
