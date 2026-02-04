@@ -44,10 +44,17 @@ class CommonValidator(Validator):
         """
         self.reset_warnings()
 
-        # Extract parameters from kwargs
-        rollover = kwargs.get('rollover')
-        trailing = kwargs.get('trailing')
-        slippage_ticks = kwargs.get('slippage_ticks')
+        # Extract and validate required parameters are present
+        if 'rollover' not in kwargs:
+            raise ValueError("Missing required parameter: rollover")
+        if 'trailing' not in kwargs:
+            raise ValueError("Missing required parameter: trailing")
+        if 'slippage_ticks' not in kwargs:
+            raise ValueError("Missing required parameter: slippage_ticks")
+
+        rollover = kwargs['rollover']
+        trailing = kwargs['trailing']
+        slippage_ticks = kwargs['slippage_ticks']
 
         # --- Type Validation ---
 
