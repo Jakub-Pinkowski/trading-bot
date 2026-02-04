@@ -51,11 +51,11 @@ Scenario 3: Gap down through stop
 """
 
 
-# ==================== Helper Functions ====================
+# ==================== Private Helper Functions ====================
 
-def should_trigger_stop(position, trailing_stop, price_high, price_low):
+def _should_trigger_stop(position, trailing_stop, price_high, price_low):
     """
-    Check if trailing stop should be triggered.
+    Check if trailing stop should be triggered (internal use only).
 
     Args:
         position: 1 for long, -1 for short
@@ -75,9 +75,9 @@ def should_trigger_stop(position, trailing_stop, price_high, price_low):
     return False
 
 
-def update_trailing_stop(position_manager, position, current_stop, new_stop):
+def _update_trailing_stop(position_manager, position, current_stop, new_stop):
     """
-    Update trailing stop if it represents a tightening of the stop.
+    Update trailing stop if it represents a tightening of the stop (internal use only).
 
     Args:
         position_manager: PositionManager instance
@@ -139,7 +139,7 @@ class TrailingStopManager:
             position = position_manager.position
             trailing_stop = position_manager.trailing_stop
 
-            if should_trigger_stop(position, trailing_stop, price_high, price_low):
+            if _should_trigger_stop(position, trailing_stop, price_high, price_low):
                 # Stop triggered - close at stop level (not at low/high price)
                 position_manager.close_position(idx, trailing_stop, switch=False)
 
@@ -159,7 +159,7 @@ class TrailingStopManager:
             new_stop = self.calculate_new_trailing_stop(position, price_high, price_low)
 
             if new_stop is not None:
-                update_trailing_stop(position_manager, position, trailing_stop, new_stop)
+                _update_trailing_stop(position_manager, position, trailing_stop, new_stop)
 
         return False
 

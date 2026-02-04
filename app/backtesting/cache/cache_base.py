@@ -66,7 +66,7 @@ class Cache:
         """
         self.cache_name = cache_name
         self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
-        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")  # Add a lockfile path
+        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
