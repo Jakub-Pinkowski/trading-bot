@@ -150,18 +150,18 @@ def format_dataframe_for_export(df):
     return formatted_df
 
 
-def build_filename(metric, aggregate, interval=None, symbol=None, weighted=True):
+def build_filename(metric, aggregate, interval, symbol, weighted):
     """
-    Build descriptive CSV filename with appropriate suffixes for strategy results.
+    Build a descriptive CSV filename with appropriate suffixes for strategy results.
 
-    Creates timestamped filename that includes all relevant parameters used for
+    Creates a timestamped filename that includes all relevant parameters used for
     the analysis, making it easy to identify what data the file contains.
 
     Args:
         metric: Primary metric used for ranking (e.g., 'profit_factor', 'sharpe_ratio')
         aggregate: If True, results are aggregated across symbols/intervals
-        interval: Specific interval filter applied (e.g., '1h', '4h'). None if all intervals
-        symbol: Specific symbol filter applied (e.g., 'ZS', 'CL'). None if all symbols
+        interval: Specific interval filter applied (e.g., '1h', '4h').
+        symbol: Specific symbol filter applied (e.g., 'ZS', 'CL').
         weighted: If True and aggregate=True, trade-weighted averaging was used
 
     Returns:

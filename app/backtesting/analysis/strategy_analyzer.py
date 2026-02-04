@@ -91,7 +91,7 @@ class StrategyAnalyzer:
                                             interval,
                                             symbol,
                                             weighted,
-                                            min_slippage,
+                                            min_slippage_ticks,
                                             min_symbol_count)
         else:
             # Apply common filtering
@@ -99,7 +99,7 @@ class StrategyAnalyzer:
                                   min_avg_trades_per_combination,
                                   interval,
                                   symbol,
-                                  min_slippage,
+                                  min_slippage_ticks,
                                   min_symbol_count)
 
         # Sort by the metric in descending order
@@ -128,12 +128,12 @@ class StrategyAnalyzer:
 
     def _aggregate_strategies(
         self,
-        min_avg_trades_per_combination=0,
-        interval=None,
-        symbol=None,
-        weighted=True,
-        min_slippage_ticks=None,
-        min_symbol_count=None
+        min_avg_trades_per_combination,
+        interval,
+        symbol,
+        weighted,
+        min_slippage_ticks,
+        min_symbol_count
     ):
         """
         Aggregate strategy results across different symbols and intervals.
@@ -166,7 +166,7 @@ class StrategyAnalyzer:
                                        min_avg_trades_per_combination,
                                        interval,
                                        symbol,
-                                       min_slippage,
+                                       min_slippage_ticks,
                                        min_symbol_count)
 
         # Group by strategy
@@ -258,7 +258,7 @@ class StrategyAnalyzer:
 
         return aggregated_df
 
-    def _save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval=None, symbol=None, weighted=True):
+    def _save_results_to_csv(self, metric, limit, df_to_save, aggregate, interval, symbol, weighted):
         """
         Save results to a human-readable CSV file with formatted column names.
 

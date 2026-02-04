@@ -15,11 +15,11 @@ logger = get_logger('backtesting/analysis/helpers')
 
 def filter_dataframe(
     df,
-    min_avg_trades_per_combination=0,
-    interval=None,
-    symbol=None,
-    min_slippage_ticks=None,
-    min_symbol_count=None
+    min_avg_trades_per_combination,
+    interval,
+    symbol,
+    min_slippage_ticks,
+    min_symbol_count
 ):
     """
     Filter DataFrame based on common criteria.
