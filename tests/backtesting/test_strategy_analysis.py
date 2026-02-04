@@ -1360,21 +1360,21 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                                   min_symbol_count=None)
         self.assertEqual(len(non_weighted_top_strategies), 3)  # Rows with slippage >= 0.1
 
-        # Test with min_slippage_ticks=3 filter (no matches)
+        # Test with min_slippage_ticks=3 filter
         weighted_top_strategies = analyzer.get_top_strategies('win_rate',
                                                               0,
                                                               min_slippage_ticks=3,
                                                               weighted=True,
                                                               min_symbol_count=None)
-        self.assertEqual(len(weighted_top_strategies), 0)  # No rows with slippage >= 0.3
+        self.assertEqual(len(weighted_top_strategies), 1)  # Only slippage_ticks=15 (>= 3)
 
-        # Test with min_slippage_ticks=3 filter (no matches)
+        # Test with min_slippage_ticks=3 filter
         non_weighted_top_strategies = analyzer.get_top_strategies('win_rate',
                                                                   0,
                                                                   min_slippage_ticks=3,
                                                                   weighted=False,
                                                                   min_symbol_count=None)
-        self.assertEqual(len(non_weighted_top_strategies), 0)  # No rows with slippage >= 0.3
+        self.assertEqual(len(non_weighted_top_strategies), 1)  # Only slippage_ticks=15 (>= 3)
 
         # Test with aggregate=True and min_slippage filter (weighted=True)
         weighted_aggregated = analyzer.get_top_strategies('win_rate',
