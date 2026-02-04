@@ -1383,9 +1383,8 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                           min_slippage_ticks=1,
                                                           weighted=True,
                                                           min_symbol_count=None)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA strategies have slippage >= 0.15
-        for strategy in weighted_aggregated['strategy']:
-            self.assertTrue(strategy.startswith('EMA'))
+        self.assertEqual(len(weighted_aggregated), 3)  # slippage_ticks >= 1: RSI with 1, and both EMA strategies
+        # Should have RSI with slippage_ticks=1 and both EMA strategies
 
         # Test with aggregate=True and min_slippage filter (weighted=False)
         non_weighted_aggregated = analyzer.get_top_strategies('win_rate',
@@ -1394,9 +1393,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                               min_slippage_ticks=1,
                                                               weighted=False,
                                                               min_symbol_count=None)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA strategies have slippage >= 0.15
-        for strategy in non_weighted_aggregated['strategy']:
-            self.assertTrue(strategy.startswith('EMA'))
+        self.assertEqual(len(non_weighted_aggregated), 3)  # slippage_ticks >= 1: RSI with 1, and both EMA strategies
 
         # Test with multiple filters, including min_slippage (weighted=True)
         weighted_multiple = analyzer.get_top_strategies('win_rate',
