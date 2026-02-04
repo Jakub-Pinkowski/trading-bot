@@ -31,7 +31,7 @@ class TestBollingerBandsStrategy:
         assert strategy.number_of_standard_deviations == 3
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
-        assert strategy.position_manager.slippage_ticks == 1.0
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds Bollinger Bands to the dataframe."""
