@@ -657,7 +657,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer.results_df = None
 
         with self.assertRaises(ValueError):
-            analyzer._aggregate_strategies()
+            analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, weighted=True, min_slippage_ticks=None, min_symbol_count=None)
 
     def test_aggregate_strategies_empty_results(self):
         """Test aggregating strategies with empty results."""
@@ -665,7 +665,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer.results_df = pd.DataFrame()
 
         with self.assertRaises(ValueError):
-            analyzer._aggregate_strategies()
+            analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, weighted=True, min_slippage_ticks=None, min_symbol_count=None)
 
     @patch('pandas.read_parquet')
     def test_aggregate_strategies_basic(self, mock_read_parquet):
@@ -677,7 +677,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test weighted aggregation (default)
-        weighted_aggregated = analyzer._aggregate_strategies(weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, weighted=True, min_slippage_ticks=None, min_symbol_count=None)
 
         # Verify results for weighted aggregation
         self.assertEqual(len(weighted_aggregated), 4)  # Four strategies (each row is a unique strategy)
@@ -744,7 +744,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
                          25.0)  # 25 trades / (1 symbol × 1 interval) = 25.0
 
         # Test non-weighted aggregation
-        non_weighted_aggregated = analyzer._aggregate_strategies(weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, weighted=False, min_slippage_ticks=None, min_symbol_count=None)
 
         # Verify results for non-weighted aggregation
         self.assertEqual(len(non_weighted_aggregated), 4)  # Four strategies (each row is a unique strategy)
@@ -832,13 +832,13 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test weighted aggregation with min_avg_trades_per_combination filter
-        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, interval=None, symbol=None, weighted=True, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 2)  # Only EMA strategies have rows with >= 20 trades per combination
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test non-weighted aggregation with min_avg_trades_per_combination filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20, interval=None, symbol=None, weighted=False, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated),
                          2)  # Only EMA strategies have rows with >= 20 trades per combination
         for strategy in non_weighted_aggregated['strategy']:
@@ -855,25 +855,25 @@ class TestStrategyAnalyzer(unittest.TestCase):
         self.assertIn('win_rate', ema_non_weighted)
 
         # Test weighted aggregation with interval filter
-        weighted_aggregated = analyzer._aggregate_strategies(interval='1d', weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval='1d', symbol=None, weighted=True, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 2)  # Only RSI strategies have 1d interval
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('RSI'))
 
         # Test non-weighted aggregation with an interval filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(interval='1d', weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval='1d', symbol=None, weighted=False, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Only RSI strategies have 1d interval
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('RSI'))
 
         # Test weighted aggregation with symbol filter
-        weighted_aggregated = analyzer._aggregate_strategies(symbol='ES', weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol='ES', weighted=True, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 2)  # Both RSI and EMA have ES
         self.assertTrue(any(s.startswith('RSI') for s in weighted_aggregated['strategy']))
         self.assertTrue(any(s.startswith('EMA') for s in weighted_aggregated['strategy']))
 
         # Test non-weighted aggregation with a symbol filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(symbol='ES', weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol='ES', weighted=False, min_slippage_ticks=None, min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Both RSI and EMA have ES
         self.assertTrue(any(s.startswith('RSI') for s in non_weighted_aggregated['strategy']))
         self.assertTrue(any(s.startswith('EMA') for s in non_weighted_aggregated['strategy']))
@@ -881,7 +881,10 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Test weighted aggregation with multiple filters
         weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
                                                              interval='4h',
-                                                             weighted=True)
+                                                             symbol=None,
+                                                             weighted=True,
+                                                             min_slippage_ticks=None,
+                                                             min_symbol_count=None)
         self.assertEqual(len(weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades per combination
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
@@ -889,7 +892,10 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Test non-weighted aggregation with multiple filters
         non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
                                                                  interval='4h',
-                                                                 weighted=False)
+                                                                 symbol=None,
+                                                                 weighted=False,
+                                                                 min_slippage_ticks=None,
+                                                                 min_symbol_count=None)
         self.assertEqual(len(non_weighted_aggregated), 2)  # Only EMA has 4h interval with >= 20 trades per combination
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
@@ -1067,7 +1073,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Test saving results with weighted=True
         mock_to_csv.reset_mock()
         mock_makedirs.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=True)
 
         # Verify os.makedirs was called
         mock_makedirs.assert_called_once()
@@ -1078,7 +1084,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # Test saving results with weighted=False
         mock_to_csv.reset_mock()
         mock_makedirs.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=False)
 
         # Verify os.makedirs was called
         mock_makedirs.assert_called_once()
@@ -1097,7 +1103,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer.results_df = None
 
         with self.assertRaises(ValueError):
-            analyzer._save_results_to_csv('win_rate', 10, None, False, None, None)
+            analyzer._save_results_to_csv('win_rate', 10, None, False, interval=None, symbol=None, weighted=True)
 
     @patch('pandas.read_parquet')
     @patch('os.makedirs')
@@ -1112,14 +1118,14 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
         # Test saving results with weighted=True
         mock_to_csv.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=True)
 
         # Verify to_csv was called
         mock_to_csv.assert_called_once()
 
         # Test saving results with weighted=False
         mock_to_csv.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=False)
 
         # Verify to_csv was called
         mock_to_csv.assert_called_once()
@@ -1142,36 +1148,36 @@ class TestStrategyAnalyzer(unittest.TestCase):
         # we'll use a different approach to test filename generation
 
         # Test with different parameters and weighted=True
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, True, None, None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, True, interval=None, symbol=None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, '1d', None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval='1d', symbol=None, weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, 'ES', weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol='ES', weighted=True)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
         # Test with different parameters and weighted=False
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=False)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, True, None, None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, True, interval=None, symbol=None, weighted=False)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, '1d', None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval='1d', symbol=None, weighted=False)
         mock_to_csv.assert_called_once()
         mock_to_csv.reset_mock()
 
-        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, 'ES', weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol='ES', weighted=False)
         mock_to_csv.assert_called_once()
 
         # Verify that the method completed without errors for all parameter combinations
@@ -1189,14 +1195,14 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
         # Test saving results with df_to_save=None and weighted=True
         mock_to_csv.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, None, False, None, None, weighted=True)
+        analyzer._save_results_to_csv('win_rate', 10, None, False, interval=None, symbol=None, weighted=True)
 
         # Verify to_csv was called (using results_df instead)
         mock_to_csv.assert_called_once()
 
         # Test saving results with df_to_save=None and weighted=False
         mock_to_csv.reset_mock()
-        analyzer._save_results_to_csv('win_rate', 10, None, False, None, None, weighted=False)
+        analyzer._save_results_to_csv('win_rate', 10, None, False, interval=None, symbol=None, weighted=False)
 
         # Verify to_csv was called (using results_df instead)
         mock_to_csv.assert_called_once()
@@ -1215,7 +1221,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
         # Test that the exception is propagated with weighted=True
         with self.assertRaises(Exception):
-            analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=True)
+            analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=True)
 
         # Verify that makedirs was called before the exception
         mock_makedirs.assert_called_once()
@@ -1226,7 +1232,7 @@ class TestStrategyAnalyzer(unittest.TestCase):
 
         # Test that the exception is propagated with weighted=False
         with self.assertRaises(Exception):
-            analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, None, None, weighted=False)
+            analyzer._save_results_to_csv('win_rate', 10, analyzer.results_df, False, interval=None, symbol=None, weighted=False)
 
         # Verify that makedirs was called before the exception
         mock_makedirs.assert_called_once()
@@ -1241,55 +1247,61 @@ class TestStrategyAnalyzer(unittest.TestCase):
         analyzer = StrategyAnalyzer()
 
         # Test weighted aggregation with min_slippage filter
-        weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=1, weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only strategies with slippage >= 0.15
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=2, min_symbol_count=None, weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # Only strategies with slippage >= 2
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue('slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
 
         # Test non-weighted aggregation with min_slippage filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=1, weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # Only strategies with slippage >= 0.15
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=2, min_symbol_count=None, weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 2)  # Only strategies with slippage >= 2
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue('slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
 
         # Test weighted aggregation with min_slippage_ticks=1 filter
-        weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=1, weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=1, min_symbol_count=None, weighted=True)
         self.assertEqual(len(weighted_aggregated), 3)  # RSI with slippage_ticks=1 and both EMA strategies
 
         # Test non-weighted aggregation with min_slippage_ticks=1 filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=1, weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=1, min_symbol_count=None, weighted=False)
         self.assertEqual(len(non_weighted_aggregated), 3)  # RSI with slippage_ticks=1 and both EMA strategies
 
         # Test weighted aggregation with min_slippage_ticks=0 filter
-        weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=0, weighted=True)
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=0, min_symbol_count=None, weighted=True)
         self.assertEqual(len(weighted_aggregated), 4)  # All strategies have slippage_ticks >= 0
 
         # Test non-weighted aggregation with min_slippage_ticks=0 filter
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=0, weighted=False)
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=0, min_symbol_count=None, weighted=False)
         self.assertEqual(len(non_weighted_aggregated), 4)  # All strategies have slippage_ticks >= 0
 
         # Test weighted aggregation with min_slippage_ticks=3 filter (no matches)
-        weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=3, weighted=True)
-        self.assertEqual(len(weighted_aggregated), 0)  # No strategies with slippage >= 0.3
+        weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=3, min_symbol_count=None, weighted=True)
+        self.assertEqual(len(weighted_aggregated), 2)  # slippage_ticks >= 3: 3 and 15
 
         # Test non-weighted aggregation with min_slippage_ticks=3 filter (no matches)
-        non_weighted_aggregated = analyzer._aggregate_strategies(min_slippage_ticks=3, weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 0)  # No strategies with slippage >= 0.3
+        non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=3, min_symbol_count=None, weighted=False)
+        self.assertEqual(len(non_weighted_aggregated), 2)  # slippage_ticks >= 3: 3 and 15
 
         # Test weighted aggregation with multiple filters including min_slippage
         weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                             interval=None,
+                                                             symbol=None,
                                                              min_slippage_ticks=1,
+                                                             min_symbol_count=None,
                                                              weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA with slippage >= 0.15 and trades per combination >= 20
+        self.assertEqual(len(weighted_aggregated), 2)  # Only EMA with slippage >= 1 and trades per combination >= 20
         for strategy in weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
         # Test non-weighted aggregation with multiple filters including min_slippage
         non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
+                                                                 interval=None,
+                                                                 symbol=None,
                                                                  min_slippage_ticks=1,
+                                                                 min_symbol_count=None,
                                                                  weighted=False)
         self.assertEqual(len(non_weighted_aggregated),
-                         2)  # Only EMA with slippage >= 0.15 and trades per combination >= 20
+                         2)  # Only EMA with slippage >= 1 and trades per combination >= 20
         for strategy in non_weighted_aggregated['strategy']:
             self.assertTrue(strategy.startswith('EMA'))
 
