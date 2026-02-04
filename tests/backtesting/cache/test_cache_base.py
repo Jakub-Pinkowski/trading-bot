@@ -79,7 +79,7 @@ def test_cache_clear():
     assert cache.size() == 2
 
     # Clear the cache
-    cache.clear()
+    cache.cache_data.clear()
     assert cache.size() == 0
     assert not cache.contains("key1")
     assert not cache.contains("key2")

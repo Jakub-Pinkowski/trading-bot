@@ -22,7 +22,7 @@ def test_indicator_cache_instance():
 def test_indicator_cache_operations():
     """Test basic operations on the indicator cache."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Test that the cache is empty
     assert indicator_cache.size() == 0
@@ -44,7 +44,7 @@ def test_indicator_cache_operations():
     assert indicator_cache.get(non_existent_key, "default") == "default"
 
     # Clear the cache again
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
     assert indicator_cache.size() == 0
     assert not indicator_cache.contains(test_key)
 
@@ -53,7 +53,7 @@ def test_indicator_cache_operations():
 def test_indicator_cache_save(mock_save_cache):
     """Test saving the indicator cache."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Add some data to the cache
     test_key = ("bollinger_bands", "CL", (20, 2))  # Crude Oil futures
@@ -80,7 +80,7 @@ def test_indicator_cache_load():
 def test_indicator_cache_with_complex_keys():
     """Test the indicator cache with complex keys."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Test with a complex key structure, but use a hashable type (tuple) for the key
     # Dictionary keys must be hashable, so we convert the complex structure to a tuple
@@ -102,13 +102,13 @@ def test_indicator_cache_with_complex_keys():
     assert indicator_cache.get(complex_key) == complex_value
 
     # Clear the cache again
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
 
 def test_rsi_caching():
     """Test that RSI calculations are properly cached."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data for ZC (Corn futures)
     prices = pd.Series([500, 505, 510, 515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580])
@@ -140,7 +140,7 @@ def test_rsi_caching():
 def test_ema_caching():
     """Test that EMA calculations are properly cached."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data for ZS (Soybean futures)
     prices = pd.Series([1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235, 1240, 1245, 1250])
@@ -172,7 +172,7 @@ def test_ema_caching():
 def test_atr_caching():
     """Test that ATR calculations are properly cached."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample OHLC data for CL (Crude Oil futures)
     df = pd.DataFrame({
@@ -215,7 +215,7 @@ def test_atr_caching():
 def test_macd_caching():
     """Test that MACD calculations are properly cached."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data for GC (Gold futures)
     prices = pd.Series([
@@ -251,7 +251,7 @@ def test_macd_caching():
 def test_bollinger_bands_caching():
     """Test that Bollinger Bands calculations are properly cached."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data for SI (Silver futures)
     prices = pd.Series([
@@ -287,7 +287,7 @@ def test_bollinger_bands_caching():
 def test_cache_persistence_across_calculations():
     """Test that the cache persists across multiple calculations with different parameters."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data for HG (Copper futures)
     prices = pd.Series([
@@ -344,7 +344,7 @@ def test_cache_persistence_across_calculations():
 def test_integration_with_real_calculations():
     """Test integration with real indicator calculations."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create realistic price data for ES (E-mini S&P 500 futures)
     prices = pd.Series([
@@ -409,7 +409,7 @@ def test_integration_with_real_calculations():
 def test_indicator_cache_corrupted_file():
     """Test handling of corrupted cache files."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data
     prices = pd.Series([100, 101, 102, 103, 104, 105])
@@ -442,7 +442,7 @@ def test_indicator_cache_corrupted_file():
 def test_indicator_cache_interrupted_save():
     """Test handling of interrupted save operations."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create sample price data
     prices = pd.Series([100, 101, 102, 103, 104, 105])
@@ -472,7 +472,7 @@ def test_indicator_cache_interrupted_save():
 def test_indicator_cache_large_objects():
     """Test handling of large objects in the cache to check for memory leaks."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create a large price series (100,000 points)
     large_prices = pd.Series(range(100_000))
@@ -495,7 +495,7 @@ def test_indicator_cache_large_objects():
     del large_rsi
 
     # Clear the cache to free memory
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
     assert not indicator_cache.contains(cache_key)
     assert indicator_cache.size() == 0
 
@@ -503,7 +503,7 @@ def test_indicator_cache_large_objects():
 def test_indicator_cache_invalid_keys():
     """Test handling of invalid keys in the cache."""
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Try to set a non-hashable key (dictionary is not hashable)
     with pytest.raises(TypeError):
@@ -523,7 +523,7 @@ def test_indicator_cache_invalid_keys():
     assert indicator_cache.size() == 2  # None and empty string keys
 
     # Clear the cache
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
     assert indicator_cache.size() == 0
 
 
@@ -532,7 +532,7 @@ def test_indicator_cache_concurrent_access():
     import threading
 
     # Clear the cache to start with a clean state
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
 
     # Create a function that adds items to the cache
     def add_to_cache(start_idx, end_idx):
@@ -563,5 +563,5 @@ def test_indicator_cache_concurrent_access():
         assert indicator_cache.contains(f'key_{i}')
 
     # Clear the cache
-    indicator_cache.clear()
+    indicator_cache.cache_data.clear()
     assert indicator_cache.size() == 0

@@ -69,11 +69,11 @@ def _simple_worker(x):
 @pytest.fixture(autouse=True)
 def reset_caches():
     """Reset caches before and after each test."""
-    indicator_cache.clear()
-    dataframe_cache.clear()
+    indicator_cache.cache_data.clear()
+    dataframe_cache.cache_data.clear()
     yield
-    indicator_cache.clear()
-    dataframe_cache.clear()
+    indicator_cache.cache_data.clear()
+    dataframe_cache.cache_data.clear()
 
 
 @pytest.fixture
@@ -495,8 +495,8 @@ class TestRealDataMultiprocessing:
             pass
 
         # Clear caches
-        indicator_cache.clear()
-        dataframe_cache.clear()
+        indicator_cache.cache_data.clear()
+        dataframe_cache.cache_data.clear()
 
         import tempfile
         import shutil
@@ -571,8 +571,8 @@ class TestRealDataMultiprocessing:
                     time_serial = time.time() - start_serial
 
                     # Clear caches to ensure fair comparison
-                    indicator_cache.clear()
-                    dataframe_cache.clear()
+                    indicator_cache.cache_data.clear()
+                    dataframe_cache.cache_data.clear()
 
                     # Parallel execution (4 workers)
                     tester_parallel = MassTester(['1!'], ['ZC'], ['1d'])
