@@ -36,7 +36,7 @@ class TestMACDStrategy:
         assert strategy.signal_period == 5
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
-        assert strategy.position_manager.slippage_ticks == 1.0
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds MACD indicators to the dataframe."""
