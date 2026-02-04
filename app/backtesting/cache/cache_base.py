@@ -203,47 +203,6 @@ class Cache:
         self.hits += 1
         return True
 
-    def clear(self):
-        """
-        Clear all items from the cache.
-
-        Removes all cached entries from memory. Cache statistics (hits/misses)
-        are preserved. Use this to free memory or reset the cache between test runs.
-
-        Side Effects:
-            - Removes all items from cache_data
-            - Does not affect hit/miss counters
-            - Does not delete the cache file on disk (call save_cache() after to persist)
-        """
-        self.cache_data.clear()
-
-    def size(self):
-        """
-        Get the current number of items in the cache.
-
-        Returns the count of cached items currently stored in memory. This count
-        excludes expired items that have already been removed but includes items
-        that have expired but not yet been accessed (and thus not yet removed).
-
-        Returns:
-            Integer count of items currently in the cache
-        """
-        return len(self.cache_data)
-
-    def get_stats(self):
-        """Get cache statistics.
-
-        Returns:
-            dict: Dictionary with 'hits', 'misses', 'total', and 'hit_rate' keys
-        """
-        total = self.hits + self.misses
-        hit_rate = (self.hits / total * 100) if total > 0 else 0
-        return {
-            'hits': self.hits,
-            'misses': self.misses,
-            'total': total,
-            'hit_rate': hit_rate
-        }
 
     def reset_stats(self):
         """

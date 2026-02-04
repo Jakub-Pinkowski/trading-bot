@@ -38,8 +38,8 @@ def get_cached_dataframe(filepath):
         DataFrame: A copy-on-write copy of the cached DataFrame
 
     Example:
-        >>> df = get_cached_dataframe('data/ES_1d.parquet')
-        >>> df['new_column'] = 0  # Only now does the copy actually happen
+         df = get_cached_dataframe('data/ES_1d.parquet')
+         df['new_column'] = 0  # Only now does the copy actually happen
     """
     if dataframe_cache.contains(filepath):
         # Return a copy-on-write copy (nearly free until modified)

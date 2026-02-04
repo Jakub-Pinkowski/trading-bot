@@ -52,8 +52,8 @@ class PositionManager:
         self.trailing_stop = None
         self.trades = []
 
-    def reset_position(self):
-        """Reset position variables"""
+    def _reset_position(self):
+        """Reset position variables (internal use only)"""
         self.entry_time = None
         self.entry_price = None
         self.position = None
@@ -166,7 +166,7 @@ class PositionManager:
         if switch:
             trade['switch'] = True
         self.trades.append(trade)
-        self.reset_position()
+        self._reset_position()
 
     def close_position_at_switch(self, prev_time, prev_row):
         """
