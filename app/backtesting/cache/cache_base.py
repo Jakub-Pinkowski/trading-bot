@@ -203,6 +203,18 @@ class Cache:
         self.hits += 1
         return True
 
+    def size(self):
+        """
+        Get the current number of items in the cache.
+
+        Returns the count of cached items currently stored in memory. This count
+        excludes expired items that have already been removed but includes items
+        that have expired but not yet been accessed (and thus not yet removed).
+
+        Returns:
+            Integer count of items currently in the cache
+        """
+        return len(self.cache_data)
 
     def reset_stats(self):
         """

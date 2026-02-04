@@ -244,7 +244,7 @@ class MassTester:
 
     # ==================== Public API - Execution ====================
 
-    def run_tests(self, verbose=True, max_workers=None, skip_existing=True):
+    def run_tests(self, verbose, max_workers, skip_existing):
         """
         Run all configured strategy tests in parallel across symbols, intervals, and months.
 

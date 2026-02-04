@@ -19,9 +19,9 @@ logger = get_logger('backtesting/testing/orchestrator')
 
 def run_tests(
     tester,
-    verbose=True,
-    max_workers=None,
-    skip_existing=True
+    verbose,
+    max_workers,
+    skip_existing
 ):
     """
     Core orchestration function that executes all configured backtests in parallel.

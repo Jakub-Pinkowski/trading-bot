@@ -103,7 +103,7 @@ def main():
         upper_thresholds=[60, 70, 80],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
-        slippage_ticks_list=[2, 3, 4, 5]
+        slippage_ticks_list=[2, 3]
     )
 
     # Run all tests
