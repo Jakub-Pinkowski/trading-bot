@@ -1274,13 +1274,13 @@ class TestStrategyAnalyzer(unittest.TestCase):
         non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=0, min_symbol_count=None, weighted=False)
         self.assertEqual(len(non_weighted_aggregated), 4)  # All strategies have slippage_ticks >= 0
 
-        # Test weighted aggregation with min_slippage_ticks=3 filter (no matches)
+        # Test weighted aggregation with min_slippage_ticks=3 filter
         weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=3, min_symbol_count=None, weighted=True)
-        self.assertEqual(len(weighted_aggregated), 2)  # slippage_ticks >= 3: 3 and 15
+        self.assertEqual(len(weighted_aggregated), 1)  # Only EMA with slippage_ticks=15
 
-        # Test non-weighted aggregation with min_slippage_ticks=3 filter (no matches)
+        # Test non-weighted aggregation with min_slippage_ticks=3 filter
         non_weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=0, interval=None, symbol=None, min_slippage_ticks=3, min_symbol_count=None, weighted=False)
-        self.assertEqual(len(non_weighted_aggregated), 2)  # slippage_ticks >= 3: 3 and 15
+        self.assertEqual(len(non_weighted_aggregated), 1)  # Only EMA with slippage_ticks=15
 
         # Test weighted aggregation with multiple filters including min_slippage
         weighted_aggregated = analyzer._aggregate_strategies(min_avg_trades_per_combination=20,
@@ -1322,9 +1322,9 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                               min_slippage_ticks=1,
                                                               weighted=True,
                                                               min_symbol_count=None)
-        self.assertEqual(len(weighted_top_strategies), 2)  # Only rows with slippage >= 0.15
+        self.assertEqual(len(weighted_top_strategies), 3)  # slippage_ticks >= 1: 1, 2, 15
         for strategy in weighted_top_strategies['strategy']:
-            self.assertTrue('slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
+            self.assertTrue('slippage_ticks=1' in strategy or 'slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
 
         # Verify save_results_to_csv was called
         mock_save_results.assert_called_once()
@@ -1336,9 +1336,9 @@ class TestStrategyAnalyzer(unittest.TestCase):
                                                                   min_slippage_ticks=1,
                                                                   weighted=False,
                                                                   min_symbol_count=None)
-        self.assertEqual(len(non_weighted_top_strategies), 2)  # Only rows with slippage >= 0.15
+        self.assertEqual(len(non_weighted_top_strategies), 3)  # slippage_ticks >= 1: 1, 2, 15
         for strategy in non_weighted_top_strategies['strategy']:
-            self.assertTrue('slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
+            self.assertTrue('slippage_ticks=1' in strategy or 'slippage_ticks=2' in strategy or 'slippage_ticks=15' in strategy)
 
         # Verify save_results_to_csv was called
         mock_save_results.assert_called_once()
