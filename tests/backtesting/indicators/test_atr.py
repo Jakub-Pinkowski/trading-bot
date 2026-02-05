@@ -73,7 +73,7 @@ class TestATRBasicLogic:
         """ATR should increase when price ranges widen."""
         # Low volatility: small oscillations
         low_vol = _price_series_to_ohlc(oscillating_price_series, range_pct=1.0)
-        
+
         # High volatility: large swings with wider ranges
         high_vol = _price_series_to_ohlc(volatile_price_series, range_pct=10.0)
 
@@ -95,7 +95,7 @@ class TestATRBasicLogic:
         df_with_gap = df.copy()
         prev_close = df_with_gap.iloc[14]['close']
         gap_size = 10.0  # Gap up 10 points
-        
+
         # Modify bar 15 to have gap up from previous close
         df_with_gap.iloc[15, df_with_gap.columns.get_loc('low')] = prev_close + gap_size - 1.0
         df_with_gap.iloc[15, df_with_gap.columns.get_loc('high')] = prev_close + gap_size + 1.0
@@ -105,17 +105,17 @@ class TestATRBasicLogic:
         # True range = max(H-L, |H-prev_close|, |prev_close-L|)
         # With gap: max(2.0, |125-114|, |114-123|) = max(2.0, 11.0, 9.0) = 11.0
         # Without gap: max(2.0, 1.0, 1.0) = 2.0
-        
+
         high = df_with_gap['high']
         low = df_with_gap['low']
         close = df_with_gap['close']
         prev_close_series = close.shift(1)
-        
+
         tr1 = high - low
         tr2 = (high - prev_close_series).abs()
         tr3 = (low - prev_close_series).abs()
         true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-        
+
         # True range at gap should be much larger
         tr_at_gap = true_range.iloc[15]
         assert tr_at_gap > 5, f"True range at gap should capture the gap, got {tr_at_gap:.2f}"
@@ -127,9 +127,9 @@ class TestATRBasicLogic:
         atr = _calculate_atr(df, period=period)
 
         # First 'period-1' values should be NaN (EWM with min_periods=period gives value at period-1)
-        assert atr.iloc[:period-1].isna().all(), f"First {period-1} ATR values should be NaN"
+        assert atr.iloc[:period - 1].isna().all(), f"First {period - 1} ATR values should be NaN"
         # After warmup, should have valid values
-        assert not atr.iloc[period-1:].isna().all(), "Should have valid ATR after warmup period"
+        assert not atr.iloc[period - 1:].isna().all(), "Should have valid ATR after warmup period"
 
     def test_larger_period_gives_smoother_atr(self, volatile_price_series):
         """Larger ATR period should produce less volatile ATR values."""
@@ -162,14 +162,22 @@ class TestATRBasicLogic:
     def test_atr_increases_with_price_spike(self):
         """ATR should spike up after large price movement."""
         df = pd.DataFrame({
-            'open': [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
-                     110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0],
-            'high': [101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0,
-                     111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0],
-            'low': [99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0,
-                    109.0, 110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0],
-            'close': [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
-                      110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0]
+            'open': [
+                100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
+                110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0
+            ],
+            'high': [
+                101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0,
+                111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0
+            ],
+            'low': [
+                99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0,
+                109.0, 110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0
+            ],
+            'close': [
+                100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
+                110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0
+            ]
         })
 
         # Calculate ATR before spike
@@ -231,7 +239,7 @@ class TestATRCalculationWithRealData:
 
         # Validate structure
         assert len(atr) == len(zs_1h_data)
-        assert atr.isna().sum() == period-1, f"Should have {period-1} NaN values for ATR({period})"
+        assert atr.isna().sum() == period - 1, f"Should have {period - 1} NaN values for ATR({period})"
 
         # Validate range
         assert_valid_indicator(atr, f'ATR({period})', min_val=0)
@@ -836,7 +844,7 @@ class TestATRPracticalUsage:
 
         # Define regimes
         high_vol_regime = atr_percentile > 75  # Top 25% of ATR values
-        low_vol_regime = atr_percentile < 25   # Bottom 25% of ATR values
+        low_vol_regime = atr_percentile < 25  # Bottom 25% of ATR values
 
         # Should identify both regimes
         assert high_vol_regime.sum() > 0, "Should identify high volatility regimes"

@@ -11,8 +11,7 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_bollinger_bands
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike
+from tests.backtesting.helpers.assertions import assert_indicator_varies
 
 
 # ==================== Helper Function ====================
@@ -38,7 +37,7 @@ class TestBollingerBandsBasicLogic:
 
         assert isinstance(bb, pd.DataFrame), "Bollinger Bands must return DataFrame"
         assert len(bb) == len(medium_price_series), "BB length must equal input length"
-        
+
         expected_columns = ['middle_band', 'upper_band', 'lower_band']
         assert list(bb.columns) == expected_columns, f"Expected columns {expected_columns}"
 
@@ -58,7 +57,7 @@ class TestBollingerBandsBasicLogic:
         bb = _calculate_bollinger_bands(rising_price_series, period=period, num_std=2.0)
 
         manual_sma = rising_price_series.rolling(window=period).mean()
-        
+
         # Compare valid values
         valid_indices = bb['middle_band'].dropna().index
         np.testing.assert_allclose(
@@ -80,7 +79,6 @@ class TestBollingerBandsBasicLogic:
         assert volatile_width > stable_width, \
             f"Volatile market should have wider bands: {volatile_width:.2f} vs {stable_width:.2f}"
 
-
     def test_band_width_increases_with_num_std(self, volatile_price_series):
         """Bands should be wider with higher number of standard deviations."""
         bb_1std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=1.0)
@@ -89,7 +87,7 @@ class TestBollingerBandsBasicLogic:
 
         # Get valid values (last 5 bars for averaging)
         valid_idx = bb_1std['middle_band'].dropna().index[-5:]
-        
+
         width_1std = (bb_1std.loc[valid_idx, 'upper_band'] - bb_1std.loc[valid_idx, 'lower_band']).mean()
         width_2std = (bb_2std.loc[valid_idx, 'upper_band'] - bb_2std.loc[valid_idx, 'lower_band']).mean()
         width_3std = (bb_3std.loc[valid_idx, 'upper_band'] - bb_3std.loc[valid_idx, 'lower_band']).mean()
@@ -104,13 +102,13 @@ class TestBollingerBandsBasicLogic:
         bb = _calculate_bollinger_bands(prices, period=period, num_std=2.0)
 
         # First 'period-1' values should be NaN
-        assert bb['middle_band'].iloc[:period-1].isna().all(), \
-            f"First {period-1} middle band values should be NaN"
-        assert bb['upper_band'].iloc[:period-1].isna().all(), \
-            f"First {period-1} upper band values should be NaN"
-        assert bb['lower_band'].iloc[:period-1].isna().all(), \
-            f"First {period-1} lower band values should be NaN"
-        
+        assert bb['middle_band'].iloc[:period - 1].isna().all(), \
+            f"First {period - 1} middle band values should be NaN"
+        assert bb['upper_band'].iloc[:period - 1].isna().all(), \
+            f"First {period - 1} upper band values should be NaN"
+        assert bb['lower_band'].iloc[:period - 1].isna().all(), \
+            f"First {period - 1} lower band values should be NaN"
+
         # After warmup, should have valid values
         assert not bb['middle_band'].iloc[period:].isna().all(), \
             "Should have valid middle band after warmup period"
@@ -163,7 +161,7 @@ class TestBollingerBandsCalculationWithRealData:
         # Validate structure
         assert len(bb) == len(zs_1h_data)
         assert bb['middle_band'].isna().sum() == period - 1, \
-            f"Should have {period-1} NaN values for BB({period})"
+            f"Should have {period - 1} NaN values for BB({period})"
 
         # Validate band relationships
         valid_bb = bb.dropna()
@@ -263,10 +261,10 @@ class TestBollingerBandsEdgeCases:
         bb = _calculate_bollinger_bands(constant_price_series, period=20, num_std=2.0)
 
         valid_bb = bb.dropna()
-        
+
         # All bands should be equal (or very close)
         assert len(valid_bb) > 0, "Should have valid values"
-        
+
         band_width = valid_bb['upper_band'] - valid_bb['lower_band']
         assert (band_width < 0.001).all(), \
             "Constant prices should produce near-zero band width"
@@ -305,7 +303,7 @@ class TestBollingerBandsDataTypes:
         # Both should produce valid BB
         valid_hourly = bb_hourly.dropna()
         valid_daily = bb_daily.dropna()
-        
+
         assert len(valid_hourly) > 0, "Hourly BB should have valid values"
         assert len(valid_daily) > 0, "Daily BB should have valid values"
 
@@ -325,10 +323,10 @@ class TestBollingerBandsPracticalUsage:
         breakout. Practical use: Identifying consolidation before moves.
         """
         bb = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
-        
+
         # Calculate band width as percentage of middle band
         valid_bb = bb.dropna()
-        band_width_pct = ((valid_bb['upper_band'] - valid_bb['lower_band']) / 
+        band_width_pct = ((valid_bb['upper_band'] - valid_bb['lower_band']) /
                           valid_bb['middle_band']) * 100
 
         # Find squeeze conditions (band width < 5% of middle band)
@@ -352,19 +350,19 @@ class TestBollingerBandsPracticalUsage:
 
         # Detect price breaking above upper band
         breaks_above = prices > bb['upper_band']
-        
+
         # Detect price breaking below lower band
         breaks_below = prices < bb['lower_band']
 
         # Real market data should have some breakouts
         assert breaks_above.sum() > 0, "Should find breaks above upper band"
         assert breaks_below.sum() > 0, "Should find breaks below lower band"
-        
+
         # Breakouts should be relatively rare (outside 2 std dev)
         total_breakouts = breaks_above.sum() + breaks_below.sum()
         valid_bars = bb['upper_band'].notna().sum()
         breakout_pct = (total_breakouts / valid_bars) * 100
-        
+
         assert breakout_pct < 10, \
             f"Breakouts should be <10% of time, got {breakout_pct:.1f}%"
 

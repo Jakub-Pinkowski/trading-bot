@@ -11,7 +11,7 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_macd
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
+from tests.backtesting.helpers.assertions import assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike
 
 
@@ -102,10 +102,10 @@ class TestMACDBasicLogic:
 
         # First slow_period-1 values in MACD line should be NaN
         # (EWM with min_periods=26 produces value at index 25)
-        assert macd['macd_line'].iloc[:slow_period-1].isna().all(), \
-            f"First {slow_period-1} MACD values should be NaN"
+        assert macd['macd_line'].iloc[:slow_period - 1].isna().all(), \
+            f"First {slow_period - 1} MACD values should be NaN"
         # At slow_period, should have first valid value
-        assert not pd.isna(macd['macd_line'].iloc[slow_period-1]), \
+        assert not pd.isna(macd['macd_line'].iloc[slow_period - 1]), \
             "Should have valid MACD at slow_period-1"
 
     def test_signal_line_lags_macd_line(self, medium_price_series):
@@ -137,7 +137,7 @@ class TestMACDBasicLogic:
         macd = _calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
 
         histogram = macd['histogram'].dropna()
-        
+
         # Histogram should cross zero (change signs) with this specific oscillating data
         sign_changes = (histogram.shift(1) * histogram < 0).sum()
         assert sign_changes >= 1, f"Histogram should cross zero at least once, got {sign_changes} crossings"
@@ -177,10 +177,10 @@ class TestMACDCalculationWithRealData:
         )
 
     @pytest.mark.parametrize("fast_period,slow_period,signal_period", [
-        (5, 13, 5),    # Faster MACD
-        (12, 26, 9),   # Standard MACD
-        (19, 39, 9),   # Slower MACD
-        (8, 17, 9),    # Custom MACD
+        (5, 13, 5),  # Faster MACD
+        (12, 26, 9),  # Standard MACD
+        (19, 39, 9),  # Slower MACD
+        (8, 17, 9),  # Custom MACD
     ])
     def test_macd_with_different_periods(self, zs_1h_data, fast_period, slow_period, signal_period):
         """
@@ -468,7 +468,7 @@ class TestMACDEdgeCases:
 
         # MACD should be positive in strong uptrend
         assert valid_macd.iloc[-1] > 0, "MACD should be positive with continuous increases"
-        
+
         # Recent MACD should be higher than early MACD (diverging)
         early_macd = valid_macd.iloc[:10].mean()
         late_macd = valid_macd.iloc[-10:].mean()
@@ -487,7 +487,7 @@ class TestMACDEdgeCases:
 
         # MACD should be negative in strong downtrend
         assert valid_macd.iloc[-1] < 0, "MACD should be negative with continuous decreases"
-        
+
         # Recent MACD should be more negative than early MACD
         early_macd = valid_macd.iloc[:10].mean()
         late_macd = valid_macd.iloc[-10:].mean()
@@ -589,7 +589,7 @@ class TestMACDPracticalUsage:
 
         # Detect bullish crossovers (MACD crosses above signal)
         bullish_cross = (macd['macd_line'].shift(1) <= macd['signal_line'].shift(1)) & \
-                       (macd['macd_line'] > macd['signal_line'])
+                        (macd['macd_line'] > macd['signal_line'])
 
         crossover_count = bullish_cross.sum()
 
@@ -616,7 +616,7 @@ class TestMACDPracticalUsage:
 
         # Detect bearish crossovers (MACD crosses below signal)
         bearish_cross = (macd['macd_line'].shift(1) >= macd['signal_line'].shift(1)) & \
-                       (macd['macd_line'] < macd['signal_line'])
+                        (macd['macd_line'] < macd['signal_line'])
 
         crossover_count = bearish_cross.sum()
 
@@ -663,7 +663,7 @@ class TestMACDPracticalUsage:
 
         # Calculate histogram peaks and troughs
         histogram_abs = histogram.abs()
-        
+
         # Histogram should show varying strength
         assert histogram_abs.std() > 0, "Histogram amplitude should vary"
 
@@ -729,12 +729,12 @@ class TestMACDPracticalUsage:
 
         # Bullish crossovers above zero (stronger signals)
         bullish_cross = (macd['macd_line'].shift(1) <= macd['signal_line'].shift(1)) & \
-                       (macd['macd_line'] > macd['signal_line'])
+                        (macd['macd_line'] > macd['signal_line'])
         bullish_above_zero = bullish_cross & (macd['macd_line'] > 0)
 
         # Bearish crossovers below zero (stronger signals)
         bearish_cross = (macd['macd_line'].shift(1) >= macd['signal_line'].shift(1)) & \
-                       (macd['macd_line'] < macd['signal_line'])
+                        (macd['macd_line'] < macd['signal_line'])
         bearish_below_zero = bearish_cross & (macd['macd_line'] < 0)
 
         # Filtered signals should be subset of all signals

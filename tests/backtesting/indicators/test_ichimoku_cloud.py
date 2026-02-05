@@ -19,8 +19,10 @@ from tests.backtesting.helpers.data_utils import inject_price_spike
 
 # ==================== Helper Functions ====================
 
-def _calculate_ichimoku(high, low, close, tenkan_period=9, kijun_period=26,
-                        senkou_span_b_period=52, displacement=26):
+def _calculate_ichimoku(
+    high, low, close, tenkan_period=9, kijun_period=26,
+    senkou_span_b_period=52, displacement=26
+):
     """
     Helper function to calculate Ichimoku with automatic hashing.
 
@@ -88,7 +90,7 @@ class TestIchimokuBasicLogic:
         # At bar 9 (0-indexed position 8), we have 9 bars
         # Should have a valid Tenkan value
         assert not pd.isna(tenkan.iloc[8]), "Tenkan should have value at position 8"
-        
+
         # Tenkan should be between high and low midpoint
         expected_min = low.iloc[:9].min()
         expected_max = high.iloc[:9].max()
@@ -105,7 +107,7 @@ class TestIchimokuBasicLogic:
 
         # At bar 26 (0-indexed position 25), we have exactly 26 bars
         assert not pd.isna(kijun.iloc[25]), "Kijun should have value at position 25"
-        
+
         expected_min = low.iloc[:26].min()
         expected_max = high.iloc[:26].max()
         expected_kijun = (expected_max + expected_min) / 2
@@ -128,13 +130,13 @@ class TestIchimokuBasicLogic:
         # The first valid value should appear at position (displacement + min_period)
         assert senkou_a.iloc[:displacement].isna().all(), \
             "Senkou Span A should have NaN for first displacement periods"
-        
+
         # Note: with 80 bars and senkou_b_period=52, we need 52+displacement=78 bars for valid senkou_b
         # So with only 75 bars, senkou_b will be mostly NaN. This is expected behavior.
         # Just verify structure is correct
         assert len(senkou_a) == len(high), "Senkou A length should match input"
         assert len(senkou_b) == len(high), "Senkou B length should match input"
-        
+
         # Senkou A should have some valid values (needs only tenkan/kijun periods)
         valid_a_count = senkou_a.notna().sum()
         assert valid_a_count > 0, "Senkou Span A should have some valid values"
@@ -774,7 +776,7 @@ class TestIchimokuEdgeCases:
         # and may still reflect the flat period even in the variable region.
         # Only check faster-responding components (Tenkan=9, Chikou=displaced close)
         fast_components = ['tenkan_sen', 'chikou_span']
-        
+
         for component_name in fast_components:
             component = result[component_name]
             variable_region = component.iloc[70:]  # Check later region after more volatile data
