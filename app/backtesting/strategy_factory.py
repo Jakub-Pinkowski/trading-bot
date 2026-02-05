@@ -53,39 +53,11 @@ STRATEGY_MAP = {
     ),
 }
 
-COMMON_PARAMS = ['rollover', 'trailing', 'slippage', 'symbol']
+COMMON_PARAMS = ['rollover', 'trailing', 'slippage_ticks', 'symbol']
 COMMON_VALIDATOR = CommonValidator()
 
 _logged_warnings = set()
 _log_warnings_enabled = True
-
-
-# ==================== Helper Functions ====================
-
-def _log_warnings_once(warnings, strategy_type):
-    """Log warnings only once per unique warning."""
-    if not _log_warnings_enabled:
-        return
-
-    for warning in warnings:
-        warning_key = f"{strategy_type}: {warning}"
-        if warning_key not in _logged_warnings:
-            logger.warning(f"{strategy_type} Strategy Parameter Guidance: {warning}")
-            _logged_warnings.add(warning_key)
-
-
-def _extract_params(param_names, all_params):
-    """Extract specific parameters from params dict."""
-    extracted = {}
-    missing = []
-
-    for name in param_names:
-        if name in all_params:
-            extracted[name] = all_params[name]
-        else:
-            missing.append(name)
-
-    return extracted, missing
 
 
 # ==================== Public API ====================
@@ -190,3 +162,31 @@ def get_strategy_params(strategy_type):
         'strategy_params': param_names,
         'common_params': COMMON_PARAMS
     }
+
+
+# ==================== Private Helper Functions ====================
+
+def _log_warnings_once(warnings, strategy_type):
+    """Log warnings only once per unique warning (internal use only)."""
+    if not _log_warnings_enabled:
+        return
+
+    for warning in warnings:
+        warning_key = f"{strategy_type}: {warning}"
+        if warning_key not in _logged_warnings:
+            logger.warning(f"{strategy_type} Strategy Parameter Guidance: {warning}")
+            _logged_warnings.add(warning_key)
+
+
+def _extract_params(param_names, all_params):
+    """Extract specific parameters from params dict (internal use only)."""
+    extracted = {}
+    missing = []
+
+    for name in param_names:
+        if name in all_params:
+            extracted[name] = all_params[name]
+        else:
+            missing.append(name)
+
+    return extracted, missing

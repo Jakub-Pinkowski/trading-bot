@@ -23,61 +23,6 @@ MARGIN_RATIOS = {
 }
 
 
-# ==================== Helper Functions ====================
-
-def get_symbol_category(symbol):
-    """
-    Categorize futures symbols into asset classes for margin calculation.
-
-    Maps each symbol to its asset class category (energies, metals, indices, etc.)
-    which determines the appropriate margin ratio to use for estimating requirements.
-
-    Args:
-        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC', 'ES')
-
-    Returns:
-        String category name: 'energies', 'metals', 'indices', 'forex', 'crypto',
-        'grains', 'softs', or 'default' if symbol not found in mapping
-    """
-    categories = {
-        'energies': ['CL', 'NG', 'MCL', 'MNG', 'HO', 'RB'],
-        'metals': ['GC', 'SI', 'HG', 'PL', 'MGC', 'MHG', 'SIL'],
-        'indices': ['ES', 'NQ', 'YM', 'RTY', 'MES', 'MNQ', 'MYM', 'ZB'],
-        'forex': ['6E', '6J', '6B', '6A', '6C', '6S', 'M6E', 'M6J', 'M6B', 'M6A', 'M6C', 'M6S'],
-        'crypto': ['BTC', 'ETH', 'MBT', 'MET'],
-        'grains': ['ZC', 'ZW', 'ZS', 'ZL', 'XC', 'XK', 'XW', 'MZC', 'MZL', 'MZS', 'MZW'],
-        'softs': ['SB', 'KC', 'CC']
-    }
-    for category, symbols in categories.items():
-        if symbol in symbols:
-            return category
-    return 'default'
-
-
-def estimate_margin(symbol, entry_price, contract_multiplier):
-    """
-    Estimate margin requirement for a futures contract based on historical market ratios.
-
-    Calculates approximate margin needed to trade one contract by applying asset-class-specific
-    ratios to the contract value. Uses historical ratios from Jan 2026 market data to estimate
-    margin requirements for backtesting periods where actual margin data is unavailable.
-
-    Args:
-        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC')
-        entry_price: Contract entry price in symbol's quote units
-        contract_multiplier: Number of units per contract (e.g., 5000 for ZS bushels)
-
-    Returns:
-        Float representing estimated margin requirement in dollars.
-        Calculated as: contract_value * category_margin_ratio
-        where contract_value = entry_price * contract_multiplier
-    """
-    category = get_symbol_category(symbol)
-    ratio = MARGIN_RATIOS.get(category, MARGIN_RATIOS['default'])
-    contract_value = entry_price * contract_multiplier
-    return contract_value * ratio
-
-
 # ==================== Public API ====================
 
 def calculate_trade_metrics(trade, symbol):
@@ -123,7 +68,7 @@ def calculate_trade_metrics(trade, symbol):
         raise ValueError(f'No contract multiplier found for symbol: {symbol}')
 
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
-    margin_requirement = estimate_margin(symbol, trade['entry_price'], contract_multiplier)
+    margin_requirement = _estimate_margin(symbol, trade['entry_price'], contract_multiplier)
 
     # Validate margin requirement
     if margin_requirement <= 0:
@@ -237,3 +182,58 @@ def print_trade_metrics(trade):
     print(f"Return % of Contract: {color}{return_percentage}%{reset}")
 
     print('=============================\n')
+
+
+# ==================== Private Helper Functions ====================
+
+def _get_symbol_category(symbol):
+    """
+    Categorize futures symbols into asset classes for margin calculation (internal use only).
+
+    Maps each symbol to its asset class category (energies, metals, indices, etc.)
+    which determines the appropriate margin ratio to use for estimating requirements.
+
+    Args:
+        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC', 'ES')
+
+    Returns:
+        String category name: 'energies', 'metals', 'indices', 'forex', 'crypto',
+        'grains', 'softs', or 'default' if symbol not found in mapping
+    """
+    categories = {
+        'energies': ['CL', 'NG', 'MCL', 'MNG', 'HO', 'RB'],
+        'metals': ['GC', 'SI', 'HG', 'PL', 'MGC', 'MHG', 'SIL'],
+        'indices': ['ES', 'NQ', 'YM', 'RTY', 'MES', 'MNQ', 'MYM', 'ZB'],
+        'forex': ['6E', '6J', '6B', '6A', '6C', '6S', 'M6E', 'M6J', 'M6B', 'M6A', 'M6C', 'M6S'],
+        'crypto': ['BTC', 'ETH', 'MBT', 'MET'],
+        'grains': ['ZC', 'ZW', 'ZS', 'ZL', 'XC', 'XK', 'XW', 'MZC', 'MZL', 'MZS', 'MZW'],
+        'softs': ['SB', 'KC', 'CC']
+    }
+    for category, symbols in categories.items():
+        if symbol in symbols:
+            return category
+    return 'default'
+
+
+def _estimate_margin(symbol, entry_price, contract_multiplier):
+    """
+    Estimate margin requirement for a futures contract based on historical market ratios (internal use only).
+
+    Calculates approximate margin needed to trade one contract by applying asset-class-specific
+    ratios to the contract value. Uses historical ratios from Jan 2026 market data to estimate
+    margin requirements for backtesting periods where actual margin data is unavailable.
+
+    Args:
+        symbol: Futures symbol code (e.g., 'ZS', 'CL', 'GC')
+        entry_price: Contract entry price in symbol's quote units
+        contract_multiplier: Number of units per contract (e.g., 5000 for ZS bushels)
+
+    Returns:
+        Float representing estimated margin requirement in dollars.
+        Calculated as: contract_value * category_margin_ratio
+        where contract_value = entry_price * contract_multiplier
+    """
+    category = _get_symbol_category(symbol)
+    ratio = MARGIN_RATIOS.get(category, MARGIN_RATIOS['default'])
+    contract_value = entry_price * contract_multiplier
+    return contract_value * ratio

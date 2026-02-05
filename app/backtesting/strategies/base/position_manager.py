@@ -4,8 +4,10 @@ Position Manager for Backtesting Strategies
 This module manages position state and lifecycle during backtesting, including:
 - Opening and closing positions
 - Position state tracking
-- Slippage calculations for entry and exit prices
+- Tick-based slippage calculations for entry and exit prices
 """
+
+from config import TICK_SIZES, DEFAULT_TICK_SIZE
 
 
 class PositionManager:
@@ -20,16 +22,16 @@ class PositionManager:
 
     # ==================== Initialization ====================
 
-    def __init__(self, slippage=0, symbol=None, trailing=None):
+    def __init__(self, slippage_ticks, symbol, trailing):
         """
         Initialize the position manager.
 
         Args:
-            slippage: Slippage percentage applied to all entries/exits (e.g., 0.05 = 0.05%)
+            slippage_ticks: Number of ticks of slippage (e.g., 2 = 2 ticks)
             symbol: Futures symbol for contract specifications (e.g., 'ZC', 'GC')
             trailing: Trailing stop percentage if enabled (None = disabled)
         """
-        self.slippage = slippage
+        self.slippage_ticks = slippage_ticks
         self.symbol = symbol
         self.trailing = trailing
 
@@ -50,8 +52,8 @@ class PositionManager:
         self.trailing_stop = None
         self.trades = []
 
-    def reset_position(self):
-        """Reset position variables"""
+    def _reset_position(self):
+        """Reset position variables (internal use only)"""
         self.entry_time = None
         self.entry_price = None
         self.position = None
@@ -61,15 +63,6 @@ class PositionManager:
         """Check if there is an open position"""
         return self.position is not None
 
-    def get_position_details(self):
-        """Get current position details"""
-        return {
-            'position': self.position,
-            'entry_time': self.entry_time,
-            'entry_price': self.entry_price,
-            'trailing_stop': self.trailing_stop
-        }
-
     def get_trades(self):
         """Get list of completed trades"""
         return self.trades
@@ -78,11 +71,11 @@ class PositionManager:
 
     def apply_slippage_to_entry_price(self, direction, price):
         """
-        Apply slippage to entry price based on position direction.
+        Apply tick-based slippage to entry price.
 
         Long positions pay more on entry (higher price), short positions receive
-        less on entry (lower price). Simulates realistic market impact and
-        execution costs.
+        less on entry (lower price). Simulates realistic market impact using
+        actual tick sizes.
 
         Args:
             direction: Position direction (1 = long, -1 = short)
@@ -91,36 +84,38 @@ class PositionManager:
         Returns:
             Adjusted entry price with slippage applied
         """
+        tick_size = TICK_SIZES.get(self.symbol, DEFAULT_TICK_SIZE)
+        slippage_amount = self.slippage_ticks * tick_size
+
         if direction == 1:  # Long position
-            # For long positions, pay more on entry (higher price)
-            adjusted_price = price * (1 + self.slippage / 100)
+            adjusted_price = price + slippage_amount
         else:  # Short position
-            # For short positions, receive less on entry (lower price)
-            adjusted_price = price * (1 - self.slippage / 100)
+            adjusted_price = price - slippage_amount
 
         return round(adjusted_price, 2)
 
     def apply_slippage_to_exit_price(self, direction, price):
         """
-        Apply slippage to exit price based on position direction.
+        Apply tick-based slippage to exit price.
 
         Long positions receive less on exit (lower price), short positions pay
-        more on exit (higher price). Simulates realistic market impact when
-        closing positions.
+        more on exit (higher price). Simulates realistic market impact using
+        actual tick sizes.
 
         Args:
             direction: Position direction being closed (1 = long, -1 = short)
             price: Base exit price before slippage
 
         Returns:
-            Adjusted exit price with slippage applied, rounded to 2 decimal places
+            Adjusted exit price with slippage applied
         """
+        tick_size = TICK_SIZES.get(self.symbol, DEFAULT_TICK_SIZE)
+        slippage_amount = self.slippage_ticks * tick_size
+
         if direction == 1:  # Long position
-            # For long positions, receive less on exit (lower price)
-            adjusted_price = price * (1 - self.slippage / 100)
+            adjusted_price = price - slippage_amount
         else:  # Short position
-            # For short positions, pay more on exit (higher price)
-            adjusted_price = price * (1 + self.slippage / 100)
+            adjusted_price = price + slippage_amount
 
         return round(adjusted_price, 2)
 
@@ -149,7 +144,7 @@ class PositionManager:
             else:  # Short position
                 self.trailing_stop = round(self.entry_price * (1 + self.trailing / 100), 2)
 
-    def close_position(self, exit_time, exit_price, switch=False):
+    def close_position(self, exit_time, exit_price, switch):
         """
         Close the current position and record the trade.
 
@@ -171,7 +166,7 @@ class PositionManager:
         if switch:
             trade['switch'] = True
         self.trades.append(trade)
-        self.reset_position()
+        self._reset_position()
 
     def close_position_at_switch(self, prev_time, prev_row):
         """

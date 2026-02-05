@@ -1,6 +1,6 @@
 # Backtesting User Guide
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** February 3, 2026  
 **For Version:** 1.0  
 **Module:** `app/backtesting/`
 
@@ -71,7 +71,7 @@ tester.add_rsi_tests(
     upper_thresholds=[70, 75],
     rollovers=[False],
     trailing_stops=[None, 1, 2],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 
 # Run all tests
@@ -110,7 +110,7 @@ tester.add_bollinger_bands_tests(
     num_stds=[2.0, 2.5],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 ```
 
@@ -122,7 +122,7 @@ tester.add_ema_crossover_tests(
     ema_longs=[21, 26, 30],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 ```
 
@@ -136,7 +136,7 @@ tester.add_ichimoku_cloud_tests(
     displacements=[26, 30],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 ```
 
@@ -149,7 +149,7 @@ tester.add_macd_tests(
     signal_periods=[9, 12],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 ```
 
@@ -162,7 +162,7 @@ tester.add_rsi_tests(
     upper_thresholds=[60, 70, 80],
     rollovers=[False],
     trailing_stops=[None, 1, 2, 3],
-    slippages=[0.05]
+  slippage_ticks_list=[2]
 )
 ```
 
@@ -192,7 +192,7 @@ def main():
         num_stds=[2.0],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
-        slippages=[0.05]
+        slippage_ticks_list=[2]
     )
 
     # EMA Crossover uses two moving averages
@@ -201,7 +201,7 @@ def main():
         ema_longs=[21, 26],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
-        slippages=[0.05]
+        slippage_ticks_list=[2]
     )
 
     # RSI is a momentum oscillator
@@ -211,7 +211,7 @@ def main():
         upper_thresholds=[60, 70, 80],
         rollovers=[False],
         trailing_stops=[None, 1, 2, 3],
-        slippages=[0.05]
+        slippage_ticks_list=[2]
     )
 
     # Run all tests
@@ -271,7 +271,7 @@ top_profit_factor = analyzer.get_top_strategies(
     aggregate=True,
     interval='4h',
     weighted=True,
-    min_slippage=0.05,
+  min_slippage_ticks=2,
     min_symbol_count=3
 )
 
@@ -316,10 +316,10 @@ print(top_profit_factor)
 - `False`: Simple average
 - Weighted gives more importance to strategies with more trades
 
-**min_slippage** (float): Minimum slippage level
+**min_slippage_ticks** (int): Minimum slippage level in ticks
 
 - Filters to only realistic slippage values
-- Example: `0.05` includes only strategies tested with 5% or higher slippage
+- Example: `2` includes only strategies tested with 2 or more ticks of slippage
 - Ensures realistic transaction costs
 
 **min_symbol_count** (int): Minimum number of symbols strategy must work on
@@ -348,7 +348,7 @@ def main():
         aggregate=True,
         interval='4h',
         weighted=True,
-        min_slippage=0.05,
+        min_slippage_ticks=2,
         min_symbol_count=3
     )
 
@@ -363,7 +363,7 @@ def main():
         aggregate=True,
         interval='4h',
         weighted=True,
-        min_slippage=0.05,
+        min_slippage_ticks=2,
         min_symbol_count=3
     )
 
@@ -377,7 +377,7 @@ def main():
         limit=50,
         aggregate=True,
         weighted=True,
-        min_slippage=0.05,
+        min_slippage_ticks=2,
         min_symbol_count=2
     )
 

@@ -6,17 +6,17 @@ class BollingerBandsStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(self, period, number_of_standard_deviations, rollover, trailing, slippage, symbol):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, period, number_of_standard_deviations, rollover, trailing, slippage_ticks, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
         self.period = period
         self.number_of_standard_deviations = number_of_standard_deviations
 
     # ==================== Name Formatting ====================
 
     @staticmethod
-    def format_name(period, number_of_standard_deviations, rollover, trailing, slippage, **kwargs):
+    def format_name(period, number_of_standard_deviations, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'BB(period={period},std={number_of_standard_deviations},rollover={rollover},trailing={trailing},slippage={slippage})'
+        return f'BB(period={period},std={number_of_standard_deviations},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

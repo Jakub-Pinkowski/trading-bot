@@ -4,7 +4,7 @@ MACD Parameter Validator
 This module contains the MACD strategy parameter validator.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import Validator, validate_positive_integer
 from app.backtesting.validators.constants import (
     MACD_FAST_MIN,
     MACD_FAST_MAX,
@@ -59,9 +59,9 @@ class MACDValidator(Validator):
         # --- Type Validation ---
 
         # Validate all MACD periods are positive integers
-        self.validate_positive_integer(fast_period, "fast period")
-        self.validate_positive_integer(slow_period, "slow period")
-        self.validate_positive_integer(signal_period, "signal period")
+        validate_positive_integer(fast_period, "fast period")
+        validate_positive_integer(slow_period, "slow period")
+        validate_positive_integer(signal_period, "signal period")
 
         # --- Period Relationship Validation ---
 

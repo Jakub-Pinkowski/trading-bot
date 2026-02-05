@@ -4,7 +4,7 @@ Bollinger Bands Parameter Validator
 This module contains the Bollinger Bands strategy parameter validator.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import Validator, validate_positive_integer, validate_positive_number
 from app.backtesting.validators.constants import (
     BB_PERIOD_MIN,
     BB_PERIOD_MAX,
@@ -54,9 +54,9 @@ class BollingerValidator(Validator):
         # --- Type Validation ---
 
         # Validate period is a positive integer
-        self.validate_positive_integer(period, "period")
+        validate_positive_integer(period, "period")
         # Validate standard deviations is a positive number
-        self.validate_positive_number(number_of_standard_deviations, "number of standard deviations")
+        validate_positive_number(number_of_standard_deviations, "number of standard deviations")
 
         # --- Period Range Validation ---
 

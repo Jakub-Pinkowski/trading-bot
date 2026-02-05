@@ -4,7 +4,7 @@ RSI Parameter Validator
 This module contains the RSI strategy parameter validator.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import Validator, validate_positive_integer, validate_type_and_range
 from app.backtesting.validators.constants import (
     RSI_PERIOD_MIN_RECOMMENDED,
     RSI_PERIOD_MAX_RECOMMENDED,
@@ -61,10 +61,10 @@ class RSIValidator(Validator):
         # --- Type Validation ---
 
         # Validate RSI period is a positive integer
-        self.validate_positive_integer(rsi_period, "rsi period")
+        validate_positive_integer(rsi_period, "rsi period")
         # Validate thresholds are numbers between 0 and 100
-        self.validate_type_and_range(lower_threshold, "lower threshold", 0, 100)
-        self.validate_type_and_range(upper_threshold, "upper threshold", 0, 100)
+        validate_type_and_range(lower_threshold, "lower threshold", 0, 100)
+        validate_type_and_range(upper_threshold, "upper threshold", 0, 100)
 
         # --- Threshold Relationship Validation ---
 

@@ -66,7 +66,7 @@ class Cache:
         """
         self.cache_name = cache_name
         self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
-        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")  # Add a lockfile path
+        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality
@@ -203,20 +203,6 @@ class Cache:
         self.hits += 1
         return True
 
-    def clear(self):
-        """
-        Clear all items from the cache.
-
-        Removes all cached entries from memory. Cache statistics (hits/misses)
-        are preserved. Use this to free memory or reset the cache between test runs.
-
-        Side Effects:
-            - Removes all items from cache_data
-            - Does not affect hit/miss counters
-            - Does not delete the cache file on disk (call save_cache() after to persist)
-        """
-        self.cache_data.clear()
-
     def size(self):
         """
         Get the current number of items in the cache.
@@ -229,21 +215,6 @@ class Cache:
             Integer count of items currently in the cache
         """
         return len(self.cache_data)
-
-    def get_stats(self):
-        """Get cache statistics.
-
-        Returns:
-            dict: Dictionary with 'hits', 'misses', 'total', and 'hit_rate' keys
-        """
-        total = self.hits + self.misses
-        hit_rate = (self.hits / total * 100) if total > 0 else 0
-        return {
-            'hits': self.hits,
-            'misses': self.misses,
-            'total': total,
-            'hit_rate': hit_rate
-        }
 
     def reset_stats(self):
         """

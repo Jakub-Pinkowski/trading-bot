@@ -102,7 +102,7 @@ class TestMassTester:
                     'upper_threshold': upper_thresholds,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages,
+                    'slippage_ticks': slippages,
                     'symbol': [None]
                 }
             )
@@ -130,7 +130,7 @@ class TestMassTester:
                     'long_ema_period': long_ema_periods,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages,
+                    'slippage_ticks': slippages,
                     'symbol': [None]
                 }
             )
@@ -176,7 +176,7 @@ class TestMassTester:
             assert strategy_instance.signal_period in signal_periods
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.position_manager.slippage in slippages
+            assert strategy_instance.position_manager.slippage_ticks in slippages
 
     @patch('yaml.safe_load')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
@@ -221,7 +221,7 @@ class TestMassTester:
             assert strategy_instance.number_of_standard_deviations in number_of_standard_deviations_list
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.position_manager.slippage in slippages
+            assert strategy_instance.position_manager.slippage_ticks in slippages
 
     def test_add_bollinger_bands_tests_with_mock(self):
         """Test that add_bollinger_bands_tests correctly calls add_strategy_tests with the right parameters."""
@@ -250,7 +250,7 @@ class TestMassTester:
                     'number_of_standard_deviations': number_of_standard_deviations_list,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages,
+                    'slippage_ticks': slippages,
                     'symbol': [None]
                 }
             )
@@ -301,7 +301,7 @@ class TestMassTester:
             assert strategy_instance.displacement in displacements
             assert strategy_instance.rollover in rollovers
             assert strategy_instance.trailing in trailing_stops
-            assert strategy_instance.position_manager.slippage in slippages
+            assert strategy_instance.position_manager.slippage_ticks in slippages
 
     def test_add_ichimoku_cloud_tests_with_mock(self):
         """Test that add_ichimoku_cloud_tests correctly calls add_strategy_tests with the right parameters."""
@@ -331,7 +331,7 @@ class TestMassTester:
                     'displacement': displacements,
                     'rollover': rollovers,
                     'trailing': trailing_stops,
-                    'slippage': slippages,
+                    'slippage_ticks': slippages,
                     'symbol': [None]
                 }
             )
@@ -457,11 +457,11 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify that the executor was called with the correct parameters
         mock_executor_instance.__enter__.return_value.submit.assert_called()
@@ -551,11 +551,11 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Get the call arguments to verify switch dates preprocessing
         call_args = mock_executor_instance.__enter__.return_value.submit.call_args_list
@@ -631,11 +631,11 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests to trigger switch dates preprocessing
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Get the call arguments to verify switch dates preprocessing
         call_args = mock_executor_instance.__enter__.return_value.submit.call_args_list
@@ -709,11 +709,11 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify the results
         assert len(results) == 1
@@ -724,7 +724,7 @@ class TestMassTester:
         assert results[0]['metrics'] == {'total_trades': 10, 'win_rate': 60.0}
 
         # Verify the mocks were called correctly
-        mock_load_results.assert_called_once()
+        # mock_load_results is only called when skip_existing=True
         mock_executor.assert_called_once()
         mock_executor_instance.__enter__.return_value.submit.assert_called_once()
         mock_as_completed.assert_called_once()
@@ -767,11 +767,11 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests with verbose=True
-        results = tester.run_tests(verbose=True)
+        results = tester.run_tests(verbose=True, max_workers=None, skip_existing=False)
 
         # Verify the results
         assert len(results) == 1
@@ -794,7 +794,7 @@ class TestMassTester:
         tester = MassTester(['1!'], ['ZS'], ['1h'])
 
         with pytest.raises(ValueError, match='No strategies added for testing'):
-            tester.run_tests()
+            tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
     @patch('app.backtesting.testing.orchestrator.load_existing_results')
     @patch('app.backtesting.testing.orchestrator.check_test_exists')
@@ -807,12 +807,13 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=True)
 
         assert results == []
+        # check_test_exists is only called when skip_existing=True
         mock_test_exists.assert_called()
 
     @patch('app.backtesting.testing.orchestrator.load_existing_results')
@@ -832,12 +833,13 @@ class TestMassTester:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': [9], 'long_ema_period': [21], 'rollover': [True], 'trailing': [None],
-                        'slippage': [0], 'symbol': [None]}
+                        'slippage_ticks': [0], 'symbol': [None]}
         )
 
-        results = tester.run_tests(verbose=True)
+        results = tester.run_tests(verbose=True, max_workers=None, skip_existing=True)
 
         assert results == []
+        # check_test_exists is only called when skip_existing=True
         mock_test_exists.assert_called()
         mock_get_name.assert_called()
 
@@ -1515,11 +1517,11 @@ class TestMassTesterPerformanceOptimizations:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': list(range(1, 201)), 'long_ema_period': [250], 'rollover': [True],
-                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
+                        'trailing': [None], 'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify progress timing was printed correctly
         # Should have progress reports at 100 and 200 tests
@@ -1584,11 +1586,11 @@ class TestMassTesterPerformanceOptimizations:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': list(range(1, 201)), 'long_ema_period': [250], 'rollover': [True],
-                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
+                        'trailing': [None], 'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Run tests
-        tester.run_tests(verbose=False)
+        tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify gc.collect() was called at least twice (at 100 and 200 tests)
         assert mock_gc_collect.call_count >= 2
@@ -1641,13 +1643,13 @@ class TestMassTesterPerformanceOptimizations:
         tester._add_strategy_tests(
             strategy_type='ema',
             param_grid={'short_ema_period': list(range(1, 1501)), 'long_ema_period': [1600], 'rollover': [True],
-                        'trailing': [None], 'slippage': [0], 'symbol': [None]}
+                        'trailing': [None], 'slippage_ticks': [0], 'symbol': [None]}
         )
 
         # Mock the save_results function to track calls
         with patch('app.backtesting.testing.orchestrator.save_results') as mock_save_results:
             # Run tests
-            results = tester.run_tests(verbose=False)
+            results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
             # Verify save_results was called at least twice:
             # Once at 1000 tests (intermediate) and once at the end (final)
@@ -1723,7 +1725,7 @@ class TestMassTesterPerformanceOptimizations:
         ]
 
         # Run tests
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify that logger.exception was called for the failed test
         assert mock_logger.exception.call_count >= 1
@@ -1805,7 +1807,7 @@ class TestMassTesterPerformanceOptimizations:
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Run tests
-        results = tester.run_tests(verbose=False)
+        results = tester.run_tests(verbose=False, max_workers=None, skip_existing=False)
 
         # Verify save_cache was called exactly once from main process (after all tests complete)
         # It should NOT be called from workers during test execution
@@ -1827,7 +1829,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1852,7 +1854,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1883,7 +1885,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1917,7 +1919,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1948,7 +1950,7 @@ class TestDataFrameValidation:
 
         # Get the test parameters
         test_params = (
-            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+            '1!', 'ZS', '1h', 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
             tester.strategies[0][1], False, [], 'test_file.parquet'
         )
 
@@ -1978,7 +1980,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     # Missing 'total_trades', 'win_rate', 'total_return_percentage_of_contract'
                     'sharpe_ratio': 1.5,
@@ -2016,7 +2018,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 'not_a_number',  # Should be int
                     'win_rate': [50.0],  # Should be float, not list
@@ -2057,7 +2059,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': float('nan'),  # NaN value
@@ -2098,7 +2100,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': 60.0,
@@ -2141,7 +2143,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'ZS',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': 'invalid',  # Type mismatch
                     'sharpe_ratio': 1.5,
@@ -2152,7 +2154,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'NQ',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     # Missing total_trades
                     'win_rate': 50.0,
@@ -2163,7 +2165,7 @@ class TestDataFrameBuilding:
                 'month': '1!',
                 'symbol': 'YM',
                 'interval': '1h',
-                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage=0)',
+                'strategy': 'RSI(period=14,lower=30,upper=70,rollover=False,trailing=None,slippage_ticks=0)',
                 'metrics': {
                     'total_trades': float('nan'),  # NaN value
                     'win_rate': float('inf'),  # Inf value

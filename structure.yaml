@@ -49,8 +49,7 @@ trading-bot/
 │   │   │   ├── utils/                            # Test utilities
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── dataframe_validators.py       # DataFrame validation functions
-│   │   │   │   ├── test_preparation.py           # Test combination preparation & filtering
-│   │   │   │   └── slippage_calculators.py       # Slippage calculation utilities
+│   │   │   │   └── test_preparation.py           # Test combination preparation & filtering
 │   │   │   ├── __init__.py
 │   │   │   ├── mass_tester.py                    # MassTester class and public API
 │   │   │   ├── orchestrator.py                   # Test orchestration & parallel execution
@@ -156,6 +155,7 @@ trading-bot/
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Add tick-based slippage instead of percentage
+# TODO [MEDIUM]: Clean up private and public methods with underscode "_"
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting

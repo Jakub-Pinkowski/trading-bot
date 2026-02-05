@@ -4,15 +4,15 @@ Common Parameters Validator
 This module contains the validator for common strategy parameters shared across all strategies.
 """
 
-from app.backtesting.validators.base import Validator
+from app.backtesting.validators.base import (Validator,
+                                             validate_boolean,
+                                             validate_non_negative_number,
+                                             validate_positive_number)
 from app.backtesting.validators.constants import (
     TRAILING_STOP_MIN,
     TRAILING_STOP_MAX,
     TRAILING_STOP_COMMON_MIN,
     TRAILING_STOP_COMMON_MAX,
-    SLIPPAGE_MAX,
-    SLIPPAGE_TYPICAL_MIN,
-    SLIPPAGE_TYPICAL_MAX,
 )
 
 
@@ -24,19 +24,19 @@ class CommonValidator(Validator):
 
     # ==================== Validation Method ====================
 
-    def validate(self, rollover, trailing, slippage, **kwargs):
+    def validate(self, rollover, trailing, slippage_ticks, **kwargs):
         """
         Enhanced validation for common strategy parameters with guidance.
 
         Reasonable ranges:
         - Rollover: Boolean (True for continuous contracts, False for single contract)
         - Trailing: None or 1-5% (2-3% is common for futures)
-        - Slippage: 0-0.5% (0.1-0.2% is typical for liquid futures)
+        - Slippage ticks: 0-10 ticks (1-3 ticks is typical for liquid futures)
 
         Args:
             rollover: Whether to use contract rollover
             trailing: Trailing stop percentage (or None)
-            slippage: Slippage percentage (0 = no slippage)
+            slippage_ticks: Slippage in ticks (0 = no slippage)
             **kwargs: Additional parameters (ignored)
 
         Returns:
@@ -50,14 +50,14 @@ class CommonValidator(Validator):
         # --- Type Validation ---
 
         # Validate rollover is a boolean value
-        self.validate_boolean(rollover, "rollover")
+        validate_boolean(rollover, "rollover")
 
         # Validate trailing is None or a positive number
         if trailing is not None:
-            self.validate_positive_number(trailing, "trailing")
+            validate_positive_number(trailing, "trailing")
 
-        # Validate slippage is a non-negative number (zero allowed)
-        self.validate_non_negative_number(slippage, "slippage")
+        # Validate slippage_ticks is a non-negative number (zero allowed)
+        validate_non_negative_number(slippage_ticks, "slippage_ticks")
 
         # --- Trailing Stop Validation ---
 
@@ -78,26 +78,18 @@ class CommonValidator(Validator):
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
 
-        # --- Slippage Validation ---
+        # --- Slippage Ticks Validation ---
 
-        # Warn if slippage is 0 (unrealistically low)
-        if slippage == 0:
+        # Warn if slippage is too high
+        if slippage_ticks > 10:
             self.warnings.append(
-                f"Slippage is set to 0% (no slippage). This is unrealistic for live trading. "
-                f"Consider using {SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% for liquid futures."
+                f"Slippage of {slippage_ticks} ticks is very high. "
+                f"Consider using 1-5 ticks (1-3 ticks is typical for liquid futures)."
             )
-        # Warn if slippage is unrealistically low
-        elif 0 < slippage < SLIPPAGE_TYPICAL_MIN:
+        elif slippage_ticks > 5:
             self.warnings.append(
-                f"Slippage {slippage}% is very low and may be unrealistic. "
-                f"Typical range is {SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% for liquid futures."
-            )
-        # Warn if slippage is unrealistically high
-        elif slippage > SLIPPAGE_MAX:
-            self.warnings.append(
-                f"Slippage {slippage}% is too high and may significantly impact returns. "
-                f"Consider using 0-{SLIPPAGE_MAX}% range "
-                f"({SLIPPAGE_TYPICAL_MIN}-{SLIPPAGE_TYPICAL_MAX}% is typical for liquid futures)."
+                f"Slippage of {slippage_ticks} ticks is high. "
+                f"Consider 1-3 ticks for liquid futures."
             )
 
         return self.warnings

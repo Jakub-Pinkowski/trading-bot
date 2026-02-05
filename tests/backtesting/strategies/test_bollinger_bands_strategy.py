@@ -13,7 +13,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         assert strategy.period == 20
         assert strategy.number_of_standard_deviations == 2
@@ -24,14 +24,14 @@ class TestBollingerBandsStrategy:
             number_of_standard_deviations=3,
             rollover=True,
             trailing=2.0,
-            slippage=1.0,
+            slippage_ticks=1,
             symbol=None
         )
         assert strategy.period == 10
         assert strategy.number_of_standard_deviations == 3
         assert strategy.rollover == True
         assert strategy.trailing == 2.0
-        assert strategy.position_manager.slippage == 1.0
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_add_indicators(self):
         """Test that the add_indicators method correctly adds Bollinger Bands to the dataframe."""
@@ -39,7 +39,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         # Create a larger dataframe to ensure we have valid Bollinger Bands values
         df = create_test_df(length=100)
@@ -54,7 +54,7 @@ class TestBollingerBandsStrategy:
 
         # Clear the cache to ensure we're not using cached values
         from app.backtesting.cache.indicators_cache import indicator_cache
-        indicator_cache.clear()
+        indicator_cache.cache_data.clear()
 
         # Apply the strategy's add_indicators method again
         df_with_indicators = strategy.add_indicators(df)
@@ -82,7 +82,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -125,7 +125,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=3,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         df = create_test_df()
         df = strategy.add_indicators(df)
@@ -157,7 +157,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         df = create_test_df()
 
@@ -183,7 +183,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
 
         # Create a dataframe with constant prices
@@ -208,7 +208,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=2.0,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         df = create_test_df()
 
@@ -233,7 +233,7 @@ class TestBollingerBandsStrategy:
                                           number_of_standard_deviations=2,
                                           rollover=True,
                                           trailing=None,
-                                          slippage=0,
+                                          slippage_ticks=0,
                                           symbol=None)
         df = create_test_df()
 
@@ -263,12 +263,15 @@ class TestBollingerBandsStrategy:
 
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices in the Bollinger Bands strategy."""
-        # Create a strategy with 2% slippage
+        from config import TICK_SIZES, DEFAULT_TICK_SIZE
+        
+        # Create a strategy with 2 ticks slippage
+        slippage_ticks = 2
         strategy = BollingerBandsStrategy(period=20,
                                           number_of_standard_deviations=2,
                                           rollover=False,
                                           trailing=None,
-                                          slippage=2.0,
+                                          slippage_ticks=slippage_ticks,
                                           symbol=None)
         df = create_test_df()
 
@@ -278,6 +281,10 @@ class TestBollingerBandsStrategy:
 
         # Extract trades
         trades = strategy._extract_trades(df, [])
+
+        # Get tick size
+        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
+        slippage_amount = slippage_ticks * tick_size
 
         # Should have at least one trade
         if len(trades) > 0:
@@ -297,8 +304,8 @@ class TestBollingerBandsStrategy:
                 # For long positions:
                 # - Entry price should be higher than the original price (pay more on entry)
                 # - Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price * (1 + strategy.position_manager.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 - strategy.position_manager.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price + slippage_amount, 2)
+                expected_exit_price = round(original_exit_price - slippage_amount, 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price
@@ -315,8 +322,8 @@ class TestBollingerBandsStrategy:
                 # For short positions:
                 # - Entry price should be lower than the original price (receive less on entry)
                 # - Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price * (1 - strategy.position_manager.slippage / 100), 2)
-                expected_exit_price = round(original_exit_price * (1 + strategy.position_manager.slippage / 100), 2)
+                expected_entry_price = round(original_entry_price - slippage_amount, 2)
+                expected_exit_price = round(original_exit_price + slippage_amount, 2)
 
                 assert trade['entry_price'] == expected_entry_price
                 assert trade['exit_price'] == expected_exit_price

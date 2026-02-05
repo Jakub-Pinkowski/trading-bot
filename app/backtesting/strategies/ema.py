@@ -6,17 +6,17 @@ class EMACrossoverStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(self, short_ema_period, long_ema_period, rollover, trailing, slippage, symbol):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, short_ema_period, long_ema_period, rollover, trailing, slippage_ticks, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
         self.short_ema_period = short_ema_period
         self.long_ema_period = long_ema_period
 
     # ==================== Name Formatting ====================
 
     @staticmethod
-    def format_name(short_ema_period, long_ema_period, rollover, trailing, slippage, **kwargs):
+    def format_name(short_ema_period, long_ema_period, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'EMA(short={short_ema_period},long={long_ema_period},rollover={rollover},trailing={trailing},slippage={slippage})'
+        return f'EMA(short={short_ema_period},long={long_ema_period},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 

@@ -50,19 +50,7 @@ class ContractSwitchHandler:
         self.must_reopen = None
         self.skip_signal_this_bar = False
 
-    def should_switch(self, current_time):
-        """
-        Check if we should switch contracts at the current time.
-
-        Args:
-            current_time: Current datetime
-
-        Returns:
-            bool: True if switch should occur
-        """
-        return self.next_switch is not None and current_time >= self.next_switch
-
-    def handle_contract_switch(self, current_time, position_manager, idx, price_open, prev_time=None, prev_row=None):
+    def handle_contract_switch(self, current_time, position_manager, idx, price_open, prev_time, prev_row):
         """
         Handle contract switch logic including closing positions at switch and reopening.
 

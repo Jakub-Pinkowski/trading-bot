@@ -1,6 +1,6 @@
 # Backtesting Examples - Real Trade Entry/Exit Scenarios
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** February 3, 2026  
 **Symbol Used:** ZS (Soybean Futures - CBOT:ZS1!)  
 **Contract Size:** 5,000 bushels  
 **Price Format:** Cents per bushel (e.g., 1053.75 = $10.5375/bushel)
@@ -96,12 +96,12 @@ Volume: 189
 
 💰 Entry Details:
 ├─ Base Entry: 1053.75 (open price)
-├─ Slippage (0.1%): +1.05 cents
-└─ Actual Entry: 1054.80
+├─ Slippage (2 ticks × 0.25): +0.50 cents
+└─ Actual Entry: 1054.25
 
 Position: LONG 1 contract
 Entry Time: 2025-02-04 04:30:00
-Entry Price: 1054.80
+Entry Price: 1054.25
 ```
 
 **What Happened:**
@@ -140,13 +140,14 @@ price_open = 1053.75  # Current bar's open
 self._open_new_position(direction=1, idx=current_time, price_open=price_open)
 
 # Inside _open_new_position():
-entry_price = self._apply_slippage_to_entry_price(1, 1053.75)
-# For long: entry_price = 1053.75 * (1 + 0.001) = 1054.80
+entry_price = self.position_manager.apply_slippage_to_entry_price(1, 1053.75)
+# For long with ZS (tick_size = 0.25, slippage_ticks = 2):
+# entry_price = 1053.75 + (2 × 0.25) = 1054.25
 
 # Trade recorded:
 {
     'entry_time': '2025-02-04 04:30:00',
-    'entry_price': 1054.80,
+    'entry_price': 1054.25,
     'side': 'long'
 }
 ```
@@ -156,11 +157,11 @@ entry_price = self._apply_slippage_to_entry_price(1, 1053.75)
 ### Financial Impact
 
 ```
-Entry Price: 1054.80 cents/bushel
+Entry Price: 1054.25 cents/bushel
 Contract Size: 5,000 bushels
-Contract Value: 1054.80 × 5,000 = $52,740
+Contract Value: 1054.25 × 5,000 = $52,712.50
 
-Slippage Cost: 1.05 × 5,000 = $52.50 per contract
+Slippage Cost: 0.50 cents × 5,000 = $25.00 per contract
 ```
 
 ---
@@ -218,8 +219,8 @@ Close: 1040.50
 
 💰 Entry Details:
 ├─ Base Entry: 1040.00
-├─ Slippage (0.1%): +1.04 cents
-└─ Actual Entry: 1041.04
+├─ Slippage (2 ticks × 0.25): +0.50 cents
+└─ Actual Entry: 1040.50
 
 Position: LONG 1 contract
 ```
@@ -293,8 +294,8 @@ Close: 1483.25
 
 💰 Entry Details:
 ├─ Base Entry: 1478.00
-├─ Slippage (0.1%): +1.48 cents
-└─ Actual Entry: 1479.48
+├─ Slippage (2 ticks × 0.25): +0.50 cents
+└─ Actual Entry: 1478.50
 
 Position: LONG 1 contract
 ```
@@ -368,8 +369,8 @@ Close: 876.25
 
 💰 Entry Details:
 ├─ Base Entry: 874.50
-├─ Slippage (0.1%): +0.87 cents
-└─ Actual Entry: 875.37
+├─ Slippage (2 ticks × 0.25): +0.50 cents
+└─ Actual Entry: 875.00
 
 Position: LONG 1 contract
 ```
@@ -416,21 +417,21 @@ Bar N (Exit Signal Generated):
 Bar N+1 (Position Closed & Reversed):
 ├─ Time: 2025-02-04 09:00:00
 ├─ Open: 1065.25  ← EXIT PRICE
-├─ Exit with slippage (0.1%): 1064.19
-└─ Immediately opens SHORT at 1064.19
+├─ Exit with slippage (2 ticks × 0.25): 1064.75
+└─ Immediately opens SHORT at 1064.75
 
 Trade Summary:
-├─ Entry: 1054.80 (2025-02-04 04:30:00)
-├─ Exit: 1064.19 (2025-02-04 09:00:00)
+├─ Entry: 1054.25 (2025-02-04 04:30:00)
+├─ Exit: 1064.75 (2025-02-04 09:00:00)
 ├─ Duration: 4.5 hours
-├─ Profit: 9.39 cents/bushel
-└─ P&L: 9.39 × 5,000 = $469.50
+├─ Profit: 10.50 cents/bushel
+└─ P&L: 10.50 × 5,000 = $525.00
 ```
 
 ### Exit Scenario 2: Trailing Stop (If Enabled)
 
 ```
-Position: LONG from 1054.80
+Position: LONG from 1054.25
 Trailing Stop: 2% below high
 
 Bar 1 (09:15:00):
@@ -447,16 +448,16 @@ Bar 3 (09:45:00):
 └─ Exit: 1047.13 (trailing stop price)
 
 Trade Summary:
-├─ Entry: 1054.80
+├─ Entry: 1054.25
 ├─ Exit: 1047.13 (trailing stop)
-├─ Loss: 7.67 cents/bushel
-└─ P&L: -$383.50
+├─ Loss: 7.12 cents/bushel
+└─ P&L: -$356.00
 ```
 
 ### Exit Scenario 3: Contract Rollover (Conservative)
 
 ```
-Position: LONG from 1054.80
+Position: LONG from 1054.25
 Current Date: 2025-10-17 20:15:00 (Last bar before switch)
 Switch Date: 2025-10-20 01:00:00
 
@@ -474,10 +475,10 @@ If Rollover Enabled:
 └─ New position opened on 2025-10-20 02:00:00 in next contract
 
 Trade Summary:
-├─ Entry: 1054.80
+├─ Entry: 1054.25
 ├─ Exit: 1062.00 (contract switch)
-├─ Profit: 7.20 cents/bushel
-└─ P&L: $360.00
+├─ Profit: 7.75 cents/bushel
+└─ P&L: $387.50
 ```
 
 ---
@@ -493,45 +494,77 @@ Slippage accounts for:
 3. **Market Movement**: Price changes during order execution
 4. **Liquidity**: Market depth affects fill prices
 
+### Tick-Based Slippage Model
+
+Unlike percentage-based slippage, **tick-based slippage** uses the minimum price movement (tick size) for each contract.
+
+**Why Tick-Based?**
+
+- ✅ More realistic for futures trading
+- ✅ Consistent across price levels
+- ✅ Reflects actual market mechanics
+- ✅ Easier to validate against real execution data
+
+### Tick Sizes by Contract
+
+```python
+# Example tick sizes (in price points)
+# ZS (Soybeans): 0.25 cents / bushel
+# ZC (Corn): 0.25 cents / bushel
+# CL (Crude Oil): 0.01 dollars / barrel
+# GC (Gold): 0.10 dollars / troy oz
+# ES (E-mini S&P 500): 0.25 index points
+```
+
 ### Slippage Calculation
+
+**Formula:**
+
+```
+slippage_amount = slippage_ticks × tick_size
+adjusted_price = base_price ± slippage_amount
+```
 
 #### Long Entry (Buying)
 
 ```python
 # You pay MORE than the open price
-entry_price = open_price × (1 + slippage %)
-entry_price = 1053.75 × 1.001 = 1054.80
+# Example: ZS with 2 ticks slippage
+tick_size = 0.25  # cents
+slippage_ticks = 2
+entry_price = 1053.75 + (2 × 0.25) = 1054.25
 ```
 
 #### Long Exit (Selling)
 
 ```python
 # You receive LESS than the exit price
-exit_price = exit_price × (1 - slippage %)
-exit_price = 1065.25 × 0.999 = 1064.19
+# Example: ZS with 2 ticks slippage
+exit_price = 1065.25 - (2 × 0.25) = 1064.75
 ```
 
 #### Short Entry (Selling)
 
 ```python
 # You receive LESS than the open price
-entry_price = open_price × (1 - slippage %)
-entry_price = 1053.75 × 0.999 = 1052.70
+# Example: ZS with 2 ticks slippage
+entry_price = 1053.75 - (2 × 0.25) = 1053.25
 ```
 
 #### Short Exit (Buying to cover)
 
 ```python
 # You pay MORE than the exit price
-exit_price = exit_price × (1 + slippage %)
-exit_price = 1065.25 × 1.001 = 1066.31
+# Example: ZS with 2 ticks slippage
+exit_price = 1065.25 + (2 × 0.25) = 1065.75
 ```
 
 ### Slippage Impact Example
 
 ```
 Strategy: RSI (15-minute bars)
-Slippage: 0.1% (default)
+Symbol: ZS (Soybeans, tick_size = 0.25)
+Slippage: 2 ticks
 
 Without Slippage:
 ├─ Entry: 1053.75
@@ -539,16 +572,37 @@ Without Slippage:
 ├─ Profit: 11.50 cents
 └─ P&L: $575.00
 
-With Slippage:
-├─ Entry: 1054.80 (+1.05)
-├─ Exit: 1064.19 (-1.06)
-├─ Profit: 9.39 cents
-└─ P&L: $469.50
+With Slippage (2 ticks):
+├─ Entry: 1054.25 (+0.50)
+├─ Exit: 1064.75 (-0.50)
+├─ Profit: 10.50 cents
+└─ P&L: $525.00
 
-Slippage Cost: $105.50 (18.3% of profit!)
+Slippage Cost: $50.00 (8.7% of profit)
 ```
 
-**Key Takeaway:** Slippage significantly impacts profitability, especially for short-term strategies with many trades.
+**Key Takeaway:** Even 2 ticks of slippage (realistic for liquid markets) reduces profitability by 8.7%.
+Higher-frequency strategies need tighter slippage assumptions.
+
+### Realistic Slippage Values
+
+**Liquid Markets (ES, NQ, CL, GC):**
+
+- Market orders during active hours: **1-2 ticks**
+- Market orders during quiet hours: **2-3 ticks**
+- Large orders: **3-5 ticks**
+
+**Agricultural Futures (ZS, ZC, ZW):**
+
+- Standard orders: **2-3 ticks**
+- Electronic trading hours: **2-4 ticks**
+- Less liquid symbols: **3-5 ticks**
+
+**Conservative Testing:**
+
+- Use **2-3 ticks** for most strategies
+- Use **3-5 ticks** for high-frequency or large positions
+- Validate with actual execution data when possible
 
 ---
 
@@ -566,7 +620,7 @@ Switch Date: 2025-10-20 01:00:00
 
 ```
 2025-10-17 20:15:00 - Last Bar Before Switch
-├─ Position: LONG from 1054.80
+├─ Position: LONG from 1054.25
 ├─ Current Price: Open=1062.00, Close=1063.50
 └─ Action: Close position at 1062.00 (conservative)
 
@@ -577,14 +631,14 @@ Switch Date: 2025-10-20 01:00:00
 Result:
 ├─ Position closed
 ├─ Exit: 1062.00
-└─ P&L: +$360.00
+└─ P&L: +$387.50
 ```
 
 ### Timeline With Rollover Enabled
 
 ```
 2025-10-17 20:15:00 - Last Bar Before Switch
-├─ Position: LONG from 1054.80
+├─ Position: LONG from 1054.25
 ├─ Current Price: Open=1062.00, Close=1063.50
 ├─ Action: Close position at 1062.00
 └─ Mark for rollover
@@ -592,10 +646,10 @@ Result:
 2025-10-20 02:00:00 - First Bar of New Contract (ZSF26)
 ├─ New contract open: 1061.50
 ├─ Action: Reopen LONG position
-└─ Entry: 1062.56 (with slippage)
+└─ Entry: 1062.00 (open + 2 ticks slippage = 1061.50 + 0.50)
 
 Result:
-├─ Old position closed: +$360.00
+├─ Old position closed: +$387.50
 ├─ New position opened in ZSF26
 └─ Continuous exposure maintained
 ```
@@ -609,8 +663,8 @@ Gap: -2.00 cents (typical)
 
 Impact on Rollover:
 ├─ Exited old: 1062.00
-├─ Entered new: 1062.56
-└─ Rollover cost: 0.56 cents = $28.00
+├─ Entered new: 1062.00 (with 2 ticks slippage)
+└─ Rollover cost: 0.50 cents = $25.00
 ```
 
 ---
@@ -639,7 +693,7 @@ Impact on Rollover:
 
 ### ✅ Cost Considerations
 
-- **Slippage**: 0.1% default (adjustable)
+- **Slippage**: Tick-based (default 2 ticks per trade)
 - **Commission**: $4 per trade (in/out = $8 total)
 - **Rollover**: Additional costs at contract switches
 

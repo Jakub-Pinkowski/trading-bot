@@ -6,8 +6,8 @@ class MACDStrategy(BaseStrategy):
 
     # ==================== Initialization ====================
 
-    def __init__(self, fast_period, slow_period, signal_period, rollover, trailing, slippage, symbol):
-        super().__init__(rollover=rollover, trailing=trailing, slippage=slippage, symbol=symbol)
+    def __init__(self, fast_period, slow_period, signal_period, rollover, trailing, slippage_ticks, symbol):
+        super().__init__(rollover=rollover, trailing=trailing, slippage_ticks=slippage_ticks, symbol=symbol)
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
@@ -15,9 +15,9 @@ class MACDStrategy(BaseStrategy):
     # ==================== Name Formatting ====================
 
     @staticmethod
-    def format_name(fast_period, slow_period, signal_period, rollover, trailing, slippage, **kwargs):
+    def format_name(fast_period, slow_period, signal_period, rollover, trailing, slippage_ticks, **kwargs):
         """Generate standardized strategy name."""
-        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage={slippage})'
+        return f'MACD(fast={fast_period},slow={slow_period},signal={signal_period},rollover={rollover},trailing={trailing},slippage_ticks={slippage_ticks})'
 
     # ==================== Public Methods ====================
 
