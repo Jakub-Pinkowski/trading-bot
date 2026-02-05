@@ -331,26 +331,33 @@ def ranging_market_data(zs_1h_data):
     Useful for testing mean-reversion strategies.
 
     Returns:
-        DataFrame subset with 200+ bars showing range-bound movement
+        DataFrame subset with 100+ bars showing range-bound movement
 
     Raises:
         pytest.skip: If no clear range found in data
     """
     df = zs_1h_data.copy()
 
-    # Calculate volatility and trend
+    # Calculate volatility and trend - more lenient criteria
     df['ma50'] = df['close'].rolling(window=50).mean()
     df['trend'] = df['ma50'].diff(10).abs()  # Absolute change
     df['volatility'] = df['close'].rolling(window=20).std()
 
-    # Ranging market: low trend change, moderate volatility
-    df['is_ranging'] = (df['trend'] < df['trend'].quantile(0.3)) & (df['volatility'] > 0)
+    # Ranging market: low trend change (use 40th percentile for more results)
+    # Also check price stays within narrow range
+    df['price_range'] = (df['close'].rolling(window=50).max() - df['close'].rolling(window=50).min()) / df['close']
+
+    df['is_ranging'] = (
+            (df['trend'] < df['trend'].quantile(0.4)) &  # Low trend
+            (df['volatility'] > 0) &  # Has some movement
+            (df['price_range'] < 0.10)  # Within 10% range over 50 bars
+    )
 
     # Find consecutive ranging bars
     df['range_group'] = (df['is_ranging'] != df['is_ranging'].shift()).cumsum()
     ranging_groups = df[df['is_ranging']].groupby('range_group').size()
 
-    if len(ranging_groups) == 0 or ranging_groups.max() < 100:
+    if len(ranging_groups) == 0 or ranging_groups.max() < 80:  # Lowered from 100
         pytest.skip("No clear ranging period found in ZS data")
 
     # Get longest ranging period
