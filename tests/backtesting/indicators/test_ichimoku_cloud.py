@@ -760,11 +760,12 @@ class TestIchimokuEdgeCases:
         # Only check faster-responding components (Tenkan=9, Chikou=displaced close)
         fast_components = ['tenkan_sen', 'chikou_span']
         
-        for component_name, component in result.items():
+        for component_name in fast_components:
+            component = result[component_name]
             variable_region = component.iloc[70:]  # Check later region after more volatile data
             valid_variable = variable_region.dropna()
 
-            if len(valid_variable) > 10 and component_name in fast_components:
+            if len(valid_variable) > 10:
                 assert valid_variable.std() > 0, \
                     f"{component_name} should vary in variable region"
 

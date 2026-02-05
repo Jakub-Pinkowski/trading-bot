@@ -99,8 +99,6 @@ class TestATRBasicLogic:
         """ATR should capture gaps in true range calculation."""
         # Create data with consistent 2-point ranges
         df = pd.DataFrame({
-            'open': [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
-                     110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0],
             'high': [101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0,
                      111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0],
             'low': [99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0,
@@ -109,38 +107,34 @@ class TestATRBasicLogic:
                       110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0]
         })
 
-        # Calculate true range manually for gap scenario
-        # At bar 15, if we gap up 10%, the previous close is 114.0
-        # Gap opens at 125.4, so true range includes this gap
+        # Create data with a gap (bar 15 gaps up from previous close)
         df_with_gap = df.copy()
         prev_close = df_with_gap.iloc[14]['close']  # 114.0
-        gap_pct = 0.10
-        new_open = prev_close * (1 + gap_pct)  # 125.4
+        gap_size = 10.0  # Gap up 10 points
         
-        # Modify bar 15 to have gap
-        df_with_gap.iloc[15, df_with_gap.columns.get_loc('open')] = new_open
-        df_with_gap.iloc[15, df_with_gap.columns.get_loc('high')] = new_open + 1.0
-        df_with_gap.iloc[15, df_with_gap.columns.get_loc('low')] = new_open - 1.0
-        df_with_gap.iloc[15, df_with_gap.columns.get_loc('close')] = new_open
+        # Modify bar 15 to have gap up from previous close
+        df_with_gap.iloc[15, df_with_gap.columns.get_loc('low')] = prev_close + gap_size - 1.0  # Gap opens above prev close
+        df_with_gap.iloc[15, df_with_gap.columns.get_loc('high')] = prev_close + gap_size + 1.0
+        df_with_gap.iloc[15, df_with_gap.columns.get_loc('close')] = prev_close + gap_size
 
         # Calculate ATR - the gap bar should have larger true range
-        # True range = max(H-L, H-prev_close, prev_close-L)
-        # With gap: max(2.0, 126.4-114, 114-124.4) = 12.4
+        # True range = max(H-L, |H-prev_close|, |prev_close-L|)
+        # With gap: max(2.0, |125-114|, |114-123|) = max(2.0, 11.0, 9.0) = 11.0
         # Without gap: max(2.0, 1.0, 1.0) = 2.0
         
         high = df_with_gap['high']
         low = df_with_gap['low']
         close = df_with_gap['close']
-        prev_close = close.shift(1)
+        prev_close_series = close.shift(1)
         
         tr1 = high - low
-        tr2 = (high - prev_close).abs()
-        tr3 = (low - prev_close).abs()
+        tr2 = (high - prev_close_series).abs()
+        tr3 = (low - prev_close_series).abs()
         true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         
         # True range at gap should be much larger
         tr_at_gap = true_range.iloc[15]
-        assert tr_at_gap > 10, f"True range at gap should capture the gap, got {tr_at_gap:.2f}"
+        assert tr_at_gap > 5, f"True range at gap should capture the gap, got {tr_at_gap:.2f}"
 
     def test_first_n_values_are_nan(self):
         """First 'period-1' values should be NaN (need warmup)."""

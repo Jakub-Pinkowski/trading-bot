@@ -140,9 +140,9 @@ class TestMACDBasicLogic:
 
         histogram = macd['histogram'].dropna()
         
-        # Histogram should cross zero (change signs)
+        # Histogram should cross zero (change signs) with this specific oscillating data
         sign_changes = (histogram.shift(1) * histogram < 0).sum()
-        assert sign_changes > 0, "Histogram should cross zero at least once"
+        assert sign_changes >= 1, f"Histogram should cross zero at least once, got {sign_changes} crossings"
 
 
 class TestMACDCalculationWithRealData:

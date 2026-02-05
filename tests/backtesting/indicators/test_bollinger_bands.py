@@ -118,12 +118,12 @@ class TestBollingerBandsBasicLogic:
         bb_2std = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
         bb_3std = _calculate_bollinger_bands(prices, period=20, num_std=3.0)
 
-        # Get valid values
-        valid_idx = bb_1std['middle_band'].dropna().index[-1]
+        # Get valid values (last 5 bars for averaging)
+        valid_idx = bb_1std['middle_band'].dropna().index[-5:]
         
-        width_1std = bb_1std.loc[valid_idx, 'upper_band'] - bb_1std.loc[valid_idx, 'lower_band']
-        width_2std = bb_2std.loc[valid_idx, 'upper_band'] - bb_2std.loc[valid_idx, 'lower_band']
-        width_3std = bb_3std.loc[valid_idx, 'upper_band'] - bb_3std.loc[valid_idx, 'lower_band']
+        width_1std = (bb_1std.loc[valid_idx, 'upper_band'] - bb_1std.loc[valid_idx, 'lower_band']).mean()
+        width_2std = (bb_2std.loc[valid_idx, 'upper_band'] - bb_2std.loc[valid_idx, 'lower_band']).mean()
+        width_3std = (bb_3std.loc[valid_idx, 'upper_band'] - bb_3std.loc[valid_idx, 'lower_band']).mean()
 
         assert width_2std > width_1std, "2 std should be wider than 1 std"
         assert width_3std > width_2std, "3 std should be wider than 2 std"
