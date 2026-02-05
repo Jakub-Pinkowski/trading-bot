@@ -106,8 +106,6 @@ class TestBollingerBandsBasicLogic:
             f"Volatile market should have wider bands: {volatile_width:.2f} vs {stable_width:.2f}"
 
 
-# Additional test classes will be added...
-
     def test_band_width_increases_with_num_std(self):
         """Bands should be wider with higher number of standard deviations."""
         prices = pd.Series([
