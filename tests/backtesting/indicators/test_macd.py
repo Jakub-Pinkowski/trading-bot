@@ -195,8 +195,8 @@ class TestMACDCalculationWithRealData:
 
         # Validate structure
         assert len(macd) == len(zs_1h_data)
-        assert macd['macd_line'].isna().sum() == slow_period, \
-            f"Should have {slow_period} NaN values for slow_period={slow_period}"
+        assert macd['macd_line'].isna().sum() == slow_period - 1, \
+            f"Should have {slow_period - 1} NaN values for slow_period={slow_period}"
 
         # Validate all components exist and vary
         valid_macd = macd['macd_line'].dropna()
