@@ -406,33 +406,31 @@ def deterministic_random(monkeypatch):
 @pytest.fixture
 def mock_contract_info():
     """
-    Mock contract information without loading from config.
+    Get contract information from actual config.
 
     Returns:
-        Function that returns mock contract info for any symbol
+        Function that returns contract info for any symbol from config.py
 
     Example:
         def test_strategy_init(mock_contract_info):
             info = mock_contract_info('ZS')
             strategy = Strategy(symbol='ZS', contract_info=info)
-            assert strategy.tick_size == 0.25
+            assert strategy.tick_size == 0.25  # From config.TICK_SIZES['ZS']
     """
+    from config import TICK_SIZES, CONTRACT_MULTIPLIERS
 
     def _get_info(symbol):
-        # Default contract info for common symbols
-        defaults = {
-            'ZS': {'symbol': 'ZS', 'tick_size': 0.25, 'tick_value': 12.50, 'contract_multiplier': 50},
-            'CL': {'symbol': 'CL', 'tick_size': 0.01, 'tick_value': 10.00, 'contract_multiplier': 1000},
-            'ES': {'symbol': 'ES', 'tick_size': 0.25, 'tick_value': 12.50, 'contract_multiplier': 50},
-            'NQ': {'symbol': 'NQ', 'tick_size': 0.25, 'tick_value': 5.00, 'contract_multiplier': 20},
-        }
+        # Get actual values from config
+        tick_size = TICK_SIZES.get(symbol, 0.01)
+        multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)
+        tick_value = tick_size * multiplier
 
-        return defaults.get(symbol, {
+        return {
             'symbol': symbol,
-            'tick_size': 0.01,
-            'tick_value': 1.00,
-            'contract_multiplier': 1
-        })
+            'tick_size': tick_size,
+            'tick_value': tick_value,
+            'contract_multiplier': multiplier
+        }
 
     return _get_info
 
