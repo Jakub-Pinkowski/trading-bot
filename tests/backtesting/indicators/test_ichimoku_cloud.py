@@ -17,7 +17,7 @@ from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_
 from tests.backtesting.helpers.data_utils import inject_price_spike
 
 
-# ==================== Helper Function ====================
+# ==================== Helper Functions ====================
 
 def _calculate_ichimoku(high, low, close, tenkan_period=9, kijun_period=26,
                         senkou_span_b_period=52, displacement=26):
@@ -36,16 +36,31 @@ def _calculate_ichimoku(high, low, close, tenkan_period=9, kijun_period=26,
     )
 
 
+def _price_series_to_hlc(prices, range_pct=2.0):
+    """
+    Convert price series to High/Low/Close series for Ichimoku testing.
+    
+    Args:
+        prices: Series of close prices
+        range_pct: Percentage range for high/low around close (default 2%)
+    
+    Returns:
+        Tuple of (high, low, close) Series
+    """
+    range_size = prices * (range_pct / 100)
+    high = prices + range_size
+    low = prices - range_size
+    return high, low, prices
+
+
 # ==================== Basic Logic Tests ====================
 
 class TestIchimokuBasicLogic:
-    """Simple sanity checks for Ichimoku basic behavior."""
+    """Simple sanity checks for Ichimoku basic behavior using shared test fixtures."""
 
-    def test_ichimoku_returns_dict_with_five_series(self):
+    def test_ichimoku_returns_dict_with_five_series(self, medium_price_series):
         """Ichimoku should return dict with 5 series of correct length."""
-        high = pd.Series(range(105, 160))
-        low = pd.Series(range(95, 150))
-        close = pd.Series(range(100, 155))
+        high, low, close = _price_series_to_hlc(medium_price_series)
 
         result = _calculate_ichimoku(high, low, close)
 
@@ -61,50 +76,47 @@ class TestIchimokuBasicLogic:
             assert isinstance(series, pd.Series), f"{key} must be pandas Series"
             assert len(series) == len(high), f"{key} length must equal input length"
 
-    def test_tenkan_sen_is_midpoint_of_highs_lows(self):
+    def test_tenkan_sen_is_midpoint_of_highs_lows(self, short_price_series):
         """Tenkan-sen should be midpoint of highest high and lowest low over period."""
-        # Create simple data where we know the expected values
-        high = pd.Series([105, 110, 115, 120, 125, 130, 135, 140, 145, 150,
-                          155, 160, 165, 170, 175])
-        low = pd.Series([95, 100, 105, 110, 115, 120, 125, 130, 135, 140,
-                         145, 150, 155, 160, 165])
-        close = pd.Series([100, 105, 110, 115, 120, 125, 130, 135, 140, 145,
-                           150, 155, 160, 165, 170])
+        # Use short series and create simple data where we know the expected values
+        simple_prices = pd.Series(range(100, 115))  # 15 bars
+        high, low, close = _price_series_to_hlc(simple_prices, range_pct=5.0)
 
         result = _calculate_ichimoku(high, low, close, tenkan_period=9)
         tenkan = result['tenkan_sen']
 
         # At bar 9 (0-indexed position 8), we have 9 bars
-        # High: 105-145, max=145, Low: 95-135, min=95
-        # Expected Tenkan: (145 + 95) / 2 = 120
+        # Should have a valid Tenkan value
         assert not pd.isna(tenkan.iloc[8]), "Tenkan should have value at position 8"
-        expected_tenkan = (145 + 95) / 2
+        
+        # Tenkan should be between high and low midpoint
+        expected_min = low.iloc[:9].min()
+        expected_max = high.iloc[:9].max()
+        expected_tenkan = (expected_max + expected_min) / 2
         assert abs(tenkan.iloc[8] - expected_tenkan) < 0.01, \
             f"Tenkan at position 8 should be {expected_tenkan}, got {tenkan.iloc[8]}"
 
-    def test_kijun_sen_is_midpoint_over_longer_period(self):
+    def test_kijun_sen_is_midpoint_over_longer_period(self, medium_price_series):
         """Kijun-sen should be midpoint over kijun_period (typically 26)."""
-        # Create data with known pattern
-        high = pd.Series(range(105, 140))  # 35 bars
-        low = pd.Series(range(95, 130))
-        close = pd.Series(range(100, 135))
+        high, low, close = _price_series_to_hlc(medium_price_series)
 
         result = _calculate_ichimoku(high, low, close, kijun_period=26)
         kijun = result['kijun_sen']
 
         # At bar 26 (0-indexed position 25), we have exactly 26 bars
-        # High: 105-130, max=130, Low: 95-120, min=95
-        # Expected Kijun: (130 + 95) / 2 = 112.5
         assert not pd.isna(kijun.iloc[25]), "Kijun should have value at position 25"
-        expected_kijun = (130 + 95) / 2
+        
+        expected_min = low.iloc[:26].min()
+        expected_max = high.iloc[:26].max()
+        expected_kijun = (expected_max + expected_min) / 2
         assert abs(kijun.iloc[25] - expected_kijun) < 0.01, \
             f"Kijun at position 25 should be {expected_kijun}, got {kijun.iloc[25]}"
 
-    def test_senkou_spans_are_displaced_forward(self):
+    def test_senkou_spans_are_displaced_forward(self, medium_price_series):
         """Senkou Span A and B should be displaced forward by displacement periods."""
-        high = pd.Series(range(105, 180))  # 75 bars
-        low = pd.Series(range(95, 170))
-        close = pd.Series(range(100, 175))
+        # Need enough bars: at least senkou_span_b_period + displacement
+        long_series = pd.Series(range(100, 180))  # 80 bars
+        high, low, close = _price_series_to_hlc(long_series)
 
         displacement = 26
         result = _calculate_ichimoku(high, low, close, displacement=displacement, senkou_span_b_period=52)
@@ -117,7 +129,7 @@ class TestIchimokuBasicLogic:
         assert senkou_a.iloc[:displacement].isna().all(), \
             "Senkou Span A should have NaN for first displacement periods"
         
-        # Note: with 75 bars and senkou_b_period=52, we need 52+displacement=78 bars for valid senkou_b
+        # Note: with 80 bars and senkou_b_period=52, we need 52+displacement=78 bars for valid senkou_b
         # So with only 75 bars, senkou_b will be mostly NaN. This is expected behavior.
         # Just verify structure is correct
         assert len(senkou_a) == len(high), "Senkou A length should match input"
@@ -149,8 +161,11 @@ class TestIchimokuBasicLogic:
                 assert abs(chikou.iloc[i] - expected_value) < 0.01, \
                     f"Chikou at position {i} should equal close at position {i + displacement}"
 
-    def test_tenkan_kijun_relationship_in_uptrend(self):
+    def test_tenkan_kijun_relationship_in_uptrend(self, rising_price_series):
         """In strong uptrend, Tenkan-sen should be above Kijun-sen."""
+        # Use longer series
+        long_rising = pd.Series(range(100, 180))  # 80 bars uptrend
+        high, low, close = _price_series_to_hlc(long_rising)
         # Create strong uptrend
         high = pd.Series(range(100, 200))  # 100 consecutive increases
         low = pd.Series(range(90, 190))

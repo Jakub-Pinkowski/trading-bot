@@ -30,31 +30,21 @@ def _calculate_bollinger_bands(prices, period=20, num_std=2.0):
 # ==================== Basic Logic Tests ====================
 
 class TestBollingerBandsBasicLogic:
-    """Simple sanity checks for Bollinger Bands basic behavior."""
+    """Simple sanity checks for Bollinger Bands basic behavior using shared test fixtures."""
 
-    def test_bollinger_bands_returns_dataframe_with_correct_columns(self):
+    def test_bollinger_bands_returns_dataframe_with_correct_columns(self, medium_price_series):
         """Bollinger Bands should return DataFrame with three band columns."""
-        prices = pd.Series([
-                               100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                               110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-                               120, 121, 122, 123, 124, 125
-                           ])
-        bb = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
+        bb = _calculate_bollinger_bands(medium_price_series, period=20, num_std=2.0)
 
         assert isinstance(bb, pd.DataFrame), "Bollinger Bands must return DataFrame"
-        assert len(bb) == len(prices), "BB length must equal input length"
+        assert len(bb) == len(medium_price_series), "BB length must equal input length"
         
         expected_columns = ['middle_band', 'upper_band', 'lower_band']
         assert list(bb.columns) == expected_columns, f"Expected columns {expected_columns}"
 
-    def test_upper_greater_than_middle_greater_than_lower(self):
+    def test_upper_greater_than_middle_greater_than_lower(self, volatile_price_series):
         """Upper band must always be >= middle band >= lower band."""
-        prices = pd.Series([
-                               100, 105, 110, 108, 112, 115, 113, 118, 120, 117,
-                               122, 125, 123, 128, 130, 127, 132, 135, 133, 138,
-                               140, 142, 145, 143, 148, 150
-                           ])
-        bb = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
+        bb = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
 
         valid_bb = bb.dropna()
         assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all(), \
@@ -62,13 +52,12 @@ class TestBollingerBandsBasicLogic:
         assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all(), \
             "Middle band must be >= lower band"
 
-    def test_middle_band_is_sma(self):
+    def test_middle_band_is_sma(self, rising_price_series):
         """Middle band should equal simple moving average."""
-        prices = pd.Series(range(100, 130))
         period = 20
-        bb = _calculate_bollinger_bands(prices, period=period, num_std=2.0)
+        bb = _calculate_bollinger_bands(rising_price_series, period=period, num_std=2.0)
 
-        manual_sma = prices.rolling(window=period).mean()
+        manual_sma = rising_price_series.rolling(window=period).mean()
         
         # Compare valid values
         valid_indices = bb['middle_band'].dropna().index
@@ -79,24 +68,10 @@ class TestBollingerBandsBasicLogic:
             err_msg="Middle band should equal SMA"
         )
 
-    def test_band_width_proportional_to_volatility(self):
+    def test_band_width_proportional_to_volatility(self, oscillating_price_series, volatile_price_series):
         """Band width should increase with price volatility."""
-        # Low volatility: small oscillations
-        stable_prices = pd.Series([
-                                      100, 101, 100, 101, 100, 101, 100, 101, 100, 101,
-                                      100, 101, 100, 101, 100, 101, 100, 101, 100, 101,
-                                      100, 101, 100, 101, 100
-                                  ])
-        
-        # High volatility: large swings
-        volatile_prices = pd.Series([
-                                        100, 110, 90, 115, 85, 120, 80, 125, 75, 130,
-                                        70, 135, 65, 140, 60, 145, 55, 150, 50, 155,
-                                        45, 160, 40, 165, 35
-                                    ])
-
-        bb_stable = _calculate_bollinger_bands(stable_prices, period=20, num_std=2.0)
-        bb_volatile = _calculate_bollinger_bands(volatile_prices, period=20, num_std=2.0)
+        bb_stable = _calculate_bollinger_bands(oscillating_price_series, period=20, num_std=2.0)
+        bb_volatile = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
 
         # Calculate average band width
         stable_width = (bb_stable['upper_band'] - bb_stable['lower_band']).dropna().mean()
@@ -106,17 +81,11 @@ class TestBollingerBandsBasicLogic:
             f"Volatile market should have wider bands: {volatile_width:.2f} vs {stable_width:.2f}"
 
 
-    def test_band_width_increases_with_num_std(self):
+    def test_band_width_increases_with_num_std(self, volatile_price_series):
         """Bands should be wider with higher number of standard deviations."""
-        prices = pd.Series([
-                               100, 105, 98, 107, 95, 110, 92, 112, 90, 115,
-                               88, 118, 85, 120, 83, 122, 80, 125, 78, 128,
-                               75, 130, 73, 132, 70
-                           ])
-
-        bb_1std = _calculate_bollinger_bands(prices, period=20, num_std=1.0)
-        bb_2std = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
-        bb_3std = _calculate_bollinger_bands(prices, period=20, num_std=3.0)
+        bb_1std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=1.0)
+        bb_2std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
+        bb_3std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=3.0)
 
         # Get valid values (last 5 bars for averaging)
         valid_idx = bb_1std['middle_band'].dropna().index[-5:]

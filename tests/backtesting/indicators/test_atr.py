@@ -15,7 +15,7 @@ from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_
 from tests.backtesting.helpers.data_utils import inject_price_spike, inject_gap
 
 
-# ==================== Helper Function ====================
+# ==================== Helper Functions ====================
 
 def _calculate_atr(df, period=14):
     """
@@ -29,62 +29,53 @@ def _calculate_atr(df, period=14):
     return calculate_atr(df, period, high_hash, low_hash, close_hash)
 
 
+def _price_series_to_ohlc(prices, range_pct=1.0):
+    """
+    Convert price series to OHLC DataFrame for ATR testing.
+    
+    Args:
+        prices: Series of close prices
+        range_pct: Percentage range for high/low around close (default 1%)
+    
+    Returns:
+        DataFrame with high, low, close columns
+    """
+    range_size = prices * (range_pct / 100)
+    return pd.DataFrame({
+        'high': prices + range_size,
+        'low': prices - range_size,
+        'close': prices
+    })
+
+
 # ==================== Basic Logic Tests ====================
 
 class TestATRBasicLogic:
-    """Simple sanity checks for ATR basic behavior."""
+    """Simple sanity checks for ATR basic behavior using shared test fixtures."""
 
-    def test_atr_returns_series_with_correct_length(self):
+    def test_atr_returns_series_with_correct_length(self, short_price_series):
         """ATR should return a series with same length as input."""
-        df = pd.DataFrame({
-            'high': [101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
-                     111, 112, 113, 114, 115, 116, 117, 118, 119, 120],
-            'low': [99, 100, 101, 102, 103, 104, 105, 106, 107, 108,
-                    109, 110, 111, 112, 113, 114, 115, 116, 117, 118],
-            'close': [100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                      110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
-        })
+        df = _price_series_to_ohlc(short_price_series)
         atr = _calculate_atr(df, period=14)
 
         assert len(atr) == len(df), "ATR length must equal input length"
         assert isinstance(atr, pd.Series), "ATR must return pandas Series"
 
-    def test_atr_is_always_positive(self):
+    def test_atr_is_always_positive(self, volatile_price_series):
         """ATR measures volatility and must always be positive."""
-        df = pd.DataFrame({
-            'high': [105, 110, 108, 112, 115, 113, 118, 120, 117, 122,
-                     125, 123, 128, 130, 127, 132, 135, 133, 138, 140],
-            'low': [95, 100, 98, 102, 105, 103, 108, 110, 107, 112,
-                    115, 113, 118, 120, 117, 122, 125, 123, 128, 130],
-            'close': [100, 105, 103, 107, 110, 108, 113, 115, 112, 117,
-                      120, 118, 123, 125, 122, 127, 130, 128, 133, 135]
-        })
+        df = _price_series_to_ohlc(volatile_price_series, range_pct=5.0)
         atr = _calculate_atr(df, period=10)
 
         valid_atr = atr.dropna()
         assert (valid_atr > 0).all(), "ATR should always be positive"
 
-    def test_higher_volatility_gives_higher_atr(self):
+    def test_higher_volatility_gives_higher_atr(self, oscillating_price_series, volatile_price_series):
         """ATR should increase when price ranges widen."""
-        # Low volatility period
-        low_vol = pd.DataFrame({
-            'high': [101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
-                     111, 112, 113, 114, 115, 116, 117, 118, 119, 120],
-            'low': [99, 100, 101, 102, 103, 104, 105, 106, 107, 108,
-                    109, 110, 111, 112, 113, 114, 115, 116, 117, 118],
-            'close': [100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                      110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
-        })
-
-        # High volatility period (wider ranges)
-        high_vol = pd.DataFrame({
-            'high': [110, 120, 115, 125, 120, 130, 125, 135, 130, 140,
-                     135, 145, 140, 150, 145, 155, 150, 160, 155, 165],
-            'low': [90, 80, 85, 75, 80, 70, 75, 65, 70, 60,
-                    65, 55, 60, 50, 55, 45, 50, 40, 45, 35],
-            'close': [100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
-                      100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
-        })
+        # Low volatility: small oscillations
+        low_vol = _price_series_to_ohlc(oscillating_price_series, range_pct=1.0)
+        
+        # High volatility: large swings with wider ranges
+        high_vol = _price_series_to_ohlc(volatile_price_series, range_pct=10.0)
 
         atr_low_vol = _calculate_atr(low_vol, period=14)
         atr_high_vol = _calculate_atr(high_vol, period=14)
@@ -95,25 +86,18 @@ class TestATRBasicLogic:
         assert avg_atr_high > avg_atr_low, \
             f"Higher volatility should give higher ATR: {avg_atr_high:.2f} vs {avg_atr_low:.2f}"
 
-    def test_atr_responds_to_gaps(self):
+    def test_atr_responds_to_gaps(self, short_price_series):
         """ATR should capture gaps in true range calculation."""
-        # Create data with consistent 2-point ranges
-        df = pd.DataFrame({
-            'high': [101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0,
-                     111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0],
-            'low': [99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0,
-                    109.0, 110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0],
-            'close': [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0,
-                      110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0]
-        })
+        # Create data with consistent ranges
+        df = _price_series_to_ohlc(short_price_series)
 
         # Create data with a gap (bar 15 gaps up from previous close)
         df_with_gap = df.copy()
-        prev_close = df_with_gap.iloc[14]['close']  # 114.0
+        prev_close = df_with_gap.iloc[14]['close']
         gap_size = 10.0  # Gap up 10 points
         
         # Modify bar 15 to have gap up from previous close
-        df_with_gap.iloc[15, df_with_gap.columns.get_loc('low')] = prev_close + gap_size - 1.0  # Gap opens above prev close
+        df_with_gap.iloc[15, df_with_gap.columns.get_loc('low')] = prev_close + gap_size - 1.0
         df_with_gap.iloc[15, df_with_gap.columns.get_loc('high')] = prev_close + gap_size + 1.0
         df_with_gap.iloc[15, df_with_gap.columns.get_loc('close')] = prev_close + gap_size
 
@@ -136,13 +120,9 @@ class TestATRBasicLogic:
         tr_at_gap = true_range.iloc[15]
         assert tr_at_gap > 5, f"True range at gap should capture the gap, got {tr_at_gap:.2f}"
 
-    def test_first_n_values_are_nan(self):
+    def test_first_n_values_are_nan(self, medium_price_series):
         """First 'period-1' values should be NaN (need warmup)."""
-        df = pd.DataFrame({
-            'high': range(100, 150),
-            'low': range(98, 148),
-            'close': range(99, 149)
-        })
+        df = _price_series_to_ohlc(medium_price_series)
         period = 14
         atr = _calculate_atr(df, period=period)
 
@@ -151,26 +131,12 @@ class TestATRBasicLogic:
         # After warmup, should have valid values
         assert not atr.iloc[period-1:].isna().all(), "Should have valid ATR after warmup period"
 
-    def test_larger_period_gives_smoother_atr(self):
+    def test_larger_period_gives_smoother_atr(self, volatile_price_series):
         """Larger ATR period should produce less volatile ATR values."""
-        # Create volatile price data
-        np.random.seed(42)
-        n = 100
-        base_price = 100
-        volatility = 5
-        
-        highs = base_price + np.random.uniform(0, volatility, n)
-        lows = base_price - np.random.uniform(0, volatility, n)
-        closes = base_price + np.random.uniform(-volatility/2, volatility/2, n)
-
-        df = pd.DataFrame({
-            'high': highs,
-            'low': lows,
-            'close': closes
-        })
+        df = _price_series_to_ohlc(volatile_price_series, range_pct=5.0)
 
         atr_short = _calculate_atr(df, period=5)
-        atr_long = _calculate_atr(df, period=30)
+        atr_long = _calculate_atr(df, period=20)
 
         # Standard deviation measures smoothness
         short_volatility = atr_short.dropna().std()
@@ -179,21 +145,18 @@ class TestATRBasicLogic:
         assert short_volatility > long_volatility, \
             f"Shorter period should be more volatile: {short_volatility:.2f} vs {long_volatility:.2f}"
 
-    def test_atr_with_constant_ranges(self):
+    def test_atr_with_constant_ranges(self, constant_price_series):
         """ATR should converge to constant value with constant ranges."""
-        # Create bars with exactly 2-point range each
-        df = pd.DataFrame({
-            'high': [101] * 30,
-            'low': [99] * 30,
-            'close': [100] * 30
-        })
+        # Create bars with constant range
+        df = _price_series_to_ohlc(constant_price_series, range_pct=1.0)
 
         atr = _calculate_atr(df, period=14)
         valid_atr = atr.dropna()
 
-        # ATR should converge to 2.0 (the constant range)
+        # ATR should converge to the constant range (1% of 100 = 1.0 * 2 = 2.0)
         final_atr = valid_atr.iloc[-5:].mean()
-        assert abs(final_atr - 2.0) < 0.1, \
+        expected_range = 2.0  # 1% above + 1% below = 2.0
+        assert abs(final_atr - expected_range) < 0.1, \
             f"ATR should converge to constant range value, got {final_atr:.2f}"
 
     def test_atr_increases_with_price_spike(self):

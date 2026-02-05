@@ -30,43 +30,36 @@ def _calculate_ema(prices, period=14):
 # ==================== Basic Logic Tests ====================
 
 class TestEMABasicLogic:
-    """Simple sanity checks for EMA basic behavior."""
+    """Simple sanity checks for EMA basic behavior using shared test fixtures."""
 
-    def test_ema_returns_series_with_correct_length(self):
+    def test_ema_returns_series_with_correct_length(self, short_price_series):
         """EMA should return a series with same length as input."""
-        prices = pd.Series([
-                               100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                               110, 111, 112, 113, 114, 115, 116, 117, 118, 119
-                           ])
-        ema = _calculate_ema(prices, period=9)
+        ema = _calculate_ema(short_price_series, period=9)
 
-        assert len(ema) == len(prices), "EMA length must equal input length"
+        assert len(ema) == len(short_price_series), "EMA length must equal input length"
         assert isinstance(ema, pd.Series), "EMA must return pandas Series"
 
-    def test_ema_lags_rising_prices(self):
+    def test_ema_lags_rising_prices(self, rising_price_series):
         """EMA should lag behind continuously rising prices."""
-        prices = pd.Series(range(100, 130))  # 30 consecutive increases
-        ema = _calculate_ema(prices, period=9)
+        ema = _calculate_ema(rising_price_series, period=9)
 
         # After warmup period, EMA should be below current price
-        for i in range(10, len(prices)):
-            assert ema.iloc[i] < prices.iloc[i], \
+        for i in range(10, len(rising_price_series)):
+            assert ema.iloc[i] < rising_price_series.iloc[i], \
                 f"EMA should lag below rising prices at index {i}"
 
-    def test_ema_lags_falling_prices(self):
+    def test_ema_lags_falling_prices(self, falling_price_series):
         """EMA should lag behind continuously falling prices."""
-        prices = pd.Series(range(130, 100, -1))  # 30 consecutive decreases
-        ema = _calculate_ema(prices, period=9)
+        ema = _calculate_ema(falling_price_series, period=9)
 
         # After warmup period, EMA should be above current price
-        for i in range(10, len(prices)):
-            assert ema.iloc[i] > prices.iloc[i], \
+        for i in range(10, len(falling_price_series)):
+            assert ema.iloc[i] > falling_price_series.iloc[i], \
                 f"EMA should lag above falling prices at index {i}"
 
-    def test_ema_changes_with_price_changes(self):
+    def test_ema_changes_with_price_changes(self, medium_price_series):
         """EMA should change when prices change."""
-        prices = pd.Series(range(100, 125))  # 25 prices
-        ema = _calculate_ema(prices, period=9)
+        ema = _calculate_ema(medium_price_series, period=9)
 
         # Get valid EMA values (after warmup)
         valid_ema = ema.dropna()
@@ -75,24 +68,18 @@ class TestEMABasicLogic:
         assert valid_ema.std() > 0, "EMA should vary with price changes"
         assert len(valid_ema.unique()) > 1, "EMA should have different values"
 
-    def test_ema_has_no_initial_nans(self):
+    def test_ema_has_no_initial_nans(self, short_price_series):
         """EMA calculation starts immediately (no initial NaN warmup)."""
-        prices = pd.Series(range(100, 120))
         period = 9
-        ema = _calculate_ema(prices, period=period)
+        ema = _calculate_ema(short_price_series, period=period)
 
         # EMA starts calculating from first value (no NaN period)
         assert not ema.iloc[0:period].isna().all(), "EMA should not have all NaN in warmup"
 
-    def test_shorter_period_more_responsive(self):
+    def test_shorter_period_more_responsive(self, volatile_price_series):
         """Shorter EMA period should be more responsive to price changes."""
-        prices = pd.Series([
-                               100, 105, 110, 108, 112, 115, 113, 118, 120, 117,
-                               122, 125, 123, 128, 130, 127, 132, 135, 133, 138
-                           ])
-
-        ema_short = _calculate_ema(prices, period=5)
-        ema_long = _calculate_ema(prices, period=15)
+        ema_short = _calculate_ema(volatile_price_series, period=5)
+        ema_long = _calculate_ema(volatile_price_series, period=15)
 
         # Shorter period should be more volatile (higher std)
         short_std = ema_short.std()
@@ -101,28 +88,20 @@ class TestEMABasicLogic:
         assert short_std > long_std, \
             f"Shorter period should be more volatile: {short_std:.2f} vs {long_std:.2f}"
 
-    def test_ema_approaches_constant_price(self):
+    def test_ema_approaches_constant_price(self, constant_price_series):
         """EMA should converge to price level when prices are constant."""
-        # Start with varied prices then go constant
-        varied = pd.Series(range(100, 110))
-        constant = pd.Series([110] * 50)
-        prices = pd.concat([varied, constant], ignore_index=True)
-
-        ema = _calculate_ema(prices, period=9)
+        ema = _calculate_ema(constant_price_series, period=9)
 
         # By end of constant period, EMA should be very close to constant price
         final_ema = ema.iloc[-1]
-        assert abs(final_ema - 110) < 0.1, \
+        constant_price = constant_price_series.iloc[0]
+        assert abs(final_ema - constant_price) < 0.1, \
             f"EMA should converge to constant price, got {final_ema}"
 
-    def test_ema_responds_to_price_magnitude(self):
+    def test_ema_responds_to_price_magnitude(self, low_price_level_series, high_price_level_series):
         """EMA values should scale with price level."""
-        # Two price series at different levels but same % changes
-        low_prices = pd.Series([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-        high_prices = pd.Series([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200])
-
-        ema_low = _calculate_ema(low_prices, period=5)
-        ema_high = _calculate_ema(high_prices, period=5)
+        ema_low = _calculate_ema(low_price_level_series, period=5)
+        ema_high = _calculate_ema(high_price_level_series, period=5)
 
         # EMA values should scale proportionally
         # High prices are 10x low prices, so EMAs should follow
