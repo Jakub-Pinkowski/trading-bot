@@ -388,8 +388,6 @@ class TestATRCaching:
         """
         # Reset stats to track this test's cache behavior
         indicator_cache.reset_stats()
-        initial_hits = indicator_cache.hits
-        initial_misses = indicator_cache.misses
 
         # First calculation (may hit or miss depending on previous tests)
         atr_1 = _calculate_atr(zs_1h_data, period=14)
@@ -413,7 +411,6 @@ class TestATRCaching:
         periods don't overwrite each other.
         """
         indicator_cache.reset_stats()
-        initial_misses = indicator_cache.misses
 
         # Calculate with different periods
         atr_14 = _calculate_atr(zs_1h_data, period=14)
@@ -796,7 +793,6 @@ class TestATRPracticalUsage:
         # Detect trending periods (simple: 20-period price ROC)
         price_roc = zs_1h_data['close'].pct_change(periods=20)
         uptrend = price_roc > 0.03  # 3% move up
-        downtrend = price_roc < -0.03  # 3% move down
 
         # In strong trends, ATR should often be rising (positive ROC)
         atr_rising_in_uptrend = (uptrend & (atr_roc > 0)).sum()

@@ -307,8 +307,6 @@ class TestRSICaching:
         """
         # Reset stats to track this test's cache behavior
         indicator_cache.reset_stats()
-        initial_hits = indicator_cache.hits
-        initial_misses = indicator_cache.misses
 
         # First calculation (may hit or miss depending on previous tests)
         rsi_1 = _calculate_rsi(zs_1h_data['close'], period=14)
@@ -332,7 +330,6 @@ class TestRSICaching:
         periods don't overwrite each other.
         """
         indicator_cache.reset_stats()
-        initial_misses = indicator_cache.misses
 
         # Calculate with different periods
         rsi_14 = _calculate_rsi(zs_1h_data['close'], period=14)

@@ -41,7 +41,7 @@ def contract_switch_dates():
 @pytest.fixture(scope="session")
 def available_symbols(historical_data_path):
     """
-    List of symbols with available data in 1! directory.
+    List of symbols with available data in the 1! (front month contract) directory.
 
     Returns:
         List of symbol strings (e.g., ['ZS', 'CL', 'ES', ...])
