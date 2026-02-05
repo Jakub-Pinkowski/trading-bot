@@ -567,3 +567,57 @@ class TestRSIDataTypes:
 
         assert rsi.index.equals(zs_1h_data.index), "RSI should preserve input index"
         assert isinstance(rsi.index, pd.DatetimeIndex), "Index should remain DatetimeIndex"
+
+
+class TestRSIPracticalUsage:
+    """Test RSI in practical trading scenarios."""
+
+    def test_rsi_identifies_oversold_condition(self, zs_1h_data):
+        """
+        Test that RSI can identify oversold conditions (RSI < 30).
+
+        Practical use: Finding potential long entry points.
+        """
+        rsi = _calculate_rsi(zs_1h_data['close'], period=14)
+
+        # Find oversold conditions
+        oversold = rsi < 30
+        oversold_count = oversold.sum()
+
+        # Real market data should have some oversold conditions
+        assert oversold_count > 0, "Should find oversold conditions in real data"
+        assert oversold_count < len(rsi) * 0.2, "Oversold should be minority of time"
+
+    def test_rsi_identifies_overbought_condition(self, zs_1h_data):
+        """
+        Test that RSI can identify overbought conditions (RSI > 70).
+
+        Practical use: Finding potential short entry or profit-taking points.
+        """
+        rsi = _calculate_rsi(zs_1h_data['close'], period=14)
+
+        # Find overbought conditions
+        overbought = rsi > 70
+        overbought_count = overbought.sum()
+
+        # Real market data should have some overbought conditions
+        assert overbought_count > 0, "Should find overbought conditions in real data"
+        assert overbought_count < len(rsi) * 0.2, "Overbought should be minority of time"
+
+    def test_rsi_crossover_detection(self, zs_1h_data):
+        """
+        Test RSI crossing key levels (30 and 70).
+
+        Practical use: Generating entry/exit signals on RSI crossovers.
+        """
+        rsi = _calculate_rsi(zs_1h_data['close'], period=14)
+
+        # Detect crossover above 30 (potential long signal)
+        crosses_above_30 = (rsi.shift(1) < 30) & (rsi >= 30)
+
+        # Detect crossover below 70 (potential short signal)
+        crosses_below_70 = (rsi.shift(1) > 70) & (rsi <= 70)
+
+        # Should detect some crossovers in real data
+        assert crosses_above_30.sum() > 0, "Should detect RSI crossing above 30"
+        assert crosses_below_70.sum() > 0, "Should detect RSI crossing below 70"
