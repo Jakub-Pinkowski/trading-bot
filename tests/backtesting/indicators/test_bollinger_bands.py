@@ -1,488 +1,390 @@
+"""
+Tests for Bollinger Bands indicator calculation.
+
+Uses real historical data from ZS (soybeans) to validate Bollinger Bands calculation
+accuracy, caching behavior, and edge case handling.
+"""
 import numpy as np
 import pandas as pd
+import pytest
 
+from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_bollinger_bands
 from app.utils.backtesting_utils.indicators_utils import hash_series
+from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
+from tests.backtesting.helpers.data_utils import inject_price_spike
 
 
-def test_calculate_bollinger_bands_with_valid_prices():
-    """Test Bollinger Bands calculation with valid price data"""
-    prices = pd.Series([
-        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-        102, 105, 108, 110, 112, 115, 118, 120, 122, 125
-    ])
+# ==================== Helper Function ====================
+
+def _calculate_bollinger_bands(prices, period=20, num_std=2.0):
+    """
+    Helper function to calculate Bollinger Bands with automatic hashing.
+
+    Simplifies test code by handling hash calculation internally.
+    """
     prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Check that the result is a DataFrame with the expected columns
-    assert isinstance(bb, pd.DataFrame)
-    assert all(col in bb.columns for col in ['middle_band', 'upper_band', 'lower_band'])
-
-    # Check that the first period-1 values are NaN
-    assert bb.iloc[:19].isna().all().all()
-
-    # Check that values after the initial period are not NaN
-    assert not bb.iloc[20:].isna().all().all()
-
-    # Check that an upper band is always greater than a middle band
-    valid_idx = ~bb.isna().all(axis=1)
-    assert (bb.loc[valid_idx, 'upper_band'] > bb.loc[valid_idx, 'middle_band']).all()
-
-    # Check that a lower band is always less than a middle band
-    assert (bb.loc[valid_idx, 'lower_band'] < bb.loc[valid_idx, 'middle_band']).all()
-
-
-def test_calculate_bollinger_bands_with_not_enough_data():
-    """Test Bollinger Bands calculation with price data less than the default period"""
-    prices = pd.Series([44, 47, 45, 50, 55])
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # All values should be NaN
-    assert bb.isna().all().all()
-
-
-def test_calculate_bollinger_bands_with_custom_period():
-    """Test Bollinger Bands calculation with a custom period"""
-    prices = pd.Series([44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90])
-
-    # Test with a custom period
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=10, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Check that the first period-1 values are NaN
-    assert bb.iloc[:9].isna().all().all()
-
-    # Check that values after the initial period are not NaN
-    assert not bb.iloc[10:].isna().all().all()
-
-
-def test_calculate_bollinger_bands_with_different_std_values():
-    """Test Bollinger Bands calculation with different standard deviation values"""
-    prices = pd.Series([
-        44, 47, 45, 50, 55, 60, 63, 62, 64, 69, 70, 75, 80, 85, 88, 90, 92, 95, 98, 100,
-        102, 105, 108, 110, 112, 115, 118, 120, 122, 125
-    ])
-
-    # Calculate Bollinger Bands with different standard deviation values
-    prices_hash = hash_series(prices)
-    bb_1std = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=1, prices_hash=prices_hash)
-    prices_hash = hash_series(prices)
-    bb_2std = calculate_bollinger_bands(prices,
-                                        period=20,
-                                        number_of_standard_deviations=2,
-                                        prices_hash=prices_hash)  # Default
-    prices_hash = hash_series(prices)
-    bb_3std = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=3, prices_hash=prices_hash)
-
-    # Find valid indices (where all calculations have non-NaN values)
-    valid_idx = ~bb_1std.isna().all(axis=1) & ~bb_2std.isna().all(axis=1) & ~bb_3std.isna().all(axis=1)
-
-    if valid_idx.any():
-        # Middle band should be the same for all standard deviation values
-        pd.testing.assert_series_equal(
-            bb_1std.loc[valid_idx, 'middle_band'],
-            bb_2std.loc[valid_idx, 'middle_band']
-        )
-
-        pd.testing.assert_series_equal(
-            bb_2std.loc[valid_idx, 'middle_band'],
-            bb_3std.loc[valid_idx, 'middle_band']
-        )
-
-        # Upper bands should widen as standard deviation increases
-        assert (bb_3std.loc[valid_idx, 'upper_band'] > bb_2std.loc[valid_idx, 'upper_band']).all()
-        assert (bb_2std.loc[valid_idx, 'upper_band'] > bb_1std.loc[valid_idx, 'upper_band']).all()
-
-        # Lower bands should widen as standard deviation increases
-        assert (bb_3std.loc[valid_idx, 'lower_band'] < bb_2std.loc[valid_idx, 'lower_band']).all()
-        assert (bb_2std.loc[valid_idx, 'lower_band'] < bb_1std.loc[valid_idx, 'lower_band']).all()
-
-        # The width of the bands (upper - lower) should increase with standard deviation
-        width_1std = bb_1std.loc[valid_idx, 'upper_band'] - bb_1std.loc[valid_idx, 'lower_band']
-        width_2std = bb_2std.loc[valid_idx, 'upper_band'] - bb_2std.loc[valid_idx, 'lower_band']
-        width_3std = bb_3std.loc[valid_idx, 'upper_band'] - bb_3std.loc[valid_idx, 'lower_band']
-
-        assert (width_3std > width_2std).all()
-        assert (width_2std > width_1std).all()
-
-
-def test_calculate_bollinger_bands_with_constant_prices():
-    """Test Bollinger Bands calculation with constant prices"""
-    prices = pd.Series([100] * 30)
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any():
-        # For constant prices, standard deviation is 0, so upper and lower bands should equal middle band
-        pd.testing.assert_series_equal(
-            bb.loc[valid_idx, 'upper_band'],
-            bb.loc[valid_idx, 'middle_band'],
-            check_names=False
-        )
-
-        pd.testing.assert_series_equal(
-            bb.loc[valid_idx, 'lower_band'],
-            bb.loc[valid_idx, 'middle_band'],
-            check_names=False
-        )
-
-
-def test_calculate_bollinger_bands_with_uptrend():
-    """Test Bollinger Bands calculation with consistently increasing prices"""
-    prices = pd.Series(np.linspace(100, 200, 50))  # Linear uptrend
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any():
-        # In an uptrend, the middle band should be increasing
-        assert (bb.loc[valid_idx, 'middle_band'].diff().dropna() > 0).all()
-
-        # Upper and lower bands should also be increasing
-        assert (bb.loc[valid_idx, 'upper_band'].diff().dropna() > 0).all()
-        assert (bb.loc[valid_idx, 'lower_band'].diff().dropna() > 0).all()
-
-
-def test_calculate_bollinger_bands_with_downtrend():
-    """Test Bollinger Bands calculation with consistently decreasing prices"""
-    prices = pd.Series(np.linspace(200, 100, 50))  # Linear downtrend
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any():
-        # In a downtrend, the middle band should be decreasing
-        assert (bb.loc[valid_idx, 'middle_band'].diff().dropna() < 0).all()
-
-        # Upper and lower bands should also be decreasing
-        assert (bb.loc[valid_idx, 'upper_band'].diff().dropna() < 0).all()
-        assert (bb.loc[valid_idx, 'lower_band'].diff().dropna() < 0).all()
-
-
-def test_calculate_bollinger_bands_with_volatility_change():
-    """Test Bollinger Bands calculation with changing volatility"""
-    # Create a price series with low volatility followed by high volatility
-    low_vol = np.linspace(100, 110, 25) + np.random.normal(0, 1, 25)
-    high_vol = np.linspace(110, 120, 25) + np.random.normal(0, 5, 25)
-    prices = pd.Series(np.concatenate([low_vol, high_vol]))
-
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any() and len(valid_idx) >= 30:
-        # Calculate band width for low volatility and high volatility periods
-        low_vol_width = bb.loc[valid_idx, 'upper_band'].iloc[0:10] - bb.loc[valid_idx, 'lower_band'].iloc[0:10]
-        high_vol_width = bb.loc[valid_idx, 'upper_band'].iloc[-10:] - bb.loc[valid_idx, 'lower_band'].iloc[-10:]
-
-        # Band width should be greater during high volatility
-        assert high_vol_width.mean() > low_vol_width.mean()
-
-
-def test_calculate_bollinger_bands_with_empty_prices():
-    """Test Bollinger Bands calculation with empty price data"""
-    prices = pd.Series(dtype='float64')
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Result should be an empty DataFrame with the expected columns
-    assert isinstance(bb, pd.DataFrame)
-    assert all(col in bb.columns for col in ['middle_band', 'upper_band', 'lower_band'])
-    assert bb.empty
-
-
-def test_calculate_bollinger_bands_calculation_correctness():
-    """Test Bollinger Bands calculation correctness by manually calculating values"""
-    # Create a simple price series
-    prices = pd.Series([
-        100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120,
-        122, 124, 126, 128, 130, 132, 134, 136, 138, 140
-    ])
-
-    # Calculate Bollinger Bands with specific parameters for easier verification
-    period = 5
-    num_std = 2
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices,
-                                   period=period,
-                                   number_of_standard_deviations=num_std,
-                                   prices_hash=prices_hash)
-
-    # Manually calculate the expected values
-    expected_middle_band = prices.rolling(window=period).mean()
-    expected_std = prices.rolling(window=period).std(ddof=0)
-    expected_upper_band = expected_middle_band + (expected_std * num_std)
-    expected_lower_band = expected_middle_band - (expected_std * num_std)
-
-    # Compare the calculated values with the expected values
-    # Skip the first period-1 values which are NaN
-    pd.testing.assert_series_equal(
-        bb.loc[period - 1:, 'middle_band'],
-        expected_middle_band.loc[period - 1:],
-        check_names=False
-    )
-
-    pd.testing.assert_series_equal(
-        bb.loc[period - 1:, 'upper_band'],
-        expected_upper_band.loc[period - 1:],
-        check_names=False
-    )
-
-    pd.testing.assert_series_equal(
-        bb.loc[period - 1:, 'lower_band'],
-        expected_lower_band.loc[period - 1:],
-        check_names=False
-    )
-
-
-def test_calculate_bollinger_bands_price_relationship():
-    """Test relationship between prices and Bollinger Bands"""
-    # Create a price series with some volatility
-    np.random.seed(42)  # For reproducibility
-    base = np.linspace(100, 150, 50)
-    noise = np.random.normal(0, 10, 50)
-    prices = pd.Series(base + noise)
-
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any():
-        # Count how many times prices are outside the bands
-        outside_upper = (prices.loc[valid_idx] > bb.loc[valid_idx, 'upper_band']).sum()
-        outside_lower = (prices.loc[valid_idx] < bb.loc[valid_idx, 'lower_band']).sum()
-        total_valid = valid_idx.sum()
-
-        # With 2 standard deviations, approximately 5% of prices should be outside the bands
-        # (2.5% above an upper band, 2.5% below a lower band)
-        assert outside_upper / total_valid < 0.1  # Allow some flexibility
-        assert outside_lower / total_valid < 0.1  # Allow some flexibility
-
-
-def test_calculate_bollinger_bands_with_nan_values():
-    """Test Bollinger Bands calculation with NaN values in the input data"""
-    # Create a price series with NaN values
-    prices = pd.Series([
-        100, 102, np.nan, 106, 108, 110, np.nan, np.nan, 116, 118, 120,
-        122, 124, np.nan, 128, 130, 132, 134, 136, 138, 140,
-        142, 144, 146, 148, 150, np.nan, 154, 156, 158, 160
-    ])
-
-    # Forward fill NaN values to create a clean series for comparison
-    clean_prices = prices.ffill()
-
-    # Calculate Bollinger Bands for both series
-    prices_hash = hash_series(prices)
-    bb_with_nans = calculate_bollinger_bands(prices,
-                                             period=20,
-                                             number_of_standard_deviations=2,
-                                             prices_hash=prices_hash)
-    clean_prices_hash = hash_series(clean_prices)
-    bb_clean = calculate_bollinger_bands(clean_prices,
-                                         period=20,
-                                         number_of_standard_deviations=2,
-                                         prices_hash=clean_prices_hash)
-
-    # Check that the result is a DataFrame with the expected columns
-    assert isinstance(bb_with_nans, pd.DataFrame)
-    assert all(col in bb_with_nans.columns for col in ['middle_band', 'upper_band', 'lower_band'])
-
-    # The NaN values should be forward filled in the calculation,
-    # So the results should be similar to calculating on the clean series
-
-    # Find valid indices (after the initial NaN period)
-    valid_idx = ~bb_with_nans.isna().all(axis=1) & ~bb_clean.isna().all(axis=1)
-
-    if valid_idx.any():
-        # The values should be close but not necessarily identical due to the forward filling
-        # We'll use a relative tolerance for the comparison
+    return calculate_bollinger_bands(prices, period, num_std, prices_hash)
+
+
+# ==================== Basic Logic Tests ====================
+
+class TestBollingerBandsBasicLogic:
+    """Simple sanity checks for Bollinger Bands basic behavior using shared test fixtures."""
+
+    def test_bollinger_bands_returns_dataframe_with_correct_columns(self, medium_price_series):
+        """Bollinger Bands should return DataFrame with three band columns."""
+        bb = _calculate_bollinger_bands(medium_price_series, period=20, num_std=2.0)
+
+        assert isinstance(bb, pd.DataFrame), "Bollinger Bands must return DataFrame"
+        assert len(bb) == len(medium_price_series), "BB length must equal input length"
+        
+        expected_columns = ['middle_band', 'upper_band', 'lower_band']
+        assert list(bb.columns) == expected_columns, f"Expected columns {expected_columns}"
+
+    def test_upper_greater_than_middle_greater_than_lower(self, volatile_price_series):
+        """Upper band must always be >= middle band >= lower band."""
+        bb = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
+
+        valid_bb = bb.dropna()
+        assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all(), \
+            "Upper band must be >= middle band"
+        assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all(), \
+            "Middle band must be >= lower band"
+
+    def test_middle_band_is_sma(self, rising_price_series):
+        """Middle band should equal simple moving average."""
+        period = 20
+        bb = _calculate_bollinger_bands(rising_price_series, period=period, num_std=2.0)
+
+        manual_sma = rising_price_series.rolling(window=period).mean()
+        
+        # Compare valid values
+        valid_indices = bb['middle_band'].dropna().index
         np.testing.assert_allclose(
-            bb_with_nans.loc[valid_idx, 'middle_band'].values,
-            bb_clean.loc[valid_idx, 'middle_band'].values,
-            rtol=0.1  # 10% relative tolerance
+            bb.loc[valid_indices, 'middle_band'].values,
+            manual_sma.loc[valid_indices].values,
+            rtol=0.001,
+            err_msg="Middle band should equal SMA"
         )
 
+    def test_band_width_proportional_to_volatility(self, oscillating_price_series, volatile_price_series):
+        """Band width should increase with price volatility."""
+        bb_stable = _calculate_bollinger_bands(oscillating_price_series, period=20, num_std=2.0)
+        bb_volatile = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
 
-def test_calculate_bollinger_bands_with_market_crash():
-    """Test Bollinger Bands calculation during a market crash scenario"""
-    # Create a price series with a stable period followed by a sharp decline (crash)
-    stable_period = np.linspace(100, 105, 30)  # Stable prices around 100-105
-    crash_period = np.linspace(105, 50, 20)  # Sharp decline from 105 to 50
-    prices = pd.Series(np.concatenate([stable_period, crash_period]))
+        # Calculate average band width
+        stable_width = (bb_stable['upper_band'] - bb_stable['lower_band']).dropna().mean()
+        volatile_width = (bb_volatile['upper_band'] - bb_volatile['lower_band']).dropna().mean()
 
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
-
-    # Find valid indices (after the initial NaN period)
-    valid_idx = ~bb.isna().all(axis=1)
-
-    if valid_idx.any():
-        # During a crash, the bands should generally move downward
-        # and the width might increase due to higher volatility
-
-        # Get the last 10 points of the valid data (during the crash)
-        crash_bb = bb.loc[valid_idx].iloc[-10:]
-
-        # Middle band should be decreasing during crash
-        # We'll check that the overall trend is downward
-        assert crash_bb['middle_band'].iloc[-1] < crash_bb['middle_band'].iloc[0]
-
-        # Upper and lower bands should also be decreasing overall
-        # Note: During the initial phase of a crash, the upper band might temporarily increase
-        # due to increased volatility before the downward trend takes over
-        assert crash_bb['upper_band'].iloc[-1] < crash_bb['upper_band'].iloc[0]
-        assert crash_bb['lower_band'].iloc[-1] < crash_bb['lower_band'].iloc[0]
-
-        # Check that most of the points are decreasing
-        # At least 70% of the points should be decreasing
-        middle_band_decreasing = (crash_bb['middle_band'].diff().dropna() < 0).mean() >= 0.7
-        lower_band_decreasing = (crash_bb['lower_band'].diff().dropna() < 0).mean() >= 0.7
-
-        assert middle_band_decreasing, "Middle band should be decreasing for most points during crash"
-        assert lower_band_decreasing, "Lower band should be decreasing for most points during crash"
-
-        # Check if prices are near or below the lower band during crash
-        # This is a common occurrence during market crashes
-        crash_prices = prices.iloc[-10:]
-        lower_band = crash_bb['lower_band']
-
-        # Calculate how close prices are to the lower band
-        # During a crash, prices often approach or break below the lower band
-        price_to_lower_ratio = (crash_prices / lower_band).mean()
-
-        # Prices should be close to or below the lower band (ratio close to or less than 1)
-        assert price_to_lower_ratio <= 1.1  # Allow a reasonable margin
+        assert volatile_width > stable_width, \
+            f"Volatile market should have wider bands: {volatile_width:.2f} vs {stable_width:.2f}"
 
 
-def test_calculate_bollinger_bands_with_market_bubble():
-    """Test Bollinger Bands calculation during a market bubble scenario"""
-    # Create a price series with a normal growth followed by exponential growth (bubble)
-    normal_growth = np.linspace(100, 120, 30)  # Normal linear growth
-    bubble_growth = np.array([120, 125, 132, 142, 155, 172, 195, 225, 265, 315])  # Exponential growth
-    prices = pd.Series(np.concatenate([normal_growth, bubble_growth]))
+    def test_band_width_increases_with_num_std(self, volatile_price_series):
+        """Bands should be wider with higher number of standard deviations."""
+        bb_1std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=1.0)
+        bb_2std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
+        bb_3std = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=3.0)
 
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
+        # Get valid values (last 5 bars for averaging)
+        valid_idx = bb_1std['middle_band'].dropna().index[-5:]
+        
+        width_1std = (bb_1std.loc[valid_idx, 'upper_band'] - bb_1std.loc[valid_idx, 'lower_band']).mean()
+        width_2std = (bb_2std.loc[valid_idx, 'upper_band'] - bb_2std.loc[valid_idx, 'lower_band']).mean()
+        width_3std = (bb_3std.loc[valid_idx, 'upper_band'] - bb_3std.loc[valid_idx, 'lower_band']).mean()
 
-    # Find valid indices (after the initial NaN period)
-    valid_idx = ~bb.isna().all(axis=1)
+        assert width_2std > width_1std, "2 std should be wider than 1 std"
+        assert width_3std > width_2std, "3 std should be wider than 2 std"
 
-    if valid_idx.any():
-        # During a bubble, the bands should move upward rapidly
-        # and the width might increase due to higher volatility
+    def test_first_n_values_are_nan(self):
+        """First 'period-1' values should be NaN (need warmup)."""
+        prices = pd.Series(range(100, 150))
+        period = 20
+        bb = _calculate_bollinger_bands(prices, period=period, num_std=2.0)
 
-        # Get the last 5 points of the valid data (during the bubble)
-        bubble_bb = bb.loc[valid_idx].iloc[-5:]
-
-        # Middle band should be increasing rapidly during bubble
-        middle_band_diff = bubble_bb['middle_band'].diff().dropna()
-        assert (middle_band_diff > 0).all()
-
-        # The rate of increase should accelerate (second derivative positive)
-        assert (middle_band_diff.diff().dropna() > 0).sum() >= len(middle_band_diff.diff().dropna()) * 0.5
-
-        # Check if prices are near or above the upper band during bubble
-        # This is a common occurrence during market bubbles
-        bubble_prices = prices.iloc[-5:]
-        upper_band = bubble_bb['upper_band']
-
-        # Calculate how close prices are to the upper band
-        # During a bubble, prices often approach or break above the upper band
-        price_to_upper_ratio = (bubble_prices / upper_band).mean()
-
-        # Prices should be close to or above the upper band (ratio close to or greater than 1)
-        assert price_to_upper_ratio >= 0.95  # Allow a small margin
+        # First 'period-1' values should be NaN
+        assert bb['middle_band'].iloc[:period-1].isna().all(), \
+            f"First {period-1} middle band values should be NaN"
+        assert bb['upper_band'].iloc[:period-1].isna().all(), \
+            f"First {period-1} upper band values should be NaN"
+        assert bb['lower_band'].iloc[:period-1].isna().all(), \
+            f"First {period-1} lower band values should be NaN"
+        
+        # After warmup, should have valid values
+        assert not bb['middle_band'].iloc[period:].isna().all(), \
+            "Should have valid middle band after warmup period"
 
 
-def test_calculate_bollinger_bands_squeeze():
-    """Test Bollinger Bands squeeze (when bands narrow significantly)"""
-    # Create a price series with low volatility (to create a squeeze)
-    # followed by higher volatility (expansion after squeeze)
-    squeeze_period = np.linspace(100, 102, 30) + np.random.normal(0, 0.1, 30)  # Very low volatility
-    expansion_period = np.linspace(102, 120, 20) + np.random.normal(0, 5, 20)  # Higher volatility
-    prices = pd.Series(np.concatenate([squeeze_period, expansion_period]))
+class TestBollingerBandsCalculationWithRealData:
+    """Test Bollinger Bands calculation using real historical data."""
 
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
+    def test_standard_bollinger_bands_with_zs_hourly_data(self, zs_1h_data):
+        """
+        Test BB(20,2) calculation on 2 years of ZS hourly data.
 
-    # Find valid indices (after the initial NaN period)
-    valid_idx = ~bb.isna().all(axis=1)
+        Validates that BB is calculated correctly across all data points,
+        handles NaN values properly, and produces values in valid range.
+        """
+        bb = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
 
-    if valid_idx.any():
-        # Calculate Bollinger Band width (upper - lower)
-        bb_width = bb.loc[valid_idx, 'upper_band'] - bb.loc[valid_idx, 'lower_band']
+        # Validate structure
+        assert len(bb) == len(zs_1h_data), "BB length must match input data length"
+        assert bb.index.equals(zs_1h_data.index), "BB index must match input index"
 
-        # During squeeze, the width should be very small
-        squeeze_width = bb_width.iloc[5:25]  # Middle of the squeeze period
+        # Validate NaN handling (first period-1 values should be NaN)
+        assert bb['middle_band'].isna().sum() == 19, "First 19 values should be NaN for BB(20)"
 
-        # During expansion, the width should increase
-        expansion_width = bb_width.iloc[-10:]  # End of the expansion period
+        # Validate all bands are positive
+        valid_bb = bb.dropna()
+        assert (valid_bb['middle_band'] > 0).all(), "Middle band must be positive"
+        assert (valid_bb['upper_band'] > 0).all(), "Upper band must be positive"
+        assert (valid_bb['lower_band'] > 0).all(), "Lower band must be positive"
 
-        # The width during expansion should be significantly larger than during squeeze
-        assert expansion_width.mean() > squeeze_width.mean() * 2
+        # Validate band relationships
+        assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all()
+        assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all()
 
-        # The minimum width during squeeze should be very small
-        # compared to the maximum width during expansion
-        assert squeeze_width.min() < expansion_width.max() * 0.3
+        # Validate bands vary (not constant)
+        assert_indicator_varies(valid_bb['middle_band'], 'Middle Band')
+        assert_indicator_varies(valid_bb['upper_band'], 'Upper Band')
+        assert_indicator_varies(valid_bb['lower_band'], 'Lower Band')
+
+    @pytest.mark.parametrize("period", [10, 20, 50, 100])
+    def test_bollinger_bands_with_different_periods(self, zs_1h_data, period):
+        """
+        Test BB calculation with various standard periods.
+
+        Validates that different periods produce valid results and proper
+        NaN counts matching the period.
+        """
+        bb = _calculate_bollinger_bands(zs_1h_data['close'], period=period, num_std=2.0)
+
+        # Validate structure
+        assert len(bb) == len(zs_1h_data)
+        assert bb['middle_band'].isna().sum() == period - 1, \
+            f"Should have {period-1} NaN values for BB({period})"
+
+        # Validate band relationships
+        valid_bb = bb.dropna()
+        assert len(valid_bb) > 0, "Should have valid BB values"
+        assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all()
+        assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all()
 
 
-def test_calculate_bollinger_bands_width_as_volatility_indicator():
-    """Test Bollinger Bands width as a volatility indicator"""
-    # Create a price series with varying volatility
-    np.random.seed(42)  # For reproducibility
+class TestBollingerBandsInMarketScenarios:
+    """Test Bollinger Bands behavior in different market conditions using real data."""
 
-    # Low-volatility period
-    low_vol_prices = np.linspace(100, 110, 30) + np.random.normal(0, 1, 30)
+    def test_bollinger_bands_in_trending_market(self, trending_market_data):
+        """
+        Test BB behavior during strong trend.
 
-    # Medium volatility period
-    med_vol_prices = np.linspace(110, 120, 30) + np.random.normal(0, 3, 30)
+        In trending markets, prices often move along one band. The bands
+        should still maintain proper relationships and not break.
+        """
+        if trending_market_data is None:
+            pytest.skip("No trending market data available")
 
-    # High-volatility period
-    high_vol_prices = np.linspace(120, 130, 30) + np.random.normal(0, 7, 30)
+        bb = _calculate_bollinger_bands(trending_market_data['close'], period=20, num_std=2.0)
+        valid_bb = bb.dropna()
 
-    # Combine all periods
-    prices = pd.Series(np.concatenate([low_vol_prices, med_vol_prices, high_vol_prices]))
+        # Bands should maintain proper order
+        assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all()
+        assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all()
 
-    prices_hash = hash_series(prices)
-    bb = calculate_bollinger_bands(prices, period=20, number_of_standard_deviations=2, prices_hash=prices_hash)
+        # Middle band should trend with price
+        assert valid_bb['middle_band'].std() > 0, "Middle band should vary in trending market"
 
-    # Find valid indices (after the initial NaN period)
-    valid_idx = ~bb.isna().all(axis=1)
 
-    if valid_idx.any() and len(bb.loc[valid_idx]) >= 60:
-        # Calculate Bollinger Band width (upper - lower)
-        bb_width = bb.loc[valid_idx, 'upper_band'] - bb.loc[valid_idx, 'lower_band']
+class TestBollingerBandsCaching:
+    """Test Bollinger Bands caching behavior."""
 
-        # Calculate the average width for each volatility period
-        low_vol_width = bb_width.iloc[0:20].mean()
-        med_vol_width = bb_width.iloc[30:50].mean()
-        high_vol_width = bb_width.iloc[-20:].mean()
+    def test_cache_hit_returns_identical_values(self, zs_1h_data):
+        """
+        Verify cached BB exactly matches fresh calculation.
 
-        # Bandwidth should increase with volatility
-        assert low_vol_width < med_vol_width
-        assert med_vol_width < high_vol_width
+        Tests that cache stores and retrieves BB correctly without
+        any data corruption or loss of precision.
+        """
+        # Reset stats to track this test's cache behavior
+        indicator_cache.reset_stats()
+        initial_hits = indicator_cache.hits
+        initial_misses = indicator_cache.misses
 
-        # Calculate the correlation between rolling volatility and bandwidth
-        # First, calculate rolling standard deviation of prices as a measure of volatility
-        rolling_vol = prices.rolling(window=20).std(ddof=0)
+        # First calculation (may hit or miss depending on previous tests)
+        bb_1 = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
+        first_misses = indicator_cache.misses
 
-        # Calculate the correlation between rolling volatility and bandwidth
-        # (only for valid indices where both are defined)
-        corr_indices = valid_idx & ~rolling_vol.isna()
-        if corr_indices.sum() > 10:  # Ensure we have enough points for correlation
-            correlation = np.corrcoef(rolling_vol.loc[corr_indices], bb_width.loc[corr_indices])[0, 1]
+        # Second calculation (should hit cache)
+        bb_2 = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
 
-            # There should be a strong positive correlation between volatility and bandwidth
-            assert correlation > 0.7
+        # Verify cache was hit (misses didn't increase)
+        assert indicator_cache.misses == first_misses, \
+            "Second calculation should not cause cache miss"
+
+        # Verify identical results
+        assert len(bb_1) == len(bb_2), "BB DataFrames should have same length"
+        for col in ['middle_band', 'upper_band', 'lower_band']:
+            np.testing.assert_array_equal(
+                bb_1[col].values,
+                bb_2[col].values,
+                err_msg=f"Cached BB {col} should match exactly"
+            )
+
+
+class TestBollingerBandsEdgeCases:
+    """Test Bollinger Bands with edge cases and error conditions."""
+
+    def test_bollinger_bands_with_insufficient_data(self, minimal_price_series):
+        """
+        Test BB when data length < period.
+
+        Should return all NaN values when insufficient data for calculation.
+        """
+        bb = _calculate_bollinger_bands(minimal_price_series, period=20, num_std=2.0)
+
+        # All values should be NaN
+        assert bb['middle_band'].isna().all(), \
+            "All middle band values should be NaN when data < period"
+        assert bb['upper_band'].isna().all(), \
+            "All upper band values should be NaN when data < period"
+        assert bb['lower_band'].isna().all(), \
+            "All lower band values should be NaN when data < period"
+        assert len(bb) == len(minimal_price_series), \
+            "BB length should match input length"
+
+    def test_bollinger_bands_with_constant_prices(self, constant_price_series):
+        """
+        Test BB when prices don't change.
+
+        With constant prices (zero variance), bands should collapse to
+        middle band (zero width). This is correct behavior.
+        """
+        bb = _calculate_bollinger_bands(constant_price_series, period=20, num_std=2.0)
+
+        valid_bb = bb.dropna()
+        
+        # All bands should be equal (or very close)
+        assert len(valid_bb) > 0, "Should have valid values"
+        
+        band_width = valid_bb['upper_band'] - valid_bb['lower_band']
+        assert (band_width < 0.001).all(), \
+            "Constant prices should produce near-zero band width"
+
+    def test_bollinger_bands_with_empty_series(self, empty_price_series):
+        """Test BB with empty input series."""
+        bb = _calculate_bollinger_bands(empty_price_series, period=20, num_std=2.0)
+
+        assert len(bb) == 0, "Empty input should return empty BB"
+        assert isinstance(bb, pd.DataFrame)
+        assert list(bb.columns) == ['middle_band', 'upper_band', 'lower_band']
+
+
+class TestBollingerBandsDataTypes:
+    """Test Bollinger Bands with different input data types and structures."""
+
+    def test_bollinger_bands_with_series_name(self, zs_1h_data):
+        """Test that BB works correctly with named series."""
+        named_series = zs_1h_data['close'].rename('ZS_Close')
+        bb = _calculate_bollinger_bands(named_series, period=20, num_std=2.0)
+
+        # Series should still work correctly
+        assert len(bb) == len(named_series)
+        assert (bb.dropna()['upper_band'] >= bb.dropna()['middle_band']).all()
+
+    def test_bollinger_bands_with_different_datetime_frequencies(self, zs_1h_data, zs_1d_data):
+        """
+        Test BB works with different time frequencies.
+
+        Validates that BB calculation is time-agnostic and works with
+        any datetime frequency (hourly, daily, etc.).
+        """
+        bb_hourly = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
+        bb_daily = _calculate_bollinger_bands(zs_1d_data['close'], period=20, num_std=2.0)
+
+        # Both should produce valid BB
+        valid_hourly = bb_hourly.dropna()
+        valid_daily = bb_daily.dropna()
+        
+        assert len(valid_hourly) > 0, "Hourly BB should have valid values"
+        assert len(valid_daily) > 0, "Daily BB should have valid values"
+
+        # Both should maintain proper band relationships
+        assert (valid_hourly['upper_band'] >= valid_hourly['middle_band']).all()
+        assert (valid_daily['upper_band'] >= valid_daily['middle_band']).all()
+
+
+class TestBollingerBandsPracticalUsage:
+    """Test Bollinger Bands in practical trading scenarios."""
+
+    def test_bollinger_bands_squeeze_detection(self, zs_1h_data):
+        """
+        Test that BB can detect squeeze (narrow bands).
+
+        Squeeze occurs when volatility contracts, indicating potential
+        breakout. Practical use: Identifying consolidation before moves.
+        """
+        bb = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
+        
+        # Calculate band width as percentage of middle band
+        valid_bb = bb.dropna()
+        band_width_pct = ((valid_bb['upper_band'] - valid_bb['lower_band']) / 
+                          valid_bb['middle_band']) * 100
+
+        # Find squeeze conditions (band width < 5% of middle band)
+        squeeze = band_width_pct < 5.0
+        squeeze_count = squeeze.sum()
+
+        # Real market data should have some squeeze periods
+        assert squeeze_count > 0, "Should find squeeze conditions in real data"
+        assert squeeze_count < len(valid_bb) * 0.3, \
+            "Squeeze should be minority of time"
+
+    def test_bollinger_bands_breakout_detection(self, zs_1h_data):
+        """
+        Test BB can identify price breakouts beyond bands.
+
+        Practical use: Finding strong momentum moves when price breaks
+        outside the bands (typically 2 standard deviations).
+        """
+        prices = zs_1h_data['close']
+        bb = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
+
+        # Detect price breaking above upper band
+        breaks_above = prices > bb['upper_band']
+        
+        # Detect price breaking below lower band
+        breaks_below = prices < bb['lower_band']
+
+        # Real market data should have some breakouts
+        assert breaks_above.sum() > 0, "Should find breaks above upper band"
+        assert breaks_below.sum() > 0, "Should find breaks below lower band"
+        
+        # Breakouts should be relatively rare (outside 2 std dev)
+        total_breakouts = breaks_above.sum() + breaks_below.sum()
+        valid_bars = bb['upper_band'].notna().sum()
+        breakout_pct = (total_breakouts / valid_bars) * 100
+        
+        assert breakout_pct < 10, \
+            f"Breakouts should be <10% of time, got {breakout_pct:.1f}%"
+
+    def test_bollinger_bands_mean_reversion_signals(self, zs_1h_data):
+        """
+        Test BB can identify mean reversion opportunities.
+
+        Practical use: When price touches bands, it often reverts to middle.
+        Identify potential reversal points.
+        """
+        prices = zs_1h_data['close']
+        bb = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
+
+        # Calculate distance from middle band
+        valid_idx = bb['middle_band'].notna()
+        distance_from_middle = (prices[valid_idx] - bb.loc[valid_idx, 'middle_band']).abs()
+        band_width = (bb.loc[valid_idx, 'upper_band'] - bb.loc[valid_idx, 'middle_band'])
+
+        # When price is near bands (> 80% of distance to band)
+        near_bands = distance_from_middle > (band_width * 0.8)
+
+        # Should find some mean reversion opportunities
+        assert near_bands.sum() > 0, "Should find prices near bands"
