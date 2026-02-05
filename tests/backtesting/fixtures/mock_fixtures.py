@@ -53,19 +53,21 @@ def suppress_all_logs(monkeypatch):
 
     Example:
         def test_quiet_execution(suppress_all_logs):
-            # All logging from strategies, indicators, cache, etc. is suppressed
+            # All logging from cache, indicators, testing, etc. is suppressed
             run_mass_backtest()  # Runs silently
     """
     mock = MagicMock()
 
-    # Patch common logger locations
+    # Patch common logger locations that actually exist in the app
     logger_paths = [
-        'app.backtesting.strategies.base.base_strategy.logger',
-        'app.backtesting.indicators.rsi.logger',
-        'app.backtesting.indicators.ema.logger',
+        'app.utils.backtesting_utils.indicators_utils.logger',
         'app.backtesting.cache.cache_base.logger',
+        'app.backtesting.cache.indicators_cache.logger',
+        'app.backtesting.cache.dataframe_cache.logger',
         'app.backtesting.testing.orchestrator.logger',
+        'app.backtesting.testing.mass_tester.logger',
         'app.utils.logger.logger',
+        'app.utils.file_utils.logger',
     ]
 
     for path in logger_paths:
@@ -487,33 +489,7 @@ def mock_trailing_stop_manager():
     return ts_mock
 
 
-# ==================== Database/Persistence Mocks ====================
-
-@pytest.fixture
-def mock_database():
-    """
-    Mock database operations for testing without real database.
-
-    Returns:
-        Dict with mock methods for common database operations
-
-    Example:
-        def test_save_to_db(mock_database, monkeypatch):
-            monkeypatch.setattr('app.utils.database.save_results', mock_database['save'])
-
-            save_backtest_results(results)
-
-            assert mock_database['save'].called
-            assert len(mock_database['save'].call_args[0][0]) > 0
-    """
-    return {
-        'save': MagicMock(),
-        'load': MagicMock(return_value=[]),
-        'query': MagicMock(return_value=[]),
-        'delete': MagicMock(),
-        'update': MagicMock()
-    }
-
+# ==================== File Writing Mocks ====================
 
 @pytest.fixture
 def mock_csv_writer():

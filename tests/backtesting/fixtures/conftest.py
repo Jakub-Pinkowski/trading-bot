@@ -10,7 +10,6 @@ conftest.py to keep new fixture architecture isolated from legacy fixtures.
 from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
 from tests.backtesting.fixtures.mock_fixtures import *  # noqa: F401, F403
 from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
-# from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== pytest Configuration ====================
