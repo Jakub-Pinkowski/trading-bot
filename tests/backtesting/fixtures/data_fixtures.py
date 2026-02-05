@@ -159,6 +159,20 @@ def zs_1d_data(load_real_data):
 
 
 @pytest.fixture(scope="module")
+def cl_15m_data(load_real_data):
+    """
+    CL (crude oil) 15-minute data from 1! contract.
+
+    Used for multi-symbol tests to validate indicator calculations
+    work across different instruments.
+
+    Returns:
+        DataFrame with OHLCV data and datetime index
+    """
+    return load_real_data('1!', 'CL', '15m')
+
+
+@pytest.fixture(scope="module")
 def zs_15m_data(load_real_data):
     """
     ZS (soybeans) 15-minute data from 1! contract.

@@ -1,0 +1,10 @@
+"""
+Conftest for indicators tests.
+
+Imports all shared fixtures from the fixtures directory to make them
+available to indicator tests.
+"""
+
+# Import all shared fixtures
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.mock_fixtures import *  # noqa: F401, F403
