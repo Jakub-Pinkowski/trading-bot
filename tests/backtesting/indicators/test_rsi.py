@@ -27,6 +27,134 @@ def _calculate_rsi(prices, period=14):
     return calculate_rsi(prices, period, prices_hash)
 
 
+# ==================== Basic Logic Tests ====================
+
+class TestRSIBasicLogic:
+    """Simple sanity checks for RSI basic behavior."""
+
+    def test_rsi_returns_series_with_correct_length(self):
+        """RSI should return a series with same length as input."""
+        prices = pd.Series([
+                               100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                               110, 111, 112, 113, 114, 115, 116, 117, 118, 119
+                           ])
+        rsi = _calculate_rsi(prices, period=14)
+
+        assert len(rsi) == len(prices), "RSI length must equal input length"
+        assert isinstance(rsi, pd.Series), "RSI must return pandas Series"
+
+    def test_rsi_stays_within_bounds(self):
+        """RSI must always be between 0 and 100."""
+        prices = pd.Series([
+                               100, 105, 110, 108, 112, 115, 113, 118, 120, 117,
+                               122, 125, 123, 128, 130, 127, 132, 135, 133, 138
+                           ])
+        rsi = _calculate_rsi(prices, period=10)
+
+        valid_rsi = rsi.dropna()
+        assert (valid_rsi >= 0).all(), "RSI should never be below 0"
+        assert (valid_rsi <= 100).all(), "RSI should never be above 100"
+
+    def test_rising_prices_give_high_rsi(self):
+        """Continuously rising prices should produce high RSI (>70)."""
+        prices = pd.Series(range(100, 130))  # 30 consecutive increases
+        rsi = _calculate_rsi(prices, period=14)
+
+        recent_rsi = rsi.iloc[-5:].mean()  # Average of last 5 RSI values
+        assert recent_rsi > 70, f"Rising prices should give high RSI, got {recent_rsi:.1f}"
+
+    def test_falling_prices_give_low_rsi(self):
+        """Continuously falling prices should produce low RSI (<30)."""
+        prices = pd.Series(range(130, 100, -1))  # 30 consecutive decreases
+        rsi = _calculate_rsi(prices, period=14)
+
+        recent_rsi = rsi.iloc[-5:].mean()  # Average of last 5 RSI values
+        assert recent_rsi < 30, f"Falling prices should give low RSI, got {recent_rsi:.1f}"
+
+    def test_rsi_changes_with_price_changes(self):
+        """RSI should change when prices change."""
+        # Test with two separate series: one rising, one falling
+        rising_prices = pd.Series(range(100, 125))  # 25 consecutive increases
+        falling_prices = pd.Series(range(125, 100, -1))  # 25 consecutive decreases
+
+        rsi_rising = _calculate_rsi(rising_prices, period=14)
+        rsi_falling = _calculate_rsi(falling_prices, period=14)
+
+        # RSI at end of rising series should be high
+        rsi_after_rising = rsi_rising.iloc[-1]
+        # RSI at end of falling series should be low
+        rsi_after_falling = rsi_falling.iloc[-1]
+
+        assert rsi_after_rising > 70, f"RSI after rising prices should be >70, got {rsi_after_rising:.1f}"
+        assert rsi_after_falling < 30, f"RSI after falling prices should be <30, got {rsi_after_falling:.1f}"
+        assert rsi_after_rising > rsi_after_falling, "Rising prices should give higher RSI than falling prices"
+
+    def test_first_n_values_are_nan(self):
+        """First 'period' values should be NaN (need warmup)."""
+        prices = pd.Series(range(100, 150))
+        period = 14
+        rsi = _calculate_rsi(prices, period=period)
+
+        # First 'period' values should be NaN
+        assert rsi.iloc[:period].isna().all(), f"First {period} RSI values should be NaN"
+        # After warmup, should have valid values
+        assert not rsi.iloc[period:].isna().all(), "Should have valid RSI after warmup period"
+
+    def test_small_price_changes_give_moderate_rsi(self):
+        """Small oscillations should keep RSI near 50."""
+        # Small oscillations around 100
+        prices = pd.Series([
+                               100, 101, 100, 101, 100, 101, 100, 101, 100, 101,
+                               100, 101, 100, 101, 100, 101, 100, 101, 100, 101
+                           ])
+        rsi = _calculate_rsi(prices, period=10)
+
+        recent_rsi = rsi.iloc[-5:].mean()
+        assert 40 < recent_rsi < 60, f"Small oscillations should keep RSI near 50, got {recent_rsi:.1f}"
+
+    def test_larger_period_gives_smoother_rsi(self):
+        """Larger RSI period should produce less volatile RSI values."""
+        # Volatile prices
+        prices = pd.Series([
+                               100, 105, 98, 107, 95, 110, 92, 112, 90, 115,
+                               88, 118, 85, 120, 83, 122, 80, 125, 78, 128,
+                               75, 130, 73, 132, 70, 135, 68, 138, 65, 140
+                           ])
+
+        rsi_short = _calculate_rsi(prices, period=5)
+        rsi_long = _calculate_rsi(prices, period=20)
+
+        # Standard deviation measures volatility
+        short_volatility = rsi_short.dropna().std()
+        long_volatility = rsi_long.dropna().std()
+
+        assert short_volatility > long_volatility, \
+            f"Shorter period should be more volatile: {short_volatility:.1f} vs {long_volatility:.1f}"
+
+    def test_rsi_responds_to_price_direction_not_magnitude(self):
+        """RSI is based on gains/losses, not absolute price level."""
+        # Two price series at different levels but same % changes
+        low_prices = pd.Series([
+                                   10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+                               ])
+        high_prices = pd.Series([
+                                    100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+                                    200, 210, 220, 230, 240, 250, 260, 270, 280, 290
+                                ])
+
+        rsi_low = _calculate_rsi(low_prices, period=10)
+        rsi_high = _calculate_rsi(high_prices, period=10)
+
+        # RSI should be similar (both are 10% increases each period)
+        # Allow some tolerance due to EWM calculation differences
+        rsi_low_final = rsi_low.iloc[-1]
+        rsi_high_final = rsi_high.iloc[-1]
+
+        assert abs(rsi_low_final - rsi_high_final) < 5, \
+            "RSI should be similar for same % changes regardless of price level"
+
+
 class TestRSICalculationWithRealData:
     """Test RSI calculation using real historical data."""
 
@@ -279,55 +407,52 @@ class TestRSICaching:
 class TestRSIEdgeCases:
     """Test RSI with edge cases and error conditions."""
 
-    def test_rsi_with_insufficient_data(self):
+    def test_rsi_with_insufficient_data(self, minimal_price_series):
         """
         Test RSI when data length < period.
 
         Should return all NaN values when insufficient data for calculation.
         """
-        short_data = pd.Series([100, 101, 102, 103, 104])
-        rsi = _calculate_rsi(short_data, period=14)
+        rsi = _calculate_rsi(minimal_price_series, period=14)
 
         # All values should be NaN
         assert rsi.isna().all(), "All RSI values should be NaN when data < period"
-        assert len(rsi) == len(short_data), "RSI length should match input length"
+        assert len(rsi) == len(minimal_price_series), "RSI length should match input length"
 
-    def test_rsi_with_exact_minimum_data(self):
+    def test_rsi_with_exact_minimum_data(self, exact_period_price_series):
         """
         Test RSI with exactly enough data for calculation.
 
         With period=14, needs at least 15 data points (14 for warmup + 1 for calculation).
         """
-        # 15 data points for period=14
-        min_data = pd.Series(range(100, 115))
-        rsi = _calculate_rsi(min_data, period=14)
+        rsi = _calculate_rsi(exact_period_price_series, period=14)
 
         # First 14 should be NaN, last should have value
         assert rsi.isna().sum() == 14
         assert not pd.isna(rsi.iloc[-1])
 
-    def test_rsi_with_constant_prices(self):
+    def test_rsi_with_constant_prices(self, constant_price_series):
         """
         Test RSI when prices don't change.
 
         With constant prices (zero variance), RSI returns NaN because there are
         no gains or losses to calculate. This is correct behavior.
         """
-        constant_data = pd.Series([100.0] * 100)
-        rsi = _calculate_rsi(constant_data, period=14)
+        rsi = _calculate_rsi(constant_price_series, period=14)
 
         # With zero variance, RSI should return all NaN (division by zero in formula)
         assert rsi.isna().all(), "RSI should be all NaN for constant prices (zero variance)"
-        assert len(rsi) == len(constant_data), "RSI length should match input length"
+        assert len(rsi) == len(constant_price_series), "RSI length should match input length"
 
-    def test_rsi_with_monotonic_increase(self):
+    def test_rsi_with_monotonic_increase(self, rising_price_series):
         """
         Test RSI with continuously increasing prices.
 
         All gains, no losses - RSI should approach 100.
         """
-        increasing_data = pd.Series(range(100, 200))  # 100 consecutive increases
-        rsi = _calculate_rsi(increasing_data, period=14)
+        # Use longer series for better demonstration
+        long_rising = pd.Series(range(100, 200))  # 100 consecutive increases
+        rsi = _calculate_rsi(long_rising, period=14)
 
         valid_rsi = rsi.dropna()
 
@@ -335,14 +460,15 @@ class TestRSIEdgeCases:
         assert valid_rsi.min() > 80, "RSI should be high with all gains"
         assert valid_rsi.iloc[-1] > 95, "Recent RSI should approach 100"
 
-    def test_rsi_with_monotonic_decrease(self):
+    def test_rsi_with_monotonic_decrease(self, falling_price_series):
         """
         Test RSI with continuously decreasing prices.
 
         All losses, no gains - RSI should approach 0.
         """
-        decreasing_data = pd.Series(range(200, 100, -1))  # 100 consecutive decreases
-        rsi = _calculate_rsi(decreasing_data, period=14)
+        # Use longer series for better demonstration
+        long_falling = pd.Series(range(200, 100, -1))  # 100 consecutive decreases
+        rsi = _calculate_rsi(long_falling, period=14)
 
         valid_rsi = rsi.dropna()
 
@@ -368,19 +494,13 @@ class TestRSIEdgeCases:
         spike_region = rsi.iloc[1000:1010]
         assert spike_region.max() > 70, "RSI should spike after large price move"
 
-    def test_rsi_with_flat_then_movement(self):
+    def test_rsi_with_flat_then_movement(self, flat_then_volatile_series):
         """
         Test RSI transition from flat period to normal movement.
 
         Validates RSI can handle transition from constant prices to price movement.
         """
-        # Create data: 50 flat, then 50 with oscillating movement
-        flat_part = pd.Series([100.0] * 50)
-        # Create oscillating pattern instead of monotonic to get RSI variation
-        variable_part = pd.Series([100 + (i % 10 - 5) * 0.5 for i in range(50)])
-        mixed_data = pd.concat([flat_part, variable_part], ignore_index=True)
-
-        rsi = _calculate_rsi(mixed_data, period=14)
+        rsi = _calculate_rsi(flat_then_volatile_series, period=14)
 
         # Flat region will have NaN (zero variance) - expected behavior
 
@@ -393,24 +513,19 @@ class TestRSIEdgeCases:
         assert 30 <= valid_variable_rsi.mean() <= 70, "RSI should be reasonable in oscillating region"
         assert valid_variable_rsi.std() > 0, "RSI should vary in variable region"
 
-    def test_rsi_invalid_period_zero(self):
+    def test_rsi_invalid_period_zero(self, short_price_series):
         """Test that period=0 raises appropriate error."""
-        data = pd.Series([100, 101, 102, 103])
-
         with pytest.raises(ValueError, match="Period must be a positive integer"):
-            _calculate_rsi(data, period=0)
+            _calculate_rsi(short_price_series, period=0)
 
-    def test_rsi_invalid_period_negative(self):
+    def test_rsi_invalid_period_negative(self, short_price_series):
         """Test that negative period raises appropriate error."""
-        data = pd.Series([100, 101, 102, 103])
-
         with pytest.raises(ValueError, match="Period must be a positive integer"):
-            _calculate_rsi(data, period=-5)
+            _calculate_rsi(short_price_series, period=-5)
 
-    def test_rsi_with_empty_series(self):
+    def test_rsi_with_empty_series(self, empty_price_series):
         """Test RSI with empty input series."""
-        empty_data = pd.Series([], dtype=float)
-        rsi = _calculate_rsi(empty_data, period=14)
+        rsi = _calculate_rsi(empty_price_series, period=14)
 
         assert len(rsi) == 0, "Empty input should return empty RSI"
         assert isinstance(rsi, pd.Series)

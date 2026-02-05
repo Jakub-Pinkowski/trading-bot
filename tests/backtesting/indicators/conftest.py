@@ -7,4 +7,5 @@ available to indicator tests.
 
 # Import all shared fixtures
 from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.indicator_test_data import *  # noqa: F401, F403
 from tests.backtesting.fixtures.mock_fixtures import *  # noqa: F401, F403
