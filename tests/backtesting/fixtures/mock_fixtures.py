@@ -441,12 +441,12 @@ def mock_position_manager():
     Mock position manager for strategy testing.
 
     Returns:
-        MagicMock with position manager interface
+        MagicMock with position manager interface matching actual PositionManager class
 
     Example:
         def test_strategy_positions(mock_position_manager, monkeypatch):
-            mock_position_manager.has_position.return_value = False
-            mock_position_manager.open_position.return_value = True
+            mock_position_manager.has_open_position.return_value = False
+            mock_position_manager.open_position.return_value = None
 
             strategy.position_manager = mock_position_manager
             strategy.execute()
@@ -454,11 +454,27 @@ def mock_position_manager():
             assert mock_position_manager.open_position.called
     """
     pm_mock = MagicMock()
-    pm_mock.has_position = MagicMock(return_value=False)
+
+    # Actual methods that exist in PositionManager
+    pm_mock.has_open_position = MagicMock(return_value=False)
     pm_mock.open_position = MagicMock()
     pm_mock.close_position = MagicMock()
-    pm_mock.get_current_position = MagicMock(return_value=None)
-    pm_mock.update_trailing_stop = MagicMock()
+    pm_mock.close_position_at_switch = MagicMock(return_value=None)
+    pm_mock.get_trades = MagicMock(return_value=[])
+    pm_mock.reset = MagicMock()
+    pm_mock.apply_slippage_to_entry_price = MagicMock()
+    pm_mock.apply_slippage_to_exit_price = MagicMock()
+
+    # Properties
+    pm_mock.position = None
+    pm_mock.entry_time = None
+    pm_mock.entry_price = None
+    pm_mock.trailing_stop = None
+    pm_mock.trades = []
+    pm_mock.slippage_ticks = 2
+    pm_mock.symbol = 'ZS'
+    pm_mock.trailing = None
+
     return pm_mock
 
 
@@ -468,22 +484,28 @@ def mock_trailing_stop_manager():
     Mock trailing stop manager for strategy testing.
 
     Returns:
-        MagicMock with trailing stop manager interface
+        MagicMock with trailing stop manager interface matching actual TrailingStopManager class
 
     Example:
-        def test_trailing_stops(mock_trailing_stop_manager):
-            mock_trailing_stop_manager.should_exit.return_value = True
+        def test_trailing_stops(mock_trailing_stop_manager, mock_position_manager):
+            mock_trailing_stop_manager.handle_trailing_stop.return_value = True
 
-            strategy.trailing_stop_manager = mock_trailing_stop_manager
-            exit_signal = strategy.check_exit()
+            result = mock_trailing_stop_manager.handle_trailing_stop(
+                mock_position_manager, idx, price_high=100, price_low=95
+            )
 
-            assert exit_signal is True
+            assert result is True
     """
     ts_mock = MagicMock()
-    ts_mock.initialize = MagicMock()
-    ts_mock.update = MagicMock()
-    ts_mock.should_exit = MagicMock(return_value=False)
-    ts_mock.get_stop_price = MagicMock(return_value=None)
+
+    # Actual methods that exist in TrailingStopManager
+    ts_mock.handle_trailing_stop = MagicMock(return_value=False)
+    ts_mock.calculate_new_trailing_stop = MagicMock(return_value=None)
+
+    # Properties
+    ts_mock.trailing_percentage = 2.0
+    ts_mock.on_stop_triggered = None
+
     return ts_mock
 
 
