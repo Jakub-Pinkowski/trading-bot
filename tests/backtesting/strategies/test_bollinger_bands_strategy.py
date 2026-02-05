@@ -54,7 +54,7 @@ class TestBollingerBandsStrategy:
 
         # Clear the cache to ensure we're not using cached values
         from app.backtesting.cache.indicators_cache import indicator_cache
-        indicator_cache.clear()
+        indicator_cache.cache_data.clear()
 
         # Apply the strategy's add_indicators method again
         df_with_indicators = strategy.add_indicators(df)

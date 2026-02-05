@@ -33,7 +33,7 @@ def test_dataframe_cache_instance():
 def test_dataframe_cache_operations():
     """Test basic operations on the dataframe cache."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Test that the cache is empty
     assert dataframe_cache.size() == 0
@@ -58,7 +58,7 @@ def test_dataframe_cache_operations():
     assert dataframe_cache.get(non_existent_key, "default") == "default"
 
     # Clear the cache again
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
     assert dataframe_cache.size() == 0
     assert not dataframe_cache.contains(test_key)
 
@@ -67,7 +67,7 @@ def test_dataframe_cache_operations():
 def test_dataframe_cache_save(mock_save_cache):
     """Test saving the dataframe cache."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Add some data to the cache
     test_key = "test_file.parquet"
@@ -87,7 +87,7 @@ def test_dataframe_cache_save(mock_save_cache):
 def test_get_cached_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sample_dataframe):
     """Test get_cached_dataframe when the dataframe is not in the cache."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Set up the mock to return our sample dataframe
     mock_read_parquet.return_value = sample_dataframe
@@ -115,7 +115,7 @@ def test_get_cached_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sam
 def test_get_cached_dataframe_cache_hit(sample_dataframe):
     """Test get_cached_dataframe when the dataframe is already in the cache."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Add the dataframe to the cache
     filepath = "test_file.parquet"
@@ -137,7 +137,7 @@ def test_get_cached_dataframe_cache_hit(sample_dataframe):
 def test_get_cached_dataframe_error_handling(mock_read_parquet):
     """Test error handling in get_cached_dataframe."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Set up the mock to raise an exception
     mock_read_parquet.side_effect = Exception("Test exception")
@@ -158,7 +158,7 @@ def test_get_cached_dataframe_with_real_file(tmp_path, sample_dataframe):
     sample_dataframe.to_parquet(filepath)
 
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Call the function with the filepath
     with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache') as mock_save_cache:
@@ -187,7 +187,7 @@ def test_get_cached_dataframe_with_real_file(tmp_path, sample_dataframe):
 def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
     """Test the dataframe cache with dataframes of different sizes and structures."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Test with a small dataframe
     small_df = pd.DataFrame({
@@ -270,7 +270,7 @@ def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
 def test_dataframe_cache_with_different_data_types(tmp_path):
     """Test the dataframe cache with dataframes containing different data types."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Create a dataframe with various data types
     df_with_types = pd.DataFrame({
@@ -341,7 +341,7 @@ def test_dataframe_cache_with_different_data_types(tmp_path):
 def test_multiple_dataframes_in_cache(tmp_path):
     """Test handling multiple dataframes in the cache simultaneously."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Create multiple dataframes for different futures contracts
     contracts = ['ZC', 'ZS', 'CL', 'GC', 'SI']
@@ -405,7 +405,7 @@ def test_multiple_dataframes_in_cache(tmp_path):
             pd.testing.assert_frame_equal(cached_df, dataframes[contract])
 
     # Clear the cache and verify it's empty
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
     assert dataframe_cache.size() == 0
     for contract in contracts:
         assert not dataframe_cache.contains(filepaths[contract])
@@ -414,7 +414,7 @@ def test_multiple_dataframes_in_cache(tmp_path):
 def test_dataframe_cache_with_non_existent_files():
     """Test handling of non-existent files."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Test with a non-existent file
     non_existent_filepath = "/path/to/non_existent_file.parquet"
@@ -449,7 +449,7 @@ def test_dataframe_cache_with_non_existent_files():
 def test_dataframe_cache_corrupted_file():
     """Test handling of corrupted cache files."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Add some data to the cache
     test_key = "test_file.parquet"
@@ -472,7 +472,7 @@ def test_dataframe_cache_corrupted_file():
 def test_dataframe_cache_interrupted_save():
     """Test handling of interrupted save operations."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Add some data to the cache
     test_key = "test_file.parquet"
@@ -492,7 +492,7 @@ def test_dataframe_cache_interrupted_save():
 def test_dataframe_cache_large_objects():
     """Test handling of large objects in the cache to check for memory leaks."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Create a large dataframe (100,000 rows x 10 columns)
     large_df = pd.DataFrame({
@@ -514,7 +514,7 @@ def test_dataframe_cache_large_objects():
     del large_df
 
     # Clear the cache to free memory
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
     assert not dataframe_cache.contains(test_key)
     assert dataframe_cache.size() == 0
 
@@ -524,7 +524,7 @@ def test_dataframe_cache_concurrent_access():
     import threading
 
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Create a function that adds dataframes to the cache
     def add_to_cache(start_idx, end_idx):
@@ -564,14 +564,14 @@ def test_dataframe_cache_concurrent_access():
         assert df['B'].iloc[0] == i + 10
 
     # Clear the cache
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
     assert dataframe_cache.size() == 0
 
 
 def test_dataframe_cache_invalid_keys():
     """Test handling of invalid keys in the cache."""
     # Clear the cache to start with a clean state
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
 
     # Try to set a non-hashable key (dictionary is not hashable)
     with pytest.raises(TypeError):
@@ -592,5 +592,5 @@ def test_dataframe_cache_invalid_keys():
     assert dataframe_cache.size() == 2  # None and empty string keys
 
     # Clear the cache
-    dataframe_cache.clear()
+    dataframe_cache.cache_data.clear()
     assert dataframe_cache.size() == 0

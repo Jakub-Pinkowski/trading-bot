@@ -69,11 +69,11 @@ def _simple_worker(x):
 @pytest.fixture(autouse=True)
 def reset_caches():
     """Reset caches before and after each test."""
-    indicator_cache.clear()
-    dataframe_cache.clear()
+    indicator_cache.cache_data.clear()
+    dataframe_cache.cache_data.clear()
     yield
-    indicator_cache.clear()
-    dataframe_cache.clear()
+    indicator_cache.cache_data.clear()
+    dataframe_cache.cache_data.clear()
 
 
 @pytest.fixture
@@ -139,7 +139,7 @@ class TestMultiprocessingIntegration:
             )
 
             # Run tests with real multiprocessing
-            results = tester.run_tests(max_workers=2, verbose=False)
+            results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
             # Verify results
             assert isinstance(results, list), "Results should be a list"
@@ -163,7 +163,7 @@ class TestMultiprocessingIntegration:
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
             # This should not raise, even though workers will fail
-            results = tester.run_tests(max_workers=2, verbose=False)
+            results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
             # Results should be empty or have None entries, but shouldn't crash
             assert isinstance(results, list), "Should return a list even with worker failures"
@@ -430,7 +430,7 @@ class TestRealDataMultiprocessing:
                     tester.add_macd_tests([12], [26], [9], [False], [None], [0])
 
                     # Run with multiprocessing
-                    results = tester.run_tests(max_workers=3, verbose=False)
+                    results = tester.run_tests(max_workers=3, verbose=False, skip_existing=False)
 
                     # Should have results list (even if strategies produce no trades)
                     assert isinstance(results, list)
@@ -473,7 +473,7 @@ class TestRealDataMultiprocessing:
                 tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                 # Run with multiprocessing
-                results = tester.run_tests(max_workers=2, verbose=False)
+                results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
                 # Should return a results list (even if empty)
                 assert isinstance(results, list)
@@ -495,8 +495,8 @@ class TestRealDataMultiprocessing:
             pass
 
         # Clear caches
-        indicator_cache.clear()
-        dataframe_cache.clear()
+        indicator_cache.cache_data.clear()
+        dataframe_cache.cache_data.clear()
 
         import tempfile
         import shutil
@@ -514,7 +514,7 @@ class TestRealDataMultiprocessing:
                     # First run - should populate cache
                     tester1 = MassTester(['1!'], ['ZC'], ['1d'])
                     tester1.add_rsi_tests([14], [30], [70], [False], [None], [0])
-                    results1 = tester1.run_tests(max_workers=2, verbose=False)
+                    results1 = tester1.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
                     # Check cache was populated (cache should have at least filepath entry)
                     cache_size_after_first = dataframe_cache.size()
@@ -526,7 +526,7 @@ class TestRealDataMultiprocessing:
                     tester2.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     start_time = time.time()
-                    results2 = tester2.run_tests(max_workers=2, verbose=False)
+                    results2 = tester2.run_tests(max_workers=2, verbose=False, skip_existing=False)
                     second_run_time = time.time() - start_time
 
                     # Cache size should remain similar or increase
@@ -571,8 +571,8 @@ class TestRealDataMultiprocessing:
                     time_serial = time.time() - start_serial
 
                     # Clear caches to ensure fair comparison
-                    indicator_cache.clear()
-                    dataframe_cache.clear()
+                    indicator_cache.cache_data.clear()
+                    dataframe_cache.cache_data.clear()
 
                     # Parallel execution (4 workers)
                     tester_parallel = MassTester(['1!'], ['ZC'], ['1d'])
@@ -631,7 +631,7 @@ class TestRealDataMultiprocessing:
                     )
 
                     # Should create 3 * 2 * 2 = 12 combinations
-                    results = tester.run_tests(max_workers=4, verbose=False)
+                    results = tester.run_tests(max_workers=4, verbose=False, skip_existing=False)
 
                     assert isinstance(results, list)
                     # Test completed successfully (may be 0 if already cached)
@@ -672,7 +672,7 @@ class TestRealDataMultiprocessing:
                     tester = MassTester(['1!'], ['ZC'], ['1d'])
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
-                    results = tester.run_tests(max_workers=4, verbose=False)
+                    results = tester.run_tests(max_workers=4, verbose=False, skip_existing=False)
 
                     # Force garbage collection
                     gc.collect()
@@ -722,7 +722,7 @@ class TestRealDataMultiprocessing:
                     for i in range(3):
                         tester = MassTester(['1!'], ['ZC'], ['1d'])
                         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
-                        results = tester.run_tests(max_workers=2, verbose=False)
+                        results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
                         results_list.append(results)
 
                     # All runs should produce the same number of results
@@ -771,7 +771,7 @@ class TestRealDataMultiprocessing:
                     tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
                     # Should complete without crashing even if some workers fail
-                    results = tester.run_tests(max_workers=2, verbose=False)
+                    results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)
 
                     # Should get results from valid symbols
                     assert isinstance(results, list)

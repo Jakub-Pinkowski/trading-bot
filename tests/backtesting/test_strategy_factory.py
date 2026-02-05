@@ -18,6 +18,11 @@ from app.backtesting.validators import (
     BollingerValidator, CommonValidator, EMAValidator,
     IchimokuValidator, MACDValidator, RSIValidator
 )
+from app.backtesting.validators.base import (
+    validate_positive_integer,
+    validate_positive_number,
+    validate_type_and_range
+)
 
 
 class TestStrategyFactory(unittest.TestCase):
