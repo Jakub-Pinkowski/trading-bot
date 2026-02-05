@@ -218,9 +218,12 @@ class TestIchimokuBasicLogic:
         # Calculate cloud thickness where both spans have values
         cloud_thickness = (senkou_a - senkou_b).abs().dropna()
 
-        # Cloud thickness should vary (not constant) with oscillating prices
-        if len(cloud_thickness) > 1:
-            assert cloud_thickness.std() >= 0, "Cloud thickness should be calculable"
+        # With oscillating prices, cloud thickness should show some variation
+        if len(cloud_thickness) > 5:
+            # Cloud may show limited variation with this pattern, but should not be constant
+            unique_values = cloud_thickness.nunique()
+            assert unique_values > 1 or cloud_thickness.std() > 0, \
+                "Cloud thickness should show some variation with changing volatility"
 
 
 class TestIchimokuCalculationWithRealData:
@@ -752,14 +755,16 @@ class TestIchimokuEdgeCases:
         result = _calculate_ichimoku(high, low, close)
 
         # Variable region should have valid, varying values
-        # Note: Kijun with period=26 needs significant price movement to show variance
-        # Tenkan (period=9) should respond faster
+        # Note: Longer-period components (Kijun=26, Senkou B=52) lag significantly
+        # and may still reflect the flat period even in the variable region.
+        # Only check faster-responding components (Tenkan=9, Chikou=displaced close)
+        fast_components = ['tenkan_sen', 'chikou_span']
+        
         for component_name, component in result.items():
             variable_region = component.iloc[70:]  # Check later region after more volatile data
             valid_variable = variable_region.dropna()
 
-            # For components with longer periods (Kijun, Senkou B), may still be influenced by flat period
-            if len(valid_variable) > 10 and component_name in ['tenkan_sen', 'chikou_span']:
+            if len(valid_variable) > 10 and component_name in fast_components:
                 assert valid_variable.std() > 0, \
                     f"{component_name} should vary in variable region"
 
