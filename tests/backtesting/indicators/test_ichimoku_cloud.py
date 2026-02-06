@@ -95,7 +95,7 @@ class TestIchimokuBasicLogic:
 
         # At bar 9 (0-indexed position 8), we have 9 bars
         # Should have a valid Tenkan value
-        assert not pd.isna(tenkan.iloc[8]), "Tenkan should have value at position 8"
+        assert pd.notna(tenkan.iloc[8]), "Tenkan should have value at position 8"
 
         # Tenkan should be between high and low midpoint
         expected_min = low.iloc[:9].min()
@@ -112,7 +112,7 @@ class TestIchimokuBasicLogic:
         kijun = result['kijun_sen']
 
         # At bar 26 (0-indexed position 25), we have exactly 26 bars
-        assert not pd.isna(kijun.iloc[25]), "Kijun should have value at position 25"
+        assert pd.notna(kijun.iloc[25]), "Kijun should have value at position 25"
 
         expected_min = low.iloc[:26].min()
         expected_max = high.iloc[:26].max()
@@ -164,7 +164,7 @@ class TestIchimokuBasicLogic:
 
         # Chikou at position i should equal close at position i+displacement
         for i in range(len(close) - displacement):
-            if not pd.isna(chikou.iloc[i]):
+            if pd.notna(chikou.iloc[i]):
                 expected_value = close.iloc[i + displacement]
                 assert abs(chikou.iloc[i] - expected_value) < 0.01, \
                     f"Chikou at position {i} should equal close at position {i + displacement}"
@@ -217,7 +217,7 @@ class TestIchimokuBasicLogic:
         # Senkou A at position i should equal (Tenkan + Kijun) / 2 at position i-displacement
         # Check a few positions where all values are valid
         for i in range(displacement + 26, displacement + 30):
-            if not pd.isna(senkou_a.iloc[i]) and not pd.isna(tenkan.iloc[i - displacement]) and not pd.isna(
+            if pd.notna(senkou_a.iloc[i]) and pd.notna(tenkan.iloc[i - displacement]) and pd.notna(
                     kijun.iloc[i - displacement]):
                 expected_senkou_a = (tenkan.iloc[i - displacement] + kijun.iloc[i - displacement]) / 2
                 assert abs(senkou_a.iloc[i] - expected_senkou_a) < 0.01, \

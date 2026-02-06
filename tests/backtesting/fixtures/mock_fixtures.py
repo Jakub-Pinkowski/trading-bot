@@ -323,7 +323,8 @@ def clear_all_caches():
     """
     # Import here to avoid circular dependencies
     try:
-        from app.backtesting.cache import indicator_cache, dataframe_cache
+        from app.backtesting.cache.indicators_cache import indicator_cache
+        from app.backtesting.cache.dataframe_cache import dataframe_cache
 
         # Clear before test
         indicator_cache.clear()

@@ -117,7 +117,7 @@ class TestMACDBasicLogic:
         assert macd['macd_line'].iloc[:slow_period - 1].isna().all(), \
             f"First {slow_period - 1} MACD values should be NaN"
         # At slow_period, should have first valid value
-        assert not pd.isna(macd['macd_line'].iloc[slow_period - 1]), \
+        assert pd.notna(macd['macd_line'].iloc[slow_period - 1]), \
             "Should have valid MACD at slow_period-1"
 
     def test_signal_line_lags_macd_line(self, medium_price_series):

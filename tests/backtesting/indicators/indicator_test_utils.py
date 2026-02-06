@@ -134,8 +134,21 @@ def assert_different_params_use_different_cache(result1, result2):
         except AssertionError:
             # Expected when dataframes are different
             return
+    elif isinstance(result1, dict) and isinstance(result2, dict):
+        # Check at least one part differs
+        differs = False
+        for key in result1.keys():
+            if isinstance(result1[key], pd.Series):
+                if not result1[key].equals(result2[key]):
+                    differs = True
+                    break
+            else:
+                if result1[key] != result2[key]:
+                    differs = True
+                    break
+        assert differs, "Different parameters should produce different results"
     else:
-        assert result1 != result2, "Different parameters should produce different results"
+        raise ValueError(f"Unsupported result types: {type(result1)} and {type(result2)}")
 
 
 # ==================== Structure Validation Utilities ====================
