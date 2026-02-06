@@ -324,11 +324,7 @@ class TestRSICaching:
         rsi_cl = _calculate_rsi(cl_15m_data['close'], period=14)
 
         # Use utility to validate different data behavior
-        assert_cache_distinguishes_different_data(
-            rsi_zs, rsi_cl,
-            len(zs_1h_data), len(cl_15m_data),
-            'RSI'
-        )
+        assert_cache_distinguishes_different_data(rsi_zs, rsi_cl, 'RSI')
 
 
 class TestRSIEdgeCases:

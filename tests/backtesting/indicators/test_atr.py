@@ -443,11 +443,7 @@ class TestATRCaching:
         atr_cl = _calculate_atr(cl_15m_data, period=14)
 
         # Use utility to validate different data behavior
-        assert_cache_distinguishes_different_data(
-            atr_zs, atr_cl,
-            len(zs_1h_data), len(cl_15m_data),
-            'ATR'
-        )
+        assert_cache_distinguishes_different_data(atr_zs, atr_cl, 'ATR')
 
 
 class TestATREdgeCases:
@@ -489,7 +485,6 @@ class TestATREdgeCases:
         # With zero range, ATR should be 0 after warmup
         valid_atr = atr.dropna()
         assert (valid_atr == 0).all(), "ATR should be 0 for constant prices (zero range)"
-
 
     def test_atr_with_large_gap(self, zs_1h_data):
         """

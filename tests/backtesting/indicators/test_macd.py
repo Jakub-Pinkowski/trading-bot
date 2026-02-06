@@ -421,11 +421,7 @@ class TestMACDCaching:
         macd_cl = _calculate_macd(cl_15m_data['close'], fast_period=12, slow_period=26, signal_period=9)
 
         # Use utility to validate different data behavior
-        assert_cache_distinguishes_different_data(
-            macd_zs, macd_cl,
-            len(zs_1h_data), len(cl_15m_data),
-            'MACD'
-        )
+        assert_cache_distinguishes_different_data(macd_zs, macd_cl, 'MACD')
 
 
 class TestMACDEdgeCases:

@@ -14,18 +14,18 @@ import pytest
 @pytest.fixture
 def short_price_series():
     """
-    Short price series (20 bars) with small oscillations.
+    Short price series (20 bars) with consistent upward trend.
 
     Useful for quick tests that don't need much data.
-    Pattern: Small up/down moves around 100
+    Pattern: Strictly increasing by 1 unit per bar (100 to 119)
 
     Returns:
-        Series of 20 prices oscillating between 100-105
+        Series of 20 prices increasing from 100 to 119
     """
     return pd.Series([
-                         100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                         110, 111, 112, 113, 114, 115, 116, 117, 118, 119
-                     ])
+        100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+        110, 111, 112, 113, 114, 115, 116, 117, 118, 119
+    ])
 
 
 @pytest.fixture
@@ -40,10 +40,10 @@ def volatile_price_series():
         Series of 30 prices with high volatility
     """
     return pd.Series([
-                         100, 105, 98, 107, 95, 110, 92, 112, 90, 115,
-                         88, 118, 85, 120, 83, 122, 80, 125, 78, 128,
-                         75, 130, 73, 132, 70, 135, 68, 138, 65, 140
-                     ])
+        100, 105, 98, 107, 95, 110, 92, 112, 90, 115,
+        88, 118, 85, 120, 83, 122, 80, 125, 78, 128,
+        75, 130, 73, 132, 70, 135, 68, 138, 65, 140
+    ])
 
 
 @pytest.fixture
@@ -86,9 +86,9 @@ def oscillating_price_series():
         Series of 20 prices oscillating between 100-101
     """
     return pd.Series([
-                         100, 101, 100, 101, 100, 101, 100, 101, 100, 101,
-                         100, 101, 100, 101, 100, 101, 100, 101, 100, 101
-                     ])
+        100, 101, 100, 101, 100, 101, 100, 101, 100, 101,
+        100, 101, 100, 101, 100, 101, 100, 101, 100, 101
+    ])
 
 
 @pytest.fixture
@@ -161,9 +161,9 @@ def low_price_level_series():
         Series of 20 prices at low level
     """
     return pd.Series([
-                         10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                         20, 21, 22, 23, 24, 25, 26, 27, 28, 29
-                     ])
+        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+    ])
 
 
 @pytest.fixture
@@ -178,9 +178,9 @@ def high_price_level_series():
         Series of 20 prices at high level
     """
     return pd.Series([
-                         100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
-                         200, 210, 220, 230, 240, 250, 260, 270, 280, 290
-                     ])
+        100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+        200, 210, 220, 230, 240, 250, 260, 270, 280, 290
+    ])
 
 
 # ==================== Mixed Pattern Fixtures ====================
@@ -191,10 +191,10 @@ def uptrend_then_downtrend_series():
     Price series with clear uptrend followed by downtrend.
 
     Useful for testing indicator transitions between trends.
-    Pattern: Rise from 100-120, then fall to 92
+    Pattern: Rise from 100 to 124 (25 bars), then fall back to 101 (25 bars)
 
     Returns:
-        Series of 25 prices with trend reversal
+        Series of 50 prices with trend reversal (25 up + 25 down)
     """
     rising = list(range(100, 125))  # 25 bars rising
     falling = list(range(125, 100, -1))  # 25 bars falling
@@ -286,8 +286,10 @@ def bb_breakout_price_series():
     downward_spike = [100, 96, 91, 86, 82]
 
     # Return to stable (20 bars)
-    stable_end = [86, 90, 94, 97, 99, 100, 100, 101, 100, 100,
-                  100, 101, 100, 101, 100, 100, 101, 100, 100, 100]
+    stable_end = [
+        86, 90, 94, 97, 99, 100, 100, 101, 100, 100,
+        100, 101, 100, 101, 100, 100, 101, 100, 100, 100
+    ]
 
     return pd.Series(stable_start + upward_spike + return_to_mean +
                      downward_spike + stable_end)

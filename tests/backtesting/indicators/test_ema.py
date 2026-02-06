@@ -311,12 +311,7 @@ class TestEMACaching:
         ema_cl = _calculate_ema(cl_15m_data['close'], period=9)
 
         # Use utility to validate different data behavior
-        # Use utility to validate different data behavior
-        assert_cache_distinguishes_different_data(
-            ema_zs, ema_cl,
-            len(zs_1h_data), len(cl_15m_data),
-            'EMA'
-        )
+        assert_cache_distinguishes_different_data(ema_zs, ema_cl, 'EMA')
 
 
 class TestEMAEdgeCases:

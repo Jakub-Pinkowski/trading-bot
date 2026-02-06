@@ -597,11 +597,7 @@ class TestIchimokuCaching:
         )
 
         # Use utility to validate different data behavior
-        assert_cache_distinguishes_different_data(
-            result_zs, result_cl,
-            len(zs_1h_data), len(cl_15m_data),
-            'Ichimoku'
-        )
+        assert_cache_distinguishes_different_data(result_zs, result_cl, 'Ichimoku')
 
 
 class TestIchimokuEdgeCases:
@@ -649,7 +645,6 @@ class TestIchimokuEdgeCases:
                 # Should equal the flat price level
                 assert abs(valid_values.iloc[0] - 100.0) < 0.01, \
                     f"{component_name} should equal flat price level"
-
 
     def test_ichimoku_with_empty_series(self, empty_price_series):
         """Test Ichimoku with empty input series."""
