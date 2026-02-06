@@ -359,12 +359,6 @@ class TestBollingerBandsPracticalUsage:
         assert breaks_above.sum() > 0, "Should detect upward breakouts"
         assert breaks_below.sum() > 0, "Should detect downward breakouts"
 
-        # Verify breakouts are in expected locations (spike regions)
-        # Upward spike around indices 30-34, downward spike around 45-49
-        valid_idx = bb['upper_band'].notna()
-        assert breaks_above[valid_idx].any(), "Should find upper band breaks"
-        assert breaks_below[valid_idx].any(), "Should find lower band breaks"
-
     def test_bollinger_bands_mean_reversion_signals(self, zs_1h_data):
         """
         Test BB can identify mean reversion opportunities.
