@@ -16,6 +16,40 @@ from app.backtesting.strategies import (
 )
 
 
+__all__ = [
+    'bollinger_strategy_default',
+    'bollinger_strategy_conservative',
+    'bollinger_strategy_aggressive',
+    'bollinger_strategy_with_rollover',
+    'bollinger_strategy_with_trailing_stop',
+    'ema_strategy_default',
+    'ema_strategy_conservative',
+    'ema_strategy_aggressive',
+    'ema_strategy_with_rollover',
+    'ema_strategy_with_trailing_stop',
+    'ichimoku_strategy_default',
+    'ichimoku_strategy_conservative',
+    'ichimoku_strategy_aggressive',
+    'ichimoku_strategy_with_rollover',
+    'ichimoku_strategy_with_trailing_stop',
+    'macd_strategy_default',
+    'macd_strategy_conservative',
+    'macd_strategy_aggressive',
+    'macd_strategy_with_rollover',
+    'macd_strategy_with_trailing_stop',
+    'rsi_strategy_default',
+    'rsi_strategy_conservative',
+    'rsi_strategy_aggressive',
+    'rsi_strategy_with_rollover',
+    'rsi_strategy_with_trailing_stop',
+    'rsi_strategy_fast',
+    'rsi_strategy_slow',
+    'all_strategies_default',
+    'all_strategies_conservative',
+    'all_strategies_aggressive',
+]
+
+
 # ==================== Bollinger Bands Strategy Fixtures ====================
 
 @pytest.fixture
