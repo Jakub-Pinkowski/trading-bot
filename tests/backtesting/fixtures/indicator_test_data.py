@@ -254,3 +254,40 @@ def extreme_periods():
         Dict with 'short' and 'long' period values
     """
     return {'short': 3, 'long': 100}
+
+
+# ==================== Bollinger Bands Specific Fixtures ====================
+
+@pytest.fixture
+def bb_breakout_price_series():
+    """
+    Controlled price series for testing BB breakout detection.
+
+    Pattern designed to produce predictable breakouts on both sides:
+    - Starts with stable prices around 100 (builds 20-period baseline)
+    - Includes sharp upward spike (breaks upper band)
+    - Returns to mean
+    - Includes sharp downward spike (breaks lower band)
+    - Returns to stable range
+
+    Returns:
+        Series of 80 prices with controlled breakout patterns
+    """
+    # Start with 30 stable bars around 100 to establish baseline (period=20)
+    stable_start = [100 + (i % 3) * 0.5 for i in range(30)]
+
+    # Sharp upward spike (5 bars) - should break upper band
+    upward_spike = [100, 103, 107, 112, 115]
+
+    # Return to mean (10 bars)
+    return_to_mean = [112, 108, 104, 102, 101, 100, 100, 99, 100, 100]
+
+    # Sharp downward spike (5 bars) - should break lower band
+    downward_spike = [100, 96, 91, 86, 82]
+
+    # Return to stable (20 bars)
+    stable_end = [86, 90, 94, 97, 99, 100, 100, 101, 100, 100,
+                  100, 101, 100, 101, 100, 100, 101, 100, 100, 100]
+
+    return pd.Series(stable_start + upward_spike + return_to_mean +
+                     downward_spike + stable_end)
