@@ -273,18 +273,20 @@ class TestEMACaching:
 
         Tests that cache stores and retrieves EMA correctly.
         """
-        # Reset stats
+        # Clear cache to ensure test isolation and prevent false positives
+        indicator_cache.cache_data.clear()
         indicator_cache.reset_stats()
 
-        # First calculation
+        # First calculation (should miss due to empty cache)
         ema_1 = _calculate_ema(zs_1h_data['close'], period=9)
-        first_misses = indicator_cache.misses
+        assert indicator_cache.misses == 1, "First calculation should cause cache miss"
 
         # Second calculation (should hit cache)
         ema_2 = _calculate_ema(zs_1h_data['close'], period=9)
 
-        # Verify cache was hit
-        assert indicator_cache.misses == first_misses, "Second calculation should hit cache"
+        # Verify cache was hit (misses remained at 1)
+        assert indicator_cache.misses == 1, "Second calculation should not cause cache miss"
+        assert indicator_cache.hits == 1, "Second calculation should cause cache hit"
 
         # Verify identical results
         np.testing.assert_array_equal(ema_1.values, ema_2.values, "Cached EMA should match exactly")
