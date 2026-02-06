@@ -10,7 +10,6 @@ Tests RSI strategy implementation with real historical data:
 
 Uses real market data (ZS, CL) from data/historical_data/.
 """
-import pandas as pd
 import pytest
 
 from app.backtesting.strategies import RSIStrategy
@@ -19,6 +18,21 @@ from tests.backtesting.helpers.assertions import (
     assert_valid_signals,
     assert_valid_trades,
     assert_no_overlapping_trades
+)
+from tests.backtesting.strategies.strategy_test_utils import (
+    assert_strategy_basic_attributes,
+    assert_trailing_stop_configured,
+    assert_rollover_configured,
+    assert_strategy_name_contains,
+    assert_trades_have_both_directions,
+    assert_similar_trade_count,
+    assert_signals_convert_to_trades,
+    assert_both_signal_types_present,
+    assert_faster_params_generate_more_trades,
+    create_small_ohlcv_dataframe,
+    create_constant_price_dataframe,
+    create_gapped_dataframe,
+    get_common_backtest_configs,
 )
 
 
@@ -48,9 +62,7 @@ class TestRSIStrategyInitialization:
         assert strategy.rsi_period == period
         assert strategy.lower_threshold == lower
         assert strategy.upper_threshold == upper
-        assert strategy.rollover is False
-        assert strategy.trailing is None
-        assert strategy.position_manager.slippage_ticks == 1
+        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
 
     def test_initialization_with_trailing_stop(self):
         """Test RSI strategy with trailing stop enabled."""
@@ -64,8 +76,7 @@ class TestRSIStrategyInitialization:
             symbol='ZS'
         )
 
-        assert strategy.trailing == 2.0
-        assert strategy.trailing_stop_manager is not None
+        assert_trailing_stop_configured(strategy, 2.0)
 
     def test_initialization_with_rollover_enabled(self):
         """Test RSI strategy with contract rollover handling."""
@@ -79,8 +90,7 @@ class TestRSIStrategyInitialization:
             symbol='ZS'
         )
 
-        assert strategy.rollover is True
-        assert strategy.switch_handler is not None
+        assert_rollover_configured(strategy)
 
     def test_format_name_generates_correct_string(self):
         """Test strategy name formatting for identification."""
@@ -93,11 +103,7 @@ class TestRSIStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert 'RSI' in name
-        assert 'period=14' in name
-        assert 'lower=30' in name
-        assert 'upper=70' in name
-        assert 'rollover=False' in name
+        assert_strategy_name_contains(name, 'RSI', 'period=14', 'lower=30', 'upper=70', 'rollover=False')
         assert 'slippage_ticks=1' in name
 
 
@@ -344,11 +350,7 @@ class TestRSIStrategySignals:
         df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        long_signals = (df['signal'] == 1).sum()
-        short_signals = (df['signal'] == -1).sum()
-
-        assert long_signals > 0, "Expected long signals"
-        assert short_signals > 0, "Expected short signals"
+        assert_both_signal_types_present(df)
 
     def test_no_signals_generated_during_rsi_warmup_period(self, zs_1h_data):
         """Test that no signals are generated while RSI is NaN (warmup period)."""
@@ -378,11 +380,7 @@ class TestRSIStrategySignals:
 class TestRSIStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    @pytest.mark.parametrize("symbol,interval,trailing,description", [
-        ('ZS', '1h', None, "standard_backtest"),
-        ('ZS', '1h', 2.0, "with_trailing_stop"),
-        ('CL', '15m', None, "different_timeframe"),
-    ])
+    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
     def test_backtest_execution_variants(
         self, symbol, interval, trailing, description,
         load_real_data, contract_switch_dates
@@ -429,11 +427,7 @@ class TestRSIStrategyExecution:
 
         trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        long_trades = [t for t in trades if t['side'] == 'long']
-        short_trades = [t for t in trades if t['side'] == 'short']
-
-        assert len(long_trades) > 0, "Expected long trades"
-        assert len(short_trades) > 0, "Expected short trades"
+        assert_trades_have_both_directions(trades)
 
     def test_trades_do_not_overlap(self, zs_1h_data, contract_switch_dates):
         """Test that trades don't overlap (proper position management)."""
@@ -476,13 +470,7 @@ class TestRSIStrategyExecution:
         trades_no_slip = strategy_no_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_with_slip = strategy_with_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Both should generate trades
-        assert len(trades_no_slip) > 0
-        assert len(trades_with_slip) > 0
-
-        # Note: Slippage affects execution prices, so trade details may differ
-        # but trade count should be similar
-        assert abs(len(trades_no_slip) - len(trades_with_slip)) < 5
+        assert_similar_trade_count(trades_no_slip, trades_with_slip, max_difference=5)
 
     def test_backtest_with_different_rsi_periods(self, zs_1h_data, contract_switch_dates):
         """Test that different RSI periods produce different trade patterns."""
@@ -509,15 +497,10 @@ class TestRSIStrategyExecution:
         trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Both should generate trades
-        assert len(trades_fast) > 0
-        assert len(trades_slow) > 0
-
-        # Fast RSI typically generates more signals
-        assert len(trades_fast) >= len(trades_slow)
+        assert_faster_params_generate_more_trades(trades_fast, trades_slow, "RSI period")
 
     def test_signals_convert_to_actual_trades(self, zs_1h_data, contract_switch_dates):
-        """Test that generated signals result in actual trades (signal-to-trade conversion)."""
+        """Test that generated signals result in actual trades."""
         strategy = RSIStrategy(
             rsi_period=14,
             lower_threshold=30,
@@ -531,19 +514,11 @@ class TestRSIStrategyExecution:
         # Get signals
         df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
-        signal_count = (df['signal'] != 0).sum()
 
         # Get trades
         trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Should have trades if we have signals
-        if signal_count > 0:
-            assert len(trades) > 0, "Signals should result in actual trades"
-
-            # Number of trades should be reasonable relative to signal count
-            # (each trade needs entry + exit, some signals might not complete)
-            assert len(trades) <= signal_count, \
-                f"Cannot have more trades ({len(trades)}) than signals ({signal_count})"
+        assert_signals_convert_to_trades(df, trades)
 
 
 # ==================== Test Edge Cases ====================
@@ -563,14 +538,8 @@ class TestRSIStrategyEdgeCases:
             symbol='ZS'
         )
 
-        # Create small dataset (less than RSI period)
-        small_data = pd.DataFrame({
-            'open': [100, 101, 102],
-            'high': [101, 102, 103],
-            'low': [99, 100, 101],
-            'close': [100.5, 101.5, 102.5],
-            'volume': [1000, 1100, 1200]
-        }, index=pd.date_range('2024-01-01', periods=3, freq='1h'))
+        # Create small dataset using utility
+        small_data = create_small_ohlcv_dataframe(bars=3, base_price=100)
 
         df = strategy.add_indicators(small_data.copy())
 
@@ -589,14 +558,8 @@ class TestRSIStrategyEdgeCases:
             symbol='ZS'
         )
 
-        # Create constant price data
-        constant_data = pd.DataFrame({
-            'open': [100] * 50,
-            'high': [100] * 50,
-            'low': [100] * 50,
-            'close': [100] * 50,
-            'volume': [1000] * 50
-        }, index=pd.date_range('2024-01-01', periods=50, freq='1h'))
+        # Create constant price data using utility
+        constant_data = create_constant_price_dataframe(bars=50, price=100)
 
         df = strategy.add_indicators(constant_data.copy())
         df = strategy.generate_signals(df)
@@ -662,10 +625,8 @@ class TestRSIStrategyEdgeCases:
             symbol='ZS'
         )
 
-        # Create data with gap
-        data_with_gap = zs_1h_data.iloc[:100].copy()
-        data_after_gap = zs_1h_data.iloc[150:].copy()
-        gapped_data = pd.concat([data_with_gap, data_after_gap])
+        # Create data with gap using utility
+        gapped_data = create_gapped_dataframe(zs_1h_data, gap_start=100, gap_end=150)
 
         df = strategy.add_indicators(gapped_data.copy())
         df = strategy.generate_signals(df)
