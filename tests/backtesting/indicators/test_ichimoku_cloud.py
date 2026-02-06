@@ -15,6 +15,11 @@ from app.backtesting.indicators import calculate_ichimoku_cloud
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+)
 
 
 # ==================== Helper Functions ====================
@@ -501,9 +506,8 @@ class TestIchimokuCaching:
         Tests that cache stores and retrieves Ichimoku correctly without
         any data corruption or loss of precision.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         result_1 = _calculate_ichimoku(
@@ -511,7 +515,7 @@ class TestIchimokuCaching:
             zs_1h_data['low'],
             zs_1h_data['close']
         )
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         result_2 = _calculate_ichimoku(
@@ -520,17 +524,9 @@ class TestIchimokuCaching:
             zs_1h_data['close']
         )
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, "Second calculation should cause cache hit"
-
-        # Verify identical results for all components
-        for component_name in result_1.keys():
-            np.testing.assert_array_equal(
-                result_1[component_name].values,
-                result_2[component_name].values,
-                err_msg=f"Cached {component_name} should match exactly"
-            )
+        # Verify cache was hit and results match
+        assert_cache_was_hit(misses_after_first)
+        assert_cache_hit_on_second_call(result_1, result_2, 'dict')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
         """

@@ -12,6 +12,13 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_bollinger_bands
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_indicator_varies
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+    assert_indicator_structure,
+    assert_band_relationships,
+)
 
 
 # ==================== Helper Function ====================
@@ -35,21 +42,25 @@ class TestBollingerBandsBasicLogic:
         """Bollinger Bands should return DataFrame with three band columns."""
         bb = _calculate_bollinger_bands(medium_price_series, period=20, num_std=2.0)
 
-        assert isinstance(bb, pd.DataFrame), "Bollinger Bands must return DataFrame"
-        assert len(bb) == len(medium_price_series), "BB length must equal input length"
-
-        expected_columns = ['middle_band', 'upper_band', 'lower_band']
-        assert list(bb.columns) == expected_columns, f"Expected columns {expected_columns}"
+        assert_indicator_structure(
+            bb,
+            len(medium_price_series),
+            'dataframe',
+            ['middle_band', 'upper_band', 'lower_band'],
+            'Bollinger Bands'
+        )
 
     def test_upper_greater_than_middle_greater_than_lower(self, volatile_price_series):
         """Upper band must always be >= middle band >= lower band."""
         bb = _calculate_bollinger_bands(volatile_price_series, period=20, num_std=2.0)
 
-        valid_bb = bb.dropna()
-        assert (valid_bb['upper_band'] >= valid_bb['middle_band']).all(), \
-            "Upper band must be >= middle band"
-        assert (valid_bb['middle_band'] >= valid_bb['lower_band']).all(), \
-            "Middle band must be >= lower band"
+        assert_band_relationships(
+            bb,
+            'upper_band',
+            'middle_band',
+            'lower_band',
+            'Bollinger Bands'
+        )
 
     def test_middle_band_is_sma(self, rising_price_series):
         """Middle band should equal simple moving average."""
@@ -204,31 +215,21 @@ class TestBollingerBandsCaching:
         Tests that cache stores and retrieves BB correctly without
         any data corruption or loss of precision.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         bb_1 = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         bb_2 = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, \
-            "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, \
-            "Second calculation should cause cache hit"
+        # Verify cache was hit
+        assert_cache_was_hit(misses_after_first)
 
         # Verify identical results
-        assert len(bb_1) == len(bb_2), "BB DataFrames should have same length"
-        for col in ['middle_band', 'upper_band', 'lower_band']:
-            np.testing.assert_array_equal(
-                bb_1[col].values,
-                bb_2[col].values,
-                err_msg=f"Cached BB {col} should match exactly"
-            )
+        assert_cache_hit_on_second_call(bb_1, bb_2, 'dataframe')
 
 
 class TestBollingerBandsEdgeCases:

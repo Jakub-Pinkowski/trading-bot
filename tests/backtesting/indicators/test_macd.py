@@ -13,6 +13,12 @@ from app.backtesting.indicators import calculate_macd
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+    assert_longer_period_smoother,
+)
 
 
 # ==================== Helper Function ====================
@@ -225,7 +231,6 @@ class TestMACDCalculationWithRealData:
         assert len(valid_long) > 0
 
         # Longer period should be smoother (less volatile changes)
-        # Compare volatility of the histogram changes, not absolute values
         # Align the series to compare the same time periods
         common_idx = valid_short.index.intersection(valid_long.index)
         assert len(common_idx) > 100, "Need sufficient overlap to compare volatility meaningfully"
@@ -233,11 +238,9 @@ class TestMACDCalculationWithRealData:
         short_aligned = valid_short.loc[common_idx]
         long_aligned = valid_long.loc[common_idx]
 
-        # Compare the volatility of changes
-        short_changes = short_aligned.diff().dropna()
-        long_changes = long_aligned.diff().dropna()
+        # Use utility to compare smoothness
+        assert_longer_period_smoother(short_aligned, long_aligned, 'MACD Histogram')
 
-        assert short_changes.std() > long_changes.std(), "Short period MACD should be more volatile"
 
     def test_macd_values_match_expected_calculation(self, zs_1h_data):
         """
@@ -364,23 +367,19 @@ class TestMACDCaching:
         Tests that cache stores and retrieves MACD correctly without
         any data corruption or loss of precision.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         macd_1 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         macd_2 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, "Second calculation should cause cache hit"
-
-        # Verify identical results
-        pd.testing.assert_frame_equal(macd_1, macd_2, "Cached MACD should match exactly")
+        # Verify cache was hit and results match
+        assert_cache_was_hit(misses_after_first)
+        assert_cache_hit_on_second_call(macd_1, macd_2, 'dataframe')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
         """

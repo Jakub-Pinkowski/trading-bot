@@ -13,6 +13,11 @@ from app.backtesting.indicators import calculate_atr
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike, inject_gap
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+)
 
 
 # ==================== Helper Functions ====================
@@ -386,24 +391,19 @@ class TestATRCaching:
         Tests that cache stores and retrieves ATR correctly without
         any data corruption or loss of precision.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         atr_1 = _calculate_atr(zs_1h_data, period=14)
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         atr_2 = _calculate_atr(zs_1h_data, period=14)
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, "Second calculation should cause cache hit"
-
-        # Verify identical results (use np.array_equal for NaN-safe comparison)
-        assert len(atr_1) == len(atr_2), "ATR series should have same length"
-        np.testing.assert_array_equal(atr_1.values, atr_2.values, "Cached ATR should match exactly")
+        # Verify cache was hit and results match
+        assert_cache_was_hit(misses_after_first)
+        assert_cache_hit_on_second_call(atr_1, atr_2, 'series')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
         """

@@ -13,6 +13,13 @@ from app.backtesting.indicators import calculate_rsi
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+    assert_indicator_structure,
+    assert_values_in_range,
+)
 
 
 # ==================== Helper Function ====================
@@ -36,16 +43,13 @@ class TestRSIBasicLogic:
         """RSI should return a series with same length as input."""
         rsi = _calculate_rsi(short_price_series, period=14)
 
-        assert len(rsi) == len(short_price_series), "RSI length must equal input length"
-        assert isinstance(rsi, pd.Series), "RSI must return pandas Series"
+        assert_indicator_structure(rsi, len(short_price_series), 'series', indicator_name='RSI')
 
     def test_rsi_stays_within_bounds(self, volatile_price_series):
         """RSI must always be between 0 and 100."""
         rsi = _calculate_rsi(volatile_price_series, period=10)
 
-        valid_rsi = rsi.dropna()
-        assert (valid_rsi >= 0).all(), "RSI should never be below 0"
-        assert (valid_rsi <= 100).all(), "RSI should never be above 100"
+        assert_values_in_range(rsi, 0, 100, indicator_name='RSI')
 
     def test_rising_prices_give_high_rsi(self, rising_price_series):
         """Continuously rising prices should produce high RSI (>70)."""
@@ -305,24 +309,19 @@ class TestRSICaching:
         Tests that cache stores and retrieves RSI correctly without
         any data corruption or loss of precision.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         rsi_1 = _calculate_rsi(zs_1h_data['close'], period=14)
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         rsi_2 = _calculate_rsi(zs_1h_data['close'], period=14)
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, "Second calculation should cause cache hit"
-
-        # Verify identical results (use np.array_equal for NaN-safe comparison)
-        assert len(rsi_1) == len(rsi_2), "RSI series should have same length"
-        np.testing.assert_array_equal(rsi_1.values, rsi_2.values, "Cached RSI should match exactly")
+        # Verify cache was hit and results match
+        assert_cache_was_hit(misses_after_first)
+        assert_cache_hit_on_second_call(rsi_1, rsi_2, 'series')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
         """

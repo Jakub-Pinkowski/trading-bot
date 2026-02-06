@@ -13,6 +13,12 @@ from app.backtesting.indicators import calculate_ema
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike
+from tests.backtesting.helpers.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_was_hit,
+    assert_cache_hit_on_second_call,
+    assert_longer_period_smoother,
+)
 
 
 # ==================== Helper Function ====================
@@ -171,11 +177,7 @@ class TestEMACalculationWithRealData:
         assert_valid_indicator(ema_long, 'EMA(200)', min_val=0)
 
         # Longer period should be smoother (less volatile changes)
-        # Compare the volatility of the EMA changes, not absolute values
-        ema_short_changes = ema_short.diff().dropna()
-        ema_long_changes = ema_long.diff().dropna()
-
-        assert ema_short_changes.std() > ema_long_changes.std(), "Short period EMA should be more volatile"
+        assert_longer_period_smoother(ema_short, ema_long, 'EMA')
 
     def test_ema_values_match_expected_calculation(self, zs_1h_data):
         """
@@ -273,23 +275,19 @@ class TestEMACaching:
 
         Tests that cache stores and retrieves EMA correctly.
         """
-        # Clear cache to ensure test isolation and prevent false positives
-        indicator_cache.cache_data.clear()
-        indicator_cache.reset_stats()
+        # Setup: Clear cache and reset stats
+        setup_cache_test()
 
         # First calculation (should miss due to empty cache)
         ema_1 = _calculate_ema(zs_1h_data['close'], period=9)
-        first_misses = indicator_cache.misses
+        misses_after_first = indicator_cache.misses
 
         # Second calculation (should hit cache)
         ema_2 = _calculate_ema(zs_1h_data['close'], period=9)
 
-        # Verify cache was hit (misses didn't increase, hits increased)
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
-        assert indicator_cache.hits > 0, "Second calculation should cause cache hit"
-
-        # Verify identical results
-        np.testing.assert_array_equal(ema_1.values, ema_2.values, "Cached EMA should match exactly")
+        # Verify cache was hit and results match
+        assert_cache_was_hit(misses_after_first)
+        assert_cache_hit_on_second_call(ema_1, ema_2, 'series')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
         """
