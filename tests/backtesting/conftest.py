@@ -2,6 +2,7 @@
 Fixtures for backtesting tests.
 
 Provides realistic test data that matches an actual historical data format.
+All backtesting fixtures are registered in tests/conftest.py via pytest_plugins.
 """
 import pandas as pd
 import pytest

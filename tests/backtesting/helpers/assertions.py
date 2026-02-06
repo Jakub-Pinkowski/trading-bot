@@ -271,8 +271,14 @@ def assert_valid_trades(trades_list):
             f"Trade {i} has invalid exit_price: {trade['exit_price']}"
 
         # Check times are valid and ordered
-        assert trade['entry_time'] < trade['exit_time'], \
-            f"Trade {i} exit_time must be after entry_time"
+        # Note: Contract switch trades may have entry_time == exit_time
+        # (position closed at switch point on same bar)
+        if trade.get('switch', False):
+            assert trade['entry_time'] <= trade['exit_time'], \
+                f"Trade {i} exit_time must be >= entry_time (switch trade)"
+        else:
+            assert trade['entry_time'] < trade['exit_time'], \
+                f"Trade {i} exit_time must be after entry_time"
 
 
 def assert_no_overlapping_trades(trades_list):

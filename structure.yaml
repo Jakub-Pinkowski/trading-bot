@@ -168,6 +168,7 @@ trading-bot/
 
 
 # Tests
+# TODO [HIGH]: Consolidate conftest.py files into a single file after all the rewrites
 # TODO [HIGH]: Split tests according to the new backtesting module structure
 # TODO [HIGH]: Verify all tests in a separate file to look for any tests testing themselves rather than testing the app's logic'
 # TODO [HIGH]: Create some multi-use fixtures instead of repeating logic

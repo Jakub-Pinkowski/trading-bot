@@ -5,6 +5,17 @@ from flask import Flask
 
 from app.routes.webhook import webhook_blueprint
 
+# ==================== Backtesting Fixtures Plugin Registration ====================
+# Import all backtesting fixtures for availability across all test modules
+pytest_plugins = [
+    'tests.backtesting.fixtures.data_fixtures',
+    'tests.backtesting.fixtures.indicator_test_data',
+    'tests.backtesting.fixtures.strategy_fixtures',
+    'tests.backtesting.fixtures.mock_fixtures',
+]
+
+
+# ==================== IBKR Service Fixtures ====================
 
 # IBKR Service fixtures
 @pytest.fixture
