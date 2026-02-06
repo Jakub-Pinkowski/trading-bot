@@ -353,7 +353,6 @@ class TestMACDCaching:
         any data corruption or loss of precision.
         """
         indicator_cache.reset_stats()
-        initial_misses = indicator_cache.misses
 
         # First calculation
         macd_1 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)

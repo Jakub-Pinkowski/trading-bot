@@ -5,11 +5,15 @@ This file makes fixtures from data_fixtures.py, strategy_fixtures.py,
 mock_fixtures.py, and indicator_test_data.py available to pytest.
 """
 
-# Import all fixtures to make them discoverable by pytest
-from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
-from tests.backtesting.fixtures.indicator_test_data import *  # noqa: F401, F403
-from tests.backtesting.fixtures.mock_fixtures import *  # noqa: F401, F403
-from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
+# ==================== Fixture Modules Registration ====================
+
+# Register fixture modules as pytest plugins instead of using wildcard imports
+pytest_plugins = [
+    "tests.backtesting.fixtures.data_fixtures",
+    "tests.backtesting.fixtures.indicator_test_data",
+    "tests.backtesting.fixtures.mock_fixtures",
+    "tests.backtesting.fixtures.strategy_fixtures",
+]
 
 
 # ==================== pytest Configuration ====================

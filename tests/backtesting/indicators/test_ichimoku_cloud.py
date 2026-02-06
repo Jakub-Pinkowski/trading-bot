@@ -165,10 +165,7 @@ class TestIchimokuBasicLogic:
 
     def test_tenkan_kijun_relationship_in_uptrend(self, rising_price_series):
         """In strong uptrend, Tenkan-sen should be above Kijun-sen."""
-        # Use longer series
-        long_rising = pd.Series(range(100, 180))  # 80 bars uptrend
-        high, low, close = _price_series_to_hlc(long_rising)
-        # Create strong uptrend
+        # Create strong uptrend with longer series
         high = pd.Series(range(100, 200))  # 100 consecutive increases
         low = pd.Series(range(90, 190))
         close = pd.Series(range(95, 195))
@@ -500,8 +497,6 @@ class TestIchimokuCaching:
         any data corruption or loss of precision.
         """
         indicator_cache.reset_stats()
-        initial_hits = indicator_cache.hits
-        initial_misses = indicator_cache.misses
 
         # First calculation
         result_1 = _calculate_ichimoku(
@@ -903,7 +898,6 @@ class TestIchimokuPracticalUsage:
             # Check if price interacts with cloud
             price_above_cloud = close > cloud_top
             price_below_cloud = close < cloud_bottom
-            price_in_cloud = (~price_above_cloud) & (~price_below_cloud)
 
             # Price should be in various positions relative to cloud
             assert price_above_cloud.sum() > 0, "Should have periods above cloud"
@@ -965,7 +959,6 @@ class TestIchimokuPracticalUsage:
         # Classify price position
         above_cloud = close > cloud_top
         below_cloud = close < cloud_bottom
-        in_cloud = (~above_cloud) & (~below_cloud)
 
         # Real market data should show all three scenarios
         assert above_cloud.sum() > 0, "Should have bullish periods (above cloud)"

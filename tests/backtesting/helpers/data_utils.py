@@ -278,8 +278,11 @@ def find_rsi_oversold_period(df, rsi_period=14, oversold_threshold=30, context_b
         assert strategy.has_long_entry()
     """
     from app.backtesting.indicators import calculate_rsi
+    from app.utils.backtesting_utils.indicators_utils import hash_series
 
-    rsi = calculate_rsi(df['close'], period=rsi_period)
+    # Compute hash of close prices for RSI calculation
+    prices_hash = hash_series(df['close'])
+    rsi = calculate_rsi(df['close'], period=rsi_period, prices_hash=prices_hash)
     oversold_mask = rsi < oversold_threshold
 
     if not oversold_mask.any():
@@ -315,8 +318,11 @@ def find_rsi_overbought_period(df, rsi_period=14, overbought_threshold=70, conte
         assert strategy.has_short_entry()
     """
     from app.backtesting.indicators import calculate_rsi
+    from app.utils.backtesting_utils.indicators_utils import hash_series
 
-    rsi = calculate_rsi(df['close'], period=rsi_period)
+    # Compute hash for close prices series for RSI calculation
+    prices_hash = hash_series(df['close'])
+    rsi = calculate_rsi(df['close'], period=rsi_period, prices_hash=prices_hash)
     overbought_mask = rsi > overbought_threshold
 
     if not overbought_mask.any():
@@ -354,9 +360,13 @@ def find_ema_crossover_period(df, fast_period=9, slow_period=21, direction='bull
     """
     from app.backtesting.indicators import calculate_ema
     from app.backtesting.strategies.base.base_strategy import detect_crossover
+    from app.utils.backtesting_utils.indicators_utils import hash_series
 
-    fast_ema = calculate_ema(df['close'], period=fast_period)
-    slow_ema = calculate_ema(df['close'], period=slow_period)
+    # Compute hash of close prices for EMA calculation
+    prices_hash = hash_series(df['close'])
+
+    fast_ema = calculate_ema(df['close'], period=fast_period, prices_hash=prices_hash)
+    slow_ema = calculate_ema(df['close'], period=slow_period, prices_hash=prices_hash)
 
     if direction == 'bullish':
         crossovers = detect_crossover(fast_ema, slow_ema, 'above')

@@ -206,8 +206,6 @@ class TestBollingerBandsCaching:
         """
         # Reset stats to track this test's cache behavior
         indicator_cache.reset_stats()
-        initial_hits = indicator_cache.hits
-        initial_misses = indicator_cache.misses
 
         # First calculation (may hit or miss depending on previous tests)
         bb_1 = _calculate_bollinger_bands(zs_1h_data['close'], period=20, num_std=2.0)
