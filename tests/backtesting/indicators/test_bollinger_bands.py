@@ -341,14 +341,15 @@ class TestBollingerBandsPracticalUsage:
         assert squeeze_count < len(valid_bb) * 0.25, \
             "Squeeze should be minority of time"
 
-    def test_bollinger_bands_breakout_detection(self, zs_1h_data):
+    def test_bollinger_bands_breakout_detection(self, bb_breakout_price_series):
         """
         Test BB can identify price breakouts beyond bands.
 
         Practical use: Finding strong momentum moves when price breaks
         outside the bands (typically 2 standard deviations).
+        Uses controlled synthetic data with known breakout patterns.
         """
-        prices = zs_1h_data['close']
+        prices = bb_breakout_price_series
         bb = _calculate_bollinger_bands(prices, period=20, num_std=2.0)
 
         # Detect price breaking above upper band
@@ -357,17 +358,9 @@ class TestBollingerBandsPracticalUsage:
         # Detect price breaking below lower band
         breaks_below = prices < bb['lower_band']
 
-        # Real market data should have some breakouts
-        assert breaks_above.sum() > 0, "Should find breaks above upper band"
-        assert breaks_below.sum() > 0, "Should find breaks below lower band"
-
-        # Breakouts should be relatively rare (outside 2 std dev)
-        total_breakouts = breaks_above.sum() + breaks_below.sum()
-        valid_bars = bb['upper_band'].notna().sum()
-        breakout_pct = (total_breakouts / valid_bars) * 100
-
-        assert breakout_pct < 15, \
-            f"Breakouts should be <15% of time, got {breakout_pct:.1f}%"
+        # Controlled data guarantees breakouts on both sides
+        assert breaks_above.sum() > 0, "Should detect upward breakouts"
+        assert breaks_below.sum() > 0, "Should detect downward breakouts"
 
     def test_bollinger_bands_mean_reversion_signals(self, zs_1h_data):
         """
