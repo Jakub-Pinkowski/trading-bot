@@ -112,19 +112,9 @@ class TestRSIStrategyInitialization:
 class TestRSIStrategyIndicators:
     """Test indicator calculation within RSI strategy."""
 
-    def test_add_indicators_creates_rsi_column(self, zs_1h_data):
+    def test_add_indicators_creates_rsi_column(self, standard_rsi_strategy, zs_1h_data):
         """Test that add_indicators properly calculates RSI on real data."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
 
         # RSI column should be added
         assert 'rsi' in df.columns
@@ -202,90 +192,50 @@ class TestRSIStrategyIndicators:
 class TestRSIStrategySignals:
     """Test signal generation logic for RSI strategy."""
 
-    def test_generate_signals_creates_signal_column(self, zs_1h_data):
+    def test_generate_signals_creates_signal_column(self, standard_rsi_strategy, zs_1h_data):
         """Test that generate_signals creates signal column."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         assert 'signal' in df.columns
         assert_valid_signals(df)
 
-    def test_long_entry_signal_on_oversold_cross(self, zs_1h_data):
+    def test_long_entry_signal_on_oversold_cross(self, standard_rsi_strategy, zs_1h_data):
         """Test long signals occur when RSI crosses into oversold territory."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Find long signal bars
         long_signal_bars = df[df['signal'] == 1]
 
         # Long signals should occur when RSI is at or below lower threshold
         assert len(long_signal_bars) > 0, "Expected long signals on 2-year real data"
-        assert (long_signal_bars['rsi'] <= strategy.lower_threshold).all(), \
+        assert (long_signal_bars['rsi'] <= standard_rsi_strategy.lower_threshold).all(), \
             "Long signals should only occur at/below lower threshold"
 
-    def test_short_entry_signal_on_overbought_cross(self, zs_1h_data):
+    def test_short_entry_signal_on_overbought_cross(self, standard_rsi_strategy, zs_1h_data):
         """Test short signals occur when RSI crosses into overbought territory."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Find short signal bars
         short_signal_bars = df[df['signal'] == -1]
 
         # Short signals should occur when RSI is at or above upper threshold
         assert len(short_signal_bars) > 0, "Expected short signals on 2-year real data"
-        assert (short_signal_bars['rsi'] >= strategy.upper_threshold).all(), \
+        assert (short_signal_bars['rsi'] >= standard_rsi_strategy.upper_threshold).all(), \
             "Short signals should only occur at/above upper threshold"
 
-    def test_no_signal_when_rsi_in_neutral_zone(self, zs_1h_data):
+    def test_no_signal_when_rsi_in_neutral_zone(self, standard_rsi_strategy, zs_1h_data):
         """Test no signals generated when RSI stays in neutral zone without crossing."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Find bars where RSI is stable in neutral zone (not at thresholds)
         # These bars should have no signals
         stable_neutral = (
-                (df['rsi'] > strategy.lower_threshold + 5) &
-                (df['rsi'] < strategy.upper_threshold - 5)
+                (df['rsi'] > standard_rsi_strategy.lower_threshold + 5) &
+                (df['rsi'] < standard_rsi_strategy.upper_threshold - 5)
         )
 
         # In stable neutral zone, signals should be 0
@@ -335,37 +285,17 @@ class TestRSIStrategySignals:
         # Should have more signals than aggressive
         assert signal_count > 0, "Expected signals with conservative thresholds"
 
-    def test_both_long_and_short_signals_present(self, zs_1h_data):
+    def test_both_long_and_short_signals_present(self, standard_rsi_strategy, zs_1h_data):
         """Test that strategy generates both long and short signals."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         assert_both_signal_types_present(df)
 
-    def test_no_signals_generated_during_rsi_warmup_period(self, zs_1h_data):
+    def test_no_signals_generated_during_rsi_warmup_period(self, standard_rsi_strategy, zs_1h_data):
         """Test that no signals are generated while RSI is NaN (warmup period)."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # During RSI warmup (first ~14 bars), RSI is NaN and signals should be 0
         nan_rsi_bars = df[df['rsi'].isna()]
@@ -413,35 +343,15 @@ class TestRSIStrategyExecution:
         # Validate trade structure
         assert_valid_trades(trades)
 
-    def test_trades_have_both_long_and_short_positions(self, zs_1h_data, contract_switch_dates):
+    def test_trades_have_both_long_and_short_positions(self, standard_rsi_strategy, zs_1h_data, contract_switch_dates):
         """Test that backtest generates both long and short trades."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades = standard_rsi_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
         assert_trades_have_both_directions(trades)
 
-    def test_trades_do_not_overlap(self, zs_1h_data, contract_switch_dates):
+    def test_trades_do_not_overlap(self, standard_rsi_strategy, zs_1h_data, contract_switch_dates):
         """Test that trades don't overlap (proper position management)."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades = standard_rsi_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
         assert_no_overlapping_trades(trades)
 
@@ -499,24 +409,14 @@ class TestRSIStrategyExecution:
 
         assert_faster_params_generate_more_trades(trades_fast, trades_slow, "RSI period")
 
-    def test_signals_convert_to_actual_trades(self, zs_1h_data, contract_switch_dates):
+    def test_signals_convert_to_actual_trades(self, standard_rsi_strategy, zs_1h_data, contract_switch_dates):
         """Test that generated signals result in actual trades."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
         # Get signals
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Get trades
-        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades = standard_rsi_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
         assert_signals_convert_to_trades(df, trades)
 
@@ -526,43 +426,23 @@ class TestRSIStrategyExecution:
 class TestRSIStrategyEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_strategy_with_insufficient_data(self):
+    def test_strategy_with_insufficient_data(self, standard_rsi_strategy):
         """Test strategy behavior with insufficient data for RSI calculation."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
         # Create small dataset using utility
         small_data = create_small_ohlcv_dataframe(bars=3, base_price=100)
 
-        df = strategy.add_indicators(small_data.copy())
+        df = standard_rsi_strategy.add_indicators(small_data.copy())
 
         # RSI should be NaN for insufficient data
         assert df['rsi'].isna().all()
 
-    def test_strategy_with_constant_prices(self):
+    def test_strategy_with_constant_prices(self, standard_rsi_strategy):
         """Test strategy with constant prices (no volatility)."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
         # Create constant price data using utility
         constant_data = create_constant_price_dataframe(bars=50, price=100)
 
-        df = strategy.add_indicators(constant_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(constant_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # With constant prices, RSI should be around 50 (neutral)
         valid_rsi = df['rsi'].dropna()
@@ -572,39 +452,19 @@ class TestRSIStrategyEdgeCases:
         # Should not generate signals with constant prices
         assert (df['signal'] == 0).all()
 
-    def test_strategy_with_extreme_volatility(self, volatile_market_data):
+    def test_strategy_with_extreme_volatility(self, standard_rsi_strategy, volatile_market_data):
         """Test strategy handles extreme volatility."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(volatile_market_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(volatile_market_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Should still produce valid RSI and signals
         assert_valid_indicator(df['rsi'], 'RSI', min_val=0, max_val=100)
         assert_valid_signals(df)
 
-    def test_strategy_with_trending_market(self, trending_market_data):
+    def test_strategy_with_trending_market(self, standard_rsi_strategy, trending_market_data):
         """Test strategy in strong trending market."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(trending_market_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(trending_market_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # In trending market, RSI should show directional bias
         valid_rsi = df['rsi'].dropna()
@@ -613,23 +473,13 @@ class TestRSIStrategyEdgeCases:
         # Should still generate valid signals
         assert_valid_signals(df)
 
-    def test_strategy_handles_gaps_in_data(self, zs_1h_data):
+    def test_strategy_handles_gaps_in_data(self, standard_rsi_strategy, zs_1h_data):
         """Test strategy handles missing bars in data."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
         # Create data with gap using utility
         gapped_data = create_gapped_dataframe(zs_1h_data, gap_start=100, gap_end=150)
 
-        df = strategy.add_indicators(gapped_data.copy())
-        df = strategy.generate_signals(df)
+        df = standard_rsi_strategy.add_indicators(gapped_data.copy())
+        df = standard_rsi_strategy.generate_signals(df)
 
         # Should still calculate RSI and signals
         assert 'rsi' in df.columns

@@ -5,8 +5,78 @@ Provides realistic test data that matches actual historical data format.
 """
 import numpy as np
 import pandas as pd
+import pytest
+
+from app.backtesting.strategies import (
+    RSIStrategy,
+    EMACrossoverStrategy,
+    MACDStrategy,
+    IchimokuCloudStrategy
+)
 
 
+# ==================== Strategy Factory Fixtures ====================
+
+@pytest.fixture
+def standard_ema_strategy():
+    """Standard EMA crossover strategy with default parameters."""
+    return EMACrossoverStrategy(
+        short_ema_period=9,
+        long_ema_period=21,
+        rollover=False,
+        trailing=None,
+        slippage_ticks=1,
+        symbol='ZS'
+    )
+
+
+@pytest.fixture
+def standard_ichimoku_strategy():
+    """Standard Ichimoku Cloud strategy with default parameters."""
+    return IchimokuCloudStrategy(
+        tenkan_period=9,
+        kijun_period=26,
+        senkou_span_b_period=52,
+        displacement=26,
+        rollover=False,
+        trailing=None,
+        slippage_ticks=1,
+        symbol='ZS'
+    )
+
+
+@pytest.fixture
+def standard_macd_strategy():
+    """Standard MACD strategy with default parameters."""
+    return MACDStrategy(
+        fast_period=12,
+        slow_period=26,
+        signal_period=9,
+        rollover=False,
+        trailing=None,
+        slippage_ticks=1,
+        symbol='ZS'
+    )
+
+
+@pytest.fixture
+def standard_rsi_strategy():
+    """Standard RSI strategy with default parameters."""
+    return RSIStrategy(
+        rsi_period=14,
+        lower_threshold=30,
+        upper_threshold=70,
+        rollover=False,
+        trailing=None,
+        slippage_ticks=1,
+        symbol='ZS'
+    )
+
+
+# ==================== Test Data Generation ====================
+
+
+# OLD below this point
 def create_test_df(length=150, base_price=100.0, symbol='CME:ES2!', trend='neutral'):
     """
     Create test dataframe matching actual historical data format.
