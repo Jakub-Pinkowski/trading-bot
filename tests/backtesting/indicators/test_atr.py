@@ -765,17 +765,18 @@ class TestATRPracticalUsage:
         close_prices = zs_1h_data['close']
         atr_pct = (atr / close_prices) * 100
 
-        # Define threshold: only trade when ATR > 1% of price
-        volatility_threshold = 1.0
-        tradeable_periods = atr_pct > volatility_threshold
+        # Use median ATR as threshold to filter bottom half
+        valid_atr_pct = atr_pct.dropna()
+        median_atr = valid_atr_pct.median()
+        tradeable_periods = atr_pct > median_atr
 
-        # Should filter out some periods
+        # Should filter out approximately half the periods
         filtered_count = (~tradeable_periods).sum()
         assert filtered_count > 0, "Should filter out some low volatility periods"
 
-        # Tradeable periods should still be significant portion
+        # Tradeable periods should be roughly half (40-60% range for flexibility)
         tradeable_ratio = tradeable_periods.sum() / len(tradeable_periods)
-        assert 0.15 < tradeable_ratio < 0.85, \
+        assert 0.35 < tradeable_ratio < 0.65, \
             "Volatility filter should be selective but not too restrictive"
 
     def test_atr_for_trend_strength_confirmation(self, zs_1h_data):

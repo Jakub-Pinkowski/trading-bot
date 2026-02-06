@@ -170,10 +170,12 @@ class TestEMACalculationWithRealData:
         ema_long = _calculate_ema(zs_1h_data['close'], period=200)
         assert_valid_indicator(ema_long, 'EMA(200)', min_val=0)
 
-        # Longer period should be smoother (less volatile) - compare valid values only
-        ema_short_valid = ema_short.dropna()
-        ema_long_valid = ema_long.dropna()
-        assert ema_short_valid.std() > ema_long_valid.std(), "Short period EMA should be more volatile"
+        # Longer period should be smoother (less volatile changes)
+        # Compare the volatility of the EMA changes, not absolute values
+        ema_short_changes = ema_short.diff().dropna()
+        ema_long_changes = ema_long.diff().dropna()
+
+        assert ema_short_changes.std() > ema_long_changes.std(), "Short period EMA should be more volatile"
 
     def test_ema_values_match_expected_calculation(self, zs_1h_data):
         """

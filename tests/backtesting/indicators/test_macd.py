@@ -224,14 +224,20 @@ class TestMACDCalculationWithRealData:
         valid_long = macd_long['histogram'].dropna()
         assert len(valid_long) > 0
 
-        # Longer period should be smoother (less volatile) - compare overlapping values only
+        # Longer period should be smoother (less volatile changes)
+        # Compare volatility of the histogram changes, not absolute values
         # Align the series to compare the same time periods
         common_idx = valid_short.index.intersection(valid_long.index)
         assert len(common_idx) > 100, "Need sufficient overlap to compare volatility meaningfully"
         
         short_aligned = valid_short.loc[common_idx]
         long_aligned = valid_long.loc[common_idx]
-        assert short_aligned.std() > long_aligned.std(), "Short period MACD should be more volatile"
+
+        # Compare the volatility of changes
+        short_changes = short_aligned.diff().dropna()
+        long_changes = long_aligned.diff().dropna()
+
+        assert short_changes.std() > long_changes.std(), "Short period MACD should be more volatile"
 
     def test_macd_values_match_expected_calculation(self, zs_1h_data):
         """

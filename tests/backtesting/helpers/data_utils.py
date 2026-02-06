@@ -430,7 +430,7 @@ def inject_gap(df, index, gap_pct, direction='up'):
     Inject price gap between bars.
 
     Creates gap between previous close and next open. Useful for testing
-    gap-related logic.
+    gap-related logic and ATR true range calculation.
 
     Args:
         df: DataFrame with OHLCV data
@@ -461,18 +461,22 @@ def inject_gap(df, index, gap_pct, direction='up'):
     gap_amount = prev_close * (gap_pct / 100)
 
     if direction == 'up':
-        new_open = prev_close + gap_amount
-        # Adjust all OHLC values for the bar
-        df.iloc[index, df.columns.get_loc('open')] = new_open
-        df.iloc[index, df.columns.get_loc('high')] = new_open + (df.iloc[index]['high'] - df.iloc[index]['open'])
-        df.iloc[index, df.columns.get_loc('low')] = new_open + (df.iloc[index]['low'] - df.iloc[index]['open'])
-        df.iloc[index, df.columns.get_loc('close')] = new_open + (df.iloc[index]['close'] - df.iloc[index]['open'])
+        new_low = prev_close + gap_amount
+        # Set low to gap up from previous close
+        # This ensures true range captures the gap
+        df.iloc[index, df.columns.get_loc('low')] = new_low
+        # Adjust high and close proportionally above the new low
+        df.iloc[index, df.columns.get_loc('high')] = new_low + 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_low + 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_low + 0.5
     else:
-        new_open = prev_close - gap_amount
-        df.iloc[index, df.columns.get_loc('open')] = new_open
-        df.iloc[index, df.columns.get_loc('high')] = new_open + (df.iloc[index]['high'] - df.iloc[index]['open'])
-        df.iloc[index, df.columns.get_loc('low')] = new_open + (df.iloc[index]['low'] - df.iloc[index]['open'])
-        df.iloc[index, df.columns.get_loc('close')] = new_open + (df.iloc[index]['close'] - df.iloc[index]['open'])
+        new_high = prev_close - gap_amount
+        # Set high to gap down from previous close
+        df.iloc[index, df.columns.get_loc('high')] = new_high
+        # Adjust low and close proportionally below the new high
+        df.iloc[index, df.columns.get_loc('low')] = new_high - 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_high - 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_high - 0.5
 
     return df
 
