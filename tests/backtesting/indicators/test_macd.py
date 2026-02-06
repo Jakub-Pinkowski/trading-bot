@@ -20,6 +20,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_longer_period_smoother,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -459,10 +460,7 @@ class TestMACDEdgeCases:
     def test_macd_with_empty_series(self, empty_price_series):
         """Test MACD with empty input series."""
         macd = _calculate_macd(empty_price_series, fast_period=12, slow_period=26, signal_period=9)
-
-        assert len(macd) == 0, "Empty input should return empty DataFrame"
-        assert isinstance(macd, pd.DataFrame)
-        assert list(macd.columns) == ['macd_line', 'signal_line', 'histogram']
+        assert_empty_series_returns_empty(macd, 'dataframe', 'MACD')
 
 
 class TestMACDDataTypes:

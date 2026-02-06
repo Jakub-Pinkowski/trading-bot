@@ -21,6 +21,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_all_positive,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -515,9 +516,7 @@ class TestATREdgeCases:
         })
 
         atr = _calculate_atr(df, period=14)
-
-        assert len(atr) == 0, "Empty input should return empty ATR"
-        assert isinstance(atr, pd.Series)
+        assert_empty_series_returns_empty(atr, 'series', 'ATR')
 
 
 class TestATRDataTypes:

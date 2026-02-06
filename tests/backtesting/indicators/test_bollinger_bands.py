@@ -18,6 +18,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_band_relationships,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -274,10 +275,7 @@ class TestBollingerBandsEdgeCases:
     def test_bollinger_bands_with_empty_series(self, empty_price_series):
         """Test BB with empty input series."""
         bb = _calculate_bollinger_bands(empty_price_series, period=20, num_std=2.0)
-
-        assert len(bb) == 0, "Empty input should return empty BB"
-        assert isinstance(bb, pd.DataFrame)
-        assert list(bb.columns) == ['middle_band', 'upper_band', 'lower_band']
+        assert_empty_series_returns_empty(bb, 'dataframe', 'Bollinger Bands')
 
 
 class TestBollingerBandsDataTypes:

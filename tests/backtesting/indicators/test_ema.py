@@ -20,6 +20,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_longer_period_smoother,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -357,9 +358,7 @@ class TestEMAEdgeCases:
     def test_ema_with_empty_series(self, empty_price_series):
         """Test EMA with empty input series."""
         ema = _calculate_ema(empty_price_series, period=9)
-
-        assert len(ema) == 0, "Empty input should return empty EMA"
-        assert isinstance(ema, pd.Series)
+        assert_empty_series_returns_empty(ema, 'series', 'EMA')
 
 
 class TestEMADataTypes:

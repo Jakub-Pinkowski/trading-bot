@@ -16,12 +16,10 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 
 def assert_cache_hit_on_second_call(first_result, second_result, result_type='series'):
     """
-    Assert that cache was hit on second calculation and results match.
+    Assert that two calculation results are identical (validates cached result matches original).
 
-    Validates cache behavior by checking:
-    1. Misses didn't increase (cache was hit)
-    2. Hits increased (cache registered the hit)
-    3. Results are identical
+    This function only validates that the results are identical - it does NOT check
+    cache hit/miss counters. Use assert_cache_was_hit() separately to validate counters.
 
     Args:
         first_result: Result from first calculation
@@ -31,13 +29,14 @@ def assert_cache_hit_on_second_call(first_result, second_result, result_type='se
     Example:
         # First calculation
         rsi_1 = calculate_rsi(data, period=14)
-        first_misses = indicator_cache.misses
+        misses_before = indicator_cache.misses
 
-        # Second calculation
+        # Second calculation (should hit cache)
         rsi_2 = calculate_rsi(data, period=14)
 
-        # Validate caching
-        assert_cache_hit_on_second_call(rsi_1, rsi_2, first_misses, 'series')
+        # Validate cache hit and result identity
+        assert_cache_was_hit(misses_before)  # Check cache counters
+        assert_cache_hit_on_second_call(rsi_1, rsi_2, 'series')  # Check results match
     """
     # Results must be identical
     if result_type == 'series':
@@ -359,6 +358,44 @@ def assert_insufficient_data_returns_nan(result, input_length, indicator_name='I
                 f"{indicator_name}[{key}]: Should be mostly NaN when data < period"
     else:
         raise ValueError(f"Result must be Series, DataFrame, or dict, got {type(result)}")
+
+
+def assert_empty_series_returns_empty(result, result_type='series', indicator_name='Indicator'):
+    """
+    Assert indicator returns empty result for empty input.
+
+    Validates that indicators handle empty input gracefully by returning
+    empty results of the appropriate type.
+
+    Args:
+        result: Indicator result
+        result_type: 'series', 'dataframe', or 'dict'
+        indicator_name: Name for error messages
+
+    Example:
+        rsi = calculate_rsi(empty_series, period=14)
+        assert_empty_series_returns_empty(rsi, 'series', 'RSI')
+
+        macd = calculate_macd(empty_series)
+        assert_empty_series_returns_empty(macd, 'dataframe', 'MACD')
+
+        ichimoku = calculate_ichimoku(empty_h, empty_l, empty_c)
+        assert_empty_series_returns_empty(ichimoku, 'dict', 'Ichimoku')
+    """
+    if result_type == 'series':
+        assert len(result) == 0, f"{indicator_name}: Empty input should return empty Series"
+        assert isinstance(result, pd.Series), f"{indicator_name}: Result should be a Series"
+    elif result_type == 'dataframe':
+        assert len(result) == 0, f"{indicator_name}: Empty input should return empty DataFrame"
+        assert isinstance(result, pd.DataFrame), f"{indicator_name}: Result should be a DataFrame"
+    elif result_type == 'dict':
+        for key, series in result.items():
+            assert len(series) == 0, \
+                f"{indicator_name}[{key}]: Empty input should return empty component"
+            assert isinstance(series, pd.Series), \
+                f"{indicator_name}[{key}]: Component should be a Series"
+    else:
+        raise ValueError(f"Unknown result_type: {result_type}. Must be 'series', 'dataframe', or 'dict'")
 
 
 # ==================== Complete Cache Test Patterns ====================

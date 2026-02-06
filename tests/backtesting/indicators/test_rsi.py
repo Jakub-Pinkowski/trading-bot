@@ -21,6 +21,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
     assert_insufficient_data_returns_nan,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -383,9 +384,7 @@ class TestRSIEdgeCases:
     def test_rsi_with_empty_series(self, empty_price_series):
         """Test RSI with empty input series."""
         rsi = _calculate_rsi(empty_price_series, period=14)
-
-        assert len(rsi) == 0, "Empty input should return empty RSI"
-        assert isinstance(rsi, pd.Series)
+        assert_empty_series_returns_empty(rsi, 'series', 'RSI')
 
 
 class TestRSIDataTypes:

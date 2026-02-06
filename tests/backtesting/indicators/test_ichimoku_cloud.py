@@ -19,6 +19,7 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_cache_was_hit,
     assert_cache_hit_on_second_call,
     assert_cache_distinguishes_different_data,
+    assert_empty_series_returns_empty,
 )
 
 
@@ -653,14 +654,7 @@ class TestIchimokuEdgeCases:
             empty_price_series,
             empty_price_series
         )
-
-        # Should return dict with empty series
-        assert isinstance(result, dict)
-        assert len(result) == 5
-
-        for component in result.values():
-            assert len(component) == 0, "Empty input should return empty components"
-            assert isinstance(component, pd.Series)
+        assert_empty_series_returns_empty(result, 'dict', 'Ichimoku')
 
 
 class TestIchimokuDataTypes:
