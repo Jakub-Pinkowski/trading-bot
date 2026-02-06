@@ -13,7 +13,7 @@ from app.backtesting.indicators import calculate_atr
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.helpers.data_utils import inject_price_spike, inject_gap
-from tests.backtesting.helpers.indicator_test_utils import (
+from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
     assert_cache_hit_on_second_call,
