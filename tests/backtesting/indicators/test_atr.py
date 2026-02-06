@@ -775,7 +775,7 @@ class TestATRPracticalUsage:
 
         # Tradeable periods should still be significant portion
         tradeable_ratio = tradeable_periods.sum() / len(tradeable_periods)
-        assert 0.1 < tradeable_ratio < 0.9, \
+        assert 0.15 < tradeable_ratio < 0.85, \
             "Volatility filter should be selective but not too restrictive"
 
     def test_atr_for_trend_strength_confirmation(self, zs_1h_data):
