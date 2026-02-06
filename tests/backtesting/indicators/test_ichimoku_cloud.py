@@ -419,8 +419,13 @@ class TestIchimokuInMarketScenarios:
         senkou_a = result['senkou_span_a'].dropna()
         senkou_b = result['senkou_span_b'].dropna()
 
+        # Align tenkan and kijun for comparison (use common index)
+        common_idx = tenkan.index.intersection(kijun.index)
+        tenkan_aligned = tenkan.loc[common_idx]
+        kijun_aligned = kijun.loc[common_idx]
+
         # In uptrend, Tenkan should often be above Kijun
-        tk_cross_ratio = (tenkan > kijun).sum() / len(tenkan)
+        tk_cross_ratio = (tenkan_aligned > kijun_aligned).sum() / len(tenkan_aligned)
         assert tk_cross_ratio > 0.5, \
             "In uptrend, Tenkan should be above Kijun most of the time"
 
