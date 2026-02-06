@@ -378,22 +378,39 @@ class TestRSIStrategySignals:
 class TestRSIStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    def test_complete_backtest_generates_trades(self, zs_1h_data, contract_switch_dates):
-        """Run complete RSI backtest on 2 years of ZS hourly data."""
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
+    def test_backtest_execution_variants(
+        self, symbol, interval, trailing, description,
+        load_real_data, contract_switch_dates
+    ):
+        """Test RSI strategy backtest with various configurations and data sources.
+
+        Validates that the strategy executes correctly across:
+        - Different symbols (ZS, CL)
+        - Different timeframes (1h, 15m)
+        - With/without trailing stops
+        """
+        # Load appropriate data based on symbol and interval
+        data = load_real_data('1!', symbol, interval)
+
         strategy = RSIStrategy(
             rsi_period=14,
             lower_threshold=30,
             upper_threshold=70,
             rollover=False,
-            trailing=None,
+            trailing=trailing,
             slippage_ticks=1,
-            symbol='ZS'
+            symbol=symbol
         )
 
-        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades = strategy.run(data.copy(), contract_switch_dates.get(symbol, []))
 
-        # Should generate trades over 2 years
-        assert len(trades) > 0, "Expected trades from 2-year backtest"
+        # Should generate trades on real data
+        assert len(trades) > 0, f"Expected trades for {symbol} {interval} (config: {description})"
 
         # Validate trade structure
         assert_valid_trades(trades)
@@ -466,42 +483,6 @@ class TestRSIStrategyExecution:
         # Note: Slippage affects execution prices, so trade details may differ
         # but trade count should be similar
         assert abs(len(trades_no_slip) - len(trades_with_slip)) < 5
-
-    def test_backtest_with_trailing_stop(self, zs_1h_data, contract_switch_dates):
-        """Test backtest with trailing stop enabled."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=2.0,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
-
-        # Should generate trades with trailing stop
-        assert len(trades) > 0
-        assert_valid_trades(trades)
-
-    def test_backtest_on_different_timeframe(self, cl_15m_data, contract_switch_dates):
-        """Test RSI strategy on different timeframe (CL 15-minute)."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=30,
-            upper_threshold=70,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='CL'
-        )
-
-        trades = strategy.run(cl_15m_data.copy(), contract_switch_dates.get('CL', []))
-
-        # Should work on different timeframe
-        assert len(trades) > 0
-        assert_valid_trades(trades)
 
     def test_backtest_with_different_rsi_periods(self, zs_1h_data, contract_switch_dates):
         """Test that different RSI periods produce different trade patterns."""
