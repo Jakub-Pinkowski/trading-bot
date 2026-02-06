@@ -103,8 +103,10 @@ class TestRSIStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(name, 'RSI', 'period=14', 'lower=30', 'upper=70', 'rollover=False')
-        assert 'slippage_ticks=1' in name
+        assert_strategy_name_contains(
+            name, 'RSI', 'period=14', 'lower=30', 'upper=70',
+            'rollover=False', 'slippage_ticks=1'
+        )
 
 
 # ==================== Test Indicator Calculation ====================

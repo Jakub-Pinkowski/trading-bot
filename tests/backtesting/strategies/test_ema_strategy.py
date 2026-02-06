@@ -102,7 +102,9 @@ class TestEMAStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(name, 'EMA', 'short=9', 'long=21', 'rollover=False')
+        assert_strategy_name_contains(
+            name, 'EMA', 'short=9', 'long=21', 'rollover=False', 'slippage_ticks=1'
+        )
 
 
 # ==================== Test Indicator Calculation ====================

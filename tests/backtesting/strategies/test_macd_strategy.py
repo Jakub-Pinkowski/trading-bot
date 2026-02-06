@@ -107,7 +107,10 @@ class TestMACDStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(name, 'MACD', 'fast=12', 'slow=26', 'signal=9', 'rollover=False')
+        assert_strategy_name_contains(
+            name, 'MACD', 'fast=12', 'slow=26', 'signal=9',
+            'rollover=False', 'slippage_ticks=1'
+        )
 
 
 # ==================== Test Indicator Calculation ====================

@@ -112,7 +112,7 @@ class TestIchimokuStrategyInitialization:
 
         assert_strategy_name_contains(
             name, 'Ichimoku', 'tenkan=9', 'kijun=26',
-            'senkou_b=52', 'displacement=26', 'rollover=False'
+            'senkou_b=52', 'displacement=26', 'rollover=False', 'slippage_ticks=1'
         )
 
 
