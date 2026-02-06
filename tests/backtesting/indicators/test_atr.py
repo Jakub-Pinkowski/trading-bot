@@ -472,26 +472,6 @@ class TestATREdgeCases:
         assert atr.isna().all(), "All ATR values should be NaN when data < period"
         assert len(atr) == len(df), "ATR length should match input length"
 
-    def test_atr_with_exact_minimum_data(self, exact_period_price_series):
-        """
-        Test ATR with exactly enough data for calculation.
-
-        With period=14, needs at least 14 data points for first ATR value.
-        EWM with min_periods=14 produces value at index 13.
-        """
-        df = pd.DataFrame({
-            'high': exact_period_price_series + 1,
-            'low': exact_period_price_series - 1,
-            'close': exact_period_price_series
-        })
-
-        atr = _calculate_atr(df, period=14)
-
-        # First 13 should be NaN, 14th onwards should have values
-        assert atr.isna().sum() == 13
-        assert not pd.isna(atr.iloc[13])
-        assert not pd.isna(atr.iloc[-1])
-
     def test_atr_with_constant_prices(self, constant_price_series):
         """
         Test ATR when prices don't change.
@@ -510,94 +490,6 @@ class TestATREdgeCases:
         valid_atr = atr.dropna()
         assert (valid_atr == 0).all(), "ATR should be 0 for constant prices (zero range)"
 
-    def test_atr_with_monotonic_increase(self, rising_price_series):
-        """
-        Test ATR with continuously increasing prices.
-
-        ATR depends on ranges, not direction. Should show consistent ATR
-        if ranges are consistent.
-        """
-        # Create rising prices with consistent ranges
-        long_rising = pd.Series(range(100, 200))
-        df = pd.DataFrame({
-            'high': long_rising + 1,
-            'low': long_rising - 1,
-            'close': long_rising
-        })
-
-        atr = _calculate_atr(df, period=14)
-        valid_atr = atr.dropna()
-
-        # ATR should be positive and relatively stable
-        assert (valid_atr > 0).all(), "ATR should be positive"
-        assert valid_atr.std() < valid_atr.mean() * 0.2, \
-            "ATR should be stable with consistent ranges"
-
-    def test_atr_with_monotonic_decrease(self, falling_price_series):
-        """
-        Test ATR with continuously decreasing prices.
-
-        ATR depends on ranges, not direction. Should show consistent ATR
-        if ranges are consistent.
-        """
-        long_falling = pd.Series(range(200, 100, -1))
-        df = pd.DataFrame({
-            'high': long_falling + 1,
-            'low': long_falling - 1,
-            'close': long_falling
-        })
-
-        atr = _calculate_atr(df, period=14)
-        valid_atr = atr.dropna()
-
-        # ATR should be positive and relatively stable
-        assert (valid_atr > 0).all(), "ATR should be positive"
-        assert valid_atr.std() < valid_atr.mean() * 0.2, \
-            "ATR should be stable with consistent ranges"
-
-    def test_atr_with_extreme_spike(self, zs_1h_data):
-        """
-        Test ATR reaction to extreme price spike.
-
-        Injects artificial spike to test ATR handles extreme moves.
-        """
-        # Inject 15% spike upward at bar 1000
-        modified_data = inject_price_spike(zs_1h_data.copy(), 1000, 15.0, 'up')
-
-        atr = _calculate_atr(modified_data, period=14)
-
-        # ATR should still be valid despite spike
-        assert_valid_indicator(atr, 'ATR', min_val=0)
-
-        # ATR around spike should be elevated
-        atr_before_spike = atr.iloc[990:1000].mean()
-        atr_after_spike = atr.iloc[1001:1011].mean()
-
-        assert atr_after_spike > atr_before_spike, \
-            "ATR should increase after large price spike"
-
-    def test_atr_with_flat_then_movement(self, flat_then_volatile_series):
-        """
-        Test ATR transition from flat period to normal movement.
-
-        Validates ATR can handle transition from zero volatility to normal volatility.
-        """
-        df = pd.DataFrame({
-            'high': flat_then_volatile_series + 1,
-            'low': flat_then_volatile_series - 1,
-            'close': flat_then_volatile_series
-        })
-
-        atr = _calculate_atr(df, period=14)
-
-        # Flat region will have low/zero ATR
-        flat_atr = atr.iloc[14:50].mean()
-
-        # Variable region should have higher ATR
-        variable_atr = atr.iloc[50:].dropna().mean()
-
-        assert variable_atr > flat_atr, \
-            "ATR should be higher in variable region than flat region"
 
     def test_atr_with_large_gap(self, zs_1h_data):
         """

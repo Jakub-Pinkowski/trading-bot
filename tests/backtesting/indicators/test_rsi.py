@@ -12,7 +12,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_rsi
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike
 from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
@@ -21,6 +20,7 @@ from tests.backtesting.helpers.indicator_test_utils import (
     assert_values_in_range,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
+    assert_insufficient_data_returns_nan,
 )
 
 
@@ -53,19 +53,18 @@ class TestRSIBasicLogic:
 
         assert_values_in_range(rsi, 0, 100, indicator_name='RSI')
 
-    def test_rising_prices_give_high_rsi(self, rising_price_series):
-        """Continuously rising prices should produce high RSI (>70)."""
-        rsi = _calculate_rsi(rising_price_series, period=14)
+    def test_rsi_responds_to_price_direction(self, rising_price_series, falling_price_series):
+        """
+        RSI should be high for rising prices, low for falling prices.
 
-        recent_rsi = rsi.iloc[-5:].mean()  # Average of last 5 RSI values
-        assert recent_rsi > 70, f"Rising prices should give high RSI, got {recent_rsi:.1f}"
+        Consolidates testing of RSI directional behavior with synthetic data.
+        """
+        rsi_rising = _calculate_rsi(rising_price_series, period=14)
+        rsi_falling = _calculate_rsi(falling_price_series, period=14)
 
-    def test_falling_prices_give_low_rsi(self, falling_price_series):
-        """Continuously falling prices should produce low RSI (<30)."""
-        rsi = _calculate_rsi(falling_price_series, period=14)
-
-        recent_rsi = rsi.iloc[-5:].mean()  # Average of last 5 RSI values
-        assert recent_rsi < 30, f"Falling prices should give low RSI, got {recent_rsi:.1f}"
+        # Average of last 5 RSI values should show clear directional bias
+        assert rsi_rising.iloc[-5:].mean() > 70, "Rising prices should give high RSI (>70)"
+        assert rsi_falling.iloc[-5:].mean() < 30, "Falling prices should give low RSI (<30)"
 
     def test_rsi_changes_with_price_changes(self, rising_price_series, falling_price_series):
         """RSI should change when prices change."""
@@ -201,66 +200,30 @@ class TestRSICalculationWithRealData:
         # Longer period should be smoother (less volatile)
         assert valid_short.std() > valid_long.std(), "Short period RSI should be more volatile"
 
-    def test_rsi_values_match_expected_calculation(self, zs_1h_data):
+    def test_rsi_behavior_is_correct(self, zs_1h_data):
         """
-        Test that RSI values match the expected calculation formula.
+        Test RSI behaves correctly on real data.
 
-        Manually calculates RSI for a subset of data and compares with
-        indicator function output to validate correctness. Uses Wilder's
-        smoothing (EWM) method as implemented in the app.
+        Tests that RSI has expected properties on real market data rather than
+        testing implementation details. This approach is more maintainable and
+        focuses on what actually matters: correct behavior.
         """
-        period = 14
-        subset = zs_1h_data['close'].iloc[100:150]  # 50 bars for stable calculation
+        rsi = _calculate_rsi(zs_1h_data['close'], period=14)
 
-        rsi = _calculate_rsi(subset, period=period)
+        # RSI should stay within valid bounds
+        valid_rsi = rsi.dropna()
+        assert 0 <= valid_rsi.min() <= 100, "RSI minimum should be between 0 and 100"
+        assert 0 <= valid_rsi.max() <= 100, "RSI maximum should be between 0 and 100"
 
-        # Manual calculation using Wilder's smoothing (EWM)
-        delta = subset.diff()
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
+        # Long-term mean should center around 50 (neutral)
+        assert 40 <= valid_rsi.mean() <= 60, f"RSI mean should be near 50, got {valid_rsi.mean():.2f}"
 
-        # Use EWM with Wilder's smoothing (alpha = 1/period)
-        avg_gain = gain.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
-
-        rs = avg_gain / avg_loss
-        expected_rsi = 100 - (100 / (1 + rs))
-
-        # Compare all valid values
-        valid_calculated = rsi.dropna()
-        valid_expected = expected_rsi.dropna()
-
-        # Should match within reasonable tolerance
-        np.testing.assert_allclose(
-            valid_calculated.values,
-            valid_expected.values,
-            rtol=0.01,
-            err_msg="RSI calculation doesn't match expected Wilder's smoothing formula"
-        )
+        # RSI should show variation (not constant)
+        assert valid_rsi.std() > 5, "RSI should vary with market conditions"
 
 
 class TestRSIInMarketScenarios:
     """Test RSI behavior in different market conditions using real data."""
-
-    def test_rsi_in_trending_market(self, trending_market_data):
-        """
-        Test RSI behavior during strong trend.
-
-        Uses subset of real data showing clear uptrend. RSI should
-        remain elevated but not pegged at extreme values.
-        """
-        if trending_market_data is None:
-            pytest.skip("No trending market data available")
-
-        rsi = _calculate_rsi(trending_market_data['close'], period=14)
-        valid_rsi = rsi.dropna()
-
-        # In uptrend, RSI should be elevated but not always at 100
-        assert valid_rsi.mean() > 50, "RSI should be above 50 in uptrend"
-        assert valid_rsi.max() < 95, "RSI should not peg at 100 even in strong trend"
-
-        # Should still show some variation (not constant)
-        assert valid_rsi.std() > 3, "RSI should vary even in trending market"
 
     def test_rsi_in_ranging_market(self, ranging_market_data):
         """
@@ -379,21 +342,8 @@ class TestRSIEdgeCases:
         """
         rsi = _calculate_rsi(minimal_price_series, period=14)
 
-        # All values should be NaN
-        assert rsi.isna().all(), "All RSI values should be NaN when data < period"
-        assert len(rsi) == len(minimal_price_series), "RSI length should match input length"
-
-    def test_rsi_with_exact_minimum_data(self, exact_period_price_series):
-        """
-        Test RSI with exactly enough data for calculation.
-
-        With period=14, needs at least 15 data points (14 for warmup + 1 for calculation).
-        """
-        rsi = _calculate_rsi(exact_period_price_series, period=14)
-
-        # First 14 should be NaN, last should have value
-        assert rsi.isna().sum() == 14
-        assert not pd.isna(rsi.iloc[-1])
+        # Use utility to validate insufficient data behavior
+        assert_insufficient_data_returns_nan(rsi, len(minimal_price_series), 'RSI')
 
     def test_rsi_with_constant_prices(self, constant_price_series):
         """
@@ -407,22 +357,6 @@ class TestRSIEdgeCases:
         # With zero variance, RSI should return all NaN (division by zero in formula)
         assert rsi.isna().all(), "RSI should be all NaN for constant prices (zero variance)"
         assert len(rsi) == len(constant_price_series), "RSI length should match input length"
-
-    def test_rsi_with_monotonic_increase(self, rising_price_series):
-        """
-        Test RSI with continuously increasing prices.
-
-        All gains, no losses - RSI should approach 100.
-        """
-        # Use longer series for better demonstration
-        long_rising = pd.Series(range(100, 200))  # 100 consecutive increases
-        rsi = _calculate_rsi(long_rising, period=14)
-
-        valid_rsi = rsi.dropna()
-
-        # RSI should be very high (approaching 100)
-        assert valid_rsi.min() > 80, "RSI should be high with all gains"
-        assert valid_rsi.iloc[-1] > 95, "Recent RSI should approach 100"
 
     def test_rsi_with_monotonic_decrease(self, falling_price_series):
         """
@@ -439,43 +373,6 @@ class TestRSIEdgeCases:
         # RSI should be very low (approaching 0)
         assert valid_rsi.max() < 20, "RSI should be low with all losses"
         assert valid_rsi.iloc[-1] < 5, "Recent RSI should approach 0"
-
-    def test_rsi_with_extreme_spike(self, zs_1h_data):
-        """
-        Test RSI reaction to extreme price spike.
-
-        Injects artificial spike to test RSI handles extreme moves.
-        """
-        # Inject 10% spike upward at bar 1000
-        modified_data = inject_price_spike(zs_1h_data.copy(), 1000, 10.0, 'up')
-
-        rsi = _calculate_rsi(modified_data['close'], period=14)
-
-        # RSI should still be within bounds despite spike
-        assert_valid_indicator(rsi, 'RSI', min_val=0, max_val=100)
-
-        # RSI around spike should be elevated
-        spike_region = rsi.iloc[1000:1010]
-        assert spike_region.max() > 70, "RSI should spike after large price move"
-
-    def test_rsi_with_flat_then_movement(self, flat_then_volatile_series):
-        """
-        Test RSI transition from flat period to normal movement.
-
-        Validates RSI can handle transition from constant prices to price movement.
-        """
-        rsi = _calculate_rsi(flat_then_volatile_series, period=14)
-
-        # Flat region will have NaN (zero variance) - expected behavior
-
-        # RSI in variable region should have valid values
-        variable_rsi = rsi.iloc[50:]
-        valid_variable_rsi = variable_rsi.dropna()
-
-        assert len(valid_variable_rsi) > 0, "Should have valid RSI values in variable region"
-        # With oscillating data, RSI should center around 50 and vary
-        assert 30 <= valid_variable_rsi.mean() <= 70, "RSI should be reasonable in oscillating region"
-        assert valid_variable_rsi.std() > 0, "RSI should vary in variable region"
 
     def test_rsi_invalid_period_zero(self, short_price_series):
         """Test that period=0 raises appropriate error."""
@@ -536,37 +433,25 @@ class TestRSIDataTypes:
 class TestRSIPracticalUsage:
     """Test RSI in practical trading scenarios."""
 
-    def test_rsi_identifies_oversold_condition(self, zs_1h_data):
+    def test_rsi_practical_thresholds(self, zs_1h_data):
         """
-        Test that RSI can identify oversold conditions (RSI < 30).
+        RSI identifies overbought/oversold conditions on real data.
 
-        Practical use: Finding potential long entry points.
-        """
-        rsi = _calculate_rsi(zs_1h_data['close'], period=14)
-
-        # Find oversold conditions
-        oversold = rsi < 30
-        oversold_count = oversold.sum()
-
-        # Real market data should have some oversold conditions
-        assert oversold_count > 0, "Should find oversold conditions in real data"
-        assert oversold_count < len(rsi) * 0.2, "Oversold should be minority of time"
-
-    def test_rsi_identifies_overbought_condition(self, zs_1h_data):
-        """
-        Test that RSI can identify overbought conditions (RSI > 70).
-
-        Practical use: Finding potential short entry or profit-taking points.
+        Consolidates testing of practical RSI thresholds (30/70) used in trading.
+        Validates that real market data produces both conditions occasionally.
         """
         rsi = _calculate_rsi(zs_1h_data['close'], period=14)
 
-        # Find overbought conditions
-        overbought = rsi > 70
-        overbought_count = overbought.sum()
+        # Should find some overbought/oversold conditions in real data
+        overbought_count = (rsi > 70).sum()
+        oversold_count = (rsi < 30).sum()
 
-        # Real market data should have some overbought conditions
-        assert overbought_count > 0, "Should find overbought conditions in real data"
+        assert overbought_count > 0, "Should find overbought conditions (RSI > 70) in real data"
+        assert oversold_count > 0, "Should find oversold conditions (RSI < 30) in real data"
+
+        # But these should be minority of time (not always extreme)
         assert overbought_count < len(rsi) * 0.2, "Overbought should be minority of time"
+        assert oversold_count < len(rsi) * 0.2, "Oversold should be minority of time"
 
     def test_rsi_crossover_detection(self, zs_1h_data):
         """

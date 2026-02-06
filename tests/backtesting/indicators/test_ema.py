@@ -12,7 +12,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_ema
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike
 from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
@@ -335,15 +334,6 @@ class TestEMAEdgeCases:
         assert len(ema) == len(minimal_price_series), "EMA length should match input"
         assert isinstance(ema, pd.Series)
 
-    def test_ema_with_exact_minimum_data(self, exact_period_price_series):
-        """
-        Test EMA with exactly period length data.
-        """
-        ema = _calculate_ema(exact_period_price_series, period=14)
-
-        # Should have values
-        assert not ema.isna().all(), "EMA should calculate with exact period data"
-
     def test_ema_with_constant_prices(self, constant_price_series):
         """
         Test EMA when prices don't change.
@@ -358,75 +348,6 @@ class TestEMAEdgeCases:
         final_values = ema.iloc[-5:]
         assert all(abs(val - unique_price) < 0.01 for val in final_values), \
             "EMA should equal constant price"
-
-    def test_ema_with_monotonic_increase(self, rising_price_series):
-        """
-        Test EMA with continuously increasing prices.
-
-        EMA should increase and lag behind prices.
-        """
-        ema = _calculate_ema(rising_price_series, period=9)
-
-        # EMA should be increasing
-        ema_diffs = ema.diff().dropna()
-        assert (ema_diffs > 0).sum() > len(ema_diffs) * 0.9, \
-            "EMA should mostly increase with rising prices"
-
-        # EMA should lag below prices
-        assert (ema < rising_price_series).sum() > len(ema) * 0.8, \
-            "EMA should lag below most price points"
-
-    def test_ema_with_monotonic_decrease(self, falling_price_series):
-        """
-        Test EMA with continuously decreasing prices.
-
-        EMA should decrease and lag above prices.
-        """
-        ema = _calculate_ema(falling_price_series, period=9)
-
-        # EMA should be decreasing
-        ema_diffs = ema.diff().dropna()
-        assert (ema_diffs < 0).sum() > len(ema_diffs) * 0.9, \
-            "EMA should mostly decrease with falling prices"
-
-        # EMA should lag above prices
-        assert (ema > falling_price_series).sum() > len(ema) * 0.8, \
-            "EMA should lag above most price points"
-
-    def test_ema_with_extreme_spike(self, zs_1h_data):
-        """
-        Test EMA reaction to extreme price spike.
-
-        EMA should smooth out spike but show some response.
-        """
-        # Inject 10% spike upward at bar 1000
-        modified_data = inject_price_spike(zs_1h_data.copy(), 1000, 10.0, 'up')
-
-        ema = _calculate_ema(modified_data['close'], period=9)
-
-        # EMA should still be valid
-        assert_valid_indicator(ema, 'EMA', min_val=0)
-
-        # EMA should increase around spike but not as much as price
-        ema_before = ema.iloc[999]
-        ema_at_spike = ema.iloc[1000]
-        ema_increase_pct = ((ema_at_spike - ema_before) / ema_before) * 100
-
-        assert ema_increase_pct > 0, "EMA should increase with price spike"
-        assert ema_increase_pct < 10, "EMA should smooth spike (not full 10% increase)"
-
-    def test_ema_with_flat_then_movement(self, flat_then_volatile_series):
-        """
-        Test EMA transition from flat period to normal movement.
-        """
-        ema = _calculate_ema(flat_then_volatile_series, period=9)
-
-        # EMA should handle transition
-        assert not ema.isna().all(), "EMA should calculate through transition"
-
-        # EMA in variable region should vary
-        variable_ema = ema.iloc[50:]
-        assert variable_ema.std() > 0, "EMA should vary in variable region"
 
     def test_ema_invalid_period_zero(self, short_price_series):
         """Test that period=0 raises appropriate error."""

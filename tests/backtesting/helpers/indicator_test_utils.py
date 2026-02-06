@@ -387,6 +387,210 @@ def assert_longer_period_smoother(short_result, long_result, indicator_name='Ind
         raise ValueError("Results must be pandas Series")
 
 
+# ==================== Edge Case Testing Utilities ====================
+
+def assert_insufficient_data_returns_nan(result, input_length, indicator_name='Indicator'):
+    """
+    Assert indicator returns all NaN when data < period.
+
+    Common edge case: When insufficient data for calculation, indicators
+    should return NaN values but maintain correct length.
+
+    Args:
+        result: Indicator result (Series or DataFrame)
+        input_length: Length of input data
+        indicator_name: Name for error messages
+
+    Example:
+        rsi = calculate_rsi(minimal_data, period=14)
+        assert_insufficient_data_returns_nan(rsi, len(minimal_data), 'RSI')
+    """
+    if isinstance(result, pd.Series):
+        assert result.isna().all(), \
+            f"{indicator_name}: All values should be NaN when data < period"
+        assert len(result) == input_length, \
+            f"{indicator_name}: Length should match input ({input_length})"
+    elif isinstance(result, pd.DataFrame):
+        for col in result.columns:
+            assert result[col].isna().all(), \
+                f"{indicator_name}[{col}]: All values should be NaN when data < period"
+        assert len(result) == input_length, \
+            f"{indicator_name}: Length should match input ({input_length})"
+    elif isinstance(result, dict):
+        for key, series in result.items():
+            # Allow for some non-NaN values in edge cases
+            nan_ratio = series.isna().sum() / len(series)
+            assert nan_ratio >= 0.95 or series.notna().sum() <= 1, \
+                f"{indicator_name}[{key}]: Should be mostly NaN when data < period"
+    else:
+        raise ValueError(f"Result must be Series, DataFrame, or dict, got {type(result)}")
+
+
+def assert_constant_prices_behavior(
+    result, constant_value, indicator_name='Indicator',
+    behavior='constant'
+):
+    """
+    Assert indicator behaves correctly with constant prices.
+
+    Different indicators have different expected behavior:
+    - 'constant': Should equal the constant price (EMA, MACD line)
+    - 'zero': Should be zero (ATR, histogram)
+    - 'neutral': Should be at neutral level (RSI ~50)
+    - 'collapse': Bands should collapse together (Bollinger Bands)
+
+    Args:
+        result: Indicator result
+        constant_value: The constant price value
+        indicator_name: Name for error messages
+        behavior: Expected behavior type
+
+    Example:
+        ema = calculate_ema(constant_prices, period=9)
+        assert_constant_prices_behavior(ema, 100.0, 'EMA', 'constant')
+
+        atr = calculate_atr(constant_prices, period=14)
+        assert_constant_prices_behavior(atr, 100.0, 'ATR', 'zero')
+    """
+    if isinstance(result, pd.Series):
+        valid_values = result.dropna()
+
+        if behavior == 'constant':
+            # Should converge to constant price
+            final_values = valid_values.iloc[-5:] if len(valid_values) >= 5 else valid_values
+            assert all(abs(val - constant_value) < 0.01 for val in final_values), \
+                f"{indicator_name}: Should equal constant price {constant_value}"
+
+        elif behavior == 'zero':
+            # Should be zero (no volatility)
+            assert (valid_values == 0).all() or (abs(valid_values) < 0.0001).all(), \
+                f"{indicator_name}: Should be zero for constant prices"
+
+        elif behavior == 'neutral':
+            # Should be near neutral (like RSI ~50)
+            mean_value = valid_values.mean()
+            assert 45 < mean_value < 55, \
+                f"{indicator_name}: Should be near neutral (50) for constant prices, got {mean_value:.2f}"
+
+    elif isinstance(result, pd.DataFrame):
+        valid_result = result.dropna()
+
+        if behavior == 'collapse':
+            # Bands should collapse (like Bollinger Bands)
+            if 'upper_band' in result.columns and 'lower_band' in result.columns:
+                band_width = valid_result['upper_band'] - valid_result['lower_band']
+                assert (band_width < 0.001).all(), \
+                    f"{indicator_name}: Bands should collapse for constant prices"
+
+        elif behavior == 'zero':
+            # All columns should be zero (like MACD histogram)
+            for col in result.columns:
+                if 'histogram' in col.lower():
+                    assert abs(valid_result[col].mean()) < 0.0001, \
+                        f"{indicator_name}[{col}]: Should be ~0 for constant prices"
+
+
+def assert_empty_input_returns_empty(result, indicator_name='Indicator'):
+    """
+    Assert indicator returns empty result for empty input.
+
+    Args:
+        result: Indicator result
+        indicator_name: Name for error messages
+
+    Example:
+        rsi = calculate_rsi(empty_series, period=14)
+        assert_empty_input_returns_empty(rsi, 'RSI')
+    """
+    if isinstance(result, pd.Series):
+        assert len(result) == 0, \
+            f"{indicator_name}: Empty input should return empty Series"
+        assert isinstance(result, pd.Series), \
+            f"{indicator_name}: Should still be a Series"
+
+    elif isinstance(result, pd.DataFrame):
+        assert len(result) == 0, \
+            f"{indicator_name}: Empty input should return empty DataFrame"
+        assert isinstance(result, pd.DataFrame), \
+            f"{indicator_name}: Should still be a DataFrame"
+
+    elif isinstance(result, dict):
+        for key, series in result.items():
+            assert len(series) == 0, \
+                f"{indicator_name}[{key}]: Empty input should return empty components"
+            assert isinstance(series, pd.Series), \
+                f"{indicator_name}[{key}]: Should still be a Series"
+
+
+def assert_monotonic_behavior(
+    result, direction, indicator_name='Indicator',
+    expected='extreme'
+):
+    """
+    Assert indicator behaves correctly with monotonic price movement.
+
+    Args:
+        result: Indicator result
+        direction: 'up' or 'down'
+        indicator_name: Name for error messages
+        expected: Expected behavior - 'extreme', 'trending', etc.
+
+    Example:
+        rsi = calculate_rsi(rising_prices, period=14)
+        assert_monotonic_behavior(rsi, 'up', 'RSI', 'extreme')  # Expects high values
+
+        atr = calculate_atr(rising_prices, period=14)
+        assert_monotonic_behavior(atr, 'up', 'ATR', 'trending')  # Expects stable values
+    """
+    if isinstance(result, pd.Series):
+        valid_values = result.dropna()
+
+        if expected == 'extreme':
+            if direction == 'up':
+                # Should be near maximum (like RSI -> 100)
+                mean_value = valid_values.iloc[-10:].mean() if len(valid_values) >= 10 else valid_values.mean()
+                assert mean_value > 70, \
+                    f"{indicator_name}: Should be high for continuous rise, got {mean_value:.2f}"
+            else:  # down
+                # Should be near minimum (like RSI -> 0)
+                mean_value = valid_values.iloc[-10:].mean() if len(valid_values) >= 10 else valid_values.mean()
+                assert mean_value < 30, \
+                    f"{indicator_name}: Should be low for continuous fall, got {mean_value:.2f}"
+
+
+def assert_handles_extreme_spike(
+    result_with_spike, result_normal, spike_index,
+    indicator_name='Indicator'
+):
+    """
+    Assert indicator responds appropriately to extreme price spike.
+
+    Args:
+        result_with_spike: Indicator result with spike
+        result_normal: Indicator result without spike
+        spike_index: Index where spike occurs
+        indicator_name: Name for error messages
+
+    Example:
+        data_with_spike = inject_price_spike(data, spike_index=100, spike_magnitude=5.0)
+        rsi_spike = calculate_rsi(data_with_spike, period=14)
+        rsi_normal = calculate_rsi(data, period=14)
+        assert_handles_extreme_spike(rsi_spike, rsi_normal, 100, 'RSI')
+    """
+    if isinstance(result_with_spike, pd.Series) and isinstance(result_normal, pd.Series):
+        # Check that spike causes a noticeable change
+        window_start = max(0, spike_index - 5)
+        window_end = min(len(result_with_spike), spike_index + 15)
+
+        spike_window = result_with_spike.iloc[window_start:window_end]
+        normal_window = result_normal.iloc[window_start:window_end]
+
+        # Should differ significantly in the spike region
+        diff = (spike_window - normal_window).abs().max()
+        assert diff > 1.0, \
+            f"{indicator_name}: Should respond to extreme spike (max diff={diff:.2f})"
+
+
 # ==================== Complete Cache Test Patterns ====================
 
 def assert_recalculation_hits_cache(calc_func, *args, **kwargs):

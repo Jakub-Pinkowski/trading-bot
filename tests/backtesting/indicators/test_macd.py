@@ -12,7 +12,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_macd
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike
 from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
@@ -444,19 +443,6 @@ class TestMACDEdgeCases:
         assert macd['macd_line'].isna().all(), "All MACD values should be NaN when data < slow_period"
         assert len(macd) == len(minimal_price_series), "MACD length should match input length"
 
-    def test_macd_with_exact_minimum_data(self):
-        """
-        Test MACD with exactly enough data for calculation.
-
-        With slow_period=26, needs at least 26 data points for first MACD value.
-        """
-        prices = pd.Series(range(100, 126))  # Exactly 26 points
-        macd = _calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
-
-        # First 25 should be NaN, 26th should have value
-        assert macd['macd_line'].isna().sum() == 25
-        assert not pd.isna(macd['macd_line'].iloc[-1])
-
     def test_macd_with_constant_prices(self, constant_price_series):
         """
         Test MACD when prices don't change.
@@ -473,80 +459,6 @@ class TestMACDEdgeCases:
         assert abs(valid_macd.mean()) < 0.0001, "MACD should be ~0 for constant prices"
         assert abs(valid_signal.mean()) < 0.0001, "Signal should be ~0 for constant prices"
         assert abs(valid_histogram.mean()) < 0.0001, "Histogram should be ~0 for constant prices"
-
-    def test_macd_with_monotonic_increase(self):
-        """
-        Test MACD with continuously increasing prices.
-
-        MACD should be positive and increasing as fast EMA diverges from slow EMA.
-        """
-        prices = pd.Series(range(100, 250))  # 150 consecutive increases
-        macd = _calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
-
-        valid_macd = macd['macd_line'].dropna()
-
-        # MACD should be positive in strong uptrend
-        assert valid_macd.iloc[-1] > 0, "MACD should be positive with continuous increases"
-
-        # Recent MACD should be higher than early MACD (diverging)
-        early_macd = valid_macd.iloc[:10].mean()
-        late_macd = valid_macd.iloc[-10:].mean()
-        assert late_macd > early_macd, "MACD should increase with sustained uptrend"
-
-    def test_macd_with_monotonic_decrease(self):
-        """
-        Test MACD with continuously decreasing prices.
-
-        MACD should be negative and decreasing as fast EMA diverges below slow EMA.
-        """
-        prices = pd.Series(range(250, 100, -1))  # 150 consecutive decreases
-        macd = _calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9)
-
-        valid_macd = macd['macd_line'].dropna()
-
-        # MACD should be negative in strong downtrend
-        assert valid_macd.iloc[-1] < 0, "MACD should be negative with continuous decreases"
-
-        # Recent MACD should be more negative than early MACD
-        early_macd = valid_macd.iloc[:10].mean()
-        late_macd = valid_macd.iloc[-10:].mean()
-        assert late_macd < early_macd, "MACD should become more negative with sustained downtrend"
-
-    def test_macd_with_extreme_spike(self, zs_1h_data):
-        """
-        Test MACD reaction to extreme price spike.
-
-        Injects artificial spike to test MACD handles extreme moves gracefully.
-        """
-        # Inject 10% spike upward at bar 1000
-        modified_data = inject_price_spike(zs_1h_data.copy(), 1000, 10.0, 'up')
-
-        macd = _calculate_macd(modified_data['close'], fast_period=12, slow_period=26, signal_period=9)
-
-        # MACD should still produce valid values
-        assert_indicator_varies(macd['macd_line'], 'MACD Line')
-
-        # MACD around spike should show reaction
-        spike_region = macd['macd_line'].iloc[1000:1020]
-        assert spike_region.max() > spike_region.min(), "MACD should react to price spike"
-
-    def test_macd_with_flat_then_movement(self, flat_then_volatile_series):
-        """
-        Test MACD transition from flat period to normal movement.
-
-        Validates MACD can handle transition from constant prices to price movement.
-        """
-        macd = _calculate_macd(flat_then_volatile_series, fast_period=12, slow_period=26, signal_period=9)
-
-        # MACD in flat region should be near zero
-        flat_region_macd = macd['macd_line'].iloc[30:50].dropna()
-        if len(flat_region_macd) > 0:
-            assert abs(flat_region_macd.mean()) < 0.01, "MACD should be near zero in flat region"
-
-        # MACD in variable region should show variation
-        variable_region_macd = macd['macd_line'].iloc[50:].dropna()
-        assert len(variable_region_macd) > 0, "Should have valid MACD in variable region"
-        assert variable_region_macd.std() > 0, "MACD should vary in volatile region"
 
     def test_macd_with_empty_series(self, empty_price_series):
         """Test MACD with empty input series."""

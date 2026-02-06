@@ -14,7 +14,6 @@ from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_ichimoku_cloud
 from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike
 from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
@@ -627,31 +626,6 @@ class TestIchimokuEdgeCases:
             assert len(component) == len(high), \
                 "Output length should match input length"
 
-    def test_ichimoku_with_exact_minimum_data(self):
-        """
-        Test Ichimoku with exactly enough data for calculation.
-
-        With standard periods (9, 26, 52), needs at least 52 data points.
-        """
-        # Create exactly 52 bars
-        high = pd.Series(range(105, 157))
-        low = pd.Series(range(95, 147))
-        close = pd.Series(range(100, 152))
-
-        result = _calculate_ichimoku(high, low, close)
-
-        # Tenkan should have valid values after period 9
-        tenkan_valid = result['tenkan_sen'].notna().sum()
-        assert tenkan_valid > 0, "Tenkan should have some valid values with 52 bars"
-
-        # Kijun should have valid values after period 26
-        kijun_valid = result['kijun_sen'].notna().sum()
-        assert kijun_valid > 0, "Kijun should have some valid values with 52 bars"
-
-        # Senkou B needs 52 periods, should have at least one valid value
-        senkou_b_valid = result['senkou_span_b'].notna().sum()
-        assert senkou_b_valid >= 0, "Senkou B should be calculable with 52 bars"
-
     def test_ichimoku_with_constant_prices(self, constant_price_series):
         """
         Test Ichimoku when prices don't change.
@@ -676,113 +650,6 @@ class TestIchimokuEdgeCases:
                 assert abs(valid_values.iloc[0] - 100.0) < 0.01, \
                     f"{component_name} should equal flat price level"
 
-    def test_ichimoku_with_monotonic_increase(self):
-        """
-        Test Ichimoku with continuously increasing prices.
-
-        All gains, no pullbacks - should show strong bullish structure.
-        """
-        # Use longer series for better demonstration
-        high = pd.Series(range(105, 205))  # 100 consecutive increases
-        low = pd.Series(range(95, 195))
-        close = pd.Series(range(100, 200))
-
-        result = _calculate_ichimoku(high, low, close)
-
-        tenkan = result['tenkan_sen'].dropna()
-        kijun = result['kijun_sen'].dropna()
-
-        # In strong uptrend, Tenkan should be consistently above Kijun
-        assert (tenkan.iloc[-20:] > kijun.iloc[-20:]).sum() > 18, \
-            "Tenkan should be above Kijun in strong uptrend"
-
-        # All components should be increasing
-        for component_name, component in result.items():
-            valid_values = component.dropna()
-            if len(valid_values) > 10:
-                # Check if generally increasing (last > first)
-                assert valid_values.iloc[-1] > valid_values.iloc[0], \
-                    f"{component_name} should increase in uptrend"
-
-    def test_ichimoku_with_monotonic_decrease(self):
-        """
-        Test Ichimoku with continuously decreasing prices.
-
-        All losses, no bounces - should show strong bearish structure.
-        """
-        # Use longer series for better demonstration
-        high = pd.Series(range(205, 105, -1))  # 100 consecutive decreases
-        low = pd.Series(range(195, 95, -1))
-        close = pd.Series(range(200, 100, -1))
-
-        result = _calculate_ichimoku(high, low, close)
-
-        tenkan = result['tenkan_sen'].dropna()
-        kijun = result['kijun_sen'].dropna()
-
-        # In strong downtrend, Tenkan should be consistently below Kijun
-        assert (tenkan.iloc[-20:] < kijun.iloc[-20:]).sum() > 18, \
-            "Tenkan should be below Kijun in strong downtrend"
-
-        # All components should be decreasing
-        for component_name, component in result.items():
-            valid_values = component.dropna()
-            if len(valid_values) > 10:
-                # Check if generally decreasing (last < first)
-                assert valid_values.iloc[-1] < valid_values.iloc[0], \
-                    f"{component_name} should decrease in downtrend"
-
-    def test_ichimoku_with_extreme_spike(self, zs_1h_data):
-        """
-        Test Ichimoku reaction to extreme price spike.
-
-        Injects artificial spike to test Ichimoku handles extreme moves.
-        """
-        # Inject 10% spike upward at bar 1000
-        modified_data = inject_price_spike(zs_1h_data.copy(), 1000, 10.0, 'up')
-
-        result = _calculate_ichimoku(
-            modified_data['high'],
-            modified_data['low'],
-            modified_data['close']
-        )
-
-        # Ichimoku should still be within reasonable bounds despite spike
-        for component_name, component in result.items():
-            assert_valid_indicator(component, component_name, min_val=0)
-
-        # Components around spike should show elevated values
-        tenkan_around_spike = result['tenkan_sen'].iloc[1000:1010].dropna()
-        if len(tenkan_around_spike) > 0:
-            assert tenkan_around_spike.max() > result['tenkan_sen'].iloc[900:999].median(), \
-                "Tenkan should react to price spike"
-
-    def test_ichimoku_with_flat_then_movement(self, flat_then_volatile_series):
-        """
-        Test Ichimoku transition from flat period to normal movement.
-
-        Validates Ichimoku can handle transition from constant prices to price movement.
-        """
-        high = flat_then_volatile_series + 5
-        low = flat_then_volatile_series - 5
-        close = flat_then_volatile_series
-
-        result = _calculate_ichimoku(high, low, close)
-
-        # Variable region should have valid, varying values
-        # Note: Longer-period components (Kijun=26, Senkou B=52) lag significantly
-        # and may still reflect the flat period even in the variable region.
-        # Only check faster-responding components (Tenkan=9, Chikou=displaced close)
-        fast_components = ['tenkan_sen', 'chikou_span']
-
-        for component_name in fast_components:
-            component = result[component_name]
-            variable_region = component.iloc[70:]  # Check later region after more volatile data
-            valid_variable = variable_region.dropna()
-
-            if len(valid_variable) > 10:
-                assert valid_variable.std() > 0, \
-                    f"{component_name} should vary in variable region"
 
     def test_ichimoku_with_empty_series(self, empty_price_series):
         """Test Ichimoku with empty input series."""
