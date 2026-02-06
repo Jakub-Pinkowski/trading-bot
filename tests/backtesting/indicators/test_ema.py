@@ -19,6 +19,8 @@ from tests.backtesting.helpers.indicator_test_utils import (
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_longer_period_smoother,
+    assert_different_params_use_different_cache,
+    assert_cache_distinguishes_different_data,
 )
 
 
@@ -290,15 +292,13 @@ class TestEMACaching:
         ema_9 = _calculate_ema(zs_1h_data['close'], period=9)
         ema_21 = _calculate_ema(zs_1h_data['close'], period=21)
 
-        # Results should differ
-        assert not ema_9.equals(ema_21), "Different periods should produce different EMA"
+        # Validate different parameters produce different results
+        assert_different_params_use_different_cache(ema_9, ema_21)
 
         # Recalculate - should hit cache
         misses_before = indicator_cache.misses
         ema_9_again = _calculate_ema(zs_1h_data['close'], period=9)
         assert indicator_cache.misses == misses_before, "Recalculation should hit cache"
-
-        # Should get same values
         np.testing.assert_array_equal(ema_9.values, ema_9_again.values)
 
     def test_cache_distinguishes_different_data(self, zs_1h_data, cl_15m_data):
@@ -311,9 +311,13 @@ class TestEMACaching:
         ema_zs = _calculate_ema(zs_1h_data['close'], period=9)
         ema_cl = _calculate_ema(cl_15m_data['close'], period=9)
 
-        # Results should differ
-        assert not ema_zs.equals(ema_cl), "Different data should produce different EMA"
-        assert len(ema_zs) != len(ema_cl), "Different datasets should have different lengths"
+        # Use utility to validate different data behavior
+        # Use utility to validate different data behavior
+        assert_cache_distinguishes_different_data(
+            ema_zs, ema_cl,
+            len(zs_1h_data), len(cl_15m_data),
+            'EMA'
+        )
 
 
 class TestEMAEdgeCases:

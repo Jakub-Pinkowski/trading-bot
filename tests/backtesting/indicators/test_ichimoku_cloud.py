@@ -19,6 +19,7 @@ from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
     assert_cache_hit_on_second_call,
+    assert_cache_distinguishes_different_data,
 )
 
 
@@ -554,7 +555,7 @@ class TestIchimokuCaching:
             kijun_period=22
         )
 
-        # Results should differ
+        # Validate different parameters produce different results
         assert not result_standard['tenkan_sen'].equals(result_fast['tenkan_sen']), \
             "Different periods should produce different Tenkan values"
 
@@ -569,8 +570,6 @@ class TestIchimokuCaching:
         )
         assert indicator_cache.misses == misses_before_recalc, \
             "Recalculation should hit cache"
-
-        # Should get same values
         np.testing.assert_array_equal(
             result_standard['tenkan_sen'].values,
             result_standard_again['tenkan_sen'].values
@@ -598,11 +597,12 @@ class TestIchimokuCaching:
             cl_15m_data['close']
         )
 
-        # Results should differ (different underlying data)
-        assert not result_zs['tenkan_sen'].equals(result_cl['tenkan_sen']), \
-            "Different data should produce different Ichimoku"
-        assert len(result_zs['tenkan_sen']) != len(result_cl['tenkan_sen']), \
-            "Different datasets should have different lengths"
+        # Use utility to validate different data behavior
+        assert_cache_distinguishes_different_data(
+            result_zs, result_cl,
+            len(zs_1h_data), len(cl_15m_data),
+            'Ichimoku'
+        )
 
 
 class TestIchimokuEdgeCases:

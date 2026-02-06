@@ -19,6 +19,8 @@ from tests.backtesting.helpers.indicator_test_utils import (
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_all_positive,
+    assert_different_params_use_different_cache,
+    assert_cache_distinguishes_different_data,
 )
 
 
@@ -418,15 +420,13 @@ class TestATRCaching:
         atr_14 = _calculate_atr(zs_1h_data, period=14)
         atr_21 = _calculate_atr(zs_1h_data, period=21)
 
-        # Results should differ
-        assert not atr_14.equals(atr_21), "Different periods should produce different ATR"
+        # Validate different parameters produce different results
+        assert_different_params_use_different_cache(atr_14, atr_21)
 
-        # Recalculate - should hit cache (misses shouldn't increase)
+        # Recalculate - should hit cache
         misses_before_recalc = indicator_cache.misses
         atr_14_again = _calculate_atr(zs_1h_data, period=14)
         assert indicator_cache.misses == misses_before_recalc, "Recalculation should hit cache"
-
-        # Should get same values
         np.testing.assert_array_equal(atr_14.values, atr_14_again.values)
 
     def test_cache_distinguishes_different_data(self, zs_1h_data, cl_15m_data):
@@ -442,9 +442,12 @@ class TestATRCaching:
         atr_zs = _calculate_atr(zs_1h_data, period=14)
         atr_cl = _calculate_atr(cl_15m_data, period=14)
 
-        # Results should differ (different underlying data)
-        assert not atr_zs.equals(atr_cl), "Different data should produce different ATR"
-        assert len(atr_zs) != len(atr_cl), "Different datasets should have different lengths"
+        # Use utility to validate different data behavior
+        assert_cache_distinguishes_different_data(
+            atr_zs, atr_cl,
+            len(zs_1h_data), len(cl_15m_data),
+            'ATR'
+        )
 
 
 class TestATREdgeCases:

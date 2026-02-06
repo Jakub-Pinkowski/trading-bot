@@ -19,6 +19,8 @@ from tests.backtesting.helpers.indicator_test_utils import (
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_longer_period_smoother,
+    assert_different_params_use_different_cache,
+    assert_cache_distinguishes_different_data,
 )
 
 
@@ -397,15 +399,13 @@ class TestMACDCaching:
         macd_standard = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
         macd_fast = _calculate_macd(zs_1h_data['close'], fast_period=5, slow_period=13, signal_period=5)
 
-        # Results should differ
-        assert not macd_standard.equals(macd_fast), "Different periods should produce different MACD"
+        # Validate different parameters produce different results
+        assert_different_params_use_different_cache(macd_standard, macd_fast)
 
         # Recalculate - should hit cache
         misses_before = indicator_cache.misses
         macd_standard_again = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
         assert indicator_cache.misses == misses_before, "Recalculation should hit cache"
-
-        # Should get same values
         pd.testing.assert_frame_equal(macd_standard, macd_standard_again)
 
     def test_cache_distinguishes_different_data(self, zs_1h_data, cl_15m_data):
@@ -421,9 +421,12 @@ class TestMACDCaching:
         macd_zs = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
         macd_cl = _calculate_macd(cl_15m_data['close'], fast_period=12, slow_period=26, signal_period=9)
 
-        # Results should differ (different underlying data)
-        assert not macd_zs.equals(macd_cl), "Different data should produce different MACD"
-        assert len(macd_zs) != len(macd_cl), "Different datasets should have different lengths"
+        # Use utility to validate different data behavior
+        assert_cache_distinguishes_different_data(
+            macd_zs, macd_cl,
+            len(zs_1h_data), len(cl_15m_data),
+            'MACD'
+        )
 
 
 class TestMACDEdgeCases:
