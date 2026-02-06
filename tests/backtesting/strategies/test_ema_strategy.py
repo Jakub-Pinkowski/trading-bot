@@ -247,6 +247,33 @@ class TestEMAStrategySignals:
         # Fast crossover should generate more signals
         assert_faster_params_generate_more_signals(df_fast, df_slow, "EMA period")
 
+    @pytest.mark.parametrize("short,long,description,max_signal_pct", [
+        (5, 15, "fast", 0.15),
+        (9, 21, "standard", 0.10),
+        (20, 50, "slow", 0.05),
+    ])
+    def test_signal_frequency_with_various_ema_periods(
+        self, zs_1h_data, short, long, description, max_signal_pct
+    ):
+        """Test signal frequency varies with EMA period settings."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=short,
+            long_ema_period=long,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        signal_pct = (df['signal'] != 0).sum() / len(df)
+
+        assert signal_pct > 0, f"Expected signals with {description} EMA periods"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} EMA periods ({signal_pct:.1%})"
+
     def test_both_long_and_short_signals_present(self, standard_ema_strategy, zs_1h_data):
         """Test that strategy generates both long and short signals."""
         df = standard_ema_strategy.add_indicators(zs_1h_data.copy())

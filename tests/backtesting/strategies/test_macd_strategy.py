@@ -300,6 +300,34 @@ class TestMACDStrategySignals:
         assert fast_signal_count >= slow_signal_count, \
             f"Fast MACD should generate more signals ({fast_signal_count} vs {slow_signal_count})"
 
+    @pytest.mark.parametrize("fast,slow,signal,description,max_signal_pct", [
+        (8, 17, 9, "fast", 0.15),
+        (12, 26, 9, "standard", 0.10),
+        (19, 39, 9, "slow", 0.07),
+    ])
+    def test_signal_frequency_with_various_macd_periods(
+        self, zs_1h_data, fast, slow, signal, description, max_signal_pct
+    ):
+        """Test signal frequency varies with MACD period settings."""
+        strategy = MACDStrategy(
+            fast_period=fast,
+            slow_period=slow,
+            signal_period=signal,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        signal_pct = (df['signal'] != 0).sum() / len(df)
+
+        assert signal_pct > 0, f"Expected signals with {description} MACD periods"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} MACD periods ({signal_pct:.1%})"
+
     def test_both_long_and_short_signals_present(self, standard_macd_strategy, zs_1h_data):
         """Test that strategy generates both long and short signals."""
         df = standard_macd_strategy.add_indicators(zs_1h_data.copy())

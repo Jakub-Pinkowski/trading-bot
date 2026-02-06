@@ -242,12 +242,19 @@ class TestRSIStrategySignals:
         assert (df.loc[stable_neutral, 'signal'] == 0).all(), \
             "No signals should be generated in stable neutral RSI zone"
 
-    def test_signals_with_aggressive_thresholds(self, zs_1h_data):
-        """Test signal frequency with aggressive thresholds (20/80)."""
+    @pytest.mark.parametrize("lower,upper,description,max_signal_pct", [
+        (20, 80, "aggressive", 0.10),
+        (30, 70, "standard", 0.15),
+        (40, 60, "conservative", 0.25),
+    ])
+    def test_signal_frequency_with_various_thresholds(
+        self, zs_1h_data, lower, upper, description, max_signal_pct
+    ):
+        """Test signal frequency varies with threshold settings."""
         strategy = RSIStrategy(
             rsi_period=14,
-            lower_threshold=20,
-            upper_threshold=80,
+            lower_threshold=lower,
+            upper_threshold=upper,
             rollover=False,
             trailing=None,
             slippage_ticks=1,
@@ -257,33 +264,11 @@ class TestRSIStrategySignals:
         df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        # Aggressive thresholds should produce fewer signals
-        signal_count = (df['signal'] != 0).sum()
+        signal_pct = (df['signal'] != 0).sum() / len(df)
 
-        # Should still have some signals, but fewer than standard 30/70
-        assert signal_count > 0, "Expected some signals with aggressive thresholds"
-        assert signal_count < len(df) * 0.1, "Too many signals for aggressive thresholds"
-
-    def test_signals_with_conservative_thresholds(self, zs_1h_data):
-        """Test signal frequency with conservative thresholds (40/60)."""
-        strategy = RSIStrategy(
-            rsi_period=14,
-            lower_threshold=40,
-            upper_threshold=60,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
-        df = strategy.generate_signals(df)
-
-        # Conservative thresholds should produce more signals
-        signal_count = (df['signal'] != 0).sum()
-
-        # Should have more signals than aggressive
-        assert signal_count > 0, "Expected signals with conservative thresholds"
+        assert signal_pct > 0, f"Expected signals with {description} thresholds"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} thresholds ({signal_pct:.1%})"
 
     def test_both_long_and_short_signals_present(self, standard_rsi_strategy, zs_1h_data):
         """Test that strategy generates both long and short signals."""

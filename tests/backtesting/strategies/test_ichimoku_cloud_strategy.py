@@ -376,6 +376,35 @@ class TestIchimokuStrategySignals:
         assert fast_signal_count >= slow_signal_count * 0.7, \
             f"Fast Ichimoku should generate similar or more signals ({fast_signal_count} vs {slow_signal_count})"
 
+    @pytest.mark.parametrize("tenkan,kijun,senkou_b,displacement,description,max_signal_pct", [
+        (7, 22, 44, 22, "fast", 0.08),
+        (9, 26, 52, 26, "standard", 0.05),
+        (12, 30, 60, 30, "slow", 0.03),
+    ])
+    def test_signal_frequency_with_various_ichimoku_periods(
+        self, zs_1h_data, tenkan, kijun, senkou_b, displacement, description, max_signal_pct
+    ):
+        """Test signal frequency varies with Ichimoku period settings."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=tenkan,
+            kijun_period=kijun,
+            senkou_span_b_period=senkou_b,
+            displacement=displacement,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        signal_pct = (df['signal'] != 0).sum() / len(df)
+
+        assert signal_pct > 0, f"Expected signals with {description} Ichimoku periods"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} Ichimoku periods ({signal_pct:.1%})"
+
     def test_both_long_and_short_signals_present(self, zs_1h_data):
         """Test that strategy generates both long and short signals."""
         strategy = IchimokuCloudStrategy(
