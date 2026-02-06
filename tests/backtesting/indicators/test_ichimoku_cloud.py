@@ -501,15 +501,17 @@ class TestIchimokuCaching:
         Tests that cache stores and retrieves Ichimoku correctly without
         any data corruption or loss of precision.
         """
+        # Clear cache to ensure test isolation and prevent false positives
+        indicator_cache.cache_data.clear()
         indicator_cache.reset_stats()
 
-        # First calculation
+        # First calculation (should miss due to empty cache)
         result_1 = _calculate_ichimoku(
             zs_1h_data['high'],
             zs_1h_data['low'],
             zs_1h_data['close']
         )
-        first_misses = indicator_cache.misses
+        assert indicator_cache.misses == 1, "First calculation should cause cache miss"
 
         # Second calculation (should hit cache)
         result_2 = _calculate_ichimoku(
@@ -518,9 +520,9 @@ class TestIchimokuCaching:
             zs_1h_data['close']
         )
 
-        # Verify cache was hit (misses didn't increase)
-        assert indicator_cache.misses == first_misses, \
-            "Second calculation should not cause cache miss"
+        # Verify cache was hit (misses remained at 1)
+        assert indicator_cache.misses == 1, "Second calculation should not cause cache miss"
+        assert indicator_cache.hits == 1, "Second calculation should cause cache hit"
 
         # Verify identical results for all components
         for component_name in result_1.keys():

@@ -364,17 +364,20 @@ class TestMACDCaching:
         Tests that cache stores and retrieves MACD correctly without
         any data corruption or loss of precision.
         """
+        # Clear cache to ensure test isolation and prevent false positives
+        indicator_cache.cache_data.clear()
         indicator_cache.reset_stats()
 
-        # First calculation
+        # First calculation (should miss due to empty cache)
         macd_1 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
-        first_misses = indicator_cache.misses
+        assert indicator_cache.misses == 1, "First calculation should cause cache miss"
 
         # Second calculation (should hit cache)
         macd_2 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
 
-        # Verify cache was hit
-        assert indicator_cache.misses == first_misses, "Second calculation should not cause cache miss"
+        # Verify cache was hit (misses remained at 1)
+        assert indicator_cache.misses == 1, "Second calculation should not cause cache miss"
+        assert indicator_cache.hits == 1, "Second calculation should cause cache hit"
 
         # Verify identical results
         pd.testing.assert_frame_equal(macd_1, macd_2, "Cached MACD should match exactly")
