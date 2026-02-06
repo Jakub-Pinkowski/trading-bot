@@ -385,3 +385,154 @@ def assert_longer_period_smoother(short_result, long_result, indicator_name='Ind
             f"(short std={short_changes.std():.6f}, long std={long_changes.std():.6f})"
     else:
         raise ValueError("Results must be pandas Series")
+
+
+# ==================== Complete Cache Test Patterns ====================
+
+def assert_recalculation_hits_cache(calc_func, *args, **kwargs):
+    """
+    Assert that recalculating with same parameters hits cache.
+
+    Generic function that works with any indicator calculation.
+
+    Args:
+        calc_func: Indicator calculation function
+        *args: Arguments to pass to calc_func
+        **kwargs: Keyword arguments to pass to calc_func
+
+    Example:
+        # For RSI
+        assert_recalculation_hits_cache(
+            _calculate_rsi,
+            zs_1h_data['close'],
+            period=14
+        )
+
+        # For MACD
+        assert_recalculation_hits_cache(
+            _calculate_macd,
+            zs_1h_data['close'],
+            fast_period=12,
+            slow_period=26,
+            signal_period=9
+        )
+    """
+    misses_before = indicator_cache.misses
+    result = calc_func(*args, **kwargs)
+    assert indicator_cache.misses == misses_before, \
+        f"Recalculation should hit cache (misses increased from {misses_before} to {indicator_cache.misses})"
+    return result
+
+
+def test_cache_distinguishes_different_params(
+    result1, result2, recalc_func, recalc_args,
+    result_type='series', indicator_name='Indicator'
+):
+    """
+    Complete test for cache distinguishing different parameters.
+
+    Tests that:
+    1. Different parameters produce different results
+    2. Recalculating with same parameters hits cache
+    3. Cached result matches original
+
+    Args:
+        result1: Result with first parameter set
+        result2: Result with second parameter set
+        recalc_func: Function to recalculate result1
+        recalc_args: Tuple of (args, kwargs) for recalc_func
+        result_type: 'series', 'dataframe', or 'dict'
+        indicator_name: Name for error messages
+
+    Example:
+        rsi_14 = _calculate_rsi(data, period=14)
+        rsi_21 = _calculate_rsi(data, period=21)
+        test_cache_distinguishes_different_params(
+            rsi_14, rsi_21,
+            _calculate_rsi,
+            ((data,), {'period': 14}),
+            'series', 'RSI'
+        )
+    """
+    # Step 1: Different params should produce different results
+    assert_different_params_use_different_cache(result1, result2)
+
+    # Step 2: Recalculation should hit cache
+    args, kwargs = recalc_args
+    misses_before = indicator_cache.misses
+    result1_again = recalc_func(*args, **kwargs)
+    assert indicator_cache.misses == misses_before, \
+        f"{indicator_name}: Recalculation should hit cache"
+
+    # Step 3: Cached result should match original
+    if result_type == 'series':
+        np.testing.assert_array_equal(
+            result1.values,
+            result1_again.values,
+            err_msg=f"{indicator_name}: Cached result should match original"
+        )
+    elif result_type == 'dataframe':
+        pd.testing.assert_frame_equal(
+            result1,
+            result1_again,
+            check_exact=True,
+            obj=f"{indicator_name} cached result"
+        )
+    elif result_type == 'dict':
+        for key in result1.keys():
+            np.testing.assert_array_equal(
+                result1[key].values,
+                result1_again[key].values,
+                err_msg=f"{indicator_name}[{key}]: Cached result should match original"
+            )
+
+
+def assert_cache_distinguishes_different_data(result1, result2, len1, len2, indicator_name='Indicator'):
+    """
+    Test that cache distinguishes different data series.
+
+    Validates that:
+    1. Different datasets produce different results
+    2. Results have different lengths (confirming different data)
+
+    Args:
+        result1: Result from first dataset
+        result2: Result from second dataset
+        len1: Expected length of result1
+        len2: Expected length of result2
+        indicator_name: Name for error messages
+
+    Example:
+        rsi_zs = _calculate_rsi(zs_data['close'], period=14)
+        rsi_cl = _calculate_rsi(cl_data['close'], period=14)
+        test_cache_distinguishes_different_data(
+            rsi_zs, rsi_cl,
+            len(zs_data), len(cl_data),
+            'RSI'
+        )
+    """
+    # Different data should produce different results
+    if isinstance(result1, pd.Series) and isinstance(result2, pd.Series):
+        assert not result1.equals(result2), \
+            f"{indicator_name}: Different data should produce different results"
+    elif isinstance(result1, pd.DataFrame) and isinstance(result2, pd.DataFrame):
+        try:
+            pd.testing.assert_frame_equal(result1, result2)
+            raise AssertionError(f"{indicator_name}: Different data should produce different results")
+        except AssertionError as e:
+            if "should produce different results" in str(e):
+                raise
+            # Expected - dataframes are different
+            pass
+    elif isinstance(result1, dict) and isinstance(result2, dict):
+        # Check at least one component differs
+        differs = False
+        for key in result1.keys():
+            if not result1[key].equals(result2[key]):
+                differs = True
+                break
+        assert differs, f"{indicator_name}: Different data should produce different results"
+
+    # Different datasets should have different lengths
+    assert len1 != len2, \
+        f"{indicator_name}: Different datasets should have different lengths ({len1} vs {len2})"

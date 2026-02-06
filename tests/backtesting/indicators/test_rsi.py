@@ -19,6 +19,8 @@ from tests.backtesting.helpers.indicator_test_utils import (
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_values_in_range,
+    assert_different_params_use_different_cache,
+    assert_cache_distinguishes_different_data,
 )
 
 
@@ -336,15 +338,13 @@ class TestRSICaching:
         rsi_14 = _calculate_rsi(zs_1h_data['close'], period=14)
         rsi_21 = _calculate_rsi(zs_1h_data['close'], period=21)
 
-        # Results should differ
-        assert not rsi_14.equals(rsi_21), "Different periods should produce different RSI"
+        # Use utility to test complete cache behavior
+        assert_different_params_use_different_cache(rsi_14, rsi_21)
 
-        # Recalculate - should hit cache (misses shouldn't increase)
-        misses_before_recalc = indicator_cache.misses
+        # Recalculate - should hit cache
+        misses_before = indicator_cache.misses
         rsi_14_again = _calculate_rsi(zs_1h_data['close'], period=14)
-        assert indicator_cache.misses == misses_before_recalc, "Recalculation should hit cache"
-
-        # Should get same values
+        assert indicator_cache.misses == misses_before, "Recalculation should hit cache"
         np.testing.assert_array_equal(rsi_14.values, rsi_14_again.values)
 
     def test_cache_distinguishes_different_data(self, zs_1h_data, cl_15m_data):
@@ -360,9 +360,12 @@ class TestRSICaching:
         rsi_zs = _calculate_rsi(zs_1h_data['close'], period=14)
         rsi_cl = _calculate_rsi(cl_15m_data['close'], period=14)
 
-        # Results should differ (different underlying data)
-        assert not rsi_zs.equals(rsi_cl), "Different data should produce different RSI"
-        assert len(rsi_zs) != len(rsi_cl), "Different datasets should have different lengths"
+        # Use utility to validate different data behavior
+        assert_cache_distinguishes_different_data(
+            rsi_zs, rsi_cl,
+            len(zs_1h_data), len(cl_15m_data),
+            'RSI'
+        )
 
 
 class TestRSIEdgeCases:

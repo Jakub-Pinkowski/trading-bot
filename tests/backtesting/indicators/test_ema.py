@@ -17,6 +17,7 @@ from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
     assert_cache_hit_on_second_call,
+    assert_indicator_structure,
     assert_longer_period_smoother,
 )
 
@@ -42,8 +43,7 @@ class TestEMABasicLogic:
         """EMA should return a series with same length as input."""
         ema = _calculate_ema(short_price_series, period=9)
 
-        assert len(ema) == len(short_price_series), "EMA length must equal input length"
-        assert isinstance(ema, pd.Series), "EMA must return pandas Series"
+        assert_indicator_structure(ema, len(short_price_series), 'series', indicator_name='EMA')
 
     def test_ema_lags_rising_prices(self, rising_price_series):
         """EMA should lag behind continuously rising prices."""
@@ -67,12 +67,7 @@ class TestEMABasicLogic:
         """EMA should change when prices change."""
         ema = _calculate_ema(medium_price_series, period=9)
 
-        # Get valid EMA values (after warmup)
-        valid_ema = ema.dropna()
-
-        # EMA should show variation
-        assert valid_ema.std() > 0, "EMA should vary with price changes"
-        assert len(valid_ema.unique()) > 1, "EMA should have different values"
+        assert_indicator_varies(ema, 'EMA')
 
     def test_ema_has_no_initial_nans(self, short_price_series):
         """EMA calculation starts immediately (no initial NaN warmup)."""
@@ -153,14 +148,10 @@ class TestEMACalculationWithRealData:
         """
         ema = _calculate_ema(zs_1h_data['close'], period=period)
 
-        # Validate structure
-        assert len(ema) == len(zs_1h_data)
-
-        # Validate EMA is valid
+        # Validate structure and variation
+        assert_indicator_structure(ema, len(zs_1h_data), 'series', indicator_name=f'EMA({period})')
         assert_valid_indicator(ema, f'EMA({period})', min_val=0)
-
-        # EMA should show variation
-        assert ema.dropna().std() > 0, "EMA should vary"
+        assert_indicator_varies(ema, f'EMA({period})')
 
     def test_ema_extreme_but_valid_parameters(self, zs_1h_data):
         """

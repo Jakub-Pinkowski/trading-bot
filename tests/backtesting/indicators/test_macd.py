@@ -17,6 +17,7 @@ from tests.backtesting.helpers.indicator_test_utils import (
     setup_cache_test,
     assert_cache_was_hit,
     assert_cache_hit_on_second_call,
+    assert_indicator_structure,
     assert_longer_period_smoother,
 )
 
@@ -42,10 +43,13 @@ class TestMACDBasicLogic:
         """MACD should return DataFrame with macd_line, signal_line, histogram."""
         macd = _calculate_macd(medium_price_series, fast_period=12, slow_period=26, signal_period=9)
 
-        assert isinstance(macd, pd.DataFrame), "MACD must return pandas DataFrame"
-        assert len(macd) == len(medium_price_series), "MACD length must equal input length"
-        assert list(macd.columns) == ['macd_line', 'signal_line', 'histogram'], \
-            "MACD must have columns: macd_line, signal_line, histogram"
+        assert_indicator_structure(
+            macd,
+            len(medium_price_series),
+            'dataframe',
+            ['macd_line', 'signal_line', 'histogram'],
+            'MACD'
+        )
 
     def test_histogram_equals_macd_minus_signal(self, medium_price_series):
         """Histogram should equal macd_line - signal_line at all points."""
@@ -234,13 +238,12 @@ class TestMACDCalculationWithRealData:
         # Align the series to compare the same time periods
         common_idx = valid_short.index.intersection(valid_long.index)
         assert len(common_idx) > 100, "Need sufficient overlap to compare volatility meaningfully"
-        
+
         short_aligned = valid_short.loc[common_idx]
         long_aligned = valid_long.loc[common_idx]
 
         # Use utility to compare smoothness
         assert_longer_period_smoother(short_aligned, long_aligned, 'MACD Histogram')
-
 
     def test_macd_values_match_expected_calculation(self, zs_1h_data):
         """
