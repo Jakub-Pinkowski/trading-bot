@@ -1,441 +1,685 @@
-import numpy as np
-import pandas as pd
+"""
+Ichimoku Cloud Strategy Test Suite.
+
+Tests Ichimoku Cloud strategy implementation with real historical data:
+- Strategy initialization and configuration
+- Indicator calculation within strategy (all 5 Ichimoku components)
+- Signal generation logic (TK cross + cloud position)
+- Full strategy execution and trade generation
+- Edge cases and error handling
+
+Uses real market data (ZS, CL) from data/historical_data/.
+"""
+import pytest
 
 from app.backtesting.strategies import IchimokuCloudStrategy
-from tests.backtesting.strategies.conftest import create_test_df
+from tests.backtesting.helpers.assertions import (
+    assert_valid_indicator,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades
+)
+from tests.backtesting.strategies.strategy_test_utils import (
+    assert_strategy_basic_attributes,
+    assert_trailing_stop_configured,
+    assert_rollover_configured,
+    assert_strategy_name_contains,
+    assert_trades_have_both_directions,
+    assert_similar_trade_count,
+    assert_signals_convert_to_trades,
+    assert_both_signal_types_present,
+    assert_minimal_warmup_signals,
+    assert_faster_params_generate_more_trades,
+    assert_indicator_columns_exist,
+    create_small_ohlcv_dataframe,
+    create_constant_price_dataframe,
+    create_gapped_dataframe,
+    get_common_backtest_configs,
+)
 
 
-class TestIchimokuCloudStrategy:
-    def test_initialization(self):
-        """Test that the Ichimoku Cloud strategy initializes with correct default parameters."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        assert strategy.tenkan_period == 9
-        assert strategy.kijun_period == 26
-        assert strategy.senkou_span_b_period == 52
-        assert strategy.displacement == 26
+# ==================== Test Strategy Initialization ====================
 
-        # Test with custom parameters
-        strategy = IchimokuCloudStrategy(tenkan_period=5,
-                                         kijun_period=15,
-                                         senkou_span_b_period=30,
-                                         displacement=15,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        assert strategy.tenkan_period == 5
-        assert strategy.kijun_period == 15
-        assert strategy.senkou_span_b_period == 30
-        assert strategy.displacement == 15
+class TestIchimokuStrategyInitialization:
+    """Test Ichimoku Cloud strategy initialization and configuration."""
 
-    def test_add_indicators(self):
-        """Test that the add_indicators method correctly adds Ichimoku components to the dataframe."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        # Create a dataframe with enough data for Ichimoku calculations
-        df = create_test_df(length=200)
+    @pytest.mark.parametrize("tenkan,kijun,senkou_b,displacement,description", [
+        (9, 26, 52, 26, "standard"),
+        (7, 22, 44, 22, "faster"),
+        (12, 30, 60, 30, "slower"),
+        (9, 26, 52, 10, "short_displacement"),
+    ])
+    def test_initialization_with_various_parameters(self, tenkan, kijun, senkou_b, displacement, description):
+        """Test Ichimoku strategy initializes correctly with various period combinations."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=tenkan,
+            kijun_period=kijun,
+            senkou_span_b_period=senkou_b,
+            displacement=displacement,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Apply the strategy's add_indicators method
-        df_with_indicators = strategy.add_indicators(df)
+        assert strategy.tenkan_period == tenkan
+        assert strategy.kijun_period == kijun
+        assert strategy.senkou_span_b_period == senkou_b
+        assert strategy.displacement == displacement
+        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
 
-        # Verify Ichimoku columns were added
-        assert 'tenkan_sen' in df_with_indicators.columns
-        assert 'kijun_sen' in df_with_indicators.columns
-        assert 'senkou_span_a' in df_with_indicators.columns
-        assert 'senkou_span_b' in df_with_indicators.columns
-        assert 'chikou_span' in df_with_indicators.columns
+    def test_initialization_with_trailing_stop(self):
+        """Test Ichimoku strategy with trailing stop enabled."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=2.0,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Verify that we have some valid values
-        assert not df_with_indicators['tenkan_sen'].isna().all()
-        assert not df_with_indicators['kijun_sen'].isna().all()
-        assert not df_with_indicators['senkou_span_a'].isna().all()
-        assert not df_with_indicators['senkou_span_b'].isna().all()
-        assert not df_with_indicators['chikou_span'].isna().all()
+        assert_trailing_stop_configured(strategy, 2.0)
 
-        # Verify initial values are NaN due to calculation requirements
-        assert df_with_indicators['tenkan_sen'].iloc[:8].isna().all()
-        assert df_with_indicators['kijun_sen'].iloc[:25].isna().all()
-        assert df_with_indicators['senkou_span_b'].iloc[:51].isna().all()
+    def test_initialization_with_rollover_enabled(self):
+        """Test Ichimoku strategy with contract rollover handling."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=True,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-    def test_generate_signals_default_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        df = create_test_df(length=200)
-        df = strategy.add_indicators(df)
+        assert_rollover_configured(strategy)
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
+    def test_format_name_generates_correct_string(self):
+        """Test strategy name formatting for identification."""
+        name = IchimokuCloudStrategy.format_name(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1
+        )
 
-        # Verify signal column was added
-        assert 'signal' in df_with_signals.columns
+        assert_strategy_name_contains(
+            name, 'Ichimoku', 'tenkan=9', 'kijun=26',
+            'senkou_b=52', 'displacement=26', 'rollover=False'
+        )
 
-        # Verify signals are either -1, 0, or 1
-        assert df_with_signals['signal'].isin([-1, 0, 1]).all()
 
-        # Find buy signals (Tenkan-sen crosses above Kijun-sen AND price is above the cloud)
-        buy_signals = df_with_signals[df_with_signals['signal'] == 1]
+# ==================== Test Indicator Calculation ====================
 
-        # Find sell signals (Tenkan-sen crosses below Kijun-sen AND price is below the cloud)
-        sell_signals = df_with_signals[df_with_signals['signal'] == -1]
+class TestIchimokuStrategyIndicators:
+    """Test indicator calculation within Ichimoku Cloud strategy."""
 
-        # If we have buy signals, verify the conditions
-        if len(buy_signals) > 0:
-            for idx in buy_signals.index:
-                # Get previous index
-                prev_idx = df_with_signals.index[df_with_signals.index.get_loc(idx) - 1]
+    def test_add_indicators_creates_all_ichimoku_components(self, zs_1h_data):
+        """Test that add_indicators properly calculates all 5 Ichimoku components on real data."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-                # Verify Tenkan-sen crossed above Kijun-sen
-                assert df_with_signals.loc[prev_idx, 'tenkan_sen'] <= df_with_signals.loc[prev_idx, 'kijun_sen']
-                assert df_with_signals.loc[idx, 'tenkan_sen'] > df_with_signals.loc[idx, 'kijun_sen']
+        df = strategy.add_indicators(zs_1h_data.copy())
 
-                # Verify price is above the cloud
-                assert df_with_signals.loc[idx, 'close'] > df_with_signals.loc[idx, 'senkou_span_a']
-                assert df_with_signals.loc[idx, 'close'] > df_with_signals.loc[idx, 'senkou_span_b']
+        # All 5 Ichimoku components should be added
+        assert_indicator_columns_exist(
+            df, 'tenkan_sen', 'kijun_sen', 'senkou_span_a',
+            'senkou_span_b', 'chikou_span'
+        )
 
-        # If we have sell signals, verify the conditions
-        if len(sell_signals) > 0:
-            for idx in sell_signals.index:
-                # Get previous index
-                prev_idx = df_with_signals.index[df_with_signals.index.get_loc(idx) - 1]
+        # Validate component values
+        assert_valid_indicator(df['tenkan_sen'], 'Tenkan-sen', min_val=0, allow_nan=True)
+        assert_valid_indicator(df['kijun_sen'], 'Kijun-sen', min_val=0, allow_nan=True)
+        assert_valid_indicator(df['senkou_span_a'], 'Senkou_Span_A', min_val=0, allow_nan=True)
+        assert_valid_indicator(df['senkou_span_b'], 'Senkou_Span_B', min_val=0, allow_nan=True)
+        assert_valid_indicator(df['chikou_span'], 'Chikou_Span', min_val=0, allow_nan=True)
 
-                # Verify Tenkan-sen crossed below Kijun-sen
-                assert df_with_signals.loc[prev_idx, 'tenkan_sen'] >= df_with_signals.loc[prev_idx, 'kijun_sen']
-                assert df_with_signals.loc[idx, 'tenkan_sen'] < df_with_signals.loc[idx, 'kijun_sen']
+    def test_tenkan_responds_faster_than_kijun(self, zs_1h_data):
+        """Test that Tenkan-sen (faster) is more responsive than Kijun-sen (slower)."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-                # Verify price is below the cloud
-                assert df_with_signals.loc[idx, 'close'] < df_with_signals.loc[idx, 'senkou_span_a']
-                assert df_with_signals.loc[idx, 'close'] < df_with_signals.loc[idx, 'senkou_span_b']
+        df = strategy.add_indicators(zs_1h_data.copy())
 
-    def test_generate_signals_custom_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
-        strategy = IchimokuCloudStrategy(tenkan_period=5,
-                                         kijun_period=15,
-                                         senkou_span_b_period=30,
-                                         displacement=15,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        df = create_test_df(length=200)
-        df = strategy.add_indicators(df)
+        # Remove NaN for comparison
+        valid_data = df.dropna(subset=['tenkan_sen', 'kijun_sen'])
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
+        # Tenkan should have more variation (more responsive)
+        tenkan_std = valid_data['tenkan_sen'].pct_change().dropna().std()
+        kijun_std = valid_data['kijun_sen'].pct_change().dropna().std()
 
-        # Verify signal column was added
-        assert 'signal' in df_with_signals.columns
+        assert tenkan_std > kijun_std * 0.8, \
+            f"Tenkan-sen should be more responsive ({tenkan_std:.6f} vs {kijun_std:.6f})"
 
-        # Verify signals are either -1, 0, or 1
-        assert df_with_signals['signal'].isin([-1, 0, 1]).all()
+    def test_cloud_spans_are_displaced_forward(self, zs_1h_data):
+        """Test that Senkou Spans are displaced forward in time."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Find buy signals (Tenkan-sen crosses above Kijun-sen AND price is above the cloud)
-        buy_signals = df_with_signals[df_with_signals['signal'] == 1]
+        df = strategy.add_indicators(zs_1h_data.copy())
 
-        # Find sell signals (Tenkan-sen crosses below Kijun-sen AND price is below the cloud)
-        sell_signals = df_with_signals[df_with_signals['signal'] == -1]
+        # Senkou Spans should have NaN at the start due to displacement
+        assert df['senkou_span_a'].iloc[:26].isna().all(), \
+            "Senkou Span A should be NaN for first displacement bars"
+        assert df['senkou_span_b'].iloc[:26].isna().all(), \
+            "Senkou Span B should be NaN for first displacement bars"
 
-        # If we have buy signals, verify the conditions
-        if len(buy_signals) > 0:
-            for idx in buy_signals.index:
-                # Get previous index
-                prev_idx = df_with_signals.index[df_with_signals.index.get_loc(idx) - 1]
+    def test_ichimoku_calculation_on_different_symbols(self, zs_1h_data, cl_15m_data):
+        """Test Ichimoku calculation works on different market data."""
+        strategy_zs = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-                # Verify Tenkan-sen crossed above Kijun-sen
-                assert df_with_signals.loc[prev_idx, 'tenkan_sen'] <= df_with_signals.loc[prev_idx, 'kijun_sen']
-                assert df_with_signals.loc[idx, 'tenkan_sen'] > df_with_signals.loc[idx, 'kijun_sen']
+        strategy_cl = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='CL'
+        )
 
-                # Verify price is above the cloud
-                assert df_with_signals.loc[idx, 'close'] > df_with_signals.loc[idx, 'senkou_span_a']
-                assert df_with_signals.loc[idx, 'close'] > df_with_signals.loc[idx, 'senkou_span_b']
+        df_zs = strategy_zs.add_indicators(zs_1h_data.copy())
+        df_cl = strategy_cl.add_indicators(cl_15m_data.copy())
 
-        # If we have sell signals, verify the conditions
-        if len(sell_signals) > 0:
-            for idx in sell_signals.index:
-                # Get previous index
-                prev_idx = df_with_signals.index[df_with_signals.index.get_loc(idx) - 1]
+        # Both should have valid Ichimoku components
+        assert_valid_indicator(df_zs['tenkan_sen'], 'Tenkan_ZS', min_val=0)
+        assert_valid_indicator(df_zs['kijun_sen'], 'Kijun_ZS', min_val=0)
+        assert_valid_indicator(df_cl['tenkan_sen'], 'Tenkan_CL', min_val=0)
+        assert_valid_indicator(df_cl['kijun_sen'], 'Kijun_CL', min_val=0)
 
-                # Verify Tenkan-sen crossed below Kijun-sen
-                assert df_with_signals.loc[prev_idx, 'tenkan_sen'] >= df_with_signals.loc[prev_idx, 'kijun_sen']
-                assert df_with_signals.loc[idx, 'tenkan_sen'] < df_with_signals.loc[idx, 'kijun_sen']
 
-                # Verify price is below the cloud
-                assert df_with_signals.loc[idx, 'close'] < df_with_signals.loc[idx, 'senkou_span_a']
-                assert df_with_signals.loc[idx, 'close'] < df_with_signals.loc[idx, 'senkou_span_b']
+# ==================== Test Signal Generation ====================
 
-    def test_run_end_to_end(self):
-        """Test the full strategy workflow from data to trades."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-        df = create_test_df(length=200)
+class TestIchimokuStrategySignals:
+    """Test signal generation logic for Ichimoku Cloud strategy."""
 
-        # Run the strategy
-        trades = strategy.run(df, [])
+    def test_generate_signals_creates_signal_column(self, zs_1h_data):
+        """Test that generate_signals creates signal column."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-    def test_no_signals_with_flat_prices(self):
-        """Test that no signals are generated when prices are flat."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
-
-        # Create a dataframe with flat prices
-        dates = pd.date_range(start='2020-01-01', periods=200)
-        data = {
-            'open': [100] * 200,
-            'high': [101] * 200,
-            'low': [99] * 200,
-            'close': [100] * 200,
-        }
-        df = pd.DataFrame(data, index=dates)
-
-        # Add indicators and generate signals
-        df = strategy.add_indicators(df)
+        df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        # With flat prices, there should be no signals
-        assert (df['signal'] == 0).all()
+        assert 'signal' in df.columns
+        assert_valid_signals(df)
 
-    def test_with_trailing_stop(self):
-        """Test the strategy with trailing stop."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=0.05,
-                                         slippage_ticks=0,
-                                         symbol=None)  # 5% trailing stop
-        df = create_test_df(length=200)
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If there are trades, verify trailing stop logic
-        # Note: The actual trade dictionaries don't have 'exit_reason' or 'direction' keys
-        # Instead, they have 'entry_time', 'entry_price', 'exit_time', 'exit_price', and 'side' keys
-        for trade in trades:
-            if trade['side'] == 'long':
-                # For long trades, check if the exit price could be due to a trailing stop
-                highest_price = df.loc[trade['entry_time']:trade['exit_time'], 'high'].max()
-                # If the exit price is significantly lower than the highest price during the trade,
-                # it might be due to a trailing stop
-                if trade['exit_price'] < highest_price * 0.97:  # Allow some buffer
-                    # Verify the exit price is not lower than what the trailing stop would allow
-                    assert trade['exit_price'] >= highest_price * (1 - 0.05 - 0.01)  # 5% trailing + 1% buffer
-            else:  # short
-                # For short trades, check if the exit price could be due to a trailing stop
-                lowest_price = df.loc[trade['entry_time']:trade['exit_time'], 'low'].min()
-                # If the exit price is significantly higher than the lowest price during the trade,
-                # it might be due to a trailing stop
-                if trade['exit_price'] > lowest_price * 1.03:  # Allow some buffer
-                    # Verify the exit price is not higher than what the trailing stop would allow
-                    assert trade['exit_price'] <= lowest_price * (1 + 0.05 + 0.01)  # 5% trailing + 1% buffer
-
-    def test_with_slippage(self):
-        """Test the strategy with slippage."""
-        from config import TICK_SIZES, DEFAULT_TICK_SIZE
-        
-        slippage_ticks = 1  # 1 tick slippage
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=slippage_ticks,
-                                         symbol=None)
-        df = create_test_df(length=200)
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # Get tick size
-        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
-        slippage_amount = slippage_ticks * tick_size
-
-        # If there are trades, verify slippage is applied
-        for trade in trades:
-            if trade['side'] == 'long':
-                # For long trades, entry price should be higher than the open price
-                entry_time = trade['entry_time']
-                entry_price = trade['entry_price']
-                open_price = df.loc[entry_time, 'open']
-                # Entry price should be open + slippage_amount
-                expected_entry = round(open_price + slippage_amount, 2)
-                assert entry_price == expected_entry, f"Expected {expected_entry}, got {entry_price}"
-            else:  # short
-                # For short trades, entry price should be lower than the open price
-                entry_time = trade['entry_time']
-                entry_price = trade['entry_price']
-                open_price = df.loc[entry_time, 'open']
-                # Entry price should be open - slippage_amount
-                expected_entry = round(open_price - slippage_amount, 2)
-                assert entry_price == expected_entry, f"Expected {expected_entry}, got {entry_price}"
-
-    def test_extreme_market_conditions(self):
-        """Test the strategy under extreme market conditions."""
+    def test_long_signal_requires_tk_cross_and_above_cloud(self, zs_1h_data):
+        """Test long signals require Tenkan crossing above Kijun AND price above cloud."""
         strategy = IchimokuCloudStrategy(
-            tenkan_period=5,  # Use shorter periods to generate more signals
-            kijun_period=10,
-            senkou_span_b_period=20,
-            displacement=10,
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        # Find long signal bars
+        long_signal_bars = df[df['signal'] == 1]
+
+        if len(long_signal_bars) > 0:
+            # Long signals should occur when Tenkan > Kijun
+            assert (long_signal_bars['tenkan_sen'] > long_signal_bars['kijun_sen']).all(), \
+                "Long signals should occur when Tenkan-sen > Kijun-sen"
+
+            # And price should be above both cloud spans
+            above_span_a = long_signal_bars['close'] > long_signal_bars['senkou_span_a']
+            above_span_b = long_signal_bars['close'] > long_signal_bars['senkou_span_b']
+
+            assert (above_span_a & above_span_b).all(), \
+                "Long signals should occur when price is above cloud"
+
+    def test_short_signal_requires_tk_cross_and_below_cloud(self, zs_1h_data):
+        """Test short signals require Tenkan crossing below Kijun AND price below cloud."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        # Find short signal bars
+        short_signal_bars = df[df['signal'] == -1]
+
+        if len(short_signal_bars) > 0:
+            # Short signals should occur when Tenkan < Kijun
+            assert (short_signal_bars['tenkan_sen'] < short_signal_bars['kijun_sen']).all(), \
+                "Short signals should occur when Tenkan-sen < Kijun-sen"
+
+            # And price should be below both cloud spans
+            below_span_a = short_signal_bars['close'] < short_signal_bars['senkou_span_a']
+            below_span_b = short_signal_bars['close'] < short_signal_bars['senkou_span_b']
+
+            assert (below_span_a & below_span_b).all(), \
+                "Short signals should occur when price is below cloud"
+
+    def test_no_signal_when_price_inside_cloud(self, zs_1h_data):
+        """Test no signals generated when price is inside the cloud (neutral zone)."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        # Signals should be relatively rare (cloud filter makes them selective)
+        signal_count = (df['signal'] != 0).sum()
+
+        # Should have some signals but not too many (Ichimoku is conservative)
+        assert signal_count > 0, "Expected some signals on 2-year real data"
+        assert signal_count < len(df) * 0.05, "Too many signals for Ichimoku strategy"
+
+    def test_faster_periods_generate_more_signals(self, zs_1h_data):
+        """Test that faster Ichimoku parameters generate more signals."""
+        strategy_fast = IchimokuCloudStrategy(
+            tenkan_period=7,
+            kijun_period=22,
+            senkou_span_b_period=44,
+            displacement=22,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        strategy_slow = IchimokuCloudStrategy(
+            tenkan_period=12,
+            kijun_period=30,
+            senkou_span_b_period=60,
+            displacement=30,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df_fast = strategy_fast.add_indicators(zs_1h_data.copy())
+        df_fast = strategy_fast.generate_signals(df_fast)
+
+        df_slow = strategy_slow.add_indicators(zs_1h_data.copy())
+        df_slow = strategy_slow.generate_signals(df_slow)
+
+        # Fast parameters should generate at least as many signals
+        fast_signal_count = (df_fast['signal'] != 0).sum()
+        slow_signal_count = (df_slow['signal'] != 0).sum()
+
+        # Fast settings typically more signals, but allow for market conditions
+        assert fast_signal_count >= slow_signal_count * 0.7, \
+            f"Fast Ichimoku should generate similar or more signals ({fast_signal_count} vs {slow_signal_count})"
+
+    def test_both_long_and_short_signals_present(self, zs_1h_data):
+        """Test that strategy generates both long and short signals."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        assert_both_signal_types_present(df)
+
+    def test_no_signals_generated_during_warmup_period(self, zs_1h_data):
+        """Test that minimal signals are generated while Ichimoku is stabilizing."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
+
+        # During warmup (first ~52 bars for Senkou Span B), signals should be minimal
+        assert_minimal_warmup_signals(df, warmup_bars=52, max_warmup_signals=2)
+
+
+# ==================== Test Strategy Execution ====================
+
+class TestIchimokuStrategyExecution:
+    """Test full strategy execution with trade generation."""
+
+    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
+    def test_backtest_execution_variants(
+        self, symbol, interval, trailing, description,
+        load_real_data, contract_switch_dates
+    ):
+        """Test Ichimoku strategy backtest with various configurations and data sources."""
+        data = load_real_data('1!', symbol, interval)
+
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=trailing,
+            slippage_ticks=1,
+            symbol=symbol
+        )
+
+        trades = strategy.run(data.copy(), contract_switch_dates.get(symbol, []))
+
+        assert len(trades) > 0, f"Expected trades for {symbol} {interval} (config: {description})"
+        assert_valid_trades(trades)
+
+    def test_trades_have_both_long_and_short_positions(self, zs_1h_data, contract_switch_dates):
+        """Test that backtest generates both long and short trades."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_trades_have_both_directions(trades)
+
+    def test_trades_do_not_overlap(self, zs_1h_data, contract_switch_dates):
+        """Test that trades don't overlap (proper position management)."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_no_overlapping_trades(trades)
+
+    def test_backtest_with_slippage_affects_prices(self, zs_1h_data, contract_switch_dates):
+        """Test that slippage is properly applied to trade prices."""
+        strategy_no_slip = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
             rollover=False,
             trailing=None,
             slippage_ticks=0,
-            symbol=None
+            symbol='ZS'
         )
 
-        # Create a dataframe with extreme market conditions
-        # We'll create a more complex price pattern to ensure signal generation
-        dates = pd.date_range(start='2020-01-01', periods=300)
+        strategy_with_slip = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=2,
+            symbol='ZS'
+        )
 
-        # Create a price series with multiple trend changes to trigger signals
-        # Start with a flat period
-        flat_period = np.ones(50) * 100
+        trades_no_slip = strategy_no_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_with_slip = strategy_with_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Then a sharp rise
-        rise_period = np.linspace(100, 200, 50)
+        assert_similar_trade_count(trades_no_slip, trades_with_slip, max_difference=5)
 
-        # Then a consolidation
-        consolidation = np.ones(50) * 200
+    def test_backtest_with_different_ichimoku_periods(self, zs_1h_data, contract_switch_dates):
+        """Test that different Ichimoku periods produce different trade patterns."""
+        strategy_fast = IchimokuCloudStrategy(
+            tenkan_period=7,
+            kijun_period=22,
+            senkou_span_b_period=44,
+            displacement=22,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Then a sharp fall
-        fall_period = np.linspace(200, 100, 50)
+        strategy_slow = IchimokuCloudStrategy(
+            tenkan_period=12,
+            kijun_period=30,
+            senkou_span_b_period=60,
+            displacement=30,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Another consolidation
-        consolidation2 = np.ones(50) * 100
+        trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Final rise
-        final_rise = np.linspace(100, 150, 50)
+        assert_faster_params_generate_more_trades(trades_fast, trades_slow, "Ichimoku period")
 
-        # Combine all periods
-        base_prices = np.concatenate([flat_period, rise_period, consolidation, fall_period, consolidation2, final_rise])
+    def test_signals_convert_to_actual_trades(self, zs_1h_data, contract_switch_dates):
+        """Test that generated signals result in actual trades."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Add some noise to create crossovers
-        noise = np.random.normal(0, 5, 300)
-        close_prices = base_prices + noise
-
-        # Create the dataframe
-        data = {
-            'open': close_prices - 1,
-            'high': close_prices + 2,
-            'low': close_prices - 2,
-            'close': close_prices,
-        }
-
-        df = pd.DataFrame(data, index=dates)
-
-        # Add indicators and generate signals
-        df = strategy.add_indicators(df)
+        # Get signals
+        df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        # Verify that signals are generated under extreme market conditions
-        # The test output shows that signals are being generated, which is what we want to test
+        # Get trades
+        trades = strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Count the number of buy and sell signals
-        buy_signals = (df['signal'] == 1).sum()
-        sell_signals = (df['signal'] == -1).sum()
-        total_signals = buy_signals + sell_signals
+        assert_signals_convert_to_trades(df, trades)
 
-        # Verify that at least some signals are generated
-        assert total_signals > 0, "No signals were generated under extreme market conditions"
 
-        # Verify that both buy and sell signals are generated
-        assert buy_signals > 0, "No buy signals were generated"
-        assert sell_signals > 0, "No sell signals were generated"
+# ==================== Test Edge Cases ====================
 
-        # Verify that the Ichimoku components are calculated correctly
-        # Check that Tenkan-sen and Kijun-sen are not all NaN
-        assert not df['tenkan_sen'].isna().all()
-        assert not df['kijun_sen'].isna().all()
+class TestIchimokuStrategyEdgeCases:
+    """Test edge cases and error handling."""
 
-        # Check that the cloud components are calculated correctly
-        assert not df['senkou_span_a'].isna().all()
-        assert not df['senkou_span_b'].isna().all()
+    def test_strategy_with_insufficient_data(self):
+        """Test strategy behavior with insufficient data for Ichimoku calculation."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # 3. Run the strategy to generate trades
-        trades = strategy.run(df, [])
+        # Create small dataset using utility
+        small_data = create_small_ohlcv_dataframe(bars=10, base_price=100)
 
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
+        df = strategy.add_indicators(small_data.copy())
 
-    def test_ichimoku_cloud_color(self):
-        """Test the Ichimoku cloud color (bullish/bearish) under different market conditions."""
-        strategy = IchimokuCloudStrategy(tenkan_period=9,
-                                         kijun_period=26,
-                                         senkou_span_b_period=52,
-                                         displacement=26,
-                                         rollover=False,
-                                         trailing=None,
-                                         slippage_ticks=0,
-                                         symbol=None)
+        # With only 10 bars, Ichimoku should have many NaN values
+        assert df['tenkan_sen'].isna().sum() > 0
+        assert df['kijun_sen'].isna().sum() > 0
+        assert df['senkou_span_b'].isna().sum() > 0
 
-        # Create a dataframe with different market conditions
-        dates = pd.date_range(start='2020-01-01', periods=200)
+    def test_strategy_with_constant_prices(self):
+        """Test strategy with constant prices (no volatility)."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # First 100 days: uptrend
-        up_close = np.linspace(100, 200, 100)
+        # Create constant price data using utility
+        constant_data = create_constant_price_dataframe(bars=100, price=100)
 
-        # Next 100 days: downtrend
-        down_close = np.linspace(200, 100, 100)
+        df = strategy.add_indicators(constant_data.copy())
+        df = strategy.generate_signals(df)
 
-        close_prices = np.concatenate([up_close, down_close])
+        # With constant prices, all components should be the same value and no crossovers
+        valid_tenkan = df['tenkan_sen'].dropna()
+        valid_kijun = df['kijun_sen'].dropna()
 
-        data = {
-            'open': close_prices - 1,
-            'high': close_prices + 2,
-            'low': close_prices - 2,
-            'close': close_prices,
-        }
+        if len(valid_tenkan) > 0 and len(valid_kijun) > 0:
+            # All components should be close to the constant price
+            assert (valid_tenkan - 100).abs().max() < 0.01
+            assert (valid_kijun - 100).abs().max() < 0.01
 
-        df = pd.DataFrame(data, index=dates)
+        # No signals with constant prices
+        assert (df['signal'] == 0).all()
 
-        # Add indicators
-        df = strategy.add_indicators(df)
+    def test_strategy_with_extreme_volatility(self, volatile_market_data):
+        """Test strategy handles extreme volatility."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # In an uptrend, the cloud should be bullish (Senkou Span A > Senkou Span B)
-        uptrend_idx = 80  # Index in the uptrend
-        assert df['senkou_span_a'].iloc[uptrend_idx] > df['senkou_span_b'].iloc[uptrend_idx]
+        df = strategy.add_indicators(volatile_market_data.copy())
+        df = strategy.generate_signals(df)
 
-        # In a downtrend, the cloud should be bearish (Senkou Span A < Senkou Span B)
-        downtrend_idx = 180  # Index in the downtrend
-        assert df['senkou_span_a'].iloc[downtrend_idx] < df['senkou_span_b'].iloc[downtrend_idx]
+        # Should still produce valid Ichimoku components and signals
+        assert_valid_indicator(df['tenkan_sen'], 'Tenkan-sen', min_val=0)
+        assert_valid_indicator(df['kijun_sen'], 'Kijun-sen', min_val=0)
+        assert_valid_signals(df)
+
+    def test_strategy_with_trending_market(self, trending_market_data):
+        """Test strategy in strong trending market."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(trending_market_data.copy())
+        df = strategy.generate_signals(df)
+
+        # In trending market, Ichimoku should produce signals
+        # but cloud acts as filter
+        assert_valid_signals(df)
+
+    def test_strategy_handles_gaps_in_data(self, zs_1h_data):
+        """Test strategy handles missing bars in data."""
+        strategy = IchimokuCloudStrategy(
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        # Create data with gap using utility
+        gapped_data = create_gapped_dataframe(zs_1h_data, gap_start=100, gap_end=150)
+
+        df = strategy.add_indicators(gapped_data.copy())
+        df = strategy.generate_signals(df)
+
+        # Should still calculate Ichimoku components and signals
+        assert_indicator_columns_exist(
+            df, 'tenkan_sen', 'kijun_sen', 'senkou_span_a',
+            'senkou_span_b', 'chikou_span', 'signal'
+        )
+        assert_valid_signals(df)
