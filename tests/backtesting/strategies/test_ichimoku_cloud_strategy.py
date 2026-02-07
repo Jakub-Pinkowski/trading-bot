@@ -121,20 +121,9 @@ class TestIchimokuStrategyInitialization:
 class TestIchimokuStrategyIndicators:
     """Test indicator calculation within Ichimoku Cloud strategy."""
 
-    def test_add_indicators_creates_all_ichimoku_components(self, zs_1h_data):
+    def test_add_indicators_creates_all_ichimoku_components(self, standard_ichimoku_strategy, zs_1h_data):
         """Test that add_indicators properly calculates all 5 Ichimoku components on real data."""
-        strategy = IchimokuCloudStrategy(
-            tenkan_period=9,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26,
-            rollover=False,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        df = strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ichimoku_strategy.add_indicators(zs_1h_data.copy())
 
         # All 5 Ichimoku components should be added
         assert_indicator_columns_exist(
