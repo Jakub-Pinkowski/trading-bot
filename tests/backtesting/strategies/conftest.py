@@ -11,7 +11,8 @@ from app.backtesting.strategies import (
     RSIStrategy,
     EMACrossoverStrategy,
     MACDStrategy,
-    IchimokuCloudStrategy
+    IchimokuCloudStrategy,
+    BollingerBandsStrategy
 )
 
 
@@ -66,6 +67,19 @@ def standard_rsi_strategy():
         rsi_period=14,
         lower_threshold=30,
         upper_threshold=70,
+        rollover=False,
+        trailing=None,
+        slippage_ticks=1,
+        symbol='ZS'
+    )
+
+
+@pytest.fixture
+def standard_bollinger_strategy():
+    """Standard Bollinger Bands strategy with default parameters."""
+    return BollingerBandsStrategy(
+        period=20,
+        number_of_standard_deviations=2.0,
         rollover=False,
         trailing=None,
         slippage_ticks=1,
