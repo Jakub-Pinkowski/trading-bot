@@ -149,6 +149,22 @@ class TestIchimokuStrategyIndicators:
         assert_valid_indicator(df['senkou_span_b'], 'Senkou_Span_B', min_val=0, allow_nan=True)
         assert_valid_indicator(df['chikou_span'], 'Chikou_Span', min_val=0, allow_nan=True)
 
+        # Verify Ichimoku components respond to price changes (not constant)
+        valid_tenkan = df['tenkan_sen'].dropna()
+        valid_kijun = df['kijun_sen'].dropna()
+        valid_span_b = df['senkou_span_b'].dropna()
+        assert valid_tenkan.std() > 1.0, "Tenkan-sen should vary with price changes"
+        assert valid_kijun.std() > 1.0, "Kijun-sen should vary with price changes"
+        assert valid_span_b.std() > 1.0, "Senkou Span B should vary with price changes"
+
+        # Verify warmup period (Senkou Span B needs 52 bars, displacement adds 26)
+        tenkan_warmup_nans = df['tenkan_sen'].iloc[:9].isna().sum()
+        kijun_warmup_nans = df['kijun_sen'].iloc[:26].isna().sum()
+        span_b_warmup_nans = df['senkou_span_b'].iloc[:52].isna().sum()
+        assert tenkan_warmup_nans > 0, "Tenkan-sen should have warmup period"
+        assert kijun_warmup_nans > 0, "Kijun-sen should have warmup period"
+        assert span_b_warmup_nans > 0, "Senkou Span B should have warmup period"
+
     def test_tenkan_responds_faster_than_kijun(self, zs_1h_data):
         """Test that Tenkan-sen (faster) is more responsive than Kijun-sen (slower)."""
         strategy = IchimokuCloudStrategy(

@@ -123,6 +123,20 @@ class TestBollingerBandsStrategyIndicators:
         assert_valid_indicator(df['upper_band'], 'Upper_Band', min_val=0, allow_nan=True)
         assert_valid_indicator(df['lower_band'], 'Lower_Band', min_val=0, allow_nan=True)
 
+        # Verify bands respond to price changes (not constant)
+        valid_middle = df['middle_band'].dropna()
+        valid_upper = df['upper_band'].dropna()
+        valid_lower = df['lower_band'].dropna()
+        assert valid_middle.std() > 1.0, "Middle band should vary with price changes"
+        assert valid_upper.std() > 1.0, "Upper band should vary with price changes"
+        assert valid_lower.std() > 1.0, "Lower band should vary with price changes"
+
+        # Verify warmup period (period = 20 bars for standard Bollinger Bands)
+        middle_warmup_nans = df['middle_band'].iloc[:20].isna().sum()
+        upper_warmup_nans = df['upper_band'].iloc[:20].isna().sum()
+        assert middle_warmup_nans > 0, "Middle band should have warmup period"
+        assert upper_warmup_nans > 0, "Upper band should have warmup period"
+
     def test_upper_band_above_lower_band(self, standard_bollinger_strategy, zs_1h_data):
         """Test that upper band is always above lower band."""
         df = standard_bollinger_strategy.add_indicators(zs_1h_data.copy())

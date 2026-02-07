@@ -130,6 +130,20 @@ class TestMACDStrategyIndicators:
         assert_valid_indicator(df['signal_line'], 'MACD_signal', allow_nan=True)
         assert_valid_indicator(df['histogram'], 'MACD_histogram', allow_nan=True)
 
+        # Verify MACD components respond to price changes (not constant)
+        valid_macd = df['macd_line'].dropna()
+        valid_signal = df['signal_line'].dropna()
+        valid_histogram = df['histogram'].dropna()
+        assert valid_macd.std() > 0.1, "MACD line should vary with price changes"
+        assert valid_signal.std() > 0.1, "Signal line should vary with price changes"
+        assert valid_histogram.std() > 0.05, "Histogram should vary with price changes"
+
+        # Verify warmup period (slow period + signal period = 26 + 9 = 35 bars)
+        macd_warmup_nans = df['macd_line'].iloc[:26].isna().sum()
+        signal_warmup_nans = df['signal_line'].iloc[:35].isna().sum()
+        assert macd_warmup_nans > 0, "MACD line should have warmup period"
+        assert signal_warmup_nans > 0, "Signal line should have warmup period"
+
     def test_histogram_equals_macd_minus_signal(self, standard_macd_strategy, zs_1h_data):
         """Test that histogram correctly represents MACD line - signal line."""
         df = standard_macd_strategy.add_indicators(zs_1h_data.copy())

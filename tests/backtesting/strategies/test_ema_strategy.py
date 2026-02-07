@@ -123,6 +123,19 @@ class TestEMAStrategyIndicators:
         assert_valid_indicator(df['ema_short'], 'EMA_short', min_val=0, allow_nan=True)
         assert_valid_indicator(df['ema_long'], 'EMA_long', min_val=0, allow_nan=True)
 
+        # Verify EMAs respond to price changes (not constant)
+        valid_short_ema = df['ema_short'].dropna()
+        valid_long_ema = df['ema_long'].dropna()
+        assert valid_short_ema.std() > 1.0, "Short EMA should vary with price changes"
+        assert valid_long_ema.std() > 1.0, "Long EMA should vary with price changes"
+
+        # Verify warmup period (long EMA needs more data to stabilize than short EMA)
+        short_warmup_nans = df['ema_short'].iloc[:9].isna().sum()
+        long_warmup_nans = df['ema_long'].iloc[:21].isna().sum()
+        # Long EMA should have at least as many warmup NaNs as short EMA
+        assert long_warmup_nans >= short_warmup_nans, \
+            "Long EMA should have warmup period at least as long as short EMA"
+
     def test_short_ema_more_responsive_than_long(self, standard_ema_strategy, zs_1h_data):
         """Test that short EMA is more responsive (varies more) than long EMA."""
         df = standard_ema_strategy.add_indicators(zs_1h_data.copy())

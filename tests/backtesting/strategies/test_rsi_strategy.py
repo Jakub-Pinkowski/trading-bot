@@ -124,6 +124,14 @@ class TestRSIStrategyIndicators:
         # Validate RSI values (already checks 0-100 range, NaN handling)
         assert_valid_indicator(df['rsi'], 'RSI', min_val=0, max_val=100, allow_nan=True)
 
+        # Verify RSI responds to price changes (not constant)
+        valid_rsi = df['rsi'].dropna()
+        assert valid_rsi.std() > 1.0, "RSI should vary with price changes"
+
+        # Verify warmup period
+        warmup_nans = df['rsi'].iloc[:14].isna().sum()
+        assert warmup_nans > 0, "RSI should have warmup period"
+
     def test_fast_vs_slow_rsi_generates_different_signal_frequency(self, zs_1h_data):
         """Test that fast RSI (7) generates more signals than slow RSI (21)."""
         strategy_fast = RSIStrategy(
