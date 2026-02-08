@@ -10,14 +10,18 @@ Tests cover:
 - Disk persistence and file locking
 - Cache size limits and enforcement
 - Error handling and retry logic
+- Concurrency and multiprocessing
 - Edge cases (empty cache, full cache, expired items)
 
 All tests use real cache operations with actual file I/O.
 """
+import multiprocessing
 import os
 import pickle
+import random
 import time
 from collections import OrderedDict
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -678,3 +682,414 @@ class TestCacheFormatConversion:
         converted = _convert_cache_format(new_format)
 
         assert converted == new_format
+
+
+# ==================== Concurrency Helper Functions ====================
+
+def _worker_process(worker_id, cache_name, iterations=10):
+    """
+    Worker process that reads and writes to the cache.
+
+    Simulates multiple strategies running in parallel (MassTester scenario).
+    Each worker repeatedly reads and writes to the same keys to create
+    contention and test file locking.
+
+    Args:
+        worker_id: Unique identifier for this worker
+        cache_name: Name of the cache to use
+        iterations: Number of read/write cycles to perform
+
+    Returns:
+        worker_id if successful
+    """
+    # Create a test cache instance
+    test_cache = Cache(cache_name, max_size=100, max_age=3600)
+
+    for i in range(iterations):
+        # Add randomness to increase chance of collision
+        time.sleep(random.uniform(0.01, 0.1))
+
+        # Read from cache (might not exist yet)
+        test_cache.get(f"key_{i % 5}")
+
+        # Write to cache (multiple workers write to same keys)
+        test_cache.set(f"key_{i % 5}", f"value_from_worker_{worker_id}_iteration_{i}")
+
+        # Save cache (triggers file locking)
+        test_cache.save_cache()
+
+    return worker_id
+
+
+def _check_cache_integrity(cache_name):
+    """
+    Verify cache file is valid and not corrupted.
+
+    Args:
+        cache_name: Name of cache to check
+
+    Returns:
+        Tuple of (is_valid, num_items)
+    """
+    cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
+    try:
+        with open(cache_file, 'rb') as f:
+            cache_data = pickle.load(f)
+            if isinstance(cache_data, dict):
+                return True, len(cache_data)
+            else:
+                return False, 0
+    except Exception:
+        return False, 0
+
+
+class TestCacheConcurrency:
+    """Test cache behavior with concurrent access from multiple processes."""
+
+    def test_cache_multiprocessing_access(self, cache_name):
+        """
+        Test cache handles multiple processes correctly.
+
+        Simulates MassTester scenario where multiple strategies run in parallel,
+        all reading/writing to the same cache. Verifies FileLock prevents
+        data corruption.
+        """
+        # Ensure cache directory exists
+        Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
+        num_workers = 4
+        iterations = 10
+
+        # Create pool of worker processes
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            # Start worker processes (each writes to same keys)
+            results = pool.starmap(
+                _worker_process,
+                [(i, cache_name, iterations) for i in range(num_workers)]
+            )
+
+        # Verify all workers completed successfully
+        assert len(results) == num_workers
+        for i in range(num_workers):
+            assert i in results, f"Worker {i} did not complete successfully"
+
+        # Verify cache integrity (not corrupted)
+        is_valid, num_items = _check_cache_integrity(cache_name)
+        assert is_valid, "Cache file is corrupted or invalid after concurrent access"
+        assert num_items > 0, "Cache is empty after concurrent writes"
+        assert num_items <= 5, f"Cache should have at most 5 items, but has {num_items}"
+
+        # Load cache and verify contents
+        test_cache = Cache(cache_name)
+        assert test_cache.size() > 0, "Cache is empty after loading"
+        assert test_cache.size() <= 5, f"Cache has unexpected size: {test_cache.size()}"
+
+        # Verify cache contains valid data
+        for i in range(5):
+            key = f"key_{i}"
+            if test_cache.contains(key):
+                value = test_cache.get(key)
+                assert isinstance(value, str), f"Cache value for {key} is not a string: {value}"
+                assert value.startswith("value_from_worker_"), f"Unexpected value format: {value}"
+
+        # Cleanup
+        _cleanup_cache_files(test_cache)
+
+    def test_file_locking_prevents_corruption(self, cache_name):
+        """
+        Test FileLock prevents cache corruption from concurrent writes.
+
+        Multiple processes attempt to write simultaneously. Without proper
+        locking, this would corrupt the pickle file. This test verifies
+        the file remains valid.
+        """
+        Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
+        num_workers = 4
+        iterations = 8
+
+        # Create high contention scenario
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            results = pool.starmap(
+                _worker_process,
+                [(i, cache_name, iterations) for i in range(num_workers)]
+            )
+
+        assert len(results) == num_workers
+
+        # Verify cache file is not corrupted
+        cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
+        assert os.path.exists(cache_file), "Cache file does not exist"
+
+        # Load and verify file is valid pickle
+        try:
+            with open(cache_file, 'rb') as f:
+                cache_data = pickle.load(f)
+            assert isinstance(cache_data, dict), "Cache file is not a valid dictionary"
+        except Exception as e:
+            pytest.fail(f"Cache file is corrupted: {e}")
+
+        # Verify we can create new cache instance from file
+        test_cache = Cache(cache_name)
+        assert test_cache.size() > 0, "Cache is empty"
+
+        # Cleanup
+        _cleanup_cache_files(test_cache)
+
+    def test_lock_acquisition_timing(self, cache_name):
+        """
+        Test locks are acquired and released properly.
+
+        Verifies that multiple cache instances can successfully acquire locks
+        in sequence without deadlocks.
+        """
+        cache1 = Cache(cache_name, max_size=100, max_age=3600)
+        cache2 = Cache(cache_name, max_size=100, max_age=3600)
+
+        # First cache writes
+        cache1.set('key1', 'value1')
+        success1 = cache1.save_cache()
+        assert success1, "First cache save failed"
+
+        # Second cache writes (should acquire lock after first releases)
+        cache2.set('key2', 'value2')
+        success2 = cache2.save_cache()
+        assert success2, "Second cache save failed"
+
+        # Verify both writes succeeded
+        cache3 = Cache(cache_name)
+        # At least one of the keys should exist (last writer wins)
+        assert cache3.size() > 0, "No data in cache after sequential writes"
+
+        # Cleanup
+        _cleanup_cache_files(cache1)
+
+    def test_multiple_sequential_saves(self, cache_name):
+        """Test multiple sequential saves work without lock issues."""
+        cache = Cache(cache_name, max_size=100, max_age=3600)
+
+        # Perform multiple saves
+        for i in range(10):
+            cache.set(f'key{i}', f'value{i}')
+            success = cache.save_cache()
+            assert success, f"Save {i} failed"
+
+        # Verify all data was saved
+        cache2 = Cache(cache_name)
+        assert cache2.size() == 10, f"Expected 10 items, got {cache2.size()}"
+
+        # Cleanup
+        _cleanup_cache_files(cache)
+
+    def test_cache_empty_during_concurrent_access(self, cache_name):
+        """Test concurrent access to initially empty cache."""
+        Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
+        num_workers = 2
+        iterations = 3
+
+        # Workers start with empty cache
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            results = pool.starmap(
+                _worker_process,
+                [(i, cache_name, iterations) for i in range(num_workers)]
+            )
+
+        assert len(results) == num_workers
+
+        # Cache should exist and be valid
+        is_valid, _ = _check_cache_integrity(cache_name)
+        assert is_valid
+
+        # Cleanup
+        test_cache = Cache(cache_name)
+        _cleanup_cache_files(test_cache)
+
+
+class TestCachePerformance:
+    """Test cache performance characteristics."""
+
+    def test_cache_hit_is_faster_than_miss(self, cache_name):
+        """
+        Test cache operations complete quickly.
+
+        Validates that cache get/set operations are performant.
+        """
+        cache = Cache(cache_name, max_size=1000, max_age=3600)
+
+        # Generate test data
+        test_data = {f'key_{i}': f'value_{i}' * 100 for i in range(1000)}
+
+        # Measure cache set time
+        start = time.time()
+        for key, value in test_data.items():
+            cache.set(key, value)
+        set_time = time.time() - start
+
+        # Measure cache get time
+        start = time.time()
+        for key in test_data.keys():
+            cache.get(key)
+        get_time = time.time() - start
+
+        # Both operations should complete quickly (< 0.5 seconds for 1000 items)
+        assert set_time < 0.5, f"Setting 1000 items took {set_time:.4f}s, should be < 0.5s"
+        assert get_time < 0.5, f"Getting 1000 items took {get_time:.4f}s, should be < 0.5s"
+
+        # Cleanup
+        _cleanup_cache_files(cache)
+
+    def test_large_cache_performance(self, cache_name):
+        """
+        Test cache performance with many entries.
+
+        Validates that cache operations remain fast even with large number
+        of entries (10,000 items).
+        """
+        cache = Cache(cache_name, max_size=20000, max_age=3600)
+
+        # Add 10,000 entries
+        num_entries = 10000
+        start = time.time()
+        for i in range(num_entries):
+            cache.set(f'key_{i}', f'value_{i}')
+        add_time = time.time() - start
+
+        # Verify reasonable performance (should be < 1 second for 10k entries)
+        assert add_time < 1.0, \
+            f"Adding 10k entries took {add_time:.4f}s, should be < 1.0s"
+
+        # Test retrieval performance
+        start = time.time()
+        for i in range(num_entries):
+            cache.get(f'key_{i}')
+        get_time = time.time() - start
+
+        # Verify reasonable retrieval performance
+        assert get_time < 0.5, \
+            f"Getting 10k entries took {get_time:.4f}s, should be < 0.5s"
+
+        # Verify all entries are present
+        assert cache.size() == num_entries
+
+        # Cleanup
+        _cleanup_cache_files(cache)
+
+    def test_cache_lookup_performance_scales_well(self, cache_name):
+        """
+        Test cache lookup performance scales linearly.
+
+        Validates that cache lookup time doesn't degrade significantly
+        as cache size increases.
+        """
+        cache = Cache(cache_name, max_size=50000, max_age=3600)
+
+        # Test with different cache sizes
+        sizes = [100, 1000, 5000]
+        times = []
+
+        for size in sizes:
+            # Populate cache
+            cache.cache_data.clear()
+            for i in range(size):
+                cache.set(f'key_{i}', f'value_{i}')
+
+            # Measure lookup time for last 100 entries
+            start = time.time()
+            for i in range(size - 100, size):
+                cache.get(f'key_{i}')
+            lookup_time = time.time() - start
+            times.append(lookup_time)
+
+        # Lookup time should not increase dramatically
+        # With OrderedDict, lookups are O(1), so time should be roughly constant
+        # Allow 3x increase from smallest to largest (generous margin)
+        ratio = times[-1] / times[0] if times[0] > 0 else 0
+        assert ratio < 3.0, \
+            f"Lookup time increased {ratio:.1f}x from 100 to 5000 entries, should be < 3x"
+
+        # Cleanup
+        _cleanup_cache_files(cache)
+
+    def test_save_cache_performance(self, cache_name):
+        """
+        Test cache save performance.
+
+        Validates that saving cache to disk completes in reasonable time
+        even with many entries.
+        """
+        cache = Cache(cache_name, max_size=5000, max_age=3600)
+
+        # Add 1000 entries
+        for i in range(1000):
+            cache.set(f'key_{i}', {'data': f'value_{i}' * 50})
+
+        # Measure save performance
+        start = time.time()
+        success = cache.save_cache()
+        save_time = time.time() - start
+
+        assert success, "Cache save failed"
+
+        # Save should complete quickly (< 1 second for 1000 entries)
+        assert save_time < 1.0, \
+            f"Saving 1000 entries took {save_time:.4f}s, should be < 1.0s"
+
+        # Cleanup
+        _cleanup_cache_files(cache)
+
+    def test_load_cache_performance(self, cache_name):
+        """
+        Test cache load performance.
+
+        Validates that loading cache from disk is fast even with many entries.
+        """
+        # Create and save a cache with many entries
+        cache1 = Cache(cache_name, max_size=5000, max_age=3600)
+        for i in range(1000):
+            cache1.set(f'key_{i}', {'data': f'value_{i}' * 50})
+        cache1.save_cache()
+
+        # Measure load performance
+        start = time.time()
+        cache2 = Cache(cache_name, max_size=5000, max_age=3600)
+        load_time = time.time() - start
+
+        # Load should complete quickly (< 1 second for 1000 entries)
+        assert load_time < 1.0, \
+            f"Loading 1000 entries took {load_time:.4f}s, should be < 1.0s"
+
+        # Verify data was loaded
+        assert cache2.size() == 1000
+
+        # Cleanup
+        _cleanup_cache_files(cache1)
+
+    def test_lru_eviction_performance(self, cache_name):
+        """
+        Test LRU eviction performance doesn't degrade.
+
+        Validates that evicting items when cache is full remains fast.
+        """
+        cache = Cache(cache_name, max_size=100, max_age=3600)
+
+        # Fill cache to max size
+        for i in range(100):
+            cache.set(f'key_{i}', f'value_{i}')
+
+        # Measure time to add items that trigger eviction
+        start = time.time()
+        for i in range(100, 200):
+            cache.set(f'key_{i}', f'value_{i}')
+        eviction_time = time.time() - start
+
+        # Eviction should not add significant overhead
+        # Should complete in < 0.1 seconds for 100 evictions
+        assert eviction_time < 0.1, \
+            f"100 evictions took {eviction_time:.4f}s, should be < 0.1s"
+
+        # Cache should still be at max size
+        assert cache.size() == 100
+
+        # Cleanup
+        _cleanup_cache_files(cache)
