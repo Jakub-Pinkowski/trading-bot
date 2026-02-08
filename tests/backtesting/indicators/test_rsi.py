@@ -21,6 +21,8 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_cache_distinguishes_different_data,
     assert_insufficient_data_returns_nan,
     assert_empty_series_returns_empty,
+    assert_hash_parameter_required,
+    assert_hash_parameter_required_even_with_cache,
 )
 
 
@@ -34,6 +36,31 @@ def _calculate_rsi(prices, period=14):
     """
     prices_hash = hash_series(prices)
     return calculate_rsi(prices, period, prices_hash)
+
+
+# ==================== Hash Parameter Contract Tests ====================
+
+class TestHashParameterRequired:
+    """Test that hash parameters are required (contract test)."""
+
+    def test_calculate_rsi_requires_prices_hash(self, short_price_series):
+        """Test that calculate_rsi requires prices_hash parameter."""
+        assert_hash_parameter_required(
+            calculate_func=calculate_rsi,
+            prices=short_price_series,
+            required_params={'period': 14},
+            indicator_name='RSI'
+        )
+
+    def test_calculate_rsi_fails_without_hash_even_with_cache(self, short_price_series):
+        """Test that calculate_rsi always requires hash, even if result might be cached."""
+        assert_hash_parameter_required_even_with_cache(
+            calculate_func=calculate_rsi,
+            calculate_with_hash_func=lambda: _calculate_rsi(short_price_series, period=14),
+            prices=short_price_series,
+            required_params={'period': 14},
+            indicator_name='RSI'
+        )
 
 
 # ==================== Basic Logic Tests ====================

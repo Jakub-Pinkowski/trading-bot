@@ -393,3 +393,110 @@ def assert_cache_distinguishes_different_data(result1, result2, indicator_name='
                 differs = True
                 break
         assert differs, f"{indicator_name}: Different data should produce different results"
+
+
+# ==================== Hash Parameter Contract Tests ====================
+
+def assert_hash_parameter_required(calculate_func, prices, required_params, indicator_name='Indicator'):
+    """
+    Test that indicator function requires hash parameter(s).
+
+    This is a contract test to ensure hash optimization is enforced.
+    Without hash parameters, the function should raise TypeError.
+
+    Args:
+        calculate_func: The indicator calculation function to test
+        prices: Price series or tuple of price series for multi-input indicators
+        required_params: Dict of required parameters (excluding hash parameters)
+        indicator_name: Name for error messages
+
+    Example - Single hash parameter:
+        assert_hash_parameter_required(
+            calculate_func=calculate_rsi,
+            prices=price_series,
+            required_params={'period': 14},
+            indicator_name='RSI'
+        )
+
+    Example - Multiple hash parameters (Ichimoku):
+        assert_hash_parameter_required(
+            calculate_func=calculate_ichimoku_cloud,
+            prices=(high_series, low_series, close_series),
+            required_params={
+                'tenkan_period': 9,
+                'kijun_period': 26,
+                'senkou_b_period': 52
+            },
+            indicator_name='Ichimoku'
+        )
+    """
+
+    # Try to call without hash parameter(s)
+    try:
+        if isinstance(prices, tuple):
+            # Multiple price series (e.g., Ichimoku with high, low, close)
+            calculate_func(*prices, **required_params)
+        else:
+            # Single price series
+            calculate_func(prices, **required_params)
+
+        # If we get here, the function didn't require hash - test fails
+        raise AssertionError(
+            f"{indicator_name}: Function should require hash parameter(s) but accepted call without them"
+        )
+
+    except TypeError as e:
+        # Expected - function requires hash parameter
+        error_msg = str(e)
+        assert 'hash' in error_msg.lower() or 'missing' in error_msg.lower(), \
+            f"{indicator_name}: TypeError should mention missing hash parameter, got: {error_msg}"
+
+
+def assert_hash_parameter_required_even_with_cache(
+    calculate_func,
+    calculate_with_hash_func,
+    prices,
+    required_params,
+    indicator_name='Indicator'
+):
+    """
+    Test that hash parameter is required even when result might be cached.
+
+    This ensures the API contract is enforced regardless of cache state.
+
+    Args:
+        calculate_func: The indicator calculation function (raw, without hash)
+        calculate_with_hash_func: Helper function that calculates with hash
+        prices: Price series or tuple of price series
+        required_params: Dict of required parameters (excluding hash parameters)
+        indicator_name: Name for error messages
+
+    Example:
+        assert_hash_parameter_required_even_with_cache(
+            calculate_func=calculate_rsi,
+            calculate_with_hash_func=lambda: _calculate_rsi(prices, period=14),
+            prices=price_series,
+            required_params={'period': 14},
+            indicator_name='RSI'
+        )
+    """
+
+    # First calculate normally to potentially cache it
+    calculate_with_hash_func()
+
+    # Should still fail without hash parameter even if cached
+    try:
+        if isinstance(prices, tuple):
+            calculate_func(*prices, **required_params)
+        else:
+            calculate_func(prices, **required_params)
+
+        raise AssertionError(
+            f"{indicator_name}: Function should require hash parameter even with cached result"
+        )
+
+    except TypeError as e:
+        # Expected - hash is always required
+        error_msg = str(e)
+        assert 'hash' in error_msg.lower() or 'missing' in error_msg.lower(), \
+            f"{indicator_name}: TypeError should mention missing hash parameter"
