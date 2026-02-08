@@ -1,3 +1,20 @@
+"""
+⚠️ DEPRECATED - OLD TEST FILE ⚠️
+
+This file has been replaced by:
+    tests/backtesting/strategies/base/test_base_strategy.py
+
+The new test file provides:
+- Better test organization (clear test classes)
+- Uses real data fixtures and shared utilities
+- More comprehensive coverage (37 tests vs 25)
+- Tests helper functions (detect_crossover, detect_threshold_cross, precompute_hashes)
+- Better documentation and maintainability
+
+Date Deprecated: February 8, 2026
+This file will be removed in a future cleanup.
+"""
+
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -586,7 +603,7 @@ class TestBaseStrategy:
     def test_slippage(self):
         """Test that slippage is correctly applied to entry and exit prices."""
         from config import TICK_SIZES, DEFAULT_TICK_SIZE
-        
+
         # Create a strategy with 2 ticks slippage
         slippage_ticks = 2
         strategy = StrategyForTesting(rollover=False, trailing=None, slippage_ticks=slippage_ticks, symbol=None)
