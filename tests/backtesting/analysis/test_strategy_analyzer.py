@@ -24,23 +24,6 @@ from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer
 # Note: Core fixtures (base_strategy_results, real_results_file) are in conftest.py
 
 @pytest.fixture
-def temp_results_file(base_strategy_results, tmp_path):
-    """
-    Create a temporary parquet file with sample results.
-
-    Args:
-        base_strategy_results: Sample DataFrame fixture from conftest
-        tmp_path: pytest's temporary directory fixture
-
-    Returns:
-        Path to temporary parquet file
-    """
-    temp_file = tmp_path / "test_results.parquet"
-    base_strategy_results.to_parquet(temp_file)
-    return str(temp_file)
-
-
-@pytest.fixture
 def analyzer_with_data(base_strategy_results, monkeypatch):
     """
     Create StrategyAnalyzer instance with sample data (CSV writing disabled).
@@ -119,8 +102,8 @@ class TestStrategyAnalyzerInitialization:
         assert not analyzer.results_df.empty
         assert len(analyzer.results_df) > 0
 
-    def test_initialization_with_custom_data(self, temp_results_file, base_strategy_results, monkeypatch):
-        """Test initialization with custom data file."""
+    def test_initialization_with_mocked_data(self, base_strategy_results, monkeypatch):
+        """Test initialization with mocked data loading."""
         monkeypatch.setattr(
             'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
             lambda *_args, **_kwargs: base_strategy_results
@@ -129,6 +112,7 @@ class TestStrategyAnalyzerInitialization:
 
         assert analyzer.results_df is not None
         assert len(analyzer.results_df) == 12  # Sample data has 12 rows
+        assert isinstance(analyzer.results_df, pd.DataFrame)
 
     def test_load_results_with_missing_file(self, monkeypatch):
         """Test error handling when results file doesn't exist."""
