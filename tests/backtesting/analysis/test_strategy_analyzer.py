@@ -454,7 +454,7 @@ class TestCSVExport:
         """Test that CSV file content matches returned DataFrame."""
         monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-        result = analyzer_with_data.get_top_strategies(
+        analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=3,
