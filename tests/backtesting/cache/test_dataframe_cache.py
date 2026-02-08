@@ -52,7 +52,7 @@ def temp_parquet_file(sample_dataframe):
     try:
         os.remove(filepath)
     except Exception:
-        pass
+        pass  # Ignore cleanup errors to avoid test flakiness
 
 
 @pytest.fixture(autouse=True)

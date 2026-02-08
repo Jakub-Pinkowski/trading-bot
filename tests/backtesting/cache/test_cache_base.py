@@ -22,7 +22,7 @@ import random
 import time
 from collections import OrderedDict
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -56,14 +56,6 @@ def small_cache(cache_name):
 
 
 @pytest.fixture
-def ttl_cache(cache_name):
-    """Cache with short TTL for expiration testing."""
-    cache = Cache(cache_name=f"{cache_name}_ttl", max_size=100, max_age=1)  # 1 second TTL
-    yield cache
-    _cleanup_cache_files(cache)
-
-
-@pytest.fixture
 def persistent_cache(cache_name):
     """Cache for persistence testing that needs cleanup."""
     cache = Cache(cache_name=f"{cache_name}_persist", max_size=100, max_age=3600)
@@ -79,7 +71,7 @@ def _cleanup_cache_files(cache):
         if os.path.exists(cache.lock_file):
             os.remove(cache.lock_file)
     except Exception:
-        pass  # Best effort cleanup
+        pass  # Best effort cleanup - ignore errors to avoid test flakiness
 
 
 # ==================== Test Classes ====================
@@ -313,59 +305,100 @@ class TestLRUEviction:
 class TestTTLExpiration:
     """Test Time-To-Live (TTL) expiration."""
 
-    def test_item_expires_after_ttl(self, ttl_cache):
-        """Test items expire after TTL period."""
-        ttl_cache.set('key1', 'value1')
+    def test_item_expires_after_ttl(self, cache_name):
+        """Test items expire after TTL period using time mocking."""
+        # Use 10 second TTL for testing
+        cache = Cache(cache_name=cache_name, max_size=100, max_age=10)
 
-        # Immediately accessible
-        assert ttl_cache.get('key1') == 'value1'
+        # Mock time to control expiration
+        mock_time = 1000.0
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
 
-        # Wait for expiration
-        time.sleep(1.5)
+            # Immediately accessible
+            assert cache.get('key1') == 'value1'
 
-        # Should be expired
-        assert ttl_cache.contains('key1') is False
-        assert ttl_cache.get('key1') is None
+        # Advance time by 11 seconds (past TTL)
+        with patch('time.time', return_value=mock_time + 11):
+            # Should be expired
+            assert cache.contains('key1') is False
+            assert cache.get('key1') is None
 
-    def test_expired_items_removed_on_access(self, ttl_cache):
+        _cleanup_cache_files(cache)
+
+    def test_expired_items_removed_on_access(self, cache_name):
         """Test expired items are removed when accessed."""
-        ttl_cache.set('key1', 'value1')
-        ttl_cache.set('key2', 'value2')
+        cache = Cache(cache_name=cache_name, max_size=100, max_age=10)
 
-        initial_size = ttl_cache.size()
-        assert initial_size == 2
+        mock_time = 1000.0
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
+            cache.set('key2', 'value2')
 
-        # Wait for expiration
-        time.sleep(1.5)
+            initial_size = cache.size()
+            assert initial_size == 2
 
-        # Access expired item - should remove it
-        ttl_cache.contains('key1')
+        # Advance time past expiration
+        with patch('time.time', return_value=mock_time + 11):
+            # Access expired item - should remove it
+            assert cache.contains('key1') is False
 
-        # Size should decrease
-        # Note: key2 is still in cache but expired (removed on next access)
-        assert ttl_cache.get('key1') is None
+            # Get should return None
+            assert cache.get('key1') is None
+
+        _cleanup_cache_files(cache)
 
     def test_ttl_none_means_no_expiration(self, cache_name):
         """Test TTL=None means items never expire."""
         cache = Cache(cache_name=cache_name, max_size=100, max_age=None)
-        cache.set('key1', 'value1')
 
-        # Wait a bit
-        time.sleep(0.5)
+        mock_time = 1000.0
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
 
-        # Should still be accessible
-        assert cache.get('key1') == 'value1'
-        assert cache.contains('key1') is True
+        # Advance time significantly
+        with patch('time.time', return_value=mock_time + 1000000):
+            # Should still be accessible (no expiration)
+            assert cache.get('key1') == 'value1'
+            assert cache.contains('key1') is True
 
         _cleanup_cache_files(cache)
 
-    def test_recent_items_not_expired(self, ttl_cache):
+    def test_recent_items_not_expired(self, cache_name):
         """Test recently added items are not expired."""
-        ttl_cache.set('key1', 'value1')
+        cache = Cache(cache_name=cache_name, max_size=100, max_age=10)
 
-        # Check immediately
-        assert ttl_cache.contains('key1') is True
-        assert ttl_cache.get('key1') == 'value1'
+        mock_time = 1000.0
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
+
+            # Check immediately (time hasn't advanced)
+            assert cache.contains('key1') is True
+            assert cache.get('key1') == 'value1'
+
+        _cleanup_cache_files(cache)
+
+    def test_items_expire_at_exact_ttl_boundary(self, cache_name):
+        """Test items expire at exactly the TTL boundary."""
+        cache = Cache(cache_name=cache_name, max_size=100, max_age=10)
+
+        mock_time = 1000.0
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
+
+        # Just before expiration (9 seconds)
+        with patch('time.time', return_value=mock_time + 9):
+            assert cache.contains('key1') is True
+
+        # Exactly at expiration (10 seconds)
+        with patch('time.time', return_value=mock_time + 10):
+            assert cache.contains('key1') is True  # Still valid at exactly TTL
+
+        # Just after expiration (10.1 seconds)
+        with patch('time.time', return_value=mock_time + 10.1):
+            assert cache.contains('key1') is False  # Now expired
+
+        _cleanup_cache_files(cache)
 
 
 class TestDiskPersistence:
@@ -439,20 +472,18 @@ class TestSaveCacheErrorHandling:
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)
         cache.set('key1', 'value1')
 
-        # Mock to fail twice then succeed
+        # Mock pickle.dump to fail twice then succeed
         call_count = 0
 
-        def mock_open_side_effect(*args, **kwargs):
+        def mock_pickle_dump(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
-                raise IOError("Simulated write failure")
-            # On 3rd attempt, succeed
-            return MagicMock(__enter__=MagicMock(return_value=MagicMock()), __exit__=MagicMock())
+                raise IOError("Simulated pickle dump failure")
+            # On 3rd attempt, succeed (do nothing)
 
-        with patch('builtins.open', side_effect=mock_open_side_effect):
-            with patch('pickle.dump'):
-                result = cache.save_cache(max_retries=3)
+        with patch('pickle.dump', side_effect=mock_pickle_dump):
+            result = cache.save_cache(max_retries=3)
 
         # Should succeed on 3rd attempt
         assert result is True
@@ -465,8 +496,8 @@ class TestSaveCacheErrorHandling:
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)
         cache.set('key1', 'value1')
 
-        # Mock to always fail
-        with patch('builtins.open', side_effect=IOError("Persistent write failure")):
+        # Mock pickle.dump to always fail
+        with patch('pickle.dump', side_effect=IOError("Persistent pickle dump failure")):
             result = cache.save_cache(max_retries=3)
 
         assert result is False
@@ -478,9 +509,8 @@ class TestSaveCacheErrorHandling:
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)
         cache.set('key1', 'value1')
 
-        sleep_called = []
-
-        with patch('builtins.open', side_effect=IOError("Failure")):
+        # Mock pickle.dump to always fail
+        with patch('pickle.dump', side_effect=IOError("Failure")):
             with patch('time.sleep') as mock_sleep:
                 cache.save_cache(max_retries=3)
                 sleep_called = mock_sleep.call_count
@@ -640,16 +670,25 @@ class TestCacheEdgeCases:
         assert result == large_list
         assert len(result) == 10000
 
-    def test_overwrite_updates_timestamp(self, ttl_cache):
+    def test_overwrite_updates_timestamp(self, cache_name):
         """Test overwriting a key updates its timestamp."""
-        ttl_cache.set('key1', 'value1')
-        time.sleep(0.5)
-        ttl_cache.set('key1', 'value2')  # Overwrite with new timestamp
+        cache = Cache(cache_name=cache_name, max_size=100, max_age=1)  # 1 second TTL
 
-        time.sleep(0.7)  # Total 1.2s from first set, 0.7s from second
+        mock_time = 1000.0
+        # Set initial value
+        with patch('time.time', return_value=mock_time):
+            cache.set('key1', 'value1')
 
-        # Should still be valid (timestamp was updated)
-        assert ttl_cache.get('key1') == 'value2'
+        # Overwrite after 0.5 seconds
+        with patch('time.time', return_value=mock_time + 0.5):
+            cache.set('key1', 'value2')  # Overwrite with new timestamp
+
+        # Check after 1.2 seconds from initial set (0.7s from overwrite)
+        with patch('time.time', return_value=mock_time + 1.2):
+            # Should still be valid (timestamp was updated on overwrite)
+            assert cache.get('key1') == 'value2'
+
+        _cleanup_cache_files(cache)
 
 
 class TestCacheFormatConversion:
@@ -740,6 +779,7 @@ def _check_cache_integrity(cache_name):
             else:
                 return False, 0
     except Exception:
+        # File doesn't exist or is corrupted - return invalid
         return False, 0
 
 
