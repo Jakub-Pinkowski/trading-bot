@@ -336,18 +336,39 @@ class TestColumnReordering:
             # Missing trailing and slippage
         })
 
-        # The function tries to insert all three columns even if they don't exist
-        # This causes a KeyError in the current implementation
-        # The test should verify that the function handles this case
-        try:
-            reordered = _reorder_columns(df)
-            # If it succeeds, rollover should still be after strategy
-            cols = list(reordered.columns)
-            strategy_idx = cols.index('strategy')
-            assert cols[strategy_idx + 1] == 'rollover'
-        except (KeyError, ValueError):
-            # If it fails, that's acceptable - the function warns and returns original
-            pass
+        # When some parameter columns are missing, function should handle gracefully
+        # and only reorder the columns that exist
+        reordered = _reorder_columns(df)
+
+        # Should not raise an error
+        assert isinstance(reordered, pd.DataFrame)
+
+        # Rollover should be after strategy (since it exists)
+        cols = list(reordered.columns)
+        strategy_idx = cols.index('strategy')
+        assert cols[strategy_idx + 1] == 'rollover'
+
+        # Should have same columns as original
+        assert set(reordered.columns) == set(df.columns)
+
+        # Data should be unchanged
+        assert reordered['strategy'].tolist() == df['strategy'].tolist()
+        assert reordered['rollover'].tolist() == df['rollover'].tolist()
+
+    def test_reorder_columns_with_no_param_columns(self):
+        """Test reordering when no parameter columns exist."""
+        df = pd.DataFrame({
+            'strategy': ['A', 'B'],
+            'col1': [1, 2],
+            'col2': [3, 4]
+            # No rollover, trailing, or slippage columns
+        })
+
+        # Should return DataFrame unchanged when no param columns exist
+        reordered = _reorder_columns(df)
+
+        assert list(reordered.columns) == list(df.columns)
+        assert reordered.equals(df)
 
 
 class TestColumnNameFormatting:
