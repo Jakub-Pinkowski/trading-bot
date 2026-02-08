@@ -7,7 +7,6 @@ Reduces code duplication across RSI, EMA, MACD, and other strategy tests.
 import pandas as pd
 
 
-
 # ==================== Trade Validation Helpers ====================
 
 def assert_trades_have_both_directions(trades):
@@ -259,4 +258,3 @@ def create_gapped_dataframe(original_df, gap_start, gap_end):
     before_gap = original_df.iloc[:gap_start].copy()
     after_gap = original_df.iloc[gap_end:].copy()
     return pd.concat([before_gap, after_gap])
-

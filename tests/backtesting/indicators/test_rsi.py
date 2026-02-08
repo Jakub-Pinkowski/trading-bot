@@ -14,7 +14,6 @@ from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
 from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
-    assert_cache_was_hit,
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_values_in_range,
@@ -286,7 +285,9 @@ class TestRSICaching:
         rsi_2 = _calculate_rsi(zs_1h_data['close'], period=14)
 
         # Verify cache was hit and results match
-        assert_cache_was_hit(misses_after_first)
+        assert indicator_cache.misses == misses_after_first, \
+            f"Cache misses increased from {misses_after_first} to {indicator_cache.misses}"
+        assert indicator_cache.hits > 0, f"Cache hits should be > 0, got {indicator_cache.hits}"
         assert_cache_hit_on_second_call(rsi_1, rsi_2, 'series')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):
