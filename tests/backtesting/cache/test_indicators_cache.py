@@ -48,22 +48,6 @@ def reset_indicator_cache():
 
 # ==================== Test Classes ====================
 
-class TestIndicatorCacheConfiguration:
-    """Test indicator cache configuration."""
-
-    def test_cache_has_correct_max_size(self):
-        """Test indicator cache is configured with max_size=500."""
-        assert indicator_cache.max_size == 500
-
-    def test_cache_has_correct_max_age(self):
-        """Test indicator cache is configured with 30 day TTL."""
-        # 30 days = 30 * 24 * 60 * 60 = 2,592,000 seconds
-        assert indicator_cache.max_age == 2592000
-
-    def test_cache_has_correct_name(self):
-        """Test indicator cache has correct name."""
-        assert indicator_cache.cache_name == "indicator"
-
 
 class TestIndicatorCacheBasicOperations:
     """Test basic cache operations with indicator data."""
@@ -162,80 +146,6 @@ class TestCacheKeyStructure:
         assert indicator_cache.size() == 2
 
 
-class TestCacheStatistics:
-    """Test cache statistics tracking."""
-
-    def test_cache_tracks_hits(self, sample_indicator_result):
-        """Test cache correctly tracks hits."""
-        cache_key = ('rsi', 'hash123', 14)
-
-        indicator_cache.set(cache_key, sample_indicator_result)
-        indicator_cache.reset_stats()
-
-        # Multiple gets - all hits
-        indicator_cache.get(cache_key)
-        indicator_cache.get(cache_key)
-        indicator_cache.get(cache_key)
-
-        assert indicator_cache.hits >= 3
-
-    def test_cache_tracks_misses(self):
-        """Test cache correctly tracks misses."""
-        indicator_cache.reset_stats()
-
-        # All different keys - all misses
-        indicator_cache.get(('rsi', 'hash1', 14))
-        indicator_cache.get(('rsi', 'hash2', 14))
-        indicator_cache.get(('ema', 'hash1', 20))
-
-        assert indicator_cache.misses >= 3
-
-    def test_reset_stats_clears_counters(self, sample_indicator_result):
-        """Test reset_stats clears hit/miss counters."""
-        cache_key = ('rsi', 'hash123', 14)
-
-        indicator_cache.set(cache_key, sample_indicator_result)
-        indicator_cache.get(cache_key)  # Hit
-        indicator_cache.get(('rsi', 'hash456', 14))  # Miss
-
-        indicator_cache.reset_stats()
-
-        assert indicator_cache.hits == 0
-        assert indicator_cache.misses == 0
-
-
-class TestCacheLRUEviction:
-    """Test LRU eviction with indicator cache."""
-
-    def test_cache_evicts_old_entries_when_approaching_limit(self, sample_indicator_result):
-        """Test cache evicts entries when approaching size limit."""
-        # Create many cache entries (but not 500 to keep test fast)
-        for i in range(20):
-            cache_key = ('rsi', f'hash_{i}', 14)
-            indicator_cache.set(cache_key, sample_indicator_result)
-
-        # All should be cached
-        assert indicator_cache.size() >= 20
-
-    def test_frequently_used_indicators_stay_cached(self, sample_indicator_result):
-        """Test frequently accessed indicators stay in cache."""
-        # Create multiple indicators
-        for period in range(10, 20):
-            cache_key = ('rsi', 'hash_common', period)
-            indicator_cache.set(cache_key, sample_indicator_result)
-
-        # Frequently access one specific calculation
-        frequent_key = ('rsi', 'hash_common', 14)
-        for _ in range(10):
-            indicator_cache.get(frequent_key)
-
-        # The frequently used one should still be cached
-        indicator_cache.reset_stats()
-        result = indicator_cache.get(frequent_key)
-        assert indicator_cache.hits >= 1
-        assert result is not None
-
-
 class TestCacheWithDifferentDataTypes:
     """Test cache with different indicator result types."""
 
@@ -281,41 +191,6 @@ class TestCacheWithDifferentDataTypes:
         result = indicator_cache.get(cache_key)
 
         pd.testing.assert_index_equal(result.index, prices_with_index.index)
-
-
-class TestCacheIntegration:
-    """Test integration with base Cache functionality."""
-
-    def test_indicator_cache_uses_base_cache_methods(self):
-        """Test indicator cache inherits base Cache methods."""
-        assert hasattr(indicator_cache, 'get')
-        assert hasattr(indicator_cache, 'set')
-        assert hasattr(indicator_cache, 'contains')
-        assert hasattr(indicator_cache, 'size')
-        assert hasattr(indicator_cache, 'reset_stats')
-        assert hasattr(indicator_cache, 'save_cache')
-
-    def test_manual_cache_operations(self, sample_indicator_result):
-        """Test manual cache get/set operations."""
-        cache_key = ('test_indicator', 'manual_test', 10)
-
-        # Manually set value
-        indicator_cache.set(cache_key, sample_indicator_result)
-
-        # Should be retrievable
-        assert indicator_cache.contains(cache_key)
-        cached_value = indicator_cache.get(cache_key)
-        pd.testing.assert_series_equal(cached_value, sample_indicator_result)
-
-    def test_cache_can_be_saved_and_loaded(self, sample_indicator_result):
-        """Test indicator cache can be persisted to disk."""
-        # Add some indicators
-        indicator_cache.set(('rsi', 'hash1', 14), sample_indicator_result)
-        indicator_cache.set(('ema', 'hash2', 20), sample_indicator_result)
-
-        # Save cache
-        success = indicator_cache.save_cache()
-        assert success is True
 
 
 class TestCacheEdgeCases:

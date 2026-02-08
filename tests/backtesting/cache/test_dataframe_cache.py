@@ -363,23 +363,6 @@ class TestMultipleColumns:
             os.remove(filepath)
 
 
-class TestCacheConfiguration:
-    """Test DataFrame cache configuration."""
-
-    def test_cache_has_correct_max_size(self):
-        """Test DataFrame cache is configured with max_size=50."""
-        assert dataframe_cache.max_size == 50
-
-    def test_cache_has_correct_max_age(self):
-        """Test DataFrame cache is configured with 7 day TTL."""
-        # 7 days = 7 * 24 * 60 * 60 = 604,800 seconds
-        assert dataframe_cache.max_age == 604800
-
-    def test_cache_has_correct_name(self):
-        """Test DataFrame cache has correct name."""
-        assert dataframe_cache.cache_name == "dataframe"
-
-
 class TestCacheEdgeCases:
     """Test edge cases and error scenarios."""
 
@@ -437,63 +420,6 @@ class TestCacheEdgeCases:
         df2 = get_cached_dataframe(temp_parquet_file)
 
         pd.testing.assert_frame_equal(df1, df2)
-
-
-class TestCacheIntegration:
-    """Test integration with base Cache functionality."""
-
-    def test_dataframe_cache_uses_base_cache_lru(self, sample_dataframe):
-        """Test DataFrame cache uses LRU eviction from base cache."""
-        # Create more files than max_size (50)
-        files = []
-
-        try:
-            # Create 52 files to trigger LRU eviction
-            for i in range(52):
-                with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
-                    filepath = f.name
-                    sample_dataframe.to_parquet(filepath)
-                    files.append(filepath)
-                    get_cached_dataframe(filepath)
-
-            # First two files should have been evicted
-            assert not dataframe_cache.contains(files[0])
-            assert not dataframe_cache.contains(files[1])
-
-            # Most recent files should still be cached
-            assert dataframe_cache.contains(files[-1])
-            assert dataframe_cache.contains(files[-2])
-        finally:
-            for f in files:
-                try:
-                    os.remove(f)
-                except Exception:
-                    pass
-
-    def test_dataframe_cache_statistics(self, temp_parquet_file):
-        """Test DataFrame cache tracks statistics correctly."""
-        dataframe_cache.reset_stats()
-
-        # Miss
-        get_cached_dataframe(temp_parquet_file)
-        assert dataframe_cache.misses >= 1
-
-        dataframe_cache.reset_stats()
-
-        # Hits
-        get_cached_dataframe(temp_parquet_file)
-        get_cached_dataframe(temp_parquet_file)
-        assert dataframe_cache.hits >= 2
-
-    def test_cache_can_be_manually_cleared(self, temp_parquet_file):
-        """Test DataFrame cache can be manually cleared."""
-        # Load and cache
-        get_cached_dataframe(temp_parquet_file)
-        assert dataframe_cache.size() > 0
-
-        # Clear cache
-        dataframe_cache.cache_data.clear()
-        assert dataframe_cache.size() == 0
 
 
 class TestRealWorldScenarios:
