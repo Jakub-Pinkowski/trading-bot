@@ -49,6 +49,46 @@ def assert_similar_trade_count(trades1, trades2, max_difference=5):
         f"Trade counts too different: {len(trades1)} vs {len(trades2)}"
 
 
+def assert_slippage_affects_prices(trades_no_slip, trades_with_slip):
+    """
+    Assert that slippage properly affects trade prices.
+
+    Validates that:
+    - Long trades: entry price higher with slippage, exit price lower
+    - Short trades: entry price lower with slippage, exit price higher
+
+    Args:
+        trades_no_slip: List of trades without slippage
+        trades_with_slip: List of trades with slippage
+
+    Example:
+        trades_no_slip = strategy_no_slip.run(data, switch_dates)
+        trades_with_slip = strategy_with_slip.run(data, switch_dates)
+        assert_slippage_affects_prices(trades_no_slip, trades_with_slip)
+    """
+    assert len(trades_no_slip) > 0, "No trades generated for slippage comparison"
+    assert len(trades_with_slip) > 0, "No trades with slippage generated"
+
+    # For matching trades, verify slippage impact on prices
+    for i in range(min(len(trades_no_slip), len(trades_with_slip))):
+        trade_no_slip = trades_no_slip[i]
+        trade_with_slip = trades_with_slip[i]
+
+        # Long trades: entry price higher with slippage, exit price lower
+        if trade_no_slip['side'] == 'long' and trade_with_slip['side'] == 'long':
+            assert trade_with_slip['entry_price'] >= trade_no_slip['entry_price'], \
+                f"Long entry with slippage should be >= no slippage (trade {i})"
+            assert trade_with_slip['exit_price'] <= trade_no_slip['exit_price'], \
+                f"Long exit with slippage should be <= no slippage (trade {i})"
+
+        # Short trades: entry price lower with slippage, exit price higher
+        elif trade_no_slip['side'] == 'short' and trade_with_slip['side'] == 'short':
+            assert trade_with_slip['entry_price'] <= trade_no_slip['entry_price'], \
+                f"Short entry with slippage should be <= no slippage (trade {i})"
+            assert trade_with_slip['exit_price'] >= trade_no_slip['exit_price'], \
+                f"Short exit with slippage should be >= no slippage (trade {i})"
+
+
 def assert_signals_convert_to_trades(signals_df, trades, signal_col='signal'):
     """
     Assert that signal DataFrame with non-zero signals produces trades.

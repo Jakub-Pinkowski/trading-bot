@@ -22,6 +22,7 @@ from tests.backtesting.helpers.assertions import (
 from tests.backtesting.strategies.strategy_test_utils import (
     assert_trades_have_both_directions,
     assert_similar_trade_count,
+    assert_slippage_affects_prices,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     create_small_ohlcv_dataframe,
@@ -379,7 +380,11 @@ class TestRSIStrategyExecution:
         trades_no_slip = strategy_no_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_with_slip = strategy_with_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
+        # Trade counts should be similar (signals are the same)
         assert_similar_trade_count(trades_no_slip, trades_with_slip, max_difference=5)
+
+        # Validate slippage affects prices correctly
+        assert_slippage_affects_prices(trades_no_slip, trades_with_slip)
 
     def test_backtest_with_different_rsi_periods(self, zs_1h_data, contract_switch_dates):
         """Test that different RSI periods produce different trade patterns."""
