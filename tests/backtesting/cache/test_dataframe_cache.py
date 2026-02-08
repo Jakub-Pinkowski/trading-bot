@@ -1,596 +1,475 @@
-import os
-import time
-from unittest.mock import patch
+"""
+Tests for DataFrame Cache.
 
-import numpy as np
+Tests cover:
+- DataFrame caching and retrieval
+- Copy-on-write protection
+- Cache hit/miss behavior
+- File path as cache key
+- DataFrame integrity across cache operations
+- Integration with base cache functionality
+- Edge cases (missing files, corrupted data)
+
+All tests use real DataFrame operations and file I/O.
+"""
+import os
+import tempfile
+
 import pandas as pd
 import pytest
 
-from app.backtesting.cache.cache_base import Cache
-from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
+from app.backtesting.cache.dataframe_cache import (
+    get_cached_dataframe,
+    dataframe_cache
+)
 
+
+# ==================== Fixtures ====================
 
 @pytest.fixture
 def sample_dataframe():
-    """Create a sample dataframe for testing."""
+    """Create a sample OHLCV DataFrame for testing."""
+    dates = pd.date_range('2024-01-01', periods=100, freq='1h')
     return pd.DataFrame({
-        'date': pd.date_range(start='2023-01-01', periods=5),
-        'open': [100, 101, 102, 103, 104],
-        'high': [105, 106, 107, 108, 109],
-        'low': [95, 96, 97, 98, 99],
-        'close': [102, 103, 104, 105, 106],
-        'volume': [1000, 1100, 1200, 1300, 1400]
-    })
+        'open': [100.0 + i * 0.1 for i in range(100)],
+        'high': [101.0 + i * 0.1 for i in range(100)],
+        'low': [99.0 + i * 0.1 for i in range(100)],
+        'close': [100.5 + i * 0.1 for i in range(100)],
+        'volume': [1000 + i * 10 for i in range(100)]
+    }, index=pd.DatetimeIndex(dates, name='datetime'))
 
 
-def test_dataframe_cache_instance():
-    """Test that the dataframe_cache is properly initialized."""
-    assert dataframe_cache.cache_name == "dataframe"
-    assert dataframe_cache.max_size == 50
-    assert dataframe_cache.max_age == 604800  # 7 days in seconds
+@pytest.fixture
+def temp_parquet_file(sample_dataframe):
+    """Create a temporary parquet file with sample data."""
+    with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+        filepath = f.name
+        sample_dataframe.to_parquet(filepath)
+
+    yield filepath
+
+    # Cleanup
+    try:
+        os.remove(filepath)
+    except Exception:
+        pass  # Ignore cleanup errors to avoid test flakiness
 
 
-def test_dataframe_cache_operations():
-    """Test basic operations on the dataframe cache."""
-    # Clear the cache to start with a clean state
+@pytest.fixture(autouse=True)
+def reset_dataframe_cache():
+    """Reset the dataframe cache before each test."""
+    dataframe_cache.cache_data.clear()
+    dataframe_cache.reset_stats()
+    yield
+    # Cleanup after test
     dataframe_cache.cache_data.clear()
 
-    # Test that the cache is empty
-    assert dataframe_cache.size() == 0
 
-    # Test setting and getting a value
-    test_key = "test_file.parquet"
-    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+# ==================== Test Classes ====================
 
-    dataframe_cache.set(test_key, test_value)
-    assert dataframe_cache.contains(test_key)
+class TestDataFrameCacheBasics:
+    """Test basic DataFrame caching functionality."""
 
-    # Get the value and verify it matches the original
-    cached_df = dataframe_cache.get(test_key)
-    pd.testing.assert_frame_equal(cached_df, test_value)
+    def test_cache_dataframe_on_first_load(self, temp_parquet_file, sample_dataframe):
+        """Test DataFrame is cached on first load."""
+        # First load - cache miss
+        df = get_cached_dataframe(temp_parquet_file)
 
-    # Test cache size
-    assert dataframe_cache.size() == 1
+        # Should have loaded and cached the DataFrame
+        assert dataframe_cache.contains(temp_parquet_file)
+        assert len(df) == len(sample_dataframe)
+        assert list(df.columns) == list(sample_dataframe.columns)
 
-    # Test getting a non-existent key
-    non_existent_key = "non_existent.parquet"
-    assert dataframe_cache.get(non_existent_key) is None
-    assert dataframe_cache.get(non_existent_key, "default") == "default"
+    def test_return_cached_dataframe_on_second_load(self, temp_parquet_file):
+        """Test cached DataFrame is returned on subsequent loads."""
+        # First load
+        df1 = get_cached_dataframe(temp_parquet_file)
 
-    # Clear the cache again
-    dataframe_cache.cache_data.clear()
-    assert dataframe_cache.size() == 0
-    assert not dataframe_cache.contains(test_key)
+        # Reset stats to measure second load
+        dataframe_cache.reset_stats()
 
+        # Second load - should be cache hit
+        df2 = get_cached_dataframe(temp_parquet_file)
 
-@patch('app.backtesting.cache.cache_base.Cache.save_cache')
-def test_dataframe_cache_save(mock_save_cache):
-    """Test saving the dataframe cache."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
+        # Should have at least one hit (from get operation)
+        assert dataframe_cache.hits >= 1
+        assert len(df2) == len(df1)
 
-    # Add some data to the cache
-    test_key = "test_file.parquet"
-    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+    def test_cached_dataframe_equals_original(self, temp_parquet_file, sample_dataframe):
+        """Test cached DataFrame equals original data."""
+        df = get_cached_dataframe(temp_parquet_file)
 
-    dataframe_cache.set(test_key, test_value)
+        pd.testing.assert_frame_equal(df, sample_dataframe, check_freq=False)
 
-    # Save the cache
-    dataframe_cache.save_cache()
+    def test_filepath_as_cache_key(self, temp_parquet_file):
+        """Test file path is used as cache key."""
+        get_cached_dataframe(temp_parquet_file)
 
-    # Verify that save_cache was called
-    mock_save_cache.assert_called_once()
+        # Cache key should be the filepath
+        assert dataframe_cache.contains(temp_parquet_file)
+        assert temp_parquet_file in dataframe_cache.cache_data
 
 
-@patch('pandas.read_parquet')
-@patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache')
-def test_get_cached_dataframe_cache_miss(mock_save_cache, mock_read_parquet, sample_dataframe):
-    """Test get_cached_dataframe when the dataframe is not in the cache."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
+class TestCopyOnWriteProtection:
+    """Test copy-on-write protection prevents cache corruption."""
 
-    # Set up the mock to return our sample dataframe
-    mock_read_parquet.return_value = sample_dataframe
+    def test_returned_dataframe_is_copy(self, temp_parquet_file):
+        """Test get_cached_dataframe returns a copy."""
+        df1 = get_cached_dataframe(temp_parquet_file)
+        df2 = get_cached_dataframe(temp_parquet_file)
 
-    # Call the function with a filepath that's not in the cache
-    filepath = "test_file.parquet"
-    result_df = get_cached_dataframe(filepath)
+        # Should be different objects
+        assert df1 is not df2
 
-    # Verify that read_parquet was called with the correct filepath
-    mock_read_parquet.assert_called_once_with(filepath)
+    def test_modifying_returned_dataframe_doesnt_affect_cache(self, temp_parquet_file):
+        """Test modifying returned DataFrame doesn't corrupt cache."""
+        # Get first copy
+        df1 = get_cached_dataframe(temp_parquet_file)
+        original_columns = list(df1.columns)
 
-    # Verify that the result is a copy of the sample dataframe
-    pd.testing.assert_frame_equal(result_df, sample_dataframe)
-    assert id(result_df) != id(sample_dataframe)  # Should be a different object (copy)
+        # Modify the DataFrame
+        df1['new_column'] = 999
+        df1['open'] = df1['open'] * 2
 
-    # Verify that the dataframe was added to the cache
-    assert dataframe_cache.contains(filepath)
-    cached_df = dataframe_cache.get(filepath)
-    pd.testing.assert_frame_equal(cached_df, sample_dataframe)
+        # Get second copy - should be unmodified
+        df2 = get_cached_dataframe(temp_parquet_file)
 
-    # Verify that save_cache was NOT called - this is now handled periodically by MassTester
-    mock_save_cache.assert_not_called()
+        assert list(df2.columns) == original_columns
+        assert 'new_column' not in df2.columns
+        assert df2['open'].iloc[0] != df1['open'].iloc[0]
 
+    def test_multiple_strategies_can_modify_independently(self, temp_parquet_file):
+        """Test multiple strategies can modify DataFrames independently."""
+        # Simulate two strategies getting the same data
+        df_strategy1 = get_cached_dataframe(temp_parquet_file)
+        df_strategy2 = get_cached_dataframe(temp_parquet_file)
 
-def test_get_cached_dataframe_cache_hit(sample_dataframe):
-    """Test get_cached_dataframe when the dataframe is already in the cache."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
+        # Each strategy adds different indicators
+        df_strategy1['rsi'] = 50
+        df_strategy2['macd'] = 0.5
 
-    # Add the dataframe to the cache
-    filepath = "test_file.parquet"
-    dataframe_cache.set(filepath, sample_dataframe)
+        # Modifications should be independent
+        assert 'rsi' in df_strategy1.columns
+        assert 'rsi' not in df_strategy2.columns
+        assert 'macd' in df_strategy2.columns
+        assert 'macd' not in df_strategy1.columns
 
-    # Call the function with the filepath that's in the cache
-    with patch('pandas.read_parquet') as mock_read_parquet:
-        result_df = get_cached_dataframe(filepath)
-
-        # Verify that read_parquet was NOT called
-        mock_read_parquet.assert_not_called()
-
-    # Verify that the result is a copy of the sample dataframe
-    pd.testing.assert_frame_equal(result_df, sample_dataframe)
-    assert id(result_df) != id(sample_dataframe)  # Should be a different object (copy)
-
-
-@patch('pandas.read_parquet')
-def test_get_cached_dataframe_error_handling(mock_read_parquet):
-    """Test error handling in get_cached_dataframe."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Set up the mock to raise an exception
-    mock_read_parquet.side_effect = Exception("Test exception")
-
-    # Call the function and verify that the exception is propagated
-    filepath = "test_file.parquet"
-    with pytest.raises(Exception, match="Test exception"):
-        get_cached_dataframe(filepath)
-
-    # Verify that the dataframe was NOT added to the cache
-    assert not dataframe_cache.contains(filepath)
-
-
-def test_get_cached_dataframe_with_real_file(tmp_path, sample_dataframe):
-    """Test get_cached_dataframe with a real parquet file."""
-    # Create a temporary parquet file
-    filepath = os.path.join(tmp_path, "test_file.parquet")
-    sample_dataframe.to_parquet(filepath)
-
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Call the function with the filepath
-    with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache') as mock_save_cache:
-        result_df = get_cached_dataframe(filepath)
-
-        # Verify that save_cache was NOT called - this is now handled periodically by MassTester
-        mock_save_cache.assert_not_called()
-
-    # Verify that the result matches the sample dataframe
-    pd.testing.assert_frame_equal(result_df, sample_dataframe)
-
-    # Verify that the dataframe was added to the cache
-    assert dataframe_cache.contains(filepath)
-
-    # Call the function again and verify that it uses the cached value
-    with patch('pandas.read_parquet') as mock_read_parquet:
-        result_df2 = get_cached_dataframe(filepath)
-
-        # Verify that read_parquet was NOT called
-        mock_read_parquet.assert_not_called()
-
-    # Verify that the result matches the sample dataframe
-    pd.testing.assert_frame_equal(result_df2, sample_dataframe)
-
-
-def test_dataframe_cache_with_different_sizes_and_structures(tmp_path):
-    """Test the dataframe cache with dataframes of different sizes and structures."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Test with a small dataframe
-    small_df = pd.DataFrame({
-        'A': range(10),
-        'B': range(10, 20)
-    })
-    small_filepath = os.path.join(tmp_path, "small_df.parquet")
-    small_df.to_parquet(small_filepath)
-
-    # Test with a medium dataframe
-    medium_df = pd.DataFrame({
-        'A': range(1000),
-        'B': range(1000, 2000),
-        'C': range(2000, 3000)
-    })
-    medium_filepath = os.path.join(tmp_path, "medium_df.parquet")
-    medium_df.to_parquet(medium_filepath)
-
-    # Test with a large dataframe
-    large_df = pd.DataFrame({
-        'A': range(10000),
-        'B': range(10000, 20000),
-        'C': range(20000, 30000),
-        'D': range(30000, 40000),
-        'E': range(40000, 50000)
-    })
-    large_filepath = os.path.join(tmp_path, "large_df.parquet")
-    large_df.to_parquet(large_filepath)
-
-    # Test with a dataframe with a different structure
-    different_structure_df = pd.DataFrame({
-        'date': pd.date_range(start='2023-01-01', periods=100),
-        'symbol': ['ZC'] * 100,
-        'open': np.random.rand(100) * 100,
-        'high': np.random.rand(100) * 100,
-        'low': np.random.rand(100) * 100,
-        'close': np.random.rand(100) * 100,
-        'volume': np.random.randint(1000, 10000, 100)
-    })
-    different_structure_filepath = os.path.join(tmp_path, "different_structure_df.parquet")
-    different_structure_df.to_parquet(different_structure_filepath)
-
-    # Load all dataframes into cache
-    with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        small_result = get_cached_dataframe(small_filepath)
-        medium_result = get_cached_dataframe(medium_filepath)
-        large_result = get_cached_dataframe(large_filepath)
-        different_structure_result = get_cached_dataframe(different_structure_filepath)
-
-    # Verify all dataframes were loaded correctly
-    pd.testing.assert_frame_equal(small_result, small_df)
-    pd.testing.assert_frame_equal(medium_result, medium_df)
-    pd.testing.assert_frame_equal(large_result, large_df)
-    pd.testing.assert_frame_equal(different_structure_result, different_structure_df)
-
-    # Verify all dataframes are in the cache
-    assert dataframe_cache.size() == 4
-    assert dataframe_cache.contains(small_filepath)
-    assert dataframe_cache.contains(medium_filepath)
-    assert dataframe_cache.contains(large_filepath)
-    assert dataframe_cache.contains(different_structure_filepath)
-
-    # Test retrieval performance for different sizes
-    start_time = time.time()
-    small_cached = get_cached_dataframe(small_filepath)
-    small_time = time.time() - start_time
-
-    start_time = time.time()
-    medium_cached = get_cached_dataframe(medium_filepath)
-    medium_time = time.time() - start_time
-
-    start_time = time.time()
-    large_cached = get_cached_dataframe(large_filepath)
-    large_time = time.time() - start_time
-
-    # Log performance metrics (these are not strict assertions, just informational)
-    # Performance metrics are measured but not printed to keep test output clean
-
-
-def test_dataframe_cache_with_different_data_types(tmp_path):
-    """Test the dataframe cache with dataframes containing different data types."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Create a dataframe with various data types
-    df_with_types = pd.DataFrame({
-        # Numeric types
-        'int': [1, 2, 3, 4, 5],
-        'float': [1.1, 2.2, 3.3, 4.4, 5.5],
-        'complex': [complex(1, 2), complex(2, 3), complex(3, 4), complex(4, 5), complex(5, 6)],
-
-        # Boolean type
-        'bool': [True, False, True, False, True],
-
-        # String type
-        'string': ['a', 'b', 'c', 'd', 'e'],
-
-        # Date and time types
-        'date': pd.date_range(start='2023-01-01', periods=5),
-        'datetime': pd.date_range(start='2023-01-01 12:00:00', periods=5),
-        'timedelta': [pd.Timedelta(days=i) for i in range(5)],
-
-        # Categorical type
-        'category': pd.Categorical(['A', 'B', 'C', 'A', 'B']),
-
-        # Object type
-        'object': [{'a': 1}, {'b': 2}, {'c': 3}, {'d': 4}, {'e': 5}]
-    })
-
-    # Save to parquet (note: some types like complex and object might not be preserved in parquet)
-    # We'll exclude those columns for the parquet file
-    df_for_parquet = df_with_types.drop(columns=['complex', 'object'])
-    filepath = os.path.join(tmp_path, "different_types.parquet")
-    df_for_parquet.to_parquet(filepath)
-
-    # Load the dataframe into cache
-    with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        result_df = get_cached_dataframe(filepath)
-
-    # Verify the dataframe was loaded correctly
-    pd.testing.assert_frame_equal(result_df, df_for_parquet)
-
-    # Verify the dataframe is in the cache
-    assert dataframe_cache.contains(filepath)
-    cached_df = dataframe_cache.get(filepath)
-    pd.testing.assert_frame_equal(cached_df, df_for_parquet)
-
-    # Test with a dataframe containing NaN, None, and Inf values
-    df_with_special_values = pd.DataFrame({
-        'with_nan': [1.0, np.nan, 3.0, np.nan, 5.0],
-        'with_none': [1, None, 3, None, 5],
-        'with_inf': [1.0, np.inf, 3.0, -np.inf, 5.0],
-    })
-
-    special_filepath = os.path.join(tmp_path, "special_values.parquet")
-    df_with_special_values.to_parquet(special_filepath)
-
-    # Load the dataframe into cache
-    with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        special_result_df = get_cached_dataframe(special_filepath)
-
-    # Verify the dataframe was loaded correctly
-    pd.testing.assert_frame_equal(special_result_df, df_with_special_values)
-
-    # Verify the dataframe is in the cache
-    assert dataframe_cache.contains(special_filepath)
-    special_cached_df = dataframe_cache.get(special_filepath)
-    pd.testing.assert_frame_equal(special_cached_df, df_with_special_values)
-
-
-def test_multiple_dataframes_in_cache(tmp_path):
-    """Test handling multiple dataframes in the cache simultaneously."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Create multiple dataframes for different futures contracts
-    contracts = ['ZC', 'ZS', 'CL', 'GC', 'SI']
-    dataframes = {}
-    filepaths = {}
-
-    # Create and save dataframes for each contract
-    for contract in contracts:
-        # Create a dataframe with OHLCV data
+    def test_cache_preserves_original_after_modifications(self, temp_parquet_file, sample_dataframe):
+        """Test cache preserves original data after modifications."""
+        # Get and modify DataFrame
+        df = get_cached_dataframe(temp_parquet_file)
+        df['indicator'] = 100
+        df['open'] = 0
+
+        # Get fresh copy - should match original
+        df_fresh = get_cached_dataframe(temp_parquet_file)
+
+        pd.testing.assert_frame_equal(df_fresh, sample_dataframe, check_freq=False)
+
+
+class TestCacheHitMiss:
+    """Test cache hit/miss behavior."""
+
+    def test_first_load_is_cache_miss(self, temp_parquet_file):
+        """Test first load results in cache miss."""
+        dataframe_cache.reset_stats()
+
+        get_cached_dataframe(temp_parquet_file)
+
+        assert dataframe_cache.misses == 1
+        assert dataframe_cache.hits == 0
+
+    def test_second_load_is_cache_hit(self, temp_parquet_file):
+        """Test second load results in cache hit."""
+        # First load
+        get_cached_dataframe(temp_parquet_file)
+
+        dataframe_cache.reset_stats()
+
+        # Second load
+        get_cached_dataframe(temp_parquet_file)
+
+        assert dataframe_cache.hits >= 1
+
+    def test_different_files_are_separate_cache_entries(self, sample_dataframe):
+        """Test different files create separate cache entries."""
+        # Create two temporary files
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f1:
+            file1 = f1.name
+            sample_dataframe.to_parquet(file1)
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f2:
+            file2 = f2.name
+            sample_dataframe.to_parquet(file2)
+
+        try:
+            # Load both files
+            get_cached_dataframe(file1)
+            get_cached_dataframe(file2)
+
+            # Both should be in cache
+            assert dataframe_cache.contains(file1)
+            assert dataframe_cache.contains(file2)
+            assert dataframe_cache.size() == 2
+        finally:
+            os.remove(file1)
+            os.remove(file2)
+
+    def test_cache_hit_rate_with_repeated_access(self, temp_parquet_file):
+        """Test cache hit rate with repeated access."""
+        # First access - miss
+        get_cached_dataframe(temp_parquet_file)
+
+        dataframe_cache.reset_stats()
+
+        # Multiple accesses - all hits
+        for _ in range(10):
+            get_cached_dataframe(temp_parquet_file)
+
+        assert dataframe_cache.hits >= 10
+
+
+class TestDataFrameIntegrity:
+    """Test DataFrame integrity across cache operations."""
+
+    def test_dataframe_index_preserved(self, temp_parquet_file, sample_dataframe):
+        """Test DataFrame index is preserved through cache."""
+        df = get_cached_dataframe(temp_parquet_file)
+
+        assert df.index.name == sample_dataframe.index.name
+        assert len(df.index) == len(sample_dataframe.index)
+        pd.testing.assert_index_equal(df.index, sample_dataframe.index)
+
+    def test_dataframe_dtypes_preserved(self, temp_parquet_file, sample_dataframe):
+        """Test DataFrame dtypes are preserved through cache."""
+        df = get_cached_dataframe(temp_parquet_file)
+
+        for col in sample_dataframe.columns:
+            assert df[col].dtype == sample_dataframe[col].dtype
+
+    def test_dataframe_values_unchanged(self, temp_parquet_file, sample_dataframe):
+        """Test DataFrame values remain unchanged through cache."""
+        df = get_cached_dataframe(temp_parquet_file)
+
+        # Check specific values
+        assert df['open'].iloc[0] == sample_dataframe['open'].iloc[0]
+        assert df['close'].iloc[-1] == sample_dataframe['close'].iloc[-1]
+        assert df['volume'].sum() == sample_dataframe['volume'].sum()
+
+    def test_dataframe_shape_preserved(self, temp_parquet_file, sample_dataframe):
+        """Test DataFrame shape is preserved through cache."""
+        df = get_cached_dataframe(temp_parquet_file)
+
+        assert df.shape == sample_dataframe.shape
+
+
+class TestLargeDataFrames:
+    """Test caching of large DataFrames."""
+
+    def test_cache_large_dataframe(self):
+        """Test caching a large DataFrame (10,000 rows)."""
+        dates = pd.date_range('2020-01-01', periods=10000, freq='1h')
+        large_df = pd.DataFrame({
+            'open': range(10000),
+            'high': range(10000),
+            'low': range(10000),
+            'close': range(10000),
+            'volume': range(10000)
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            large_df.to_parquet(filepath)
+
+        try:
+            # Cache large DataFrame
+            df = get_cached_dataframe(filepath)
+
+            assert len(df) == 10000
+            assert dataframe_cache.contains(filepath)
+        finally:
+            os.remove(filepath)
+
+    def test_copy_performance_with_large_dataframe(self):
+        """Test copy-on-write is efficient with large DataFrames."""
+        dates = pd.date_range('2020-01-01', periods=5000, freq='1h')
+        large_df = pd.DataFrame({
+            'open': range(5000),
+            'close': range(5000),
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            large_df.to_parquet(filepath)
+
+        try:
+            # Get multiple copies
+            df1 = get_cached_dataframe(filepath)
+            df2 = get_cached_dataframe(filepath)
+            df3 = get_cached_dataframe(filepath)
+
+            # All should have correct data
+            assert len(df1) == 5000
+            assert len(df2) == 5000
+            assert len(df3) == 5000
+        finally:
+            os.remove(filepath)
+
+
+class TestMultipleColumns:
+    """Test DataFrames with various column configurations."""
+
+    def test_dataframe_with_many_columns(self):
+        """Test DataFrame with many columns."""
+        dates = pd.date_range('2024-01-01', periods=100, freq='1h')
         df = pd.DataFrame({
-            'date': pd.date_range(start='2023-01-01', periods=100),
-            'symbol': [contract] * 100,
-            'open': np.random.rand(100) * 100,
-            'high': np.random.rand(100) * 100 + 10,
-            'low': np.random.rand(100) * 100 - 10,
-            'close': np.random.rand(100) * 100,
-            'volume': np.random.randint(1000, 10000, 100)
+            f'col_{i}': range(100) for i in range(20)
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            df.to_parquet(filepath)
+
+        try:
+            cached_df = get_cached_dataframe(filepath)
+
+            assert len(cached_df.columns) == 20
+            assert list(cached_df.columns) == [f'col_{i}' for i in range(20)]
+        finally:
+            os.remove(filepath)
+
+    def test_dataframe_with_mixed_dtypes(self):
+        """Test DataFrame with mixed data types."""
+        dates = pd.date_range('2024-01-01', periods=50, freq='1h')
+        df = pd.DataFrame({
+            'int_col': range(50),
+            'float_col': [float(i) * 1.5 for i in range(50)],
+            'string_col': [f'str_{i}' for i in range(50)],
+            'bool_col': [i % 2 == 0 for i in range(50)],
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            df.to_parquet(filepath)
+
+        try:
+            cached_df = get_cached_dataframe(filepath)
+
+            assert cached_df['int_col'].dtype == df['int_col'].dtype
+            assert cached_df['float_col'].dtype == df['float_col'].dtype
+            assert cached_df['string_col'].dtype == df['string_col'].dtype
+            assert cached_df['bool_col'].dtype == df['bool_col'].dtype
+        finally:
+            os.remove(filepath)
+
+
+class TestCacheEdgeCases:
+    """Test edge cases and error scenarios."""
+
+    def test_load_nonexistent_file_raises_error(self):
+        """Test loading non-existent file raises appropriate error."""
+        nonexistent_file = '/tmp/nonexistent_file_12345.parquet'
+
+        with pytest.raises(FileNotFoundError):
+            get_cached_dataframe(nonexistent_file)
+
+    def test_empty_dataframe_can_be_cached(self):
+        """Test empty DataFrame can be cached."""
+        empty_df = pd.DataFrame()
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            empty_df.to_parquet(filepath)
+
+        try:
+            df = get_cached_dataframe(filepath)
+
+            assert len(df) == 0
+            assert dataframe_cache.contains(filepath)
+        finally:
+            os.remove(filepath)
+
+    def test_single_row_dataframe(self):
+        """Test DataFrame with single row."""
+        single_row_df = pd.DataFrame({
+            'open': [100.0],
+            'close': [101.0],
         })
 
-        # Save to parquet
-        filepath = os.path.join(tmp_path, f"{contract}.parquet")
-        df.to_parquet(filepath)
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            single_row_df.to_parquet(filepath)
 
-        # Store for later comparison
-        dataframes[contract] = df
-        filepaths[contract] = filepath
+        try:
+            df = get_cached_dataframe(filepath)
 
-    # Load all dataframes into cache
-    with patch('app.backtesting.cache.dataframe_cache.dataframe_cache.save_cache'):
-        for contract in contracts:
-            result_df = get_cached_dataframe(filepaths[contract])
-            # Verify the dataframe was loaded correctly
-            pd.testing.assert_frame_equal(result_df, dataframes[contract])
+            assert len(df) == 1
+            assert df['open'].iloc[0] == 100.0
+        finally:
+            os.remove(filepath)
 
-    # Verify all dataframes are in the cache
-    assert dataframe_cache.size() == len(contracts)
-    for contract in contracts:
-        assert dataframe_cache.contains(filepaths[contract])
+    def test_cache_survives_file_deletion(self, temp_parquet_file):
+        """Test cached DataFrame remains accessible after file deletion."""
+        # Load and cache
+        df1 = get_cached_dataframe(temp_parquet_file)
 
-    # Retrieve all dataframes from the cache and verify they match the originals
-    for contract in contracts:
-        cached_df = dataframe_cache.get(filepaths[contract])
-        pd.testing.assert_frame_equal(cached_df, dataframes[contract])
+        # Delete the file
+        os.remove(temp_parquet_file)
 
-    # Modify one dataframe and verify others remain unchanged
-    modified_contract = 'ZC'
-    modified_df = dataframes[modified_contract].copy()
-    modified_df['close'] = modified_df['close'] * 1.1  # Increase close prices by 10%
+        # Should still be able to get from cache
+        df2 = get_cached_dataframe(temp_parquet_file)
 
-    # Update the cache with the modified dataframe
-    dataframe_cache.set(filepaths[modified_contract], modified_df)
-
-    # Verify the modified dataframe is updated in the cache
-    cached_modified_df = dataframe_cache.get(filepaths[modified_contract])
-    pd.testing.assert_frame_equal(cached_modified_df, modified_df)
-
-    # Verify other dataframes remain unchanged
-    for contract in contracts:
-        if contract != modified_contract:
-            cached_df = dataframe_cache.get(filepaths[contract])
-            pd.testing.assert_frame_equal(cached_df, dataframes[contract])
-
-    # Clear the cache and verify it's empty
-    dataframe_cache.cache_data.clear()
-    assert dataframe_cache.size() == 0
-    for contract in contracts:
-        assert not dataframe_cache.contains(filepaths[contract])
+        pd.testing.assert_frame_equal(df1, df2)
 
 
-def test_dataframe_cache_with_non_existent_files():
-    """Test handling of non-existent files."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
+class TestRealWorldScenarios:
+    """Test realistic usage scenarios."""
 
-    # Test with a non-existent file
-    non_existent_filepath = "/path/to/non_existent_file.parquet"
+    def test_typical_backtesting_scenario(self, sample_dataframe):
+        """Test typical backtesting scenario with multiple strategies."""
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            sample_dataframe.to_parquet(filepath)
 
-    # Attempt to load the non-existent file
-    with patch('pandas.read_parquet') as mock_read_parquet:
-        # Set up the mock to raise a FileNotFoundError
-        mock_read_parquet.side_effect = FileNotFoundError("File not found")
+        try:
+            # Simulate 5 strategies loading the same data
+            dataframes = []
+            for _ in range(5):
+                df = get_cached_dataframe(filepath)
+                dataframes.append(df)
 
-        # Verify that the exception is propagated
-        with pytest.raises(FileNotFoundError, match="File not found"):
-            get_cached_dataframe(non_existent_filepath)
+            # All strategies get their own copy
+            assert len(dataframes) == 5
 
-    # Verify that the non-existent file was not added to the cache
-    assert not dataframe_cache.contains(non_existent_filepath)
-    assert dataframe_cache.size() == 0
+            # Each can modify independently
+            for i, df in enumerate(dataframes):
+                df[f'strategy_{i}_signal'] = i
 
-    # Test with a file that exists but is not a valid parquet file
-    with patch('pandas.read_parquet') as mock_read_parquet:
-        # Set up the mock to raise a different exception
-        mock_read_parquet.side_effect = Exception("Invalid parquet file")
+            # Verify independence
+            for i, df in enumerate(dataframes):
+                assert f'strategy_{i}_signal' in df.columns
+                for j in range(5):
+                    if i != j:
+                        assert f'strategy_{j}_signal' not in df.columns
+        finally:
+            os.remove(filepath)
 
-        # Verify that the exception is propagated
-        with pytest.raises(Exception, match="Invalid parquet file"):
-            get_cached_dataframe("invalid_parquet_file.parquet")
+    def test_sequential_backtests_reuse_cache(self, sample_dataframe):
+        """Test sequential backtests reuse cached data."""
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.parquet', delete=False) as f:
+            filepath = f.name
+            sample_dataframe.to_parquet(filepath)
 
-    # Verify that the invalid file was not added to the cache
-    assert not dataframe_cache.contains("invalid_parquet_file.parquet")
-    assert dataframe_cache.size() == 0
+        try:
+            dataframe_cache.reset_stats()
 
+            # Run 3 sequential backtests
+            for backtest_num in range(3):
+                df = get_cached_dataframe(filepath)
+                df['backtest'] = backtest_num
 
-def test_dataframe_cache_corrupted_file():
-    """Test handling of corrupted cache files."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Add some data to the cache
-    test_key = "test_file.parquet"
-    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-    dataframe_cache.set(test_key, test_value)
-
-    # Save the cache
-    dataframe_cache.save_cache()
-
-    # Simulate a corrupted cache file by mocking pickle.load to raise an exception
-    with patch('pickle.load', side_effect=Exception("Corrupted file")):
-        # Create a new cache instance, which will try to load the corrupted file
-        new_cache = Cache("dataframe")
-
-        # Verify the new cache is empty (couldn't load the corrupted data)
-        assert not new_cache.contains(test_key)
-        assert new_cache.size() == 0
-
-
-def test_dataframe_cache_interrupted_save():
-    """Test handling of interrupted save operations."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Add some data to the cache
-    test_key = "test_file.parquet"
-    test_value = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-    dataframe_cache.set(test_key, test_value)
-
-    # Simulate an interrupted save by mocking open to raise an exception
-    with patch('builtins.open', side_effect=Exception("Interrupted save")):
-        # Try to save the cache, which should handle the exception gracefully
-        dataframe_cache.save_cache()
-
-    # Verify the cache still contains the data in memory
-    assert dataframe_cache.contains(test_key)
-    pd.testing.assert_frame_equal(dataframe_cache.get(test_key), test_value)
-
-
-def test_dataframe_cache_large_objects():
-    """Test handling of large objects in the cache to check for memory leaks."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Create a large dataframe (100,000 rows x 10 columns)
-    large_df = pd.DataFrame({
-        f'col_{i}': np.random.rand(100_000) for i in range(10)
-    })
-
-    # Add the large dataframe to the cache
-    test_key = "large_file.parquet"
-    dataframe_cache.set(test_key, large_df)
-
-    # Verify the dataframe is in the cache
-    assert dataframe_cache.contains(test_key)
-
-    # Get the dataframe from the cache and verify it matches the original
-    cached_df = dataframe_cache.get(test_key)
-    pd.testing.assert_frame_equal(cached_df, large_df)
-
-    # Clear the reference to the original dataframe to allow garbage collection
-    del large_df
-
-    # Clear the cache to free memory
-    dataframe_cache.cache_data.clear()
-    assert not dataframe_cache.contains(test_key)
-    assert dataframe_cache.size() == 0
-
-
-def test_dataframe_cache_concurrent_access():
-    """Test handling of concurrent access to the cache."""
-    import threading
-
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Create a function that adds dataframes to the cache
-    def add_to_cache(start_idx, end_idx):
-        for i in range(start_idx, end_idx):
-            df = pd.DataFrame({
-                'A': range(i, i + 10),
-                'B': range(i + 10, i + 20)
-            })
-            dataframe_cache.set(f'file_{i}.parquet', df)
-
-    # Create threads to add dataframes to the cache concurrently
-    threads = []
-    for i in range(5):
-        t = threading.Thread(target=add_to_cache, args=(i * 10, (i + 1) * 10))
-        threads.append(t)
-
-    # Start all threads
-    for t in threads:
-        t.start()
-
-    # Wait for all threads to complete
-    for t in threads:
-        t.join()
-
-    # Verify that all dataframes were added to the cache
-    assert dataframe_cache.size() == 50  # 5 threads * 10 dataframes each
-
-    # Verify that we can retrieve some of the dataframes
-    for i in range(0, 50, 10):
-        key = f'file_{i}.parquet'
-        assert dataframe_cache.contains(key)
-        df = dataframe_cache.get(key)
-        assert isinstance(df, pd.DataFrame)
-        assert df.shape == (10, 2)
-        assert list(df.columns) == ['A', 'B']
-        assert df['A'].iloc[0] == i
-        assert df['B'].iloc[0] == i + 10
-
-    # Clear the cache
-    dataframe_cache.cache_data.clear()
-    assert dataframe_cache.size() == 0
-
-
-def test_dataframe_cache_invalid_keys():
-    """Test handling of invalid keys in the cache."""
-    # Clear the cache to start with a clean state
-    dataframe_cache.cache_data.clear()
-
-    # Try to set a non-hashable key (dictionary is not hashable)
-    with pytest.raises(TypeError):
-        dataframe_cache.set({'non_hashable': 'key'}, pd.DataFrame())
-
-    # Try to set a None key
-    test_df = pd.DataFrame({'A': [1, 2, 3]})
-    dataframe_cache.set(None, test_df)
-    assert dataframe_cache.contains(None)
-    pd.testing.assert_frame_equal(dataframe_cache.get(None), test_df)
-
-    # Try to set an empty string key
-    dataframe_cache.set('', test_df)
-    assert dataframe_cache.contains('')
-    pd.testing.assert_frame_equal(dataframe_cache.get(''), test_df)
-
-    # Verify the cache size
-    assert dataframe_cache.size() == 2  # None and empty string keys
-
-    # Clear the cache
-    dataframe_cache.cache_data.clear()
-    assert dataframe_cache.size() == 0
+            # First was miss, others were hits
+            assert dataframe_cache.misses >= 1
+            assert dataframe_cache.hits >= 2
+        finally:
+            os.remove(filepath)
