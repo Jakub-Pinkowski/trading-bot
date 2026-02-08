@@ -132,9 +132,12 @@ def _reorder_columns(df):
     if 'strategy' not in cols:
         return df
     try:
-        strategy_idx = cols.index('strategy')
         # Remove param columns from their current positions (if they exist)
         cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
+
+        # Recompute strategy_idx after filtering to get correct position
+        strategy_idx = cols.index('strategy')
+
         # Insert param columns after strategy (only if they existed in original df)
         insert_pos = strategy_idx + 1
         if 'rollover' in df.columns:

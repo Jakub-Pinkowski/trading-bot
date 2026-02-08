@@ -370,6 +370,34 @@ class TestColumnReordering:
         assert list(reordered.columns) == list(df.columns)
         assert reordered.equals(df)
 
+    def test_reorder_columns_when_params_before_strategy(self):
+        """Test reordering when param columns appear before strategy column."""
+        df = pd.DataFrame({
+            'rollover': [True, False],
+            'slippage': [1, 2],
+            'col1': [10, 20],
+            'strategy': ['A', 'B'],
+            'col2': [30, 40],
+            'trailing': [1.5, 2.0]
+        })
+
+        reordered = _reorder_columns(df)
+
+        # Params should be moved after strategy, not before
+        cols = list(reordered.columns)
+        strategy_idx = cols.index('strategy')
+
+        # All param columns should come after strategy
+        assert cols[strategy_idx + 1] == 'rollover'
+        assert cols[strategy_idx + 2] == 'trailing'
+        assert cols[strategy_idx + 3] == 'slippage'
+
+        # col1 should remain before strategy
+        assert cols.index('col1') < strategy_idx
+
+        # col2 should remain after all params
+        assert cols.index('col2') > cols.index('slippage')
+
 
 class TestColumnNameFormatting:
     """Test column name transformation."""
