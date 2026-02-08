@@ -134,16 +134,56 @@ class TestDataFrameFiltering:
             min_symbol_count=None
         )
 
-        # Slippage filtering extracts from strategy name
-        # If it returns empty, the regex might not be matching
-        # This is acceptable - we're testing the function works without errors
+        # Should return non-empty results (fixture has strategies with slippage_ticks >= 1.0)
+        assert len(result) > 0, "Should find strategies with slippage_ticks >= 1.0"
         assert isinstance(result, pd.DataFrame)
 
-        # If results exist, verify they meet criteria
-        if len(result) > 0:
-            unique_strategies = result['strategy'].unique()
-            # Should include strategies with slippage >= 1.0
-            assert len(unique_strategies) > 0
+        # Verify all returned strategies have slippage_ticks >= 1.0
+        # Extract slippage from strategy names and validate
+        for strategy_name in result['strategy'].unique():
+            assert 'slippage_ticks=' in strategy_name, \
+                f"Strategy name should contain slippage_ticks pattern: {strategy_name}"
+
+            # Extract the slippage value
+            import re
+            match = re.search(r'slippage_ticks=([0-9.]+)', strategy_name)
+            assert match is not None, f"Could not extract slippage from: {strategy_name}"
+
+            slippage_value = float(match.group(1))
+            assert slippage_value >= 1.0, \
+                f"Strategy {strategy_name} has slippage {slippage_value} < 1.0"
+
+        # Should exclude LowTradeStrategy which has slippage_ticks=0.5
+        assert 'LowTradeStrategy(slippage_ticks=0.5)' not in result['strategy'].values
+
+        # Should include HighPerformer (1.0), MediumPerformer (2.0), SingleSymbolStrategy (1.5)
+        unique_strategies = result['strategy'].unique()
+        assert 'HighPerformer(slippage_ticks=1.0)' in unique_strategies
+        assert 'MediumPerformer(slippage_ticks=2.0)' in unique_strategies
+        assert 'SingleSymbolStrategy(slippage_ticks=1.5)' in unique_strategies
+
+    def test_filter_by_higher_slippage_threshold(self, filtering_strategy_data):
+        """Test filtering with higher slippage threshold excludes lower slippage strategies."""
+        result = filter_dataframe(
+            df=filtering_strategy_data,
+            min_avg_trades_per_combination=0,
+            interval=None,
+            symbol=None,
+            min_slippage_ticks=1.5,
+            min_symbol_count=None
+        )
+
+        # Should return non-empty results
+        assert len(result) > 0, "Should find strategies with slippage_ticks >= 1.5"
+
+        # Should only include strategies with slippage >= 1.5
+        # MediumPerformer (2.0) and SingleSymbolStrategy (1.5) should be included
+        # HighPerformer (1.0) and LowTradeStrategy (0.5) should be excluded
+        unique_strategies = result['strategy'].unique()
+        assert 'MediumPerformer(slippage_ticks=2.0)' in unique_strategies
+        assert 'SingleSymbolStrategy(slippage_ticks=1.5)' in unique_strategies
+        assert 'HighPerformer(slippage_ticks=1.0)' not in unique_strategies
+        assert 'LowTradeStrategy(slippage_ticks=0.5)' not in unique_strategies
 
     def test_filter_by_min_symbol_count(self, filtering_strategy_data):
         """Test filtering by minimum number of unique symbols."""
