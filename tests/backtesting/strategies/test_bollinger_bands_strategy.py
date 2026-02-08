@@ -20,21 +20,14 @@ from tests.backtesting.helpers.assertions import (
     assert_no_overlapping_trades
 )
 from tests.backtesting.strategies.strategy_test_utils import (
-    assert_strategy_basic_attributes,
-    assert_trailing_stop_configured,
-    assert_rollover_configured,
-    assert_strategy_name_contains,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
-    assert_faster_params_generate_more_trades,
-    assert_indicator_columns_exist,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
-    get_common_backtest_configs,
 )
 
 
@@ -63,7 +56,9 @@ class TestBollingerBandsStrategyInitialization:
 
         assert strategy.period == period
         assert strategy.number_of_standard_deviations == std_dev
-        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_initialization_with_trailing_stop(self):
         """Test Bollinger Bands strategy with trailing stop enabled."""
@@ -76,7 +71,8 @@ class TestBollingerBandsStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_trailing_stop_configured(strategy, 2.0)
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
     def test_initialization_with_rollover_enabled(self):
         """Test Bollinger Bands strategy with contract rollover handling."""
@@ -89,7 +85,8 @@ class TestBollingerBandsStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_rollover_configured(strategy)
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
     def test_format_name_generates_correct_string(self):
         """Test strategy name formatting for identification."""
@@ -101,9 +98,11 @@ class TestBollingerBandsStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(
-            name, 'BB', 'period=20', 'std=2.0', 'rollover=False', 'slippage_ticks=1'
-        )
+        assert 'BB' in name
+        assert 'period=20' in name
+        assert 'std=2.0' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
 
 # ==================== Test Indicator Calculation ====================
@@ -116,7 +115,9 @@ class TestBollingerBandsStrategyIndicators:
         df = standard_bollinger_strategy.add_indicators(zs_1h_data.copy())
 
         # All Bollinger Bands columns should be added
-        assert_indicator_columns_exist(df, 'middle_band', 'upper_band', 'lower_band')
+        assert 'middle_band' in df.columns
+        assert 'upper_band' in df.columns
+        assert 'lower_band' in df.columns
 
         # Validate band values
         assert_valid_indicator(df['middle_band'], 'Middle_Band', min_val=0, allow_nan=True)
@@ -342,7 +343,11 @@ class TestBollingerBandsStrategySignals:
 class TestBollingerBandsStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
     def test_backtest_execution_variants(
         self, symbol, interval, trailing, description,
         load_real_data, contract_switch_dates
@@ -429,7 +434,10 @@ class TestBollingerBandsStrategyExecution:
         trades_tight = strategy_tight.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_wide = strategy_wide.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        assert_faster_params_generate_more_trades(trades_tight, trades_wide, "Bollinger Bands period/std")
+        assert len(trades_tight) > 0, "Tight parameter strategy generated no trades"
+        assert len(trades_wide) > 0, "Wide parameter strategy generated no trades"
+        assert len(trades_tight) >= len(trades_wide), \
+            f"Tighter Bollinger Bands period/std should generate more trades ({len(trades_tight)} vs {len(trades_wide)})"
 
     def test_signals_convert_to_actual_trades(self, standard_bollinger_strategy, zs_1h_data, contract_switch_dates):
         """Test that generated signals result in actual trades."""
@@ -507,5 +515,8 @@ class TestBollingerBandsStrategyEdgeCases:
         df = standard_bollinger_strategy.generate_signals(df)
 
         # Should still calculate Bollinger Bands and signals
-        assert_indicator_columns_exist(df, 'middle_band', 'upper_band', 'lower_band', 'signal')
+        assert 'middle_band' in df.columns
+        assert 'upper_band' in df.columns
+        assert 'lower_band' in df.columns
+        assert 'signal' in df.columns
         assert_valid_signals(df)

@@ -20,19 +20,13 @@ from tests.backtesting.helpers.assertions import (
     assert_no_overlapping_trades
 )
 from tests.backtesting.strategies.strategy_test_utils import (
-    assert_strategy_basic_attributes,
-    assert_trailing_stop_configured,
-    assert_rollover_configured,
-    assert_strategy_name_contains,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
-    assert_faster_params_generate_more_trades,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
-    get_common_backtest_configs,
 )
 
 
@@ -62,7 +56,9 @@ class TestRSIStrategyInitialization:
         assert strategy.rsi_period == period
         assert strategy.lower_threshold == lower
         assert strategy.upper_threshold == upper
-        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_initialization_with_trailing_stop(self):
         """Test RSI strategy with trailing stop enabled."""
@@ -76,7 +72,8 @@ class TestRSIStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_trailing_stop_configured(strategy, 2.0)
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
     def test_initialization_with_rollover_enabled(self):
         """Test RSI strategy with contract rollover handling."""
@@ -90,7 +87,8 @@ class TestRSIStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_rollover_configured(strategy)
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
     def test_format_name_generates_correct_string(self):
         """Test strategy name formatting for identification."""
@@ -103,10 +101,12 @@ class TestRSIStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(
-            name, 'RSI', 'period=14', 'lower=30', 'upper=70',
-            'rollover=False', 'slippage_ticks=1'
-        )
+        assert 'RSI' in name
+        assert 'period=14' in name
+        assert 'lower=30' in name
+        assert 'upper=70' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
 
 # ==================== Test Indicator Calculation ====================
@@ -305,7 +305,11 @@ class TestRSIStrategySignals:
 class TestRSIStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
     def test_backtest_execution_variants(
         self, symbol, interval, trailing, description,
         load_real_data, contract_switch_dates
@@ -402,7 +406,10 @@ class TestRSIStrategyExecution:
         trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        assert_faster_params_generate_more_trades(trades_fast, trades_slow, "RSI period")
+        assert len(trades_fast) > 0, "Fast parameter strategy generated no trades"
+        assert len(trades_slow) > 0, "Slow parameter strategy generated no trades"
+        assert len(trades_fast) >= len(trades_slow), \
+            f"Faster RSI period should generate more trades ({len(trades_fast)} vs {len(trades_slow)})"
 
     def test_signals_convert_to_actual_trades(self, standard_rsi_strategy, zs_1h_data, contract_switch_dates):
         """Test that generated signals result in actual trades."""

@@ -21,9 +21,6 @@ from app.backtesting.strategies.base.base_strategy import (
     INDICATOR_WARMUP_PERIOD
 )
 from tests.backtesting.strategies.strategy_test_utils import (
-    assert_strategy_basic_attributes,
-    assert_trailing_stop_configured,
-    assert_rollover_configured,
     assert_trades_have_both_directions,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
@@ -114,7 +111,9 @@ class TestBaseStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_strategy_basic_attributes(strategy, False, None, 0)
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 0
         assert strategy.position_manager is not None
         assert strategy.switch_handler is not None
         assert strategy.prev_row is None
@@ -130,7 +129,7 @@ class TestBaseStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_trailing_stop_configured(strategy, 2.0)
+        assert strategy.trailing == 2.0
         assert strategy.trailing_stop_manager is not None
 
     def test_initialization_with_rollover(self):
@@ -142,7 +141,8 @@ class TestBaseStrategyInitialization:
             symbol='CL'
         )
 
-        assert_rollover_configured(strategy)
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
     def test_initialization_with_all_parameters(self):
         """Test strategy initializes with all parameters enabled."""

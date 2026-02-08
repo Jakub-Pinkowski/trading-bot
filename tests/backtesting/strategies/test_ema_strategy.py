@@ -20,23 +20,15 @@ from tests.backtesting.helpers.assertions import (
     assert_no_overlapping_trades
 )
 from tests.backtesting.strategies.strategy_test_utils import (
-    assert_strategy_basic_attributes,
-    assert_trailing_stop_configured,
-    assert_rollover_configured,
-    assert_strategy_name_contains,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
-    assert_faster_params_generate_more_signals,
-    assert_faster_params_generate_more_trades,
     assert_more_responsive_indicator,
-    assert_indicator_columns_exist,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
-    get_common_backtest_configs,
 )
 
 
@@ -64,7 +56,9 @@ class TestEMAStrategyInitialization:
 
         assert strategy.short_ema_period == short
         assert strategy.long_ema_period == long
-        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_initialization_with_trailing_stop(self):
         """Test EMA strategy with trailing stop enabled."""
@@ -77,7 +71,8 @@ class TestEMAStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_trailing_stop_configured(strategy, 2.0)
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
     def test_initialization_with_rollover_enabled(self):
         """Test EMA strategy with contract rollover handling."""
@@ -90,7 +85,8 @@ class TestEMAStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_rollover_configured(strategy)
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
     def test_format_name_generates_correct_string(self):
         """Test strategy name formatting for identification."""
@@ -102,9 +98,11 @@ class TestEMAStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(
-            name, 'EMA', 'short=9', 'long=21', 'rollover=False', 'slippage_ticks=1'
-        )
+        assert 'EMA' in name
+        assert 'short=9' in name
+        assert 'long=21' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
 
 # ==================== Test Indicator Calculation ====================
@@ -117,7 +115,8 @@ class TestEMAStrategyIndicators:
         df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
 
         # Both EMA columns should be added
-        assert_indicator_columns_exist(df, 'ema_short', 'ema_long')
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
 
         # Validate EMA values
         assert_valid_indicator(df['ema_short'], 'EMA_short', min_val=0, allow_nan=True)
@@ -260,7 +259,10 @@ class TestEMAStrategySignals:
         df_slow = strategy_slow.generate_signals(df_slow)
 
         # Fast crossover should generate more signals
-        assert_faster_params_generate_more_signals(df_fast, df_slow, "EMA period")
+        fast_count = (df_fast['signal'] != 0).sum()
+        slow_count = (df_slow['signal'] != 0).sum()
+        assert fast_count >= slow_count, \
+            f"Faster EMA period should generate more signals ({fast_count} vs {slow_count})"
 
     @pytest.mark.parametrize("short,long,description,max_signal_pct", [
         (5, 15, "fast", 0.15),
@@ -310,7 +312,11 @@ class TestEMAStrategySignals:
 class TestEMAStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
     def test_backtest_execution_variants(
         self, symbol, interval, trailing, description,
         load_real_data, contract_switch_dates
@@ -392,7 +398,10 @@ class TestEMAStrategyExecution:
         trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        assert_faster_params_generate_more_trades(trades_fast, trades_slow, "EMA period")
+        assert len(trades_fast) > 0, "Fast parameter strategy generated no trades"
+        assert len(trades_slow) > 0, "Slow parameter strategy generated no trades"
+        assert len(trades_fast) >= len(trades_slow), \
+            f"Faster EMA period should generate more trades ({len(trades_fast)} vs {len(trades_slow)})"
 
     def test_signals_convert_to_actual_trades(self, standard_ema_strategy, zs_1h_data, contract_switch_dates):
         """Test that generated signals result in actual trades."""
@@ -416,7 +425,8 @@ class TestEMAStrategyEdgeCases:
         df = standard_ema_strategy.add_indicators(small_data.copy())
 
         # Long EMA needs more data, but short EMA can calculate with less
-        assert_indicator_columns_exist(df, 'ema_short', 'ema_long')
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
         assert len(df) == 3
 
     def test_strategy_with_constant_prices(self, standard_ema_strategy):
@@ -457,5 +467,7 @@ class TestEMAStrategyEdgeCases:
         df = standard_ema_strategy.generate_signals(df)
 
         # Should still calculate EMAs and signals
-        assert_indicator_columns_exist(df, 'ema_short', 'ema_long', 'signal')
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
+        assert 'signal' in df.columns
         assert_valid_signals(df)

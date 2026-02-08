@@ -20,21 +20,14 @@ from tests.backtesting.helpers.assertions import (
     assert_no_overlapping_trades
 )
 from tests.backtesting.strategies.strategy_test_utils import (
-    assert_strategy_basic_attributes,
-    assert_trailing_stop_configured,
-    assert_rollover_configured,
-    assert_strategy_name_contains,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
-    assert_faster_params_generate_more_trades,
-    assert_indicator_columns_exist,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
-    get_common_backtest_configs,
 )
 
 
@@ -66,7 +59,9 @@ class TestIchimokuStrategyInitialization:
         assert strategy.kijun_period == kijun
         assert strategy.senkou_span_b_period == senkou_b
         assert strategy.displacement == displacement
-        assert_strategy_basic_attributes(strategy, rollover=False, trailing=None, slippage_ticks=1)
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 1
 
     def test_initialization_with_trailing_stop(self):
         """Test Ichimoku strategy with trailing stop enabled."""
@@ -81,7 +76,8 @@ class TestIchimokuStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_trailing_stop_configured(strategy, 2.0)
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
     def test_initialization_with_rollover_enabled(self):
         """Test Ichimoku strategy with contract rollover handling."""
@@ -96,7 +92,8 @@ class TestIchimokuStrategyInitialization:
             symbol='ZS'
         )
 
-        assert_rollover_configured(strategy)
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
     def test_format_name_generates_correct_string(self):
         """Test strategy name formatting for identification."""
@@ -110,10 +107,13 @@ class TestIchimokuStrategyInitialization:
             slippage_ticks=1
         )
 
-        assert_strategy_name_contains(
-            name, 'Ichimoku', 'tenkan=9', 'kijun=26',
-            'senkou_b=52', 'displacement=26', 'rollover=False', 'slippage_ticks=1'
-        )
+        assert 'Ichimoku' in name
+        assert 'tenkan=9' in name
+        assert 'kijun=26' in name
+        assert 'senkou_b=52' in name
+        assert 'displacement=26' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
 
 # ==================== Test Indicator Calculation ====================
@@ -126,10 +126,11 @@ class TestIchimokuStrategyIndicators:
         df = standard_ichimoku_strategy.add_indicators(zs_1h_data.copy())
 
         # All 5 Ichimoku components should be added
-        assert_indicator_columns_exist(
-            df, 'tenkan_sen', 'kijun_sen', 'senkou_span_a',
-            'senkou_span_b', 'chikou_span'
-        )
+        assert 'tenkan_sen' in df.columns
+        assert 'kijun_sen' in df.columns
+        assert 'senkou_span_a' in df.columns
+        assert 'senkou_span_b' in df.columns
+        assert 'chikou_span' in df.columns
 
         # Validate component values
         assert_valid_indicator(df['tenkan_sen'], 'Tenkan-sen', min_val=0, allow_nan=True)
@@ -453,7 +454,11 @@ class TestIchimokuStrategySignals:
 class TestIchimokuStrategyExecution:
     """Test full strategy execution with trade generation."""
 
-    @pytest.mark.parametrize("symbol,interval,trailing,description", get_common_backtest_configs())
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
     def test_backtest_execution_variants(
         self, symbol, interval, trailing, description,
         load_real_data, contract_switch_dates
@@ -567,7 +572,10 @@ class TestIchimokuStrategyExecution:
         trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
         trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        assert_faster_params_generate_more_trades(trades_fast, trades_slow, "Ichimoku period")
+        assert len(trades_fast) > 0, "Fast parameter strategy generated no trades"
+        assert len(trades_slow) > 0, "Slow parameter strategy generated no trades"
+        assert len(trades_fast) >= len(trades_slow), \
+            f"Faster Ichimoku period should generate more trades ({len(trades_fast)} vs {len(trades_slow)})"
 
     def test_signals_convert_to_actual_trades(self, zs_1h_data, contract_switch_dates):
         """Test that generated signals result in actual trades."""
@@ -712,8 +720,10 @@ class TestIchimokuStrategyEdgeCases:
         df = strategy.generate_signals(df)
 
         # Should still calculate Ichimoku components and signals
-        assert_indicator_columns_exist(
-            df, 'tenkan_sen', 'kijun_sen', 'senkou_span_a',
-            'senkou_span_b', 'chikou_span', 'signal'
-        )
+        assert 'tenkan_sen' in df.columns
+        assert 'kijun_sen' in df.columns
+        assert 'senkou_span_a' in df.columns
+        assert 'senkou_span_b' in df.columns
+        assert 'chikou_span' in df.columns
+        assert 'signal' in df.columns
         assert_valid_signals(df)
