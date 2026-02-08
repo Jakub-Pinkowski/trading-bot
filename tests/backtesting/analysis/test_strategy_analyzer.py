@@ -43,23 +43,62 @@ def temp_results_file(base_strategy_results, tmp_path):
 @pytest.fixture
 def analyzer_with_data(base_strategy_results, monkeypatch):
     """
-    Create StrategyAnalyzer instance with sample data.
+    Create StrategyAnalyzer instance with sample data (CSV writing disabled).
 
     Uses monkeypatch to override the default file loading so tests don't depend on
     the actual mass_test_results_all.parquet file existing.
+
+    **Important:** Stubs out _save_results_to_csv to prevent side effects during tests.
+    For tests that need CSV functionality, use `analyzer_with_csv_enabled` fixture instead.
 
     Args:
         base_strategy_results: Sample DataFrame fixture from conftest
         monkeypatch: pytest's monkeypatch fixture for mocking
 
     Returns:
-        StrategyAnalyzer instance loaded with test data
+        StrategyAnalyzer instance loaded with test data (CSV writing disabled)
     """
     # Mock pd.read_parquet to return our test data
     monkeypatch.setattr(
         'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
         lambda *_args, **_kwargs: base_strategy_results
     )
+
+    # Stub out _save_results_to_csv to prevent side effects
+    # Use analyzer_with_csv_enabled fixture if CSV functionality is needed
+    monkeypatch.setattr(
+        'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+        lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None  # No-op
+    )
+
+    return StrategyAnalyzer()
+
+
+@pytest.fixture
+def analyzer_with_csv_enabled(base_strategy_results, tmp_path, monkeypatch):
+    """
+    Create StrategyAnalyzer instance with CSV writing enabled (writes to tmp_path).
+
+    Similar to analyzer_with_data but allows CSV export functionality.
+    Automatically redirects BACKTESTING_DIR to tmp_path to prevent side effects.
+
+    Args:
+        base_strategy_results: Sample DataFrame fixture from conftest
+        tmp_path: pytest's temporary directory fixture
+        monkeypatch: pytest's monkeypatch fixture for mocking
+
+    Returns:
+        StrategyAnalyzer instance loaded with test data (CSV writing enabled to tmp_path)
+    """
+    # Mock pd.read_parquet to return our test data
+    monkeypatch.setattr(
+        'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+        lambda *_args, **_kwargs: base_strategy_results
+    )
+
+    # Redirect BACKTESTING_DIR to tmp_path to prevent side effects
+    monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
+
     return StrategyAnalyzer()
 
 
@@ -137,11 +176,9 @@ class TestGetTopStrategiesBasic:
         assert result.iloc[0]['symbol'] == 'ES'
         assert result.iloc[0]['profit_factor'] == 7.0
 
-    def test_get_top_strategies_applies_limit(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_get_top_strategies_applies_limit(self, analyzer_with_csv_enabled, tmp_path):
         """Test that limit parameter affects CSV export (not returned DataFrame)."""
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        result = analyzer_with_data.get_top_strategies(
+        result = analyzer_with_csv_enabled.get_top_strategies(
             metric='win_rate',
             min_avg_trades_per_combination=0,
             limit=3,
@@ -416,12 +453,9 @@ class TestGetTopStrategiesMetrics:
 class TestCSVExport:
     """Test CSV export functionality."""
 
-    def test_saves_csv_file(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_saves_csv_file(self, analyzer_with_csv_enabled, tmp_path):
         """Test that results are saved to CSV file."""
-        # Mock the BACKTESTING_DIR to use temp directory
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        analyzer_with_data.get_top_strategies(
+        analyzer_with_csv_enabled.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=5,
@@ -436,11 +470,9 @@ class TestCSVExport:
         csv_files = list(csv_dir.glob('*.csv'))
         assert len(csv_files) > 0
 
-    def test_csv_filename_includes_metric(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_csv_filename_includes_metric(self, analyzer_with_csv_enabled, tmp_path):
         """Test that CSV filename includes the ranking metric."""
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        analyzer_with_data.get_top_strategies(
+        analyzer_with_csv_enabled.get_top_strategies(
             metric='sharpe_ratio',
             min_avg_trades_per_combination=0,
             limit=5,
@@ -450,11 +482,9 @@ class TestCSVExport:
         csv_files = list((tmp_path / 'csv_results').glob('*.csv'))
         assert any('sharpe_ratio' in f.name for f in csv_files)
 
-    def test_csv_content_matches_dataframe(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_csv_content_matches_dataframe(self, analyzer_with_csv_enabled, tmp_path):
         """Test that CSV file content matches returned DataFrame."""
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        analyzer_with_data.get_top_strategies(
+        analyzer_with_csv_enabled.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=3,
@@ -468,11 +498,9 @@ class TestCSVExport:
         # Should have same number of rows (limited to 3)
         assert len(csv_df) == 3
 
-    def test_csv_respects_limit(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_csv_respects_limit(self, analyzer_with_csv_enabled, tmp_path):
         """Test that CSV file respects the limit parameter."""
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        analyzer_with_data.get_top_strategies(
+        analyzer_with_csv_enabled.get_top_strategies(
             metric='win_rate',
             min_avg_trades_per_combination=0,
             limit=10,
@@ -531,12 +559,10 @@ class TestEdgeCases:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
-    def test_single_strategy_result(self, analyzer_with_data, tmp_path, monkeypatch):
+    def test_single_strategy_result(self, analyzer_with_csv_enabled, tmp_path):
         """Test handling of results when filtering to a single strategy."""
         # Filter to get only one specific strategy by using symbol and interval filters
-        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
-
-        result = analyzer_with_data.get_top_strategies(
+        result = analyzer_with_csv_enabled.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=None,
