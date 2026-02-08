@@ -4,16 +4,11 @@ Fixtures for strategy tests.
 Provides realistic test data that matches actual historical data format.
 """
 import numpy as np
-import pandas as pd
-import pytest
 
-from app.backtesting.strategies import (
-    RSIStrategy,
-    EMACrossoverStrategy,
-    MACDStrategy,
-    IchimokuCloudStrategy,
-    BollingerBandsStrategy
-)
+# Import fixtures from parent fixtures directory to make them available
+# This ensures PyCharm's test runner can find fixtures like zs_1h_data, load_real_data, etc.
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== Strategy Factory Fixtures ====================
