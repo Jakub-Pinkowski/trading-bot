@@ -761,3 +761,235 @@ class TestPositionManagerIntegration:
 
         # First trade should still be recorded
         assert len(position_manager.trades) == 1
+
+
+class TestSlippageProfitImpact:
+    """Test slippage impact on profit and loss."""
+
+    def test_slippage_reduces_profit_on_winning_long_trade(self, sample_timestamp):
+        """Test slippage reduces profit on winning long trade."""
+        entry_price = 100.0
+        exit_price = 110.0
+
+        # Scenario 1: No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ZS', trailing=None)
+        pm_no_slip.open_position(1, sample_timestamp, entry_price)
+        entry_no_slip = pm_no_slip.entry_price
+        exit_time = sample_timestamp + pd.Timedelta(hours=1)
+        pm_no_slip.close_position(exit_time, exit_price, switch=False)
+        exit_no_slip = pm_no_slip.get_trades()[0]['exit_price']
+
+        profit_no_slip = exit_no_slip - entry_no_slip
+
+        # Scenario 2: With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ZS', trailing=None)
+        pm_with_slip.open_position(1, sample_timestamp, entry_price)
+        entry_with_slip = pm_with_slip.entry_price
+        pm_with_slip.close_position(exit_time, exit_price, switch=False)
+        exit_with_slip = pm_with_slip.get_trades()[0]['exit_price']
+
+        profit_with_slip = exit_with_slip - entry_with_slip
+
+        # Slippage should reduce profit
+        assert profit_with_slip < profit_no_slip
+
+        # Verify actual amounts
+        from config import TICK_SIZES
+        tick_size = TICK_SIZES.get('ZS', 0.01)
+        expected_reduction = 2 * tick_size * 2  # Entry + Exit slippage
+        assert profit_no_slip - profit_with_slip == pytest.approx(expected_reduction, abs=0.01)
+
+    def test_slippage_increases_loss_on_losing_long_trade(self, sample_timestamp):
+        """Test slippage increases loss on losing long trade."""
+        entry_price = 100.0
+        exit_price = 95.0
+
+        # Scenario 1: No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ZS', trailing=None)
+        pm_no_slip.open_position(1, sample_timestamp, entry_price)
+        entry_no_slip = pm_no_slip.entry_price
+        exit_time = sample_timestamp + pd.Timedelta(hours=1)
+        pm_no_slip.close_position(exit_time, exit_price, switch=False)
+        exit_no_slip = pm_no_slip.get_trades()[0]['exit_price']
+
+        loss_no_slip = entry_no_slip - exit_no_slip
+
+        # Scenario 2: With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ZS', trailing=None)
+        pm_with_slip.open_position(1, sample_timestamp, entry_price)
+        entry_with_slip = pm_with_slip.entry_price
+        pm_with_slip.close_position(exit_time, exit_price, switch=False)
+        exit_with_slip = pm_with_slip.get_trades()[0]['exit_price']
+
+        loss_with_slip = entry_with_slip - exit_with_slip
+
+        # Slippage should increase loss
+        assert loss_with_slip > loss_no_slip
+
+        # Verify actual amounts
+        from config import TICK_SIZES
+        tick_size = TICK_SIZES.get('ZS', 0.01)
+        expected_increase = 2 * tick_size * 2  # Entry + Exit slippage
+        assert loss_with_slip - loss_no_slip == pytest.approx(expected_increase, abs=0.01)
+
+    def test_slippage_reduces_profit_on_winning_short_trade(self, sample_timestamp):
+        """Test slippage reduces profit on winning short trade."""
+        entry_price = 100.0
+        exit_price = 90.0
+
+        # Scenario 1: No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ZS', trailing=None)
+        pm_no_slip.open_position(-1, sample_timestamp, entry_price)
+        entry_no_slip = pm_no_slip.entry_price
+        exit_time = sample_timestamp + pd.Timedelta(hours=1)
+        pm_no_slip.close_position(exit_time, exit_price, switch=False)
+        exit_no_slip = pm_no_slip.get_trades()[0]['exit_price']
+
+        profit_no_slip = entry_no_slip - exit_no_slip
+
+        # Scenario 2: With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ZS', trailing=None)
+        pm_with_slip.open_position(-1, sample_timestamp, entry_price)
+        entry_with_slip = pm_with_slip.entry_price
+        pm_with_slip.close_position(exit_time, exit_price, switch=False)
+        exit_with_slip = pm_with_slip.get_trades()[0]['exit_price']
+
+        profit_with_slip = entry_with_slip - exit_with_slip
+
+        # Slippage should reduce profit
+        assert profit_with_slip < profit_no_slip
+
+    def test_slippage_increases_loss_on_losing_short_trade(self, sample_timestamp):
+        """Test slippage increases loss on losing short trade."""
+        entry_price = 100.0
+        exit_price = 105.0
+
+        # Scenario 1: No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ZS', trailing=None)
+        pm_no_slip.open_position(-1, sample_timestamp, entry_price)
+        entry_no_slip = pm_no_slip.entry_price
+        exit_time = sample_timestamp + pd.Timedelta(hours=1)
+        pm_no_slip.close_position(exit_time, exit_price, switch=False)
+        exit_no_slip = pm_no_slip.get_trades()[0]['exit_price']
+
+        loss_no_slip = exit_no_slip - entry_no_slip
+
+        # Scenario 2: With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ZS', trailing=None)
+        pm_with_slip.open_position(-1, sample_timestamp, entry_price)
+        entry_with_slip = pm_with_slip.entry_price
+        pm_with_slip.close_position(exit_time, exit_price, switch=False)
+        exit_with_slip = pm_with_slip.get_trades()[0]['exit_price']
+
+        loss_with_slip = exit_with_slip - entry_with_slip
+
+        # Slippage should increase loss
+        assert loss_with_slip > loss_no_slip
+
+    def test_slippage_impact_scales_with_ticks(self, sample_timestamp):
+        """Test slippage impact scales proportionally with tick count."""
+        entry_price = 100.0
+        exit_price = 110.0
+
+        # Test with different slippage amounts
+        profits = {}
+        for ticks in [0, 1, 2, 5, 10]:
+            pm = PositionManager(slippage_ticks=ticks, symbol='ZS', trailing=None)
+            pm.open_position(1, sample_timestamp, entry_price)
+            exit_time = sample_timestamp + pd.Timedelta(hours=1)
+            pm.close_position(exit_time, exit_price, switch=False)
+
+            trade = pm.get_trades()[0]
+            profit = trade['exit_price'] - trade['entry_price']
+            profits[ticks] = profit
+
+        # More slippage = less profit
+        assert profits[0] > profits[1] > profits[2] > profits[5] > profits[10]
+
+        # Verify linear relationship
+        from config import TICK_SIZES
+        tick_size = TICK_SIZES.get('ZS', 0.01)
+
+        # Profit difference between 0 and 5 ticks should be 2x difference between 0 and 2.5 ticks
+        diff_5_ticks = profits[0] - profits[5]
+        diff_1_tick = profits[0] - profits[1]
+
+        # 5 ticks should cause ~5x the impact of 1 tick
+        assert diff_5_ticks == pytest.approx(diff_1_tick * 5, abs=0.01)
+
+    def test_slippage_percentage_impact_on_returns(self, sample_timestamp):
+        """Test slippage as percentage of returns."""
+        entry_price = 1000.0
+        exit_price = 1050.0  # 5% return
+
+        # No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ES', trailing=None)
+        pm_no_slip.open_position(1, sample_timestamp, entry_price)
+        exit_time = sample_timestamp + pd.Timedelta(hours=1)
+        pm_no_slip.close_position(exit_time, exit_price, switch=False)
+
+        trade_no_slip = pm_no_slip.get_trades()[0]
+        pnl_no_slip = trade_no_slip['exit_price'] - trade_no_slip['entry_price']
+        return_pct_no_slip = (pnl_no_slip / trade_no_slip['entry_price']) * 100
+
+        # With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ES', trailing=None)
+        pm_with_slip.open_position(1, sample_timestamp, entry_price)
+        pm_with_slip.close_position(exit_time, exit_price, switch=False)
+
+        trade_with_slip = pm_with_slip.get_trades()[0]
+        pnl_with_slip = trade_with_slip['exit_price'] - trade_with_slip['entry_price']
+        return_pct_with_slip = (pnl_with_slip / trade_with_slip['entry_price']) * 100
+
+        # Slippage reduces return percentage
+        assert return_pct_with_slip < return_pct_no_slip
+
+        # Slippage should be a measurable drag on returns
+        return_drag = return_pct_no_slip - return_pct_with_slip
+        assert return_drag > 0
+        assert return_drag < 1.0  # Should be less than 1% for this scenario
+
+    def test_slippage_impact_across_multiple_trades(self, sample_timestamp):
+        """Test cumulative slippage impact across multiple trades."""
+        # Create multiple round-trip trades
+        num_trades = 5
+        entry_price = 100.0
+        exit_price = 105.0
+
+        # No slippage
+        pm_no_slip = PositionManager(slippage_ticks=0, symbol='ZS', trailing=None)
+        total_pnl_no_slip = 0
+
+        for i in range(num_trades):
+            time_entry = sample_timestamp + pd.Timedelta(hours=i * 2)
+            time_exit = time_entry + pd.Timedelta(hours=1)
+
+            pm_no_slip.open_position(1, time_entry, entry_price)
+            pm_no_slip.close_position(time_exit, exit_price, switch=False)
+
+        for trade in pm_no_slip.get_trades():
+            total_pnl_no_slip += trade['exit_price'] - trade['entry_price']
+
+        # With slippage
+        pm_with_slip = PositionManager(slippage_ticks=2, symbol='ZS', trailing=None)
+        total_pnl_with_slip = 0
+
+        for i in range(num_trades):
+            time_entry = sample_timestamp + pd.Timedelta(hours=i * 2)
+            time_exit = time_entry + pd.Timedelta(hours=1)
+
+            pm_with_slip.open_position(1, time_entry, entry_price)
+            pm_with_slip.close_position(time_exit, exit_price, switch=False)
+
+        for trade in pm_with_slip.get_trades():
+            total_pnl_with_slip += trade['exit_price'] - trade['entry_price']
+
+        # Total slippage impact should scale with number of trades
+        assert total_pnl_with_slip < total_pnl_no_slip
+
+        from config import TICK_SIZES
+        tick_size = TICK_SIZES.get('ZS', 0.01)
+        expected_total_impact = num_trades * 2 * tick_size * 2  # num_trades * (entry+exit) * ticks
+        actual_impact = total_pnl_no_slip - total_pnl_with_slip
+
+        assert actual_impact == pytest.approx(expected_total_impact, abs=0.02)
