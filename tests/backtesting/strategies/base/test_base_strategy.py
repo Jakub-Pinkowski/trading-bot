@@ -303,6 +303,188 @@ class TestHelperFunctions:
         assert hashes1['high'] == hashes2['high']
         assert hashes1['low'] == hashes2['low']
 
+    def test_precompute_hashes_shared_across_indicators(self, sample_ohlcv_data):
+        """
+        Test that one hash can be used for multiple indicators (optimization pattern).
+
+        This documents the intended usage: pre-compute hashes once, then pass to
+        multiple indicator functions. This eliminates redundant hash calculations
+        and is the key performance optimization.
+
+        Tests all available single-price indicators and multi-price indicators
+        to ensure the pattern works universally.
+        """
+        from app.backtesting.indicators import (
+            calculate_atr,
+            calculate_bollinger_bands,
+            calculate_ema,
+            calculate_ichimoku_cloud,
+            calculate_macd,
+            calculate_rsi,
+        )
+
+        # Pre-compute hashes ONCE for all price series
+        hashes = precompute_hashes(sample_ohlcv_data)
+
+        # ==================== Single-Price Indicators ====================
+        # All use same 'close' hash - the key optimization!
+
+        bb = calculate_bollinger_bands(
+            sample_ohlcv_data['close'],
+            period=20,
+            number_of_standard_deviations=2,
+            prices_hash=hashes['close']
+        )
+
+        ema = calculate_ema(
+            sample_ohlcv_data['close'],
+            period=9,
+            prices_hash=hashes['close']  # Same hash reused
+        )
+
+        macd = calculate_macd(
+            sample_ohlcv_data['close'],
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            prices_hash=hashes['close']  # Same hash reused
+        )
+
+        rsi = calculate_rsi(
+            sample_ohlcv_data['close'],
+            period=14,
+            prices_hash=hashes['close']  # Same hash reused
+        )
+
+        # ==================== Multi-Price Indicators ====================
+        # Use pre-computed hashes for high, low, close
+        # Note: ATR takes DataFrame, not individual series
+
+        atr = calculate_atr(
+            sample_ohlcv_data,
+            period=14,
+            high_hash=hashes['high'],
+            low_hash=hashes['low'],
+            close_hash=hashes['close']
+        )
+
+        ichimoku = calculate_ichimoku_cloud(
+            sample_ohlcv_data['high'],
+            sample_ohlcv_data['low'],
+            sample_ohlcv_data['close'],
+            tenkan_period=9,
+            kijun_period=26,
+            senkou_span_b_period=52,
+            displacement=26,
+            high_hash=hashes['high'],
+            low_hash=hashes['low'],
+            close_hash=hashes['close']
+        )
+
+        # ==================== Validate Results ====================
+
+        # All indicators should return valid results with correct length
+        assert len(atr) == len(sample_ohlcv_data), "ATR length mismatch"
+        assert len(bb) == len(sample_ohlcv_data), "BB length mismatch"
+        assert len(ema) == len(sample_ohlcv_data), "EMA length mismatch"
+        assert len(ichimoku['tenkan_sen']) == len(sample_ohlcv_data), "Ichimoku length mismatch"
+        assert len(macd) == len(sample_ohlcv_data), "MACD length mismatch"
+        assert len(rsi) == len(sample_ohlcv_data), "RSI length mismatch"
+
+        # All indicators should have valid values (not all NaN)
+        assert not atr.dropna().empty, "ATR should have valid values"
+        assert not bb['middle_band'].dropna().empty, "BB should have valid values"
+        assert not ema.dropna().empty, "EMA should have valid values"
+        assert not ichimoku['tenkan_sen'].dropna().empty, "Ichimoku should have valid values"
+        assert not macd['macd_line'].dropna().empty, "MACD should have valid values"
+        assert not rsi.dropna().empty, "RSI should have valid values"
+
+    @pytest.mark.parametrize("indicator_type,indicator_func,params", [
+        ('atr', 'calculate_atr', {'period': 14}),
+        ('single_price', 'calculate_bollinger_bands', {'period': 20, 'number_of_standard_deviations': 2}),
+        ('single_price', 'calculate_ema', {'period': 9}),
+        ('ichimoku', 'calculate_ichimoku_cloud', {
+            'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26
+        }),
+        ('single_price', 'calculate_macd', {'fast_period': 12, 'slow_period': 26, 'signal_period': 9}),
+        ('single_price', 'calculate_rsi', {'period': 14}),
+    ])
+    def test_hash_reuse_works_for_all_indicators(
+        self, sample_ohlcv_data, indicator_type, indicator_func, params
+    ):
+        """
+        Parametrized test: Hash reuse pattern works for every indicator.
+
+        Tests that pre-computed hashes can be used multiple times with any indicator,
+        demonstrating the universal applicability of the optimization.
+        """
+        import importlib
+        indicators_module = importlib.import_module('app.backtesting.indicators')
+        calc_func = getattr(indicators_module, indicator_func)
+
+        # Pre-compute hashes once
+        hashes = precompute_hashes(sample_ohlcv_data)
+
+        # Call indicator multiple times with SAME pre-computed hash(es)
+        if indicator_type == 'single_price':
+            result1 = calc_func(
+                sample_ohlcv_data['close'],
+                **params,
+                prices_hash=hashes['close']
+            )
+            result2 = calc_func(
+                sample_ohlcv_data['close'],
+                **params,
+                prices_hash=hashes['close']  # Same hash reused!
+            )
+        elif indicator_type == 'atr':
+            # ATR takes DataFrame, not individual series
+            result1 = calc_func(
+                sample_ohlcv_data,
+                **params,
+                high_hash=hashes['high'],
+                low_hash=hashes['low'],
+                close_hash=hashes['close']
+            )
+            result2 = calc_func(
+                sample_ohlcv_data,
+                **params,
+                high_hash=hashes['high'],  # Same hashes reused!
+                low_hash=hashes['low'],
+                close_hash=hashes['close']
+            )
+        else:  # ichimoku
+            result1 = calc_func(
+                sample_ohlcv_data['high'],
+                sample_ohlcv_data['low'],
+                sample_ohlcv_data['close'],
+                **params,
+                high_hash=hashes['high'],
+                low_hash=hashes['low'],
+                close_hash=hashes['close']
+            )
+            result2 = calc_func(
+                sample_ohlcv_data['high'],
+                sample_ohlcv_data['low'],
+                sample_ohlcv_data['close'],
+                **params,
+                high_hash=hashes['high'],  # Same hashes reused!
+                low_hash=hashes['low'],
+                close_hash=hashes['close']
+            )
+
+        # Both calls should produce valid results
+        if isinstance(result1, pd.Series):
+            assert len(result1) == len(sample_ohlcv_data)
+            assert len(result2) == len(sample_ohlcv_data)
+        elif isinstance(result1, pd.DataFrame):
+            assert len(result1) == len(sample_ohlcv_data)
+            assert len(result2) == len(sample_ohlcv_data)
+        elif isinstance(result1, dict):
+            first_key = list(result1.keys())[0]
+            assert len(result1[first_key]) == len(sample_ohlcv_data)
+            assert len(result2[first_key]) == len(sample_ohlcv_data)
+
 
 class TestStrategyWorkflow:
     """Test complete strategy execution workflow."""

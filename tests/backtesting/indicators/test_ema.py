@@ -20,6 +20,8 @@ from tests.backtesting.indicators.indicator_test_utils import (
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
     assert_empty_series_returns_empty,
+    assert_hash_parameter_required,
+    assert_hash_parameter_required_even_with_cache,
 )
 
 
@@ -33,6 +35,31 @@ def _calculate_ema(prices, period=14):
     """
     prices_hash = hash_series(prices)
     return calculate_ema(prices, period, prices_hash)
+
+
+# ==================== Hash Parameter Contract Tests ====================
+
+class TestHashParameterRequired:
+    """Test that hash parameters are required (contract test)."""
+
+    def test_calculate_ema_requires_prices_hash(self, short_price_series):
+        """Test that calculate_ema requires prices_hash parameter."""
+        assert_hash_parameter_required(
+            calculate_func=calculate_ema,
+            prices=short_price_series,
+            required_params={'period': 9},
+            indicator_name='EMA'
+        )
+
+    def test_calculate_ema_fails_without_hash_even_with_cache(self, short_price_series):
+        """Test that calculate_ema always requires hash, even if result might be cached."""
+        assert_hash_parameter_required_even_with_cache(
+            calculate_func=calculate_ema,
+            calculate_with_hash_func=lambda: _calculate_ema(short_price_series, period=9),
+            prices=short_price_series,
+            required_params={'period': 9},
+            indicator_name='EMA'
+        )
 
 
 # ==================== Basic Logic Tests ====================

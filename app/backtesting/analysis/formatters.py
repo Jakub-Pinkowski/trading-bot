@@ -132,13 +132,24 @@ def _reorder_columns(df):
     if 'strategy' not in cols:
         return df
     try:
-        strategy_idx = cols.index('strategy')
+        # Remove param columns from their current positions (if they exist)
         cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
-        cols.insert(strategy_idx + 1, 'rollover')
-        cols.insert(strategy_idx + 2, 'trailing')
-        cols.insert(strategy_idx + 3, 'slippage')
+
+        # Recompute strategy_idx after filtering to get correct position
+        strategy_idx = cols.index('strategy')
+
+        # Insert param columns after strategy (only if they existed in original df)
+        insert_pos = strategy_idx + 1
+        if 'rollover' in df.columns:
+            cols.insert(insert_pos, 'rollover')
+            insert_pos += 1
+        if 'trailing' in df.columns:
+            cols.insert(insert_pos, 'trailing')
+            insert_pos += 1
+        if 'slippage' in df.columns:
+            cols.insert(insert_pos, 'slippage')
         return df[cols]
-    except (ValueError, IndexError) as e:
+    except (ValueError, IndexError, KeyError) as e:
         logger.warning(f"Could not reorder columns: {e}. Using original column order.")
         return df
 
