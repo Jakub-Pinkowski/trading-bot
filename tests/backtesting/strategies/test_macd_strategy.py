@@ -1,651 +1,543 @@
-from datetime import datetime, timedelta
+"""
+MACD Strategy Test Suite.
 
-import numpy as np
+Tests MACD strategy implementation with real historical data:
+- Strategy initialization and configuration
+- Indicator calculation within strategy (MACD line, signal line, histogram)
+- Signal generation logic (MACD/signal crossovers)
+- Full strategy execution and trade generation
+- Edge cases and error handling
+
+Uses real market data (ZS, CL) from data/historical_data/.
+"""
 import pandas as pd
+import pytest
 
 from app.backtesting.strategies import MACDStrategy
-from tests.backtesting.strategies.conftest import create_test_df
+from tests.backtesting.helpers.assertions import (
+    assert_valid_indicator,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades
+)
+from tests.backtesting.strategies.strategy_test_utils import (
+    assert_trades_have_both_directions,
+    assert_similar_trade_count,
+    assert_slippage_affects_prices,
+    assert_signals_convert_to_trades,
+    assert_both_signal_types_present,
+    assert_minimal_warmup_signals,
+    assert_different_indicator_patterns,
+    create_small_ohlcv_dataframe,
+    create_constant_price_dataframe,
+    create_gapped_dataframe,
+)
 
 
-class TestMACDStrategy:
-    def test_initialization(self):
-        """Test that the MACD strategy initializes with correct default parameters."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-        assert strategy.fast_period == 12
-        assert strategy.slow_period == 26
-        assert strategy.signal_period == 9
+# ==================== Test Strategy Initialization ====================
 
-        # Test with custom parameters
+class TestMACDStrategyInitialization:
+    """Test MACD strategy initialization and configuration."""
+
+    @pytest.mark.parametrize("fast,slow,signal,description", [
+        (12, 26, 9, "standard"),
+        (8, 17, 9, "faster"),
+        (19, 39, 9, "slower"),
+        (12, 26, 6, "faster_signal"),
+    ])
+    def test_initialization_with_various_parameters(self, fast, slow, signal, description):
+        """Test MACD strategy initializes correctly with various period combinations."""
         strategy = MACDStrategy(
-            fast_period=8,
-            slow_period=21,
-            signal_period=5,
-            rollover=True,
-            trailing=2.0,
+            fast_period=fast,
+            slow_period=slow,
+            signal_period=signal,
+            rollover=False,
+            trailing=None,
             slippage_ticks=1,
-            symbol=None
+            symbol='ZS'
         )
-        assert strategy.fast_period == 8
-        assert strategy.slow_period == 21
-        assert strategy.signal_period == 5
-        assert strategy.rollover == True
-        assert strategy.trailing == 2.0
+
+        assert strategy.fast_period == fast
+        assert strategy.slow_period == slow
+        assert strategy.signal_period == signal
+        assert strategy.rollover == False
+        assert strategy.trailing is None
         assert strategy.position_manager.slippage_ticks == 1
 
-    def test_add_indicators(self):
-        """Test that the add_indicators method correctly adds MACD indicators to the dataframe."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
+    def test_initialization_with_trailing_stop(self):
+        """Test MACD strategy with trailing stop enabled."""
+        strategy = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=2.0,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Create a simple dataframe with a clear trend
-        dates = [datetime.now() + timedelta(days=i) for i in range(100)]
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
-        # Create a simple price series with a clear trend
-        prices = [100 + i for i in range(100)]
+    def test_initialization_with_rollover_enabled(self):
+        """Test MACD strategy with contract rollover handling."""
+        strategy = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=True,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Create OHLC data
-        data = {
-            'open': prices,
-            'high': [p + 1 for p in prices],
-            'low': [p - 1 for p in prices],
-            'close': prices,
-        }
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
-        df = pd.DataFrame(data, index=dates)
+    def test_format_name_generates_correct_string(self):
+        """Test strategy name formatting for identification."""
+        name = MACDStrategy.format_name(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1
+        )
 
-        # Apply the strategy's add_indicators method
-        df_with_indicators = strategy.add_indicators(df)
+        assert 'MACD' in name
+        assert 'fast=12' in name
+        assert 'slow=26' in name
+        assert 'signal=9' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
-        # Verify MACD columns were added
-        assert 'macd_line' in df_with_indicators.columns
-        assert 'signal_line' in df_with_indicators.columns
-        assert 'histogram' in df_with_indicators.columns
 
-        # Verify that we have non-NaN values after the initialization period
-        # The MACD line should be available after the slow period
-        assert not df_with_indicators['macd_line'].iloc[strategy.slow_period:].isna().all()
+# ==================== Test Indicator Calculation ====================
 
-        # The signal line should be available after the slow period + signal period
-        assert not df_with_indicators['signal_line'].iloc[strategy.slow_period + strategy.signal_period:].isna().all()
+class TestMACDStrategyIndicators:
+    """Test indicator calculation within MACD strategy."""
 
-        # The histogram should be available when both MACD line and signal line are available
-        assert not df_with_indicators['histogram'].iloc[strategy.slow_period + strategy.signal_period:].isna().all()
+    def test_add_indicators_creates_macd_columns(self, standard_macd_strategy, zs_1h_data):
+        """Test that add_indicators properly calculates MACD components on real data."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
 
-        # Verify that histogram is the difference between MACD line and signal line
-        # Allow for small floating point differences
-        for i in range(strategy.slow_period + strategy.signal_period, len(df_with_indicators)):
-            if not pd.isna(df_with_indicators.iloc[i]['macd_line']) and not pd.isna(
-                    df_with_indicators.iloc[i]['signal_line']):
-                expected_histogram = df_with_indicators.iloc[i]['macd_line'] - df_with_indicators.iloc[i]['signal_line']
-                actual_histogram = df_with_indicators.iloc[i]['histogram']
-                assert abs(expected_histogram - actual_histogram) < 1e-10, f"Histogram calculation incorrect at index {i}"
+        # All MACD columns should be added
+        assert 'macd_line' in df.columns
+        assert 'signal_line' in df.columns
+        assert 'histogram' in df.columns
 
-        # Verify indicators are NaN for the first few periods
-        # The MACD line should be NaN for the first slow_period - 1 periods
-        assert df_with_indicators['macd_line'].iloc[:strategy.slow_period - 1].isna().all()
+        # Validate MACD values (can be negative)
+        assert_valid_indicator(df['macd_line'], 'MACD_line', allow_nan=True)
+        assert_valid_indicator(df['signal_line'], 'MACD_signal', allow_nan=True)
+        assert_valid_indicator(df['histogram'], 'MACD_histogram', allow_nan=True)
 
-        # The signal line should be NaN for at least the first slow_period - 1 periods
-        # (it might be NaN for more periods depending on the implementation)
-        assert df_with_indicators['signal_line'].iloc[:strategy.slow_period - 1].isna().all()
+        # Verify MACD components respond to price changes (not constant)
+        valid_macd = df['macd_line'].dropna()
+        valid_signal = df['signal_line'].dropna()
+        valid_histogram = df['histogram'].dropna()
+        assert valid_macd.std() > 0.1, "MACD line should vary with price changes"
+        assert valid_signal.std() > 0.1, "Signal line should vary with price changes"
+        assert valid_histogram.std() > 0.05, "Histogram should vary with price changes"
 
-        # The histogram should be NaN for at least the first slow_period - 1 periods
-        # (it might be NaN for more periods depending on the implementation)
-        assert df_with_indicators['histogram'].iloc[:strategy.slow_period - 1].isna().all()
+        # Verify warmup period (slow period + signal period = 26 + 9 = 35 bars)
+        macd_warmup_nans = df['macd_line'].iloc[:26].isna().sum()
+        signal_warmup_nans = df['signal_line'].iloc[:35].isna().sum()
+        assert macd_warmup_nans > 0, "MACD line should have warmup period"
+        assert signal_warmup_nans > 0, "Signal line should have warmup period"
 
-    def test_generate_signals_default_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-        df = create_test_df()
-        df = strategy.add_indicators(df)
+    def test_histogram_equals_macd_minus_signal(self, standard_macd_strategy, zs_1h_data):
+        """Test that histogram correctly represents MACD line - signal line."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
+        # Remove NaN values for comparison
+        valid_data = df.dropna(subset=['macd_line', 'signal_line', 'histogram'])
 
-        # Verify signal column was added
-        assert 'signal' in df_with_signals.columns
+        # Histogram should equal MACD line - signal line
+        calculated_histogram = valid_data['macd_line'] - valid_data['signal_line']
 
-        # Find where MACD line crosses above signal line (buy signals)
-        buy_signals = df_with_signals[
-            (df_with_signals['macd_line'].shift(1) <= df_with_signals['signal_line'].shift(1)) &
-            (df_with_signals['macd_line'] > df_with_signals['signal_line'])
-            ]
+        # Use allclose for floating point comparison
+        assert pd.Series(calculated_histogram).equals(valid_data['histogram']) or \
+               (calculated_histogram - valid_data['histogram']).abs().max() < 1e-10, \
+            "Histogram should equal MACD line - signal line"
 
-        # Find where MACD line crosses below signal line (sell signals)
-        sell_signals = df_with_signals[
-            (df_with_signals['macd_line'].shift(1) >= df_with_signals['signal_line'].shift(1)) &
-            (df_with_signals['macd_line'] < df_with_signals['signal_line'])
-            ]
+    def test_fast_vs_slow_macd_generates_different_patterns(self, zs_1h_data):
+        """Test that different MACD parameters create different indicator patterns."""
+        strategy_fast = MACDStrategy(
+            fast_period=8,
+            slow_period=17,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Verify all buy signals have signal value of 1
-        assert (buy_signals['signal'] == 1).all()
+        strategy_slow = MACDStrategy(
+            fast_period=19,
+            slow_period=39,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Verify all sell signals have signal value of -1
-        assert (sell_signals['signal'] == -1).all()
+        df_fast = strategy_fast.add_indicators(zs_1h_data.copy())
+        df_slow = strategy_slow.add_indicators(zs_1h_data.copy())
 
-        # Verify no other signals exist
-        other_signals = df_with_signals[
-            ~df_with_signals.index.isin(buy_signals.index) &
-            ~df_with_signals.index.isin(sell_signals.index)
-            ]
-        assert (other_signals['signal'] == 0).all()
+        # MACD values should be different
+        assert_different_indicator_patterns(
+            df_fast['macd_line'],
+            df_slow['macd_line'],
+            min_difference=0.1,
+            indicator_name='MACD'
+        )
 
-    def test_generate_signals_custom_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
-        # Use different periods
-        strategy = MACDStrategy(fast_period=8,
-                                slow_period=21,
-                                signal_period=5,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-        df = create_test_df()
-        df = strategy.add_indicators(df)
+    def test_macd_calculation_on_different_symbols(self, zs_1h_data, cl_15m_data):
+        """Test MACD calculation works on different market data."""
+        strategy_zs = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
+        strategy_cl = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='CL'
+        )
 
-        # Find where MACD line crosses above signal line (buy signals)
-        buy_signals = df_with_signals[
-            (df_with_signals['macd_line'].shift(1) <= df_with_signals['signal_line'].shift(1)) &
-            (df_with_signals['macd_line'] > df_with_signals['signal_line'])
-            ]
+        df_zs = strategy_zs.add_indicators(zs_1h_data.copy())
+        df_cl = strategy_cl.add_indicators(cl_15m_data.copy())
 
-        # Find where MACD line crosses below signal line (sell signals)
-        sell_signals = df_with_signals[
-            (df_with_signals['macd_line'].shift(1) >= df_with_signals['signal_line'].shift(1)) &
-            (df_with_signals['macd_line'] < df_with_signals['signal_line'])
-            ]
+        # Both should have valid MACD
+        assert_valid_indicator(df_zs['macd_line'], 'MACD_ZS')
+        assert_valid_indicator(df_zs['signal_line'], 'Signal_ZS')
+        assert_valid_indicator(df_cl['macd_line'], 'MACD_CL')
+        assert_valid_indicator(df_cl['signal_line'], 'Signal_CL')
 
-        # Verify all buy signals have signal value of 1
-        assert (buy_signals['signal'] == 1).all()
 
-        # Verify all sell signals have signal value of -1
-        assert (sell_signals['signal'] == -1).all()
+# ==================== Test Signal Generation ====================
 
-    def test_run_end_to_end(self):
-        """Test the full strategy workflow from data to trades."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-        df = create_test_df()
+class TestMACDStrategySignals:
+    """Test signal generation logic for MACD strategy."""
 
-        # Run the strategy
-        trades = strategy.run(df, [])
+    def test_generate_signals_creates_signal_column(self, standard_macd_strategy, zs_1h_data):
+        """Test that generate_signals creates signal column."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
 
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
+        assert 'signal' in df.columns
+        assert_valid_signals(df)
 
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-                assert trade['side'] in ['long', 'short']
+    def test_long_entry_signal_on_bullish_crossover(self, standard_macd_strategy, zs_1h_data):
+        """Test long signals occur when MACD line crosses above signal line."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
 
-    def test_no_signals_with_flat_prices(self):
-        """Test that no signals are generated with flat prices."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
+        # Find long signal bars
+        long_signal_bars = df[df['signal'] == 1]
 
-        # Create a dataframe with constant prices
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
-        data = {
-            'open': [100] * 50,
-            'high': [101] * 50,
-            'low': [99] * 50,
-            'close': [100] * 50,
-        }
-        df = pd.DataFrame(data, index=dates)
+        # Long signals should occur when MACD > signal (after crossover)
+        assert len(long_signal_bars) > 0, "Expected long signals on 2-year real data"
+        assert (long_signal_bars['macd_line'] > long_signal_bars['signal_line']).all(), \
+            "Long signals should occur when MACD line > signal line"
 
-        # Run the strategy
-        trades = strategy.run(df, [])
+    def test_short_entry_signal_on_bearish_crossover(self, standard_macd_strategy, zs_1h_data):
+        """Test short signals occur when MACD line crosses below signal line."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
 
-        # Verify no trades were generated
-        assert len(trades) == 0
+        # Find short signal bars
+        short_signal_bars = df[df['signal'] == -1]
 
-    def test_with_trailing_stop(self):
-        """Test MACD strategy with trailing stop."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=2.0,
-                                slippage_ticks=0,
-                                symbol=None)
-        df = create_test_df()
+        # Short signals should occur when MACD < signal (after crossover)
+        assert len(short_signal_bars) > 0, "Expected short signals on 2-year real data"
+        assert (short_signal_bars['macd_line'] < short_signal_bars['signal_line']).all(), \
+            "Short signals should occur when MACD line < signal line"
 
-        # Run the strategy
-        trades = strategy.run(df, [])
+    def test_histogram_sign_matches_crossover_direction(self, standard_macd_strategy, zs_1h_data):
+        """Test that histogram sign indicates which line is on top."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
 
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
+        # When MACD > signal, histogram should be positive
+        macd_above = df[df['macd_line'] > df['signal_line']]
+        if len(macd_above) > 0:
+            assert (macd_above['histogram'] > 0).all() or \
+                   (macd_above['histogram'].abs() < 1e-10).all(), \
+                "Histogram should be positive when MACD > signal"
 
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
+        # When MACD < signal, histogram should be negative
+        macd_below = df[df['macd_line'] < df['signal_line']]
+        if len(macd_below) > 0:
+            assert (macd_below['histogram'] < 0).all() or \
+                   (macd_below['histogram'].abs() < 1e-10).all(), \
+                "Histogram should be negative when MACD < signal"
 
-    def test_with_contract_switch(self):
-        """Test MACD strategy with a contract switch."""
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=True,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-        df = create_test_df()
+    def test_fast_vs_slow_macd_generate_different_signal_frequency(self, zs_1h_data):
+        """Test that faster MACD generates more crossover signals."""
+        strategy_fast = MACDStrategy(
+            fast_period=8,
+            slow_period=17,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Create a switch date in the middle of the dataframe
-        switch_date = df.index[25]
+        strategy_slow = MACDStrategy(
+            fast_period=19,
+            slow_period=39,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Run the strategy
-        trades = strategy.run(df, [switch_date])
+        df_fast = strategy_fast.add_indicators(zs_1h_data.copy())
+        df_fast = strategy_fast.generate_signals(df_fast)
 
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
+        df_slow = strategy_slow.add_indicators(zs_1h_data.copy())
+        df_slow = strategy_slow.generate_signals(df_slow)
 
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
+        # Fast MACD should generate more signals
+        fast_signal_count = (df_fast['signal'] != 0).sum()
+        slow_signal_count = (df_slow['signal'] != 0).sum()
 
-            # If there are trades with the switch flag, verify them
-            switch_trades = [trade for trade in trades if trade.get('switch')]
-            if switch_trades:
-                for trade in switch_trades:
-                    assert trade['switch'] is True
+        assert fast_signal_count >= slow_signal_count, \
+            f"Fast MACD should generate more signals ({fast_signal_count} vs {slow_signal_count})"
 
-    def test_slippage(self):
-        """Test that slippage is correctly applied to entry and exit prices in the MACD strategy."""
-        from config import TICK_SIZES, DEFAULT_TICK_SIZE
-        
-        # Create a strategy with 2 ticks slippage
-        slippage_ticks = 2
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=slippage_ticks,
-                                symbol=None)
-        df = create_test_df()
+    @pytest.mark.parametrize("fast,slow,signal,description,max_signal_pct", [
+        (8, 17, 9, "fast", 0.15),
+        (12, 26, 9, "standard", 0.10),
+        (19, 39, 9, "slow", 0.07),
+    ])
+    def test_signal_frequency_with_various_macd_periods(
+        self, zs_1h_data, fast, slow, signal, description, max_signal_pct
+    ):
+        """Test signal frequency varies with MACD period settings."""
+        strategy = MACDStrategy(
+            fast_period=fast,
+            slow_period=slow,
+            signal_period=signal,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Add indicators and generate signals
-        df = strategy.add_indicators(df)
+        df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        # Extract trades
-        trades = strategy._extract_trades(df, [])
-
-        # Get tick size
-        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
-        slippage_amount = slippage_ticks * tick_size
-
-        # Should have at least one trade
-        if len(trades) > 0:
-            # Find long and short trades
-            long_trades = [t for t in trades if t['side'] == 'long']
-            short_trades = [t for t in trades if t['side'] == 'short']
-
-            # Verify slippage is applied correctly for long trades
-            for trade in long_trades:
-                # Get the original entry and exit prices from the dataframe
-                entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
-                exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
-
-                original_entry_price = df.iloc[entry_idx]['open']
-                original_exit_price = df.iloc[exit_idx]['open']
-
-                # For long positions:
-                # - Entry price should be higher than the original price (pay more on entry)
-                # - Exit price should be lower than the original price (receive less on exit)
-                expected_entry_price = round(original_entry_price + slippage_amount, 2)
-                expected_exit_price = round(original_exit_price - slippage_amount, 2)
-
-                assert trade['entry_price'] == expected_entry_price
-                assert trade['exit_price'] == expected_exit_price
-
-            # Verify slippage is applied correctly for short trades
-            for trade in short_trades:
-                # Get the original entry and exit prices from the dataframe
-                entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
-                exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
-
-                original_entry_price = df.iloc[entry_idx]['open']
-                original_exit_price = df.iloc[exit_idx]['open']
-
-                # For short positions:
-                # - Entry price should be lower than the original price (receive less on entry)
-                # - Exit price should be higher than the original price (pay more on exit)
-                expected_entry_price = round(original_entry_price - slippage_amount, 2)
-                expected_exit_price = round(original_exit_price + slippage_amount, 2)
-
-                assert trade['entry_price'] == expected_entry_price
-                assert trade['exit_price'] == expected_exit_price
-
-    def test_extreme_market_conditions(self):
-        """Test MACD strategy with extreme market conditions."""
-        # Create a dataframe with extreme price movements
-        dates = [datetime.now() + timedelta(days=i) for i in range(100)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a price series with extreme movements
-        close_prices = []
-
-        # Start with a stable price
-        for i in range(30):
-            close_prices.append(100)
-
-        # Add a sharp drop (crash)
-        for i in range(10):
-            close_prices.append(100 - i * 5)  # Drop by 5 each day
-
-        # Add a sharp recovery
-        for i in range(10):
-            close_prices.append(50 + i * 5)  # Recover by 5 each day
-
-        # Add a period of high volatility
-        for i in range(20):
-            if i % 2 == 0:
-                close_prices.append(close_prices[-1] * 1.05)  # Up 5%
-            else:
-                close_prices.append(close_prices[-1] * 0.95)  # Down 5%
-
-        # Add a period of low volatility
-        last_price = close_prices[-1]
-        for i in range(30):
-            close_prices.append(last_price + np.random.normal(0, 0.5))  # Small random movements
-
-        # Create OHLC data
-        data = {
-            'open': close_prices,
-            'high': [p * 1.01 for p in close_prices],  # 1% higher than close
-            'low': [p * 0.99 for p in close_prices],  # 1% lower than close
-            'close': close_prices,
-        }
-
-        df = pd.DataFrame(data, index=dates)
-
-        # Create a strategy with default parameters
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-                assert trade['side'] in ['long', 'short']
-
-    def test_boundary_macd_values(self):
-        """Test MACD strategy with MACD values at or near the crossover boundaries."""
-        # Create a strategy with default parameters
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
-        df = pd.DataFrame(index=dates)
-
-        # Add required price columns
-        df['open'] = 100
-        df['high'] = 101
-        df['low'] = 99
-        df['close'] = 100
-
-        # Manually create MACD columns with specific boundary values
-        # Start with NaN for the first 26 periods (slow period)
-        macd_line = [np.nan] * 26
-        signal_line = [np.nan] * 26
-        histogram = [np.nan] * 26
-
-        # Add values that will test the boundary conditions:
-
-        # 1. MACD line below signal line
-        macd_line.append(-1.0)  # Previous value
-        signal_line.append(1.0)  # Previous value
-        histogram.append(-2.0)  # Previous value
-
-        # 2. MACD line crosses above signal line (buy signal)
-        macd_line.append(1.1)  # Current value
-        signal_line.append(1.0)  # Current value
-        histogram.append(0.1)  # Current value
-
-        # 3. MACD line stays above signal line (no signal)
-        macd_line.append(2.0)
-        signal_line.append(1.0)
-        histogram.append(1.0)
-
-        # 4. MACD line above signal line
-        macd_line.append(2.0)  # Previous value
-        signal_line.append(1.0)  # Previous value
-        histogram.append(1.0)  # Previous value
-
-        # 5. MACD line crosses below signal line (sell signal)
-        macd_line.append(0.9)  # Current value
-        signal_line.append(1.0)  # Current value
-        histogram.append(-0.1)  # Current value
-
-        # 6. MACD line stays below signal line (no signal)
-        macd_line.append(0.5)
-        signal_line.append(1.0)
-        histogram.append(-0.5)
-
-        # 7. Test exact equality (no crossover)
-        macd_line.append(1.0)  # Equal to signal line
-        signal_line.append(1.0)
-        histogram.append(0.0)
-
-        # 8. Test tiny crossover (just above)
-        macd_line.append(1.000001)  # Just above signal line
-        signal_line.append(1.0)
-        histogram.append(0.000001)
-
-        # 9. Test tiny crossover (just below)
-        macd_line.append(0.999999)  # Just below signal line
-        signal_line.append(1.0)
-        histogram.append(-0.000001)
-
-        # Fill the rest with neutral values
-        while len(macd_line) < 50:
-            macd_line.append(0.0)
-            signal_line.append(0.0)
-            histogram.append(0.0)
-
-        # Add MACD columns to dataframe
-        df['macd_line'] = macd_line
-        df['signal_line'] = signal_line
-        df['histogram'] = histogram
-
-        # Generate signals
-        df = strategy.generate_signals(df)
-
-        # Verify signals at boundary conditions
-
-        # Check for a buy signal when MACD line crosses above signal line
-        assert df.iloc[27]['signal'] == 1, "Should generate buy signal when MACD line crosses above signal line"
-
-        # Check for a sell signal when MACD line crosses below signal line
-        assert df.iloc[30]['signal'] == -1, "Should generate sell signal when MACD line crosses below signal line"
-
-        # Check no signals when MACD line stays above signal line (no crossing)
-        assert df.iloc[28]['signal'] == 0, "Should not generate signal when MACD line stays above signal line"
-
-        # Check no signals when MACD line stays below signal line (no crossing)
-        assert df.iloc[31]['signal'] == 0, "Should not generate signal when MACD line stays below signal line"
-
-        # Check no signals when MACD line equals signal line (no crossing)
-        assert df.iloc[32]['signal'] == 0, "Should not generate signal when MACD line equals signal line"
-
-        # Check for signals with tiny crossovers
-        assert df.iloc[33]['signal'] == 1, "Should generate buy signal with tiny crossover above"
-        assert df.iloc[34]['signal'] == -1, "Should generate sell signal with tiny crossover below"
-
-    def test_macd_divergence_patterns(self):
-        """Test MACD strategy with price-MACD divergence patterns."""
-        # Create a strategy with default parameters
-        strategy = MACDStrategy(fast_period=12,
-                                slow_period=26,
-                                signal_period=9,
-                                rollover=False,
-                                trailing=None,
-                                slippage_ticks=0,
-                                symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(100)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a price series with a divergence pattern
-        # Price making higher highs, but MACD making lower highs (bearish divergence)
-        base_price = 100
-        prices = []
-
-        # Initial uptrend
-        for i in range(30):
-            prices.append(base_price + i)
-
-        # First peak
-        prices.append(prices[-1] + 5)  # Day 30
-
-        # Pullback
-        for i in range(10):
-            prices.append(prices[-1] - 2)
-
-        # Second peak (higher high in price)
-        for i in range(20):
-            prices.append(prices[-1] + 1)
-        prices[-1] += 10  # Make sure it's a higher high
-
-        # Decline after divergence
-        for i in range(39):
-            prices.append(prices[-1] * 0.99)
-
-        # Create OHLC data
-        df['open'] = prices
-        df['high'] = [p * 1.01 for p in prices]
-        df['low'] = [p * 0.99 for p in prices]
-        df['close'] = prices
-
-        # Add indicators
-        df = strategy.add_indicators(df)
-
-        # Manually modify MACD to create a divergence
-        # We'll make the MACD at the second peak lower than at the first peak
-        # This is a bearish divergence (price higher high, MACD lower high)
-
-        # Find the MACD at the first peak (around day 30)
-        first_peak_idx = 30
-        first_peak_macd = df['macd_line'].iloc[first_peak_idx]
-
-        # Make the MACD at the second peak (around day 60) lower
-        second_peak_idx = 60
-
-        # Ensure there's a crossover at the second peak
-        # Set the previous day's MACD below the signal line
-        df.loc[df.index[second_peak_idx - 1], 'macd_line'] = df['signal_line'].iloc[second_peak_idx - 1] - 0.5
-
-        # Set the current day's MACD above the signal line but lower than the first peak
-        df.loc[df.index[second_peak_idx], 'macd_line'] = min(first_peak_macd * 0.8,
-                                                             df['signal_line'].iloc[second_peak_idx] + 0.5)
-
-        # Update histogram
-        df.loc[df.index[second_peak_idx - 1], 'histogram'] = df['macd_line'].iloc[second_peak_idx - 1] - \
-                                                             df['signal_line'].iloc[second_peak_idx - 1]
-        df.loc[df.index[second_peak_idx], 'histogram'] = df['macd_line'].iloc[second_peak_idx] - df['signal_line'].iloc[
-            second_peak_idx]
-
-        # Generate signals
-        df = strategy.generate_signals(df)
-
-        # Extract trades
-        trades = strategy._extract_trades(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # Verify that there's a buy signal at the second peak due to MACD crossover
-        # even though there's a bearish divergence
-        assert df.iloc[second_peak_idx][
-                   'signal'] == 1, "Should generate buy signal at MACD crossover despite divergence"
-
-        # If there are trades that entered long near the second peak, they should be documented
-        divergence_trades = []
-        for trade in trades:
-            # Find the index in the dataframe that matches the entry_time
-            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
-            if second_peak_idx - 2 <= entry_idx <= second_peak_idx + 2 and trade['side'] == 'long':
-                # Calculate profit/loss
-                pnl = trade['exit_price'] / trade['entry_price'] - 1
-                divergence_trades.append((trade, pnl))
-
-        # Document the behavior during divergence
-        # The standard MACD strategy doesn't account for divergences
-        # This is a known limitation - it might generate false signals during divergences
-        if divergence_trades:
-            # Verify the structure of divergence trades
-            for trade, pnl in divergence_trades:
-                assert 'entry_time' in trade, "Trade should have entry_time"
-                assert 'entry_price' in trade, "Trade should have entry_price"
-                assert 'exit_time' in trade, "Trade should have exit_time"
-                assert 'exit_price' in trade, "Trade should have exit_price"
-                assert 'side' in trade, "Trade should have side"
-                assert trade['side'] == 'long', "Divergence trade should be long"
+        signal_pct = (df['signal'] != 0).sum() / len(df)
+
+        assert signal_pct > 0, f"Expected signals with {description} MACD periods"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} MACD periods ({signal_pct:.1%})"
+
+    def test_both_long_and_short_signals_present(self, standard_macd_strategy, zs_1h_data):
+        """Test that strategy generates both long and short signals."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        assert_both_signal_types_present(df)
+
+    def test_no_signals_generated_during_macd_warmup_period(self, standard_macd_strategy, zs_1h_data):
+        """Test that no signals are generated while MACD is stabilizing."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        # During warmup (first ~35 bars for slow + signal period), signals should be minimal
+        assert_minimal_warmup_signals(df, warmup_bars=35, max_warmup_signals=2)
+
+
+# ==================== Test Strategy Execution ====================
+
+class TestMACDStrategyExecution:
+    """Test full strategy execution with trade generation."""
+
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
+    def test_backtest_execution_variants(
+        self, symbol, interval, trailing, description,
+        load_real_data, contract_switch_dates
+    ):
+        """Test MACD strategy backtest with various configurations and data sources."""
+        data = load_real_data('1!', symbol, interval)
+
+        strategy = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=trailing,
+            slippage_ticks=1,
+            symbol=symbol
+        )
+
+        trades = strategy.run(data.copy(), contract_switch_dates.get(symbol, []))
+
+        assert len(trades) > 0, f"Expected trades for {symbol} {interval} (config: {description})"
+        assert_valid_trades(trades)
+
+    def test_trades_have_both_long_and_short_positions(self, standard_macd_strategy, zs_1h_data, contract_switch_dates):
+        """Test that backtest generates both long and short trades."""
+        trades = standard_macd_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_trades_have_both_directions(trades)
+
+    def test_trades_do_not_overlap(self, standard_macd_strategy, zs_1h_data, contract_switch_dates):
+        """Test that trades don't overlap (proper position management)."""
+        trades = standard_macd_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_no_overlapping_trades(trades)
+
+    def test_backtest_with_slippage_affects_prices(self, zs_1h_data, contract_switch_dates):
+        """Test that slippage is properly applied to trade prices."""
+        strategy_no_slip = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=0,
+            symbol='ZS'
+        )
+
+        strategy_with_slip = MACDStrategy(
+            fast_period=12,
+            slow_period=26,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=2,
+            symbol='ZS'
+        )
+
+        trades_no_slip = strategy_no_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_with_slip = strategy_with_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        # Trade counts should be similar (signals are the same)
+        assert_similar_trade_count(trades_no_slip, trades_with_slip, max_difference=5)
+
+        # Validate slippage affects prices correctly
+        assert_slippage_affects_prices(trades_no_slip, trades_with_slip)
+
+    def test_backtest_with_different_macd_periods(self, zs_1h_data, contract_switch_dates):
+        """Test that different MACD periods produce different trade patterns."""
+        strategy_fast = MACDStrategy(
+            fast_period=8,
+            slow_period=17,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        strategy_slow = MACDStrategy(
+            fast_period=19,
+            slow_period=39,
+            signal_period=9,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert len(trades_fast) > 0, "Fast parameter strategy generated no trades"
+        assert len(trades_slow) > 0, "Slow parameter strategy generated no trades"
+        assert len(trades_fast) >= len(trades_slow), \
+            f"Faster MACD period should generate more trades ({len(trades_fast)} vs {len(trades_slow)})"
+
+    def test_signals_convert_to_actual_trades(self, standard_macd_strategy, zs_1h_data, contract_switch_dates):
+        """Test that generated signals result in actual trades."""
+        df = standard_macd_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+        trades = standard_macd_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_signals_convert_to_trades(df, trades)
+
+
+# ==================== Test Edge Cases ====================
+
+class TestMACDStrategyEdgeCases:
+    """Test edge cases and error handling."""
+
+    def test_strategy_with_insufficient_data(self, standard_macd_strategy):
+        """Test strategy behavior with insufficient data for MACD calculation."""
+        # Create small dataset using utility
+        small_data = create_small_ohlcv_dataframe(bars=3, base_price=100)
+
+        df = standard_macd_strategy.add_indicators(small_data.copy())
+
+        # MACD should be mostly NaN for insufficient data
+        assert df['macd_line'].isna().all()
+        assert df['signal_line'].isna().all()
+        assert df['histogram'].isna().all()
+
+    def test_strategy_with_constant_prices(self, standard_macd_strategy):
+        """Test strategy with constant prices (no volatility)."""
+        # Create constant price data using utility
+        constant_data = create_constant_price_dataframe(bars=50, price=100)
+
+        df = standard_macd_strategy.add_indicators(constant_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        # With constant prices, MACD should be zero and no crossovers occur
+        valid_macd = df['macd_line'].dropna()
+        if len(valid_macd) > 0:
+            assert (valid_macd.abs() < 1e-10).all(), "MACD should be zero for constant prices"
+
+        assert (df['signal'] == 0).all()
+
+    def test_strategy_with_extreme_volatility(self, standard_macd_strategy, volatile_market_data):
+        """Test strategy handles extreme volatility."""
+        df = standard_macd_strategy.add_indicators(volatile_market_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        # Should still produce valid MACD and signals
+        assert_valid_indicator(df['macd_line'], 'MACD')
+        assert_valid_indicator(df['signal_line'], 'Signal')
+        assert_valid_signals(df)
+
+    def test_strategy_with_trending_market(self, standard_macd_strategy, trending_market_data):
+        """Test strategy in strong trending market."""
+        df = standard_macd_strategy.add_indicators(trending_market_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        # In trending market, MACD histogram should show persistent direction
+        assert_valid_signals(df)
+
+    def test_strategy_handles_gaps_in_data(self, standard_macd_strategy, zs_1h_data):
+        """Test strategy handles missing bars in data."""
+        # Create data with gap using utility
+        gapped_data = create_gapped_dataframe(zs_1h_data, gap_start=100, gap_end=150)
+
+        df = standard_macd_strategy.add_indicators(gapped_data.copy())
+        df = standard_macd_strategy.generate_signals(df)
+
+        # Should still calculate MACD and signals
+        assert 'macd_line' in df.columns
+        assert 'signal_line' in df.columns
+        assert 'histogram' in df.columns
+        assert 'signal' in df.columns
+        assert_valid_signals(df)

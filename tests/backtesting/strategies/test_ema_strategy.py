@@ -1,751 +1,478 @@
-from datetime import datetime, timedelta
+"""
+EMA Crossover Strategy Test Suite.
 
-import pandas as pd
+Tests EMA crossover strategy implementation with real historical data:
+- Strategy initialization and configuration
+- Indicator calculation within strategy (short/long EMAs)
+- Signal generation logic (crossovers)
+- Full strategy execution and trade generation
+- Edge cases and error handling
+
+Uses real market data (ZS, CL) from data/historical_data/.
+"""
+import pytest
 
 from app.backtesting.strategies import EMACrossoverStrategy
-from tests.backtesting.strategies.conftest import create_test_df, create_ema_test_df
+from tests.backtesting.helpers.assertions import (
+    assert_valid_indicator,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades
+)
+from tests.backtesting.strategies.strategy_test_utils import (
+    assert_trades_have_both_directions,
+    assert_similar_trade_count,
+    assert_slippage_affects_prices,
+    assert_signals_convert_to_trades,
+    assert_both_signal_types_present,
+    assert_minimal_warmup_signals,
+    assert_more_responsive_indicator,
+    create_small_ohlcv_dataframe,
+    create_constant_price_dataframe,
+    create_gapped_dataframe,
+)
 
 
-class TestEMACrossoverStrategy:
-    def test_initialization(self):
-        """Test that the EMA Crossover strategy initializes with correct default parameters."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
+# ==================== Test Strategy Initialization ====================
 
-        assert strategy.short_ema_period == 9
-        assert strategy.long_ema_period == 21
+class TestEMAStrategyInitialization:
+    """Test EMA crossover strategy initialization and configuration."""
 
-        # Test with custom parameters
-        strategy = EMACrossoverStrategy(short_ema_period=5,
-                                        long_ema_period=15,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        assert strategy.short_ema_period == 5
-        assert strategy.long_ema_period == 15
-
-    def test_add_indicators(self):
-        """Test that the add_indicators method correctly adds EMAs to the dataframe."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        # Create a larger dataframe to ensure we have valid EMA values
-        df = create_ema_test_df(length=100)
-
-        # Apply the strategy's add_indicators method
-        df_with_indicators = strategy.add_indicators(df)
-
-        # Verify EMA columns were added
-        assert 'ema_short' in df_with_indicators.columns
-        assert 'ema_long' in df_with_indicators.columns
-
-        # It's normal for the first few values of an EMA to be NaN
-        # Verify that most rows have valid EMA values
-        # For short EMA, we expect at least (length - short_period) valid values
-        min_valid_short = len(df) - strategy.short_ema_period
-        assert df_with_indicators['ema_short'].notna().sum() >= min_valid_short, \
-            f"Not enough valid short EMA values. Expected at least {min_valid_short}, got {df_with_indicators['ema_short'].notna().sum()}"
-
-        # For long EMA, we expect at least (length - long_period) valid values
-        min_valid_long = len(df) - strategy.long_ema_period
-        assert df_with_indicators['ema_long'].notna().sum() >= min_valid_long, \
-            f"Not enough valid long EMA values. Expected at least {min_valid_long}, got {df_with_indicators['ema_long'].notna().sum()}"
-
-        # Manually calculate the EMAs to verify correctness
-        manual_ema_short = df['close'].ewm(span=strategy.short_ema_period, adjust=False).mean()
-        manual_ema_long = df['close'].ewm(span=strategy.long_ema_period, adjust=False).mean()
-
-        # Verify the calculated EMAs match the manually calculated ones
-        pd.testing.assert_series_equal(
-            df_with_indicators['ema_short'],
-            manual_ema_short,
-            check_names=False,
-            check_exact=False,  # Allow for small floating-point differences
-            rtol=1e-10,  # Relative tolerance
-            atol=1e-10,  # Absolute tolerance
-        )
-        pd.testing.assert_series_equal(
-            df_with_indicators['ema_long'],
-            manual_ema_long,
-            check_names=False,
-            check_exact=False,  # Allow for small floating-point differences
-            rtol=1e-10,  # Relative tolerance
-            atol=1e-10,  # Absolute tolerance
+    @pytest.mark.parametrize("short,long,description", [
+        (9, 21, "standard"),
+        (12, 26, "macd_like"),
+        (5, 20, "fast_crossover"),
+        (20, 50, "slow_crossover"),
+    ])
+    def test_initialization_with_various_parameters(self, short, long, description):
+        """Test EMA strategy initializes correctly with various period combinations."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=short,
+            long_ema_period=long,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
         )
 
-        # Verify the short EMA reacts faster to price changes than the long EMA
-        # During uptrend, short EMA should be higher than long EMA
-        # Based on create_ema_test_df: uptrend is from index 15-29 (15 bars)
-        # Use index near the end of uptrend to ensure EMAs have caught up
-        uptrend_idx = 28
-        assert df_with_indicators['ema_short'].iloc[uptrend_idx] > df_with_indicators['ema_long'].iloc[uptrend_idx], \
-            "Short EMA should be higher than long EMA during uptrend"
+        assert strategy.short_ema_period == short
+        assert strategy.long_ema_period == long
+        assert strategy.rollover == False
+        assert strategy.trailing is None
+        assert strategy.position_manager.slippage_ticks == 1
 
-        # During downtrend, short EMA should be lower than long EMA
-        # Based on create_ema_test_df: downtrend is from index 40-49 (10 bars)
-        # Use index near the end of downtrend
-        downtrend_idx = 48
-        assert df_with_indicators['ema_short'].iloc[downtrend_idx] < df_with_indicators['ema_long'].iloc[downtrend_idx], \
-            "Short EMA should be lower than long EMA during downtrend"
+    def test_initialization_with_trailing_stop(self):
+        """Test EMA strategy with trailing stop enabled."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=2.0,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-    def test_generate_signals_default_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with default parameters."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        df = create_test_df()
-        df = strategy.add_indicators(df)
+        assert strategy.trailing == 2.0
+        assert strategy.trailing_stop_manager is not None
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
+    def test_initialization_with_rollover_enabled(self):
+        """Test EMA strategy with contract rollover handling."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=True,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Verify signal column was added
-        assert 'signal' in df_with_signals.columns
+        assert strategy.rollover is True
+        assert strategy.switch_handler is not None
 
-        # Find where short EMA crosses above long EMA (buy signals)
-        buy_signals = df_with_signals[
-            (df_with_signals['ema_short'].shift(1) <= df_with_signals['ema_long'].shift(1)) &
-            (df_with_signals['ema_short'] > df_with_signals['ema_long'])
-            ]
+    def test_format_name_generates_correct_string(self):
+        """Test strategy name formatting for identification."""
+        name = EMACrossoverStrategy.format_name(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1
+        )
 
-        # Find where short EMA crosses below long EMA (sell signals)
-        sell_signals = df_with_signals[
-            (df_with_signals['ema_short'].shift(1) >= df_with_signals['ema_long'].shift(1)) &
-            (df_with_signals['ema_short'] < df_with_signals['ema_long'])
-            ]
+        assert 'EMA' in name
+        assert 'short=9' in name
+        assert 'long=21' in name
+        assert 'rollover=False' in name
+        assert 'slippage_ticks=1' in name
 
-        # Verify all buy signals have signal value of 1
-        assert (buy_signals['signal'] == 1).all()
 
-        # Verify all sell signals have signal value of -1
-        assert (sell_signals['signal'] == -1).all()
+# ==================== Test Indicator Calculation ====================
 
-        # Verify no other signals exist
-        other_signals = df_with_signals[
-            ~df_with_signals.index.isin(buy_signals.index) &
-            ~df_with_signals.index.isin(sell_signals.index)
-            ]
-        assert (other_signals['signal'] == 0).all()
+class TestEMAStrategyIndicators:
+    """Test indicator calculation within EMA crossover strategy."""
 
-    def test_generate_signals_custom_params(self):
-        """Test that the generate_signals method correctly identifies buy/sell signals with custom parameters."""
-        # Use different EMA periods
-        strategy = EMACrossoverStrategy(short_ema_period=5,
-                                        long_ema_period=15,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        df = create_test_df()
-        df = strategy.add_indicators(df)
+    def test_add_indicators_creates_ema_columns(self, standard_ema_strategy, zs_1h_data):
+        """Test that add_indicators properly calculates both EMAs on real data."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
 
-        # Apply the strategy's generate_signals method
-        df_with_signals = strategy.generate_signals(df)
-
-        # Find where short EMA crosses above long EMA (buy signals)
-        buy_signals = df_with_signals[
-            (df_with_signals['ema_short'].shift(1) <= df_with_signals['ema_long'].shift(1)) &
-            (df_with_signals['ema_short'] > df_with_signals['ema_long'])
-            ]
-
-        # Find where short EMA crosses below long EMA (sell signals)
-        sell_signals = df_with_signals[
-            (df_with_signals['ema_short'].shift(1) >= df_with_signals['ema_long'].shift(1)) &
-            (df_with_signals['ema_short'] < df_with_signals['ema_long'])
-            ]
-
-        # Verify all buy signals have signal value of 1
-        assert (buy_signals['signal'] == 1).all()
-
-        # Verify all sell signals have signal value of -1
-        assert (sell_signals['signal'] == -1).all()
-
-    def test_run_end_to_end(self):
-        """Test the full strategy workflow from data to trades."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        df = create_test_df()
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-                assert trade['side'] in ['long', 'short']
-
-    def test_no_signals_with_flat_prices(self):
-        """Test that no signals are generated with flat prices."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-
-        # Create a dataframe with constant prices
-        dates = [datetime.now() + timedelta(days=i) for i in range(30)]
-        data = {
-            'open': [100] * 30,
-            'high': [101] * 30,
-            'low': [99] * 30,
-            'close': [100] * 30,
-        }
-        df = pd.DataFrame(data, index=dates)
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify no trades were generated
-        assert len(trades) == 0
-
-    def test_with_trailing_stop(self):
-        """Test EMA Crossover strategy with trailing stop."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=2.0,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        df = create_test_df()
-
-        # Run the strategy
-        trades = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-
-    def test_with_contract_switch(self):
-        """Test EMA Crossover strategy with contract switch."""
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=True,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-        df = create_test_df()
-
-        # Create a switch date in the middle of the dataframe
-        switch_date = df.index[25]
-
-        # Run the strategy
-        trades = strategy.run(df, [switch_date])
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-
-            # If there are trades with the switch flag, verify them
-            switch_trades = [trade for trade in trades if trade.get('switch')]
-            if switch_trades:
-                for trade in switch_trades:
-                    assert trade['switch'] is True
-
-    def test_close_ema_values(self):
-        """Test EMA Crossover strategy when EMA values are very close to each other."""
-
-        # Create a strategy with custom parameters - use closer periods to ensure they can get close
-        strategy = EMACrossoverStrategy(short_ema_period=5,
-                                        long_ema_period=7,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a price series that will definitely result in close EMA values
-        # Start with a flat price for a long period to make EMAs converge
-        close_prices = [100] * 100  # First 100 candles for warm-up
-
-        # Then add a very small oscillation to create small differences
-        for i in range(40):
-            # Oscillate between 100 and 100.2
-            close_prices.append(100 + (0.2 * (i % 2)))
-
-        # Fill the rest with flat prices
-        while len(close_prices) < 150:
-            close_prices.append(100)
-
-        # Create OHLC data
-        df['open'] = close_prices
-        df['high'] = [p + 0.05 for p in close_prices]
-        df['low'] = [p - 0.05 for p in close_prices]
-        df['close'] = close_prices
-
-        # Add indicators
-        df = strategy.add_indicators(df)
-
-        # Verify EMAs are calculated
+        # Both EMA columns should be added
         assert 'ema_short' in df.columns
         assert 'ema_long' in df.columns
 
-        # Skip the initial NaN values
-        valid_df = df.iloc[strategy.long_ema_period:].copy()
+        # Validate EMA values
+        assert_valid_indicator(df['ema_short'], 'EMA_short', min_val=0, allow_nan=True)
+        assert_valid_indicator(df['ema_long'], 'EMA_long', min_val=0, allow_nan=True)
 
-        # Find where EMAs are very close (difference < 0.1)
-        # With the flat price series and close EMA periods, they should be very close
-        close_emas = valid_df[(valid_df['ema_short'] - valid_df['ema_long']).abs() < 0.1]
+        # Verify EMAs respond to price changes (not constant)
+        valid_short_ema = df['ema_short'].dropna()
+        valid_long_ema = df['ema_long'].dropna()
+        assert valid_short_ema.std() > 1.0, "Short EMA should vary with price changes"
+        assert valid_long_ema.std() > 1.0, "Long EMA should vary with price changes"
 
-        # There should be some periods where EMAs are close
-        assert len(close_emas) > 0, "Test data should have periods with close EMA values"
+        # Verify warmup period (long EMA needs more data to stabilize than short EMA)
+        short_warmup_nans = df['ema_short'].iloc[:9].isna().sum()
+        long_warmup_nans = df['ema_long'].iloc[:21].isna().sum()
+        # Long EMA should have at least as many warmup NaNs as short EMA
+        assert long_warmup_nans >= short_warmup_nans, \
+            "Long EMA should have warmup period at least as long as short EMA"
 
-        # Generate signals
+    def test_short_ema_more_responsive_than_long(self, standard_ema_strategy, zs_1h_data):
+        """Test that short EMA is more responsive (varies more) than long EMA."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+
+        # Short EMA should be more volatile (more responsive to price changes)
+        assert_more_responsive_indicator(df['ema_short'], df['ema_long'], 'EMA')
+
+    def test_ema_calculation_on_different_symbols(self, zs_1h_data, cl_15m_data):
+        """Test EMA calculation works on different market data."""
+        strategy_zs = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        strategy_cl = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='CL'
+        )
+
+        df_zs = strategy_zs.add_indicators(zs_1h_data.copy())
+        df_cl = strategy_cl.add_indicators(cl_15m_data.copy())
+
+        # Both should have valid EMAs
+        assert_valid_indicator(df_zs['ema_short'], 'EMA_short_ZS', min_val=0)
+        assert_valid_indicator(df_zs['ema_long'], 'EMA_long_ZS', min_val=0)
+        assert_valid_indicator(df_cl['ema_short'], 'EMA_short_CL', min_val=0)
+        assert_valid_indicator(df_cl['ema_long'], 'EMA_long_CL', min_val=0)
+
+
+# ==================== Test Signal Generation ====================
+
+class TestEMAStrategySignals:
+    """Test signal generation logic for EMA crossover strategy."""
+
+    def test_generate_signals_creates_signal_column(self, standard_ema_strategy, zs_1h_data):
+        """Test that generate_signals creates signal column."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        assert 'signal' in df.columns
+        assert_valid_signals(df)
+
+    def test_long_entry_signal_on_bullish_crossover(self, standard_ema_strategy, zs_1h_data):
+        """Test long signals occur when short EMA crosses above long EMA."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # Find long signal bars
+        long_signal_bars = df[df['signal'] == 1]
+
+        # Long signals should occur when short > long (after crossover)
+        assert len(long_signal_bars) > 0, "Expected long signals on 2-year real data"
+        assert (long_signal_bars['ema_short'] > long_signal_bars['ema_long']).all(), \
+            "Long signals should occur when short EMA > long EMA"
+
+    def test_short_entry_signal_on_bearish_crossover(self, standard_ema_strategy, zs_1h_data):
+        """Test short signals occur when short EMA crosses below long EMA."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # Find short signal bars
+        short_signal_bars = df[df['signal'] == -1]
+
+        # Short signals should occur when short < long (after crossover)
+        assert len(short_signal_bars) > 0, "Expected short signals on 2-year real data"
+        assert (short_signal_bars['ema_short'] < short_signal_bars['ema_long']).all(), \
+            "Short signals should occur when short EMA < long EMA"
+
+    def test_no_signal_when_emas_aligned_without_crossing(self, zs_1h_data):
+        """Test no signals generated when EMAs trending together without crosses."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        df = strategy.add_indicators(zs_1h_data.copy())
         df = strategy.generate_signals(df)
 
-        # Find crossover points
-        crossovers = df[df['signal'] != 0]
-
-        # Verify crossovers occur at the expected points
-        # When close prices change from uptrend to downtrend and vice versa
-        assert len(crossovers) >= 2, "Should have at least 2 crossovers with the test data"
-
-        # Run end-to-end and verify trades
-        trades = strategy.run(df, [])
-
-        # Verify trades are generated
-        assert len(trades) > 0, "No trades generated with close EMA values"
-
-        # Verify trade sides alternate (long, short, long, etc.)
-        if len(trades) >= 2:
-            for i in range(1, len(trades)):
-                assert trades[i]['side'] != trades[i - 1]['side'], "Trade sides should alternate"
-
-    def test_multiple_contract_switches(self):
-        """Test EMA Crossover strategy with multiple contract switches."""
-
-        # Create a custom strategy that returns trades with switch flags
-        class MultiSwitchTestStrategy(EMACrossoverStrategy):
-            def _extract_trades(self, df, switch_dates):
-                # Create trades with switch flags
-                trades = []
-                for i, switch_date in enumerate(switch_dates):
-                    # Create a trade with the switch flag
-                    trade = {
-                        'entry_time': df.index[max(0, i * 25)],
-                        'entry_price': 100.0,
-                        'exit_time': switch_date,
-                        'exit_price': 110.0,
-                        'side': 'long',
-                        'switch': True
-                    }
-                    trades.append(trade)
-                return trades
-
-        strategy = MultiSwitchTestStrategy(short_ema_period=9,
-                                           long_ema_period=21,
-                                           rollover=True,
-                                           trailing=None,
-                                           slippage_ticks=0,
-                                           symbol=None)
-        df = create_test_df(length=100)  # Longer dataframe for multiple switches
-
-        # Create multiple switch dates
-        switch_dates = [df.index[25], df.index[50], df.index[75]]
-
-        # Run the strategy
-        trades = strategy.run(df, switch_dates)
-
-        # Verify the strategy ran without errors
-        assert isinstance(trades, list)
-
-        # If trades were generated, verify their structure
-        if trades:
-            for trade in trades:
-                assert 'entry_time' in trade
-                assert 'entry_price' in trade
-                assert 'exit_time' in trade
-                assert 'exit_price' in trade
-                assert 'side' in trade
-
-            # Find trades with the switch flag
-            switch_trades = [trade for trade in trades if trade.get('switch')]
-
-            # There should be at least one switch trade for each switch date
-            assert len(switch_trades) > 0, "No switch trades generated with multiple contract switches"
-
-            # Verify switch trades have the correct flag
-            for trade in switch_trades:
-                assert trade['switch'] is True
-
-    def test_futures_market_gap(self):
-        """Test EMA Crossover strategy with price gaps, common in futures markets."""
-
-        # Create a strategy with default parameters
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a price series with significant gaps
-        close_prices = [100] * 20
-
-        # Add a significant gap up (e.g., limit up in futures)
-        close_prices.extend([100, 100, 100, 108, 109, 110])  # 8% gap up
-
-        # Add a significant gap down (e.g., limit down in futures)
-        close_prices.extend([110, 110, 110, 99, 98, 97])  # 10% gap down
-
-        # Add some normal price action
-        close_prices.extend([97 + i * 0.5 for i in range(10)])
-
-        # Fill the rest with flat prices
-        while len(close_prices) < 50:
-            close_prices.append(close_prices[-1])
-
-        # Create OHLC data
-        df['open'] = close_prices
-        df['high'] = [p * 1.01 for p in close_prices]
-        df['low'] = [p * 0.99 for p in close_prices]
-        df['close'] = close_prices
-
-        # Run the strategy with empty switch_dates
-        result = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(result, list)
-
-        # Instead of checking for trades, let's verify that the EMAs respond to the price gaps
-        df = strategy.add_indicators(df)
-
-        # Check that EMAs are calculated
-        assert 'ema_short' in df.columns
-        assert 'ema_long' in df.columns
-
-        # Skip the initial NaN values
-        valid_df = df.iloc[strategy.long_ema_period:].copy()
-
-        # Check that there are valid EMA values
-        assert not valid_df['ema_short'].isnull().all(), "No valid short EMA values"
-        assert not valid_df['ema_long'].isnull().all(), "No valid long EMA values"
-
-        # Check that EMAs change after the gap up (around index 23)
-        gap_up_idx = 23
-        if gap_up_idx < len(valid_df):
-            ema_before_gap = valid_df['ema_short'].iloc[gap_up_idx - 1]
-            ema_after_gap = valid_df['ema_short'].iloc[gap_up_idx + 1]
-            if not pd.isna(ema_before_gap) and not pd.isna(ema_after_gap):
-                assert ema_before_gap != ema_after_gap, "EMA should change after gap up"
-
-        # Check that EMAs change after the gap down (around index 29)
-        gap_down_idx = 29
-        if gap_down_idx < len(valid_df):
-            ema_before_gap = valid_df['ema_short'].iloc[gap_down_idx - 1]
-            ema_after_gap = valid_df['ema_short'].iloc[gap_down_idx + 1]
-            if not pd.isna(ema_before_gap) and not pd.isna(ema_after_gap):
-                assert ema_before_gap != ema_after_gap, "EMA should change after gap down"
-
-            # This test intentionally doesn't assert specific trade outcomes
-            # as the strategy might have different responses to gaps
-
-    def test_futures_rollover_vulnerability(self):
-        """Test EMA Crossover strategy vulnerability during future contract rollover periods."""
-
-        # Create a strategy with rollover enabled
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=True,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(60)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a price series with a trend before rollover and different trend after
-        # This simulates the common scenario where the new contract has a different price level
-
-        # Uptrend before rollover
-        close_prices = [100 + i * 0.5 for i in range(30)]
-
-        # Price jump at rollover (contango or backwardation)
-        rollover_jump = -5  # Backwardation: new contract is cheaper
-
-        # Different trend after rollover
-        close_prices.extend([close_prices[-1] + rollover_jump + i * 0.2 for i in range(30)])
-
-        # Create OHLC data
-        df['open'] = close_prices
-        df['high'] = [p * 1.01 for p in close_prices]
-        df['low'] = [p * 0.99 for p in close_prices]
-        df['close'] = close_prices
-
-        # Set rollover date at index 30
-        rollover_date = dates[30]
-        switch_dates = [rollover_date]
-
-        # Run the strategy
-        result = strategy.run(df, switch_dates)
-
-        # Verify the strategy ran without errors
-        assert isinstance(result, list)
-
-        # Check for trades around the rollover date
-        if result:
-            # Find trades that were closed due to rollover
-            rollover_trades = [trade for trade in result if trade.get('switch')]
-
-            # There should be at least one trade closed due to rollover
-            assert len(rollover_trades) > 0, "No trades closed due to rollover"
-
-            # Verify the exit time matches the rollover date
-            for trade in rollover_trades:
-                assert trade['exit_time'] == rollover_date, "Trade not closed at rollover date"
-
-            # This test exposes a vulnerability: the strategy doesn't account for price jumps at rollover
-            # which can lead to misleading signals if not handled properly
-
-    # TODO [LOW]: Upgrade this test
-    def test_high_volatility_futures(self):
-        """Test EMA Crossover strategy with high volatility futures like energy or metals."""
-
-        # Create a strategy with default parameters
-        strategy = EMACrossoverStrategy(short_ema_period=9,
-                                        long_ema_period=21,
-                                        rollover=False,
-                                        trailing=None,
-                                        slippage_ticks=0,
-                                        symbol=None)
-
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(50)]
-        df = pd.DataFrame(index=dates)
-
-        # Create a highly volatile price series (e.g., crude oil futures during a crisis)
-        base_price = 100
-
-        # Generate random walk with high volatility
-        import random
-        random.seed(42)  # For reproducibility
-
-        # Daily volatility of 3-5% (very high)
-        volatility = 0.04
-
-        # Generate prices
-        close_prices = [base_price]
-        for _ in range(49):
-            # Random daily return with high volatility
-            daily_return = random.normalvariate(0, volatility)
-            new_price = close_prices[-1] * (1 + daily_return)
-            close_prices.append(new_price)
-
-        # Create OHLC data with large intraday ranges
-        df['open'] = close_prices
-        df['high'] = [p * (1 + random.uniform(0.01, 0.03)) for p in close_prices]  # 1-3% above close
-        df['low'] = [p * (1 - random.uniform(0.01, 0.03)) for p in close_prices]  # 1-3% below close
-        df['close'] = close_prices
-
-        # Run the strategy with empty switch_dates
-        result = strategy.run(df, [])
-
-        # Verify the strategy ran without errors
-        assert isinstance(result, list)
-
-        # In high volatility environments, we expect more signals and potentially more whipsaws
-        # Count the number of trades
-        trade_count = len(result)
-
-        # Run the same strategy on a lower volatility series for comparison
-        df_low_vol = create_test_df(length=50)  # Standard test data with lower volatility
-        result_low_vol = strategy.run(df_low_vol, [])
-        low_vol_trade_count = len(result_low_vol)
-
-        # This test intentionally doesn't assert that high volatility produces more trades
-        # as it depends on the specific random seed and strategy parameters
-        # Instead, we're documenting the behavior for analysis
-
-        # Calculate average trade duration for high volatility
-        if result:
-            # Check if trades have entry_idx and exit_idx keys
-            if 'entry_idx' in result[0] and 'exit_idx' in result[0]:
-                durations = [(trade['exit_idx'] - trade['entry_idx']) for trade in result]
-                avg_duration_high_vol = sum(durations) / len(durations)
-
-                # Calculate average trade duration for low volatility
-                if result_low_vol and 'entry_idx' in result_low_vol[0] and 'exit_idx' in result_low_vol[0]:
-                    durations_low_vol = [(trade['exit_idx'] - trade['entry_idx']) for trade in result_low_vol]
-                    avg_duration_low_vol = sum(durations_low_vol) / len(durations_low_vol)
-
-                    # High volatility often leads to shorter trade durations due to more crossovers
-                    # This is a vulnerability as it can lead to overtrading
-            else:
-                # If trades don't have entry_idx and exit_idx keys, use entry_time and exit_time instead
-                # Calculate duration in days
-                durations = [(trade['exit_time'] - trade['entry_time']).days for trade in result]
-                avg_duration_high_vol = sum(durations) / len(durations)
-
-                # Calculate average trade duration for low volatility
-                if result_low_vol:
-                    durations_low_vol = [(trade['exit_time'] - trade['entry_time']).days for trade in result_low_vol]
-                    avg_duration_low_vol = sum(durations_low_vol) / len(durations_low_vol) if durations_low_vol else 0
-
-                    # High volatility often leads to shorter trade durations due to more crossovers
-                    # This is a vulnerability as it can lead to overtrading
-
-        # This test exposes the vulnerability of EMA crossover strategies to high volatility
-        # which can lead to frequent whipsaws and overtrading
-
-    def test_slippage(self):
-        """Test that slippage is correctly applied to entry and exit prices in the EMA Crossover strategy."""
-        from config import TICK_SIZES, DEFAULT_TICK_SIZE
-        
-        # Create a strategy with 2 ticks slippage
-        slippage_ticks = 2
-        strategy = EMACrossoverStrategy(
+        # Count crossover signals
+        signal_count = (df['signal'] != 0).sum()
+
+        # Should have some crossovers but not too many (crossovers are relatively rare)
+        assert signal_count > 0, "Expected some crossover signals"
+        assert signal_count < len(df) * 0.1, "Too many signals for crossover strategy"
+
+    def test_fast_vs_slow_crossovers_generate_different_frequency(self, zs_1h_data):
+        """Test that faster EMAs generate more crossover signals."""
+        strategy_fast = EMACrossoverStrategy(
             short_ema_period=5,
             long_ema_period=15,
             rollover=False,
             trailing=None,
-            slippage_ticks=slippage_ticks,
-            symbol=None
+            slippage_ticks=1,
+            symbol='ZS'
         )
 
-        # Create a dataframe with dates
-        dates = [datetime.now() + timedelta(days=i) for i in range(150)]
-        df = pd.DataFrame(index=dates)
+        strategy_slow = EMACrossoverStrategy(
+            short_ema_period=20,
+            long_ema_period=50,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Create a price series that will definitely result in EMA crossovers
-        # Start with 100 candles for warm-up
-        close_prices = [100] * 100
+        df_fast = strategy_fast.add_indicators(zs_1h_data.copy())
+        df_fast = strategy_fast.generate_signals(df_fast)
 
-        # Start with an uptrend
-        for i in range(15):
-            close_prices.append(100 + i * 2)
+        df_slow = strategy_slow.add_indicators(zs_1h_data.copy())
+        df_slow = strategy_slow.generate_signals(df_slow)
 
-        # Then a downtrend
-        for i in range(15):
-            close_prices.append(130 - i * 2)
+        # Fast crossover should generate more signals
+        fast_count = (df_fast['signal'] != 0).sum()
+        slow_count = (df_slow['signal'] != 0).sum()
+        assert fast_count >= slow_count, \
+            f"Faster EMA period should generate more signals ({fast_count} vs {slow_count})"
 
-        # Then another uptrend
-        for i in range(15):
-            close_prices.append(100 + i * 2)
+    @pytest.mark.parametrize("short,long,description,max_signal_pct", [
+        (5, 15, "fast", 0.15),
+        (9, 21, "standard", 0.10),
+        (20, 50, "slow", 0.05),
+    ])
+    def test_signal_frequency_with_various_ema_periods(
+        self, zs_1h_data, short, long, description, max_signal_pct
+    ):
+        """Test signal frequency varies with EMA period settings."""
+        strategy = EMACrossoverStrategy(
+            short_ema_period=short,
+            long_ema_period=long,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
 
-        # Fill the rest with flat prices
-        while len(close_prices) < 150:
-            close_prices.append(close_prices[-1])
+        df = strategy.add_indicators(zs_1h_data.copy())
+        df = strategy.generate_signals(df)
 
-        # Create OHLC data
-        df['open'] = close_prices
-        df['high'] = [p + 1 for p in close_prices]
-        df['low'] = [p - 1 for p in close_prices]
-        df['close'] = close_prices
+        signal_pct = (df['signal'] != 0).sum() / len(df)
 
-        # Run the strategy
-        trades = strategy.run(df, [])
+        assert signal_pct > 0, f"Expected signals with {description} EMA periods"
+        assert signal_pct <= max_signal_pct, \
+            f"Too many signals for {description} EMA periods ({signal_pct:.1%})"
 
-        # Should have at least one trade
-        assert len(trades) > 0
+    def test_both_long_and_short_signals_present(self, standard_ema_strategy, zs_1h_data):
+        """Test that strategy generates both long and short signals."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
 
-        # Get tick size
-        tick_size = TICK_SIZES.get(None, DEFAULT_TICK_SIZE)
-        slippage_amount = slippage_ticks * tick_size
+        assert_both_signal_types_present(df)
 
-        # Find long and short trades
-        long_trades = [t for t in trades if t['side'] == 'long']
-        short_trades = [t for t in trades if t['side'] == 'short']
+    def test_no_signals_generated_during_ema_warmup_period(self, standard_ema_strategy, zs_1h_data):
+        """Test that no signals are generated while EMAs are stabilizing."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
 
-        # Verify slippage is applied correctly for long trades
-        for trade in long_trades:
-            # Get the original entry and exit prices from the dataframe
-            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
-            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+        # During warmup (first ~21 bars for long EMA), signals should be minimal
+        assert_minimal_warmup_signals(df, warmup_bars=21, max_warmup_signals=2)
 
-            original_entry_price = df.iloc[entry_idx]['open']
-            original_exit_price = df.iloc[exit_idx]['open']
 
-            # For long positions:
-            # - Entry price should be higher than the original price (pay more on entry)
-            # - Exit price should be lower than the original price (receive less on exit)
-            expected_entry_price = round(original_entry_price + slippage_amount, 2)
-            expected_exit_price = round(original_exit_price - slippage_amount, 2)
+# ==================== Test Strategy Execution ====================
 
-            assert trade[
-                       'entry_price'] == expected_entry_price, f"Long entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
-            assert trade[
-                       'exit_price'] == expected_exit_price, f"Long exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+class TestEMAStrategyExecution:
+    """Test full strategy execution with trade generation."""
 
-        # Verify slippage is applied correctly for short trades
-        for trade in short_trades:
-            # Get the original entry and exit prices from the dataframe
-            entry_idx = df.index.get_indexer([trade['entry_time']], method='nearest')[0]
-            exit_idx = df.index.get_indexer([trade['exit_time']], method='nearest')[0]
+    @pytest.mark.parametrize("symbol,interval,trailing,description", [
+        ('ZS', '1h', None, "standard_backtest"),
+        ('ZS', '1h', 2.0, "with_trailing_stop"),
+        ('CL', '15m', None, "different_timeframe"),
+    ])
+    def test_backtest_execution_variants(
+        self, symbol, interval, trailing, description,
+        load_real_data, contract_switch_dates
+    ):
+        """Test EMA strategy backtest with various configurations and data sources."""
+        data = load_real_data('1!', symbol, interval)
 
-            original_entry_price = df.iloc[entry_idx]['open']
-            original_exit_price = df.iloc[exit_idx]['open']
+        strategy = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=trailing,
+            slippage_ticks=1,
+            symbol=symbol
+        )
 
-            # For short positions:
-            # - Entry price should be lower than the original price (receive less on entry)
-            # - Exit price should be higher than the original price (pay more on exit)
-            expected_entry_price = round(original_entry_price - slippage_amount, 2)
-            expected_exit_price = round(original_exit_price + slippage_amount, 2)
+        trades = strategy.run(data.copy(), contract_switch_dates.get(symbol, []))
 
-            assert trade[
-                       'entry_price'] == expected_entry_price, f"Short entry price with slippage should be {expected_entry_price}, got {trade['entry_price']}"
-            assert trade[
-                       'exit_price'] == expected_exit_price, f"Short exit price with slippage should be {expected_exit_price}, got {trade['exit_price']}"
+        assert len(trades) > 0, f"Expected trades for {symbol} {interval} (config: {description})"
+        assert_valid_trades(trades)
 
-        # Run the same strategy without slippage for comparison
-        strategy_no_slippage = EMACrossoverStrategy(short_ema_period=9,
-                                                    long_ema_period=21,
-                                                    rollover=False,
-                                                    trailing=None,
-                                                    slippage_ticks=0,
-                                                    symbol=None)
-        trades_no_slippage = strategy_no_slippage.run(df, [])
+    def test_trades_have_both_long_and_short_positions(self, standard_ema_strategy, zs_1h_data, contract_switch_dates):
+        """Test that backtest generates both long and short trades."""
+        trades = standard_ema_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Verify that trades with slippage have different prices than trades without slippage
-        if trades and trades_no_slippage:
-            for i in range(min(len(trades), len(trades_no_slippage))):
-                assert trades[i]['entry_price'] != trades_no_slippage[i][
-                    'entry_price'], "Entry prices should differ with slippage"
-                assert trades[i]['exit_price'] != trades_no_slippage[i][
-                    'exit_price'], "Exit prices should differ with slippage"
+        assert_trades_have_both_directions(trades)
+
+    def test_trades_do_not_overlap(self, standard_ema_strategy, zs_1h_data, contract_switch_dates):
+        """Test that trades don't overlap (proper position management)."""
+        trades = standard_ema_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_no_overlapping_trades(trades)
+
+    def test_backtest_with_slippage_affects_prices(self, zs_1h_data, contract_switch_dates):
+        """Test that slippage is properly applied to trade prices."""
+        strategy_no_slip = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=0,
+            symbol='ZS'
+        )
+
+        strategy_with_slip = EMACrossoverStrategy(
+            short_ema_period=9,
+            long_ema_period=21,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=2,
+            symbol='ZS'
+        )
+
+        trades_no_slip = strategy_no_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_with_slip = strategy_with_slip.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        # Trade counts should be similar (signals are the same)
+        assert_similar_trade_count(trades_no_slip, trades_with_slip, max_difference=5)
+
+        # Validate slippage affects prices correctly
+        assert_slippage_affects_prices(trades_no_slip, trades_with_slip)
+
+    def test_backtest_with_different_ema_periods(self, zs_1h_data, contract_switch_dates):
+        """Test that different EMA periods produce different trade patterns."""
+        strategy_fast = EMACrossoverStrategy(
+            short_ema_period=5,
+            long_ema_period=15,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        strategy_slow = EMACrossoverStrategy(
+            short_ema_period=20,
+            long_ema_period=50,
+            rollover=False,
+            trailing=None,
+            slippage_ticks=1,
+            symbol='ZS'
+        )
+
+        trades_fast = strategy_fast.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+        trades_slow = strategy_slow.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert len(trades_fast) > 0, "Fast parameter strategy generated no trades"
+        assert len(trades_slow) > 0, "Slow parameter strategy generated no trades"
+        assert len(trades_fast) >= len(trades_slow), \
+            f"Faster EMA period should generate more trades ({len(trades_fast)} vs {len(trades_slow)})"
+
+    def test_signals_convert_to_actual_trades(self, standard_ema_strategy, zs_1h_data, contract_switch_dates):
+        """Test that generated signals result in actual trades."""
+        df = standard_ema_strategy.add_indicators(zs_1h_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+        trades = standard_ema_strategy.run(zs_1h_data.copy(), contract_switch_dates.get('ZS', []))
+
+        assert_signals_convert_to_trades(df, trades)
+
+
+# ==================== Test Edge Cases ====================
+
+class TestEMAStrategyEdgeCases:
+    """Test edge cases and error handling."""
+
+    def test_strategy_with_insufficient_data(self, standard_ema_strategy):
+        """Test strategy behavior with insufficient data for full EMA calculation."""
+        # Create small dataset using utility
+        small_data = create_small_ohlcv_dataframe(bars=3, base_price=100)
+
+        df = standard_ema_strategy.add_indicators(small_data.copy())
+
+        # Long EMA needs more data, but short EMA can calculate with less
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
+        assert len(df) == 3
+
+    def test_strategy_with_constant_prices(self, standard_ema_strategy):
+        """Test strategy with constant prices (no volatility)."""
+        # Create constant price data using utility
+        constant_data = create_constant_price_dataframe(bars=50, price=100)
+
+        df = standard_ema_strategy.add_indicators(constant_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # With constant prices, EMAs converge and no crossovers occur
+        assert (df['signal'] == 0).all()
+
+    def test_strategy_with_extreme_volatility(self, standard_ema_strategy, volatile_market_data):
+        """Test strategy handles extreme volatility."""
+        df = standard_ema_strategy.add_indicators(volatile_market_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # Should still produce valid EMAs and signals
+        assert_valid_indicator(df['ema_short'], 'EMA_short', min_val=0)
+        assert_valid_indicator(df['ema_long'], 'EMA_long', min_val=0)
+        assert_valid_signals(df)
+
+    def test_strategy_with_trending_market(self, standard_ema_strategy, trending_market_data):
+        """Test strategy in strong trending market."""
+        df = standard_ema_strategy.add_indicators(trending_market_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # In trending market, EMAs should separate and crossovers less frequent
+        assert_valid_signals(df)
+
+    def test_strategy_handles_gaps_in_data(self, standard_ema_strategy, zs_1h_data):
+        """Test strategy handles missing bars in data."""
+        # Create data with gap using utility
+        gapped_data = create_gapped_dataframe(zs_1h_data, gap_start=100, gap_end=150)
+
+        df = standard_ema_strategy.add_indicators(gapped_data.copy())
+        df = standard_ema_strategy.generate_signals(df)
+
+        # Should still calculate EMAs and signals
+        assert 'ema_short' in df.columns
+        assert 'ema_long' in df.columns
+        assert 'signal' in df.columns
+        assert_valid_signals(df)

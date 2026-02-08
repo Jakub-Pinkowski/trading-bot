@@ -32,10 +32,20 @@ def contract_switch_dates():
     Load contract switch dates from YAML file.
 
     Returns:
-        Dictionary mapping symbols to list of switch dates
+        Dictionary mapping symbols to list of pandas Timestamps
     """
     with open(SWITCH_DATES_FILE_PATH, 'r') as f:
-        return yaml.safe_load(f)
+        dates_dict = yaml.safe_load(f)
+
+    # Convert string dates to pandas Timestamps (skip non-list entries like symbol mappings)
+    for symbol in list(dates_dict.keys()):
+        if isinstance(dates_dict[symbol], list):
+            dates_dict[symbol] = [pd.Timestamp(date) for date in dates_dict[symbol]]
+        else:
+            # Remove non-list entries (e.g., "MCL: CL" mappings)
+            del dates_dict[symbol]
+
+    return dates_dict
 
 
 @pytest.fixture(scope="session")

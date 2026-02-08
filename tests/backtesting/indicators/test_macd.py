@@ -14,7 +14,6 @@ from app.utils.backtesting_utils.indicators_utils import hash_series
 from tests.backtesting.helpers.assertions import assert_indicator_varies
 from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
-    assert_cache_was_hit,
     assert_cache_hit_on_second_call,
     assert_indicator_structure,
     assert_longer_period_smoother,
@@ -383,7 +382,9 @@ class TestMACDCaching:
         macd_2 = _calculate_macd(zs_1h_data['close'], fast_period=12, slow_period=26, signal_period=9)
 
         # Verify cache was hit and results match
-        assert_cache_was_hit(misses_after_first)
+        assert indicator_cache.misses == misses_after_first, \
+            f"Cache misses increased from {misses_after_first} to {indicator_cache.misses}"
+        assert indicator_cache.hits > 0, f"Cache hits should be > 0, got {indicator_cache.hits}"
         assert_cache_hit_on_second_call(macd_1, macd_2, 'dataframe')
 
     def test_cache_distinguishes_different_periods(self, zs_1h_data):

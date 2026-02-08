@@ -91,26 +91,6 @@ def setup_cache_test():
     return indicator_cache.misses
 
 
-def assert_cache_was_hit(misses_after_first_calc):
-    """
-    Assert that cache was hit (misses didn't increase, hits did).
-
-    Args:
-        misses_after_first_calc: Miss count after first calculation (before second call)
-
-    Example:
-        setup_cache_test()
-        result1 = calculate_indicator(...)
-        misses_after_first = indicator_cache.misses
-        result2 = calculate_indicator(...)  # Should hit cache
-        assert_cache_was_hit(misses_after_first)
-    """
-    assert indicator_cache.misses == misses_after_first_calc, \
-        f"Cache misses increased from {misses_after_first_calc} to {indicator_cache.misses} (expected no change)"
-    assert indicator_cache.hits > 0, \
-        f"Cache hits should be > 0, got {indicator_cache.hits}"
-
-
 def assert_different_params_use_different_cache(result1, result2):
     """
     Assert that different parameters produce different results (not cached together).
@@ -241,20 +221,6 @@ def assert_values_in_range(
         raise ValueError(f"Result must be Series or DataFrame, got {type(result)}")
 
 
-def assert_all_positive(result, column=None, indicator_name='Indicator'):
-    """
-    Assert all valid values are positive (> 0).
-
-    Convenience wrapper around assert_values_in_range for common case.
-
-    Example:
-        atr = calculate_atr(data, period=14)
-        assert_all_positive(atr, indicator_name='ATR')
-    """
-    assert_values_in_range(result, min_val=0, column=column,
-                           indicator_name=indicator_name, check_valid_only=True)
-
-
 # ==================== Relationship Validation Utilities ====================
 
 def assert_band_relationships(df, upper_col, middle_col, lower_col, indicator_name='Bands'):
@@ -280,28 +246,6 @@ def assert_band_relationships(df, upper_col, middle_col, lower_col, indicator_na
         f"{indicator_name}: {upper_col} must be >= {middle_col}"
     assert (valid_df[middle_col] >= valid_df[lower_col]).all(), \
         f"{indicator_name}: {middle_col} must be >= {lower_col}"
-
-
-# ==================== Index Validation Utilities ====================
-
-def assert_index_preserved(result, original_index, indicator_name='Indicator'):
-    """
-    Assert indicator preserves the original data's index.
-
-    Args:
-        result: Indicator result
-        original_index: Original data's index
-        indicator_name: Name for error messages
-
-    Example:
-        rsi = calculate_rsi(df['close'], period=14)
-        assert_index_preserved(rsi, df.index, 'RSI')
-    """
-    if isinstance(result, (pd.Series, pd.DataFrame)):
-        assert result.index.equals(original_index), \
-            f"{indicator_name} should preserve original index"
-    else:
-        raise ValueError(f"Result must be Series or DataFrame, got {type(result)}")
 
 
 # ==================== Comparison Utilities ====================
@@ -449,7 +393,3 @@ def assert_cache_distinguishes_different_data(result1, result2, indicator_name='
                 differs = True
                 break
         assert differs, f"{indicator_name}: Different data should produce different results"
-
-    # Note: We don't check len1 != len2 because different datasets can legitimately
-    # have the same length (e.g., two different symbols over the same date range).
-    # The important check is that the results differ, which we validate above.
