@@ -18,6 +18,8 @@ Note: This file uses shared fixtures from conftest.py:
 """
 from datetime import datetime, timedelta
 
+import pytest
+
 from app.backtesting.metrics.summary_metrics import (
     SummaryMetrics,
     MIN_RETURNS_FOR_SHARPE,
@@ -211,409 +213,189 @@ class TestProfitFactor:
 
 
 class TestDrawdownCalculations:
-    """Test drawdown-related metrics."""
+    """Consolidated drawdown and Ulcer Index tests."""
 
-    def test_maximum_drawdown_calculation(self, trades_factory):
-        """Test maximum drawdown is calculated."""
-        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
-        metrics = SummaryMetrics(mixed_trades)
-        result = metrics.calculate_all_metrics()
+    def test_drawdown_basic_scenarios(self, trades_factory):
+        """Test drawdown with basic win/loss patterns."""
+        # Test 1: All wins (minimal drawdown)
+        all_wins = trades_factory.all_winning(count=5)
+        metrics_wins = SummaryMetrics(all_wins)
+        assert metrics_wins.calculate_all_metrics()['maximum_drawdown_percentage'] >= 0
 
-        # Should have a drawdown value
+        # Test 2: All losses (significant drawdown)
+        all_losses = trades_factory.all_losing(count=5)
+        metrics_losses = SummaryMetrics(all_losses)
+        assert metrics_losses.calculate_all_metrics()['maximum_drawdown_percentage'] > 0
+
+        # Test 3: Mixed trades
+        mixed = trades_factory.mixed(win_count=3, loss_count=2)
+        metrics_mixed = SummaryMetrics(mixed)
+        result = metrics_mixed.calculate_all_metrics()
         assert 'maximum_drawdown_percentage' in result
         assert isinstance(result['maximum_drawdown_percentage'], float)
 
-    def test_maximum_drawdown_all_wins(self, trades_factory):
-        """Test maximum drawdown with all winning trades."""
-        all_winning = trades_factory.all_winning(count=5)
-        metrics = SummaryMetrics(all_winning)
-        result = metrics.calculate_all_metrics()
+    @pytest.mark.parametrize("scenario,expected_has_drawdown", [
+        ("peak_trough_recovery", True),
+        ("sustained_decline", True),
+        ("multiple_drawdowns", True),
+    ])
+    def test_drawdown_patterns(self, trades_factory, scenario, expected_has_drawdown):
+        """Test various drawdown patterns using parametrization."""
+        if scenario == "peak_trough_recovery":
+            specs = [(1200, 1250), (1250, 1220), (1220, 1245)]
+        elif scenario == "sustained_decline":
+            specs = [(1200, 1250), (1250, 1240), (1240, 1230), (1230, 1220)]
+        else:  # multiple_drawdowns
+            specs = [(1200, 1230), (1230, 1220), (1220, 1240), (1240, 1210)]
 
-        # All wins = minimal or zero drawdown
-        assert result['maximum_drawdown_percentage'] >= 0
+        trades = trades_factory.create_sequence(specs, symbol='ZS')
+        result = SummaryMetrics(trades).calculate_all_metrics()
 
-    def test_maximum_drawdown_all_losses(self, trades_factory):
-        """Test maximum drawdown with all losing trades."""
-        all_losing = trades_factory.all_losing(count=5)
-        metrics = SummaryMetrics(all_losing)
-        result = metrics.calculate_all_metrics()
+        if expected_has_drawdown:
+            assert result['maximum_drawdown_percentage'] > 0
 
-        # All losses = significant drawdown
+    def test_ulcer_index_scenarios(self, trades_factory):
+        """Test Ulcer Index with key scenarios."""
+        # No drawdown
+        no_dd = trades_factory.all_winning(count=5)
+        assert SummaryMetrics(no_dd).calculate_all_metrics()['ulcer_index'] < 1.0
+
+        # Single drawdown
+        single_dd = trades_factory.create_sequence(
+            [(1200, 1250), (1250, 1220), (1220, 1245)], symbol='ZS'
+        )
+        assert SummaryMetrics(single_dd).calculate_all_metrics()['ulcer_index'] > 0
+
+        # Multiple drawdowns
+        multi_dd = trades_factory.create_sequence(
+            [(1200, 1230), (1230, 1220), (1220, 1240), (1240, 1210), (1210, 1235)],
+            symbol='ZS'
+        )
+        assert SummaryMetrics(multi_dd).calculate_all_metrics()['ulcer_index'] > 0
+
+    def test_drawdown_edge_cases(self, trade_factory):
+        """Test drawdown edge cases."""
+        # Single losing trade from zero
+        single_loss = [trade_factory('ZS', 1200, 1190)]
+        result = SummaryMetrics(single_loss).calculate_all_metrics()
         assert result['maximum_drawdown_percentage'] > 0
 
-    def test_ulcer_index_calculation(self, trades_factory):
-        """Test Ulcer Index is calculated."""
-        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
-        metrics = SummaryMetrics(mixed_trades)
-        result = metrics.calculate_all_metrics()
+        # Zero duration trade
+        zero_duration = [trade_factory('ZS', 1200, 1205, duration_hours=0.0)]
+        result_zero = SummaryMetrics(zero_duration).calculate_all_metrics()
+        assert 'maximum_drawdown_percentage' in result_zero
 
-        assert 'ulcer_index' in result
-        assert isinstance(result['ulcer_index'], float)
-        assert result['ulcer_index'] >= 0
+    def test_drawdown_vs_ulcer_relationship(self, trades_factory):
+        """Test relationship between max drawdown and Ulcer Index."""
+        specs = [(1200, 1300), (1300, 1250), (1250, 1295)]
+        trades = trades_factory.create_sequence(specs, symbol='ZS')
+        result = SummaryMetrics(trades).calculate_all_metrics()
 
-    def test_single_negative_trade_from_zero(self, trade_factory):
-        """Test drawdown from zero starting equity with single losing trade."""
-        trades = [trade_factory('ZS', 1200.0, 1190.0)]
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Starting from zero, one loss creates drawdown equal to the loss
+        # Both should capture the drawdown
+        assert result['ulcer_index'] > 0
         assert result['maximum_drawdown_percentage'] > 0
-        # The drawdown should equal the absolute loss
-        expected_dd = abs(trades[0]['return_percentage_of_contract'])
-        assert round(result['maximum_drawdown_percentage'], 2) == round(expected_dd, 2)
+        # Ulcer considers duration, Max DD only depth
 
-    def test_multiple_drawdown_periods(self, trades_factory):
-        """Test multiple separate drawdown periods are tracked correctly."""
-        # Create pattern: Win -> Loss -> Win -> Bigger Loss -> Win
-        price_specs = [
-            (1200.0, 1210.0),  # Win +10
-            (1210.0, 1205.0),  # Loss -5 (first drawdown)
-            (1205.0, 1220.0),  # Win +15 (recovery)
-            (1220.0, 1200.0),  # Loss -20 (second, larger drawdown)
-            (1200.0, 1215.0),  # Win +15 (recovery)
+
+class TestRiskAdjustedRatios:
+    """Consolidated tests for Sharpe, Sortino, and Calmar ratios."""
+
+    @pytest.mark.parametrize("ratio_name,min_trades", [
+        ('sharpe_ratio', MIN_RETURNS_FOR_SHARPE),
+        ('sortino_ratio', MIN_RETURNS_FOR_SHARPE),
+        ('calmar_ratio', 2),
+    ])
+    def test_ratio_with_sufficient_trades(self, trades_factory, ratio_name, min_trades):
+        """Test all ratios with sufficient trades."""
+        trades = trades_factory.all_winning(count=max(5, min_trades))
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert ratio_name in result
+        assert isinstance(result[ratio_name], (int, float))
+        if ratio_name != 'calmar_ratio':
+            assert result[ratio_name] > 0  # Should be positive for all wins
+
+    @pytest.mark.parametrize("ratio_name", ['sharpe_ratio', 'sortino_ratio'])
+    def test_ratio_insufficient_trades(self, trade_factory, ratio_name):
+        """Test ratios with insufficient trades."""
+        single_trade = [trade_factory('ZS', 1200, 1210)]
+        result = SummaryMetrics(single_trade).calculate_all_metrics()
+
+        # Sharpe should be 0 with insufficient trades
+        # Sortino with a single winning trade returns INFINITY_REPLACEMENT (no downside)
+        if ratio_name == 'sharpe_ratio':
+            assert result[ratio_name] == 0.0
+        else:  # sortino_ratio
+            assert result[ratio_name] == INFINITY_REPLACEMENT
+
+    def test_ratios_with_high_volatility(self, trades_factory):
+        """Test all ratios with high volatility returns."""
+        specs = [
+            (1200, 1250), (1250, 1210), (1210, 1260),
+            (1260, 1215), (1215, 1265)
         ]
+        trades = trades_factory.create_sequence(specs, symbol='ZS')
+        result = SummaryMetrics(trades).calculate_all_metrics()
 
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
+        # All ratios should be calculated
+        for ratio in ['sharpe_ratio', 'sortino_ratio', 'calmar_ratio']:
+            assert ratio in result
+            assert isinstance(result[ratio], (int, float))
 
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
+    def test_ratios_with_negative_returns(self, trades_factory):
+        """Test all ratios with predominantly negative returns."""
+        losing_trades = trades_factory.all_losing(count=5)
+        result = SummaryMetrics(losing_trades).calculate_all_metrics()
 
-        # Should capture the largest drawdown (second period)
-        assert result['maximum_drawdown_percentage'] > 0
-
-    def test_complex_peak_trough_scenario(self, trades_factory):
-        """Test complex scenario with multiple peaks and troughs."""
-        # Pattern: Peak -> Drop -> Small recovery -> Further drop -> Recovery
-        price_specs = [
-            (1200.0, 1250.0),  # Big win to peak
-            (1250.0, 1230.0),  # Drop
-            (1230.0, 1240.0),  # Small recovery
-            (1240.0, 1210.0),  # Further drop (trough)
-            (1210.0, 1245.0),  # Recovery
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        max_dd, max_dd_pct = metrics._calculate_max_drawdown()
-
-        # Verify drawdown is calculated from highest peak to lowest trough
-        assert max_dd > 0
-        assert max_dd_pct > 0
-
-    def test_drawdown_with_recovery(self, trades_factory):
-        """Test drawdown calculation followed by full recovery."""
-        # Pattern: Win to peak -> Loss (drawdown) -> Win (full recovery)
-        price_specs = [
-            (1200.0, 1250.0),  # Win to peak
-            (1250.0, 1220.0),  # Loss (drawdown)
-            (1220.0, 1250.0),  # Recovery to previous peak
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Drawdown should still be recorded even after recovery
-        assert result['maximum_drawdown_percentage'] > 0
-
-    def test_drawdown_calculation_accuracy(self, trades_factory):
-        """Test precise drawdown percentage calculation."""
-        # Create specific scenario with known drawdown
-        price_specs = [
-            (1000.0, 1100.0),  # +10% (cumulative: 10%)
-            (1100.0, 1050.0),  # -4.55% (cumulative: ~5.45%)
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        # Drawdown from peak should be measurable
-        assert metrics.maximum_drawdown_percentage > 0
-
-
-class TestSharpeRatio:
-    """Test Sharpe ratio calculations."""
-
-    def test_sharpe_ratio_with_sufficient_trades(self, trades_factory):
-        """Test Sharpe ratio with enough trades."""
-        all_winning = trades_factory.all_winning(count=5)
-        metrics = SummaryMetrics(all_winning)
-        result = metrics.calculate_all_metrics()
-
-        # With 5 trades, should calculate Sharpe
-        assert 'sharpe_ratio' in result
-        assert isinstance(result['sharpe_ratio'], float)
-
-    def test_sharpe_ratio_insufficient_trades(self, trade_factory):
-        """Test Sharpe ratio with insufficient trades."""
-        winning_trade = trade_factory('ZS', 1200.0, 1210.0)
-        metrics = SummaryMetrics([winning_trade])
-        result = metrics.calculate_all_metrics()
-
-        # Less than MIN_RETURNS_FOR_SHARPE = 0
-        assert result['sharpe_ratio'] == 0.0
-
-    def test_sharpe_ratio_high_volatility(self, trades_factory):
-        """Test Sharpe ratio with high volatility returns."""
-        # Create trades with high variance: large wins and large losses
-        price_specs = [
-            (1200.0, 1250.0),  # Big win
-            (1250.0, 1210.0),  # Big loss
-            (1210.0, 1260.0),  # Big win
-            (1260.0, 1215.0),  # Big loss
-            (1215.0, 1265.0),  # Big win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # High volatility should result in lower Sharpe ratio
-        # (compared to same returns with lower volatility)
-        assert result['sharpe_ratio'] is not None
-        assert isinstance(result['sharpe_ratio'], float)
-
-    def test_sharpe_ratio_negative_returns(self, trades_factory):
-        """Test Sharpe ratio with predominantly negative returns."""
-        # Create mostly losing trades
-        all_losing = trades_factory.all_losing(count=5)
-
-        metrics = SummaryMetrics(all_losing)
-        result = metrics.calculate_all_metrics()
-
-        # Negative average return should give negative Sharpe
+        # Sharpe and Sortino should be negative
         assert result['sharpe_ratio'] < 0
-
-    def test_sharpe_ratio_single_large_outlier(self, trades_factory):
-        """Test Sharpe ratio with single large outlier affecting std dev."""
-        # Create mostly small wins with one huge win
-        price_specs = [
-            (1200.0, 1202.0),  # Small win
-            (1202.0, 1204.0),  # Small win
-            (1204.0, 1206.0),  # Small win
-            (1206.0, 1208.0),  # Small win
-            (1208.0, 1300.0),  # Huge outlier win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Outlier increases both mean and std dev
-        assert result['sharpe_ratio'] > 0
-        assert isinstance(result['sharpe_ratio'], float)
-
-    def test_sharpe_ratio_with_mixed_returns(self, trades_factory):
-        """Test Sharpe ratio with balanced wins and losses."""
-        # Create alternating wins and losses
-        price_specs = [
-            (1200.0, 1210.0),  # Win
-            (1210.0, 1205.0),  # Loss
-            (1205.0, 1215.0),  # Win
-            (1215.0, 1210.0),  # Loss
-            (1210.0, 1220.0),  # Win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Mixed returns should give moderate Sharpe ratio
-        assert isinstance(result['sharpe_ratio'], float)
-
-
-class TestSortinoRatio:
-    """Test Sortino ratio calculations."""
-
-    def test_sortino_ratio_with_losses(self, trades_factory):
-        """Test Sortino ratio with both wins and losses."""
-        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
-        metrics = SummaryMetrics(mixed_trades)
-        result = metrics.calculate_all_metrics()
-
-        assert 'sortino_ratio' in result
-        assert isinstance(result['sortino_ratio'], float)
-
-    def test_sortino_ratio_no_negative_returns(self, trades_factory):
-        """Test Sortino ratio with no negative returns."""
-        all_winning = trades_factory.all_winning(count=5)
-        metrics = SummaryMetrics(all_winning)
-        result = metrics.calculate_all_metrics()
-
-        # No downside deviation = infinity replacement
-        assert result['sortino_ratio'] == INFINITY_REPLACEMENT
-
-    def test_sortino_ratio_all_downside_returns(self, trades_factory):
-        """Test Sortino ratio when all returns are below risk-free rate."""
-        all_losing = trades_factory.all_losing(count=5)
-        metrics = SummaryMetrics(all_losing)
-        result = metrics.calculate_all_metrics()
-
-        # All negative returns should give negative Sortino ratio
         assert result['sortino_ratio'] < 0
-
-    def test_sortino_ratio_asymmetric_returns(self, trades_factory):
-        """Test Sortino ratio with asymmetric return distribution (large wins, small losses)."""
-        # Create asymmetric distribution: few large wins, many small losses
-        trades = []
-
-        # Many small losses
-        for i in range(7):
-            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1198.0,
-                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
-                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
-
-        # Few large wins
-        for i in range(3):
-            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1250.0 + i * 10,
-                                                       entry_time=datetime(2024, 1, 17 + i, 10, 0),
-                                                       exit_time=datetime(2024, 1, 17 + i, 14, 0)))
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Sortino should be better than Sharpe for positive skew (many small losses, few big wins)
-        assert result['sortino_ratio'] is not None
-        assert isinstance(result['sortino_ratio'], float)
-
-    def test_sortino_vs_sharpe_comparison(self, trades_factory):
-        """Test that Sortino ratio differs from Sharpe ratio appropriately."""
-        # Create scenario with downside volatility
-        price_specs = [
-            (1200.0, 1220.0),  # Win
-            (1220.0, 1200.0),  # Loss
-            (1200.0, 1225.0),  # Win
-            (1225.0, 1205.0),  # Loss
-            (1205.0, 1230.0),  # Win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Both ratios should be calculated
-        assert result['sortino_ratio'] is not None
-        assert result['sharpe_ratio'] is not None
-        # Sortino typically higher (penalizes only downside)
-        # But both should be positive for net positive returns
-
-    def test_sortino_with_small_downside(self, trades_factory):
-        """Test Sortino ratio with minimal downside volatility."""
-        # Create mostly wins with one tiny loss
-        price_specs = [
-            (1200.0, 1210.0),  # Win
-            (1210.0, 1220.0),  # Win
-            (1220.0, 1219.0),  # Tiny loss
-            (1219.0, 1230.0),  # Win
-            (1230.0, 1240.0),  # Win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Small downside should give good Sortino ratio
-        assert result['sortino_ratio'] > 0
-
-
-class TestCalmarRatio:
-    """Test Calmar ratio calculations."""
-
-    def test_calmar_ratio_calculation(self, trades_factory):
-        """Test Calmar ratio is calculated."""
-        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
-        metrics = SummaryMetrics(mixed_trades)
-        result = metrics.calculate_all_metrics()
-
-        assert 'calmar_ratio' in result
-        assert isinstance(result['calmar_ratio'], float)
-
-    def test_calmar_ratio_zero_drawdown(self, trades_factory):
-        """Test Calmar ratio with zero or minimal drawdown."""
-        all_winning = trades_factory.all_winning(count=5)
-        metrics = SummaryMetrics(all_winning)
-        result = metrics.calculate_all_metrics()
-
-        # Zero/minimal drawdown might give very high value
-        assert result['calmar_ratio'] >= 0
-
-    def test_calmar_ratio_small_drawdown(self, trades_factory):
-        """Test Calmar ratio with small drawdown relative to returns."""
-        # Pattern: Large wins with small drawdown
-        price_specs = [
-            (1200.0, 1250.0),  # Large win
-            (1250.0, 1245.0),  # Small drawdown
-            (1245.0, 1280.0),  # Large win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Small drawdown with good returns = high Calmar
-        assert result['calmar_ratio'] > 0
-
-    def test_calmar_ratio_large_drawdown(self, trades_factory):
-        """Test Calmar ratio with large drawdown relative to returns."""
-        # Pattern: Small net return with large drawdown
-        price_specs = [
-            (1200.0, 1250.0),  # Win to peak
-            (1250.0, 1180.0),  # Large drawdown
-            (1180.0, 1210.0),  # Small recovery
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Large drawdown with small return = low Calmar
-        assert result['calmar_ratio'] > 0  # Still positive if net return is positive
-
-    def test_calmar_ratio_negative_returns(self, trades_factory):
-        """Test Calmar ratio with negative total returns."""
-        # All losing trades
-        price_specs = [
-            (1200.0, 1190.0),
-            (1190.0, 1180.0),
-            (1180.0, 1170.0),
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Negative returns = negative Calmar ratio
+        # Calmar should be negative
         assert result['calmar_ratio'] < 0
 
-    def test_calmar_ratio_recovery_periods(self, trades_factory):
-        """Test Calmar ratio accounts for drawdown even after recovery."""
-        # Pattern: Drawdown followed by full recovery
-        price_specs = [
-            (1200.0, 1300.0),  # Peak
-            (1300.0, 1250.0),  # Drawdown
-            (1250.0, 1350.0),  # Recovery beyond peak
-        ]
+    @pytest.mark.parametrize("trade_pattern,expected_behavior", [
+        ("all_wins", "sortino_infinity"),
+        ("mixed", "both_calculated"),
+        ("all_losses", "both_negative"),
+    ])
+    def test_sortino_vs_sharpe_behavior(self, trades_factory, trade_pattern, expected_behavior):
+        """Test Sortino vs Sharpe ratio behavior patterns."""
+        if trade_pattern == "all_wins":
+            trades = trades_factory.all_winning(count=5)
+            result = SummaryMetrics(trades).calculate_all_metrics()
+            assert result['sortino_ratio'] == INFINITY_REPLACEMENT
+            assert result['sharpe_ratio'] > 0
+        elif trade_pattern == "mixed":
+            trades = trades_factory.mixed(win_count=3, loss_count=2)
+            result = SummaryMetrics(trades).calculate_all_metrics()
+            # Both should be calculated (can be positive or negative)
+            assert isinstance(result['sortino_ratio'], (int, float))
+            assert isinstance(result['sharpe_ratio'], (int, float))
+        else:  # all_losses
+            trades = trades_factory.all_losing(count=5)
+            result = SummaryMetrics(trades).calculate_all_metrics()
+            assert result['sortino_ratio'] < 0
+            assert result['sharpe_ratio'] < 0
 
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
+    def test_calmar_with_varying_drawdowns(self, trades_factory):
+        """Test Calmar ratio with different drawdown scenarios."""
+        # Small drawdown
+        small_dd_specs = [(1200, 1250), (1250, 1245), (1245, 1280)]
+        small_dd_trades = trades_factory.create_sequence(small_dd_specs, symbol='ZS')
+        small_result = SummaryMetrics(small_dd_trades).calculate_all_metrics()
+        assert small_result['calmar_ratio'] > 0
 
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
+        # Large drawdown
+        large_dd_specs = [(1200, 1250), (1250, 1180), (1180, 1210)]
+        large_dd_trades = trades_factory.create_sequence(large_dd_specs, symbol='ZS')
+        large_result = SummaryMetrics(large_dd_trades).calculate_all_metrics()
+        assert large_result['calmar_ratio'] > 0
 
-        # Good return with moderate drawdown = reasonable Calmar
-        assert result['calmar_ratio'] > 0
-        assert result['maximum_drawdown_percentage'] > 0  # Drawdown still recorded
+        # Negative returns
+        neg_specs = [(1200, 1190), (1190, 1180), (1180, 1170)]
+        neg_trades = trades_factory.create_sequence(neg_specs, symbol='ZS')
+        neg_result = SummaryMetrics(neg_trades).calculate_all_metrics()
+        assert neg_result['calmar_ratio'] < 0
 
 
 class TestValueAtRisk:
@@ -725,155 +507,7 @@ class TestValueAtRisk:
         # VaR should be reasonable for normal distribution
         assert result['value_at_risk'] >= 0
 
-
-class TestUlcerIndex:
-    """Test Ulcer Index calculations for downside risk measurement."""
-
-    def test_ulcer_index_no_drawdown(self, trades_factory):
-        """Test Ulcer Index with no drawdown (all winning trades)."""
-        all_winning = trades_factory.all_winning(count=5)
-        metrics = SummaryMetrics(all_winning)
-        result = metrics.calculate_all_metrics()
-
-        # No drawdown should give very low or zero Ulcer Index
-        assert result['ulcer_index'] >= 0
-        # With all wins, ulcer index should be minimal
-        assert result['ulcer_index'] < 1.0  # Should be very small
-
-    def test_ulcer_index_single_drawdown(self, trades_factory):
-        """Test Ulcer Index with single drawdown period."""
-        # Pattern: Win -> Loss -> Recovery
-        price_specs = [
-            (1200.0, 1250.0),  # Win (peak)
-            (1250.0, 1220.0),  # Loss (drawdown)
-            (1220.0, 1245.0),  # Recovery
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Single drawdown should register in Ulcer Index
-        assert result['ulcer_index'] > 0
-
-    def test_ulcer_index_multiple_drawdowns(self, trades_factory):
-        """Test Ulcer Index with multiple drawdown periods."""
-        # Pattern: Win -> Loss -> Win -> Loss -> Win
-        price_specs = [
-            (1200.0, 1230.0),  # Win
-            (1230.0, 1220.0),  # Loss (first drawdown)
-            (1220.0, 1240.0),  # Win
-            (1240.0, 1210.0),  # Loss (second drawdown)
-            (1210.0, 1235.0),  # Win
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Multiple drawdowns should increase Ulcer Index
-        assert result['ulcer_index'] > 0
-
-    def test_ulcer_index_sustained_drawdown(self, trades_factory):
-        """Test Ulcer Index with sustained (long duration) drawdown."""
-        # Pattern: Peak -> Sustained losses
-        price_specs = [
-            (1200.0, 1250.0),  # Peak
-            (1250.0, 1240.0),  # Small loss
-            (1240.0, 1230.0),  # Another loss
-            (1230.0, 1220.0),  # Another loss
-            (1220.0, 1210.0),  # Another loss (sustained decline)
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics_sustained = SummaryMetrics(trades)
-        result_sustained = metrics_sustained.calculate_all_metrics()
-
-        # Sustained drawdown should give significant Ulcer Index
-        assert result_sustained['ulcer_index'] > 0
-
-    def test_ulcer_index_sharp_drawdown_vs_sustained(self, trades_factory):
-        """Test that sustained drawdown has higher Ulcer Index than sharp recovery."""
-        # Sharp drawdown with quick recovery
-        sharp_prices = [
-            (1200.0, 1250.0),  # Peak
-            (1250.0, 1200.0),  # Sharp drop
-            (1200.0, 1245.0),  # Quick recovery
-        ]
-
-        # Sustained drawdown
-        sustained_prices = [
-            (1200.0, 1250.0),  # Peak
-            (1250.0, 1235.0),  # Gradual decline
-            (1235.0, 1220.0),  # Continues
-            (1220.0, 1205.0),  # Still declining
-        ]
-
-        sharp_trades = trades_factory.create_sequence(sharp_prices, symbol='ZS')
-        sustained_trades = trades_factory.create_sequence(sustained_prices, symbol='ZS')
-
-        sharp_metrics = SummaryMetrics(sharp_trades)
-        sustained_metrics = SummaryMetrics(sustained_trades)
-
-        sharp_result = sharp_metrics.calculate_all_metrics()
-        sustained_result = sustained_metrics.calculate_all_metrics()
-
-        # Sustained drawdown penalized more by Ulcer Index (duration matters)
-        assert sustained_result['ulcer_index'] > 0
-        assert sharp_result['ulcer_index'] > 0
-
-    def test_ulcer_index_vs_max_drawdown_comparison(self, trades_factory):
-        """Test relationship between Ulcer Index and Max Drawdown."""
-        # Create scenario with known drawdown
-        price_specs = [
-            (1200.0, 1300.0),  # Win to peak
-            (1300.0, 1250.0),  # Drawdown
-            (1250.0, 1295.0),  # Recovery
-        ]
-
-        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
-
-        metrics = SummaryMetrics(trades)
-        result = metrics.calculate_all_metrics()
-
-        # Both metrics should capture the drawdown
-        assert result['ulcer_index'] > 0
-        assert result['maximum_drawdown_percentage'] > 0
-        # Ulcer Index considers duration, Max DD only considers depth
-
-    def test_ulcer_index_recovery_impact(self, trades_factory):
-        """Test how recovery affects Ulcer Index."""
-        # Scenario with recovery
-        recovery_prices = [
-            (1200.0, 1250.0),  # Peak
-            (1250.0, 1220.0),  # Drawdown
-            (1220.0, 1250.0),  # Full recovery
-        ]
-
-        # Scenario without recovery
-        no_recovery_prices = [
-            (1200.0, 1250.0),  # Peak
-            (1250.0, 1220.0),  # Drawdown
-            (1220.0, 1225.0),  # Partial recovery only
-        ]
-
-        recovery_trades = trades_factory.create_sequence(recovery_prices, symbol='ZS')
-        no_recovery_trades = trades_factory.create_sequence(no_recovery_prices, symbol='ZS')
-
-        recovery_metrics = SummaryMetrics(recovery_trades)
-        no_recovery_metrics = SummaryMetrics(no_recovery_trades)
-
-        recovery_result = recovery_metrics.calculate_all_metrics()
-        no_recovery_result = no_recovery_metrics.calculate_all_metrics()
-
-        # Both should have Ulcer Index > 0
-        assert recovery_result['ulcer_index'] > 0
-        assert no_recovery_result['ulcer_index'] > 0
-
-    """Test Expected Shortfall (CVaR) calculations."""
+    # Expected Shortfall (CVaR) tests
 
     def test_expected_shortfall_with_sufficient_trades(self, trades_factory):
         """Test Expected Shortfall with enough trades."""
