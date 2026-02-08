@@ -571,7 +571,9 @@ class TestEdgeCases:
 
         # Weighted win rate should handle NaN
         win_rate_result = calculate_weighted_win_rate(df, grouped)
-        assert pd.isna(win_rate_result['A']) or win_rate_result['A'] == 0.0
+        # Check if NaN or zero (avoid ambiguous truth value)
+        result_value = win_rate_result['A']
+        assert pd.isna(result_value) or (not pd.isna(result_value) and result_value == 0.0)
 
     def test_calculations_with_zero_trades(self):
         """Test calculations when total_trades is zero."""
@@ -581,7 +583,6 @@ class TestEdgeCases:
         ])
 
         grouped = df.groupby('strategy')
-        total_trades = grouped['total_trades'].sum()
 
         # Division by zero should result in inf or nan
         result = calculate_weighted_win_rate(df, grouped)
@@ -696,7 +697,6 @@ class TestIntegrationScenarios:
 
         # All calculations should work on the same data
         grouped = df.groupby('strategy')
-        total_trades = grouped['total_trades'].sum()
 
         win_rate = calculate_weighted_win_rate(df, grouped)
         avg_return = calculate_average_trade_return(
@@ -707,6 +707,6 @@ class TestIntegrationScenarios:
         )
 
         # All should return valid results
-        assert not pd.isna(win_rate['A'])
-        assert not pd.isna(avg_return.iloc[0])
-        assert not pd.isna(profit_ratio.iloc[0])
+        assert pd.notna(win_rate['A'])
+        assert pd.notna(avg_return.iloc[0])
+        assert pd.notna(profit_ratio.iloc[0])

@@ -58,7 +58,7 @@ def analyzer_with_data(base_strategy_results, monkeypatch):
     # Mock pd.read_parquet to return our test data
     monkeypatch.setattr(
         'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
-        lambda *args, **kwargs: base_strategy_results
+        lambda *_args, **_kwargs: base_strategy_results
     )
     return StrategyAnalyzer()
 
@@ -84,7 +84,7 @@ class TestStrategyAnalyzerInitialization:
         """Test initialization with custom data file."""
         monkeypatch.setattr(
             'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
-            lambda *args, **kwargs: base_strategy_results
+            lambda *_args, **_kwargs: base_strategy_results
         )
         analyzer = StrategyAnalyzer()
 
@@ -94,7 +94,7 @@ class TestStrategyAnalyzerInitialization:
     def test_load_results_with_missing_file(self, monkeypatch):
         """Test error handling when results file doesn't exist."""
 
-        def raise_file_not_found(*args, **kwargs):
+        def raise_file_not_found(*_args, **_kwargs):
             raise FileNotFoundError("File not found")
 
         monkeypatch.setattr(
@@ -104,7 +104,7 @@ class TestStrategyAnalyzerInitialization:
 
         # Should raise exception during initialization
         with pytest.raises(Exception):
-            analyzer = StrategyAnalyzer()
+            StrategyAnalyzer()
 
     def test_results_dataframe_has_required_columns(self, analyzer_with_data):
         """Test that loaded results have all required columns."""
@@ -421,7 +421,7 @@ class TestCSVExport:
         # Mock the BACKTESTING_DIR to use temp directory
         monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-        result = analyzer_with_data.get_top_strategies(
+        analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=5,
@@ -492,7 +492,7 @@ class TestEdgeCases:
     def test_empty_results_raises_error(self, monkeypatch):
         """Test that calling get_top_strategies with no data raises error."""
         # Mock _load_results to do nothing
-        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda self, file_path: None)
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
 
         analyzer = StrategyAnalyzer()
         analyzer.results_df = None
@@ -507,7 +507,7 @@ class TestEdgeCases:
     def test_empty_dataframe_raises_error(self, monkeypatch):
         """Test that empty DataFrame raises error."""
         # Mock _load_results to do nothing
-        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda self, file_path: None)
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
 
         analyzer = StrategyAnalyzer()
         analyzer.results_df = pd.DataFrame()  # Empty DataFrame
