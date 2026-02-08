@@ -71,54 +71,27 @@ def sample_row():
 class TestContractSwitchHandlerInitialization:
     """Test ContractSwitchHandler initialization."""
 
-    def test_initialization_without_rollover(self):
-        """Test handler initializes without rollover enabled."""
-        switch_dates = [pd.Timestamp('2025-03-01'), pd.Timestamp('2025-06-01')]
-        handler = ContractSwitchHandler(switch_dates=switch_dates, rollover=False)
+    @pytest.mark.parametrize("switch_dates,rollover,expected_dates,expected_rollover", [
+        (
+                [pd.Timestamp('2025-03-01'), pd.Timestamp('2025-06-01')], False,
+                [pd.Timestamp('2025-03-01'), pd.Timestamp('2025-06-01')], False
+        ),
+        ([pd.Timestamp('2025-03-01')], True, [pd.Timestamp('2025-03-01')], True),
+        ([], False, [], False),
+        (None, False, None, False),
+    ])
+    def test_initialization_with_various_configs(
+        self, switch_dates, rollover, expected_dates, expected_rollover
+    ):
+        """Test handler initializes correctly with various configurations."""
+        handler = ContractSwitchHandler(switch_dates=switch_dates, rollover=rollover)
 
-        assert handler.switch_dates == switch_dates
-        assert handler.rollover is False
+        assert handler.switch_dates == expected_dates
+        assert handler.rollover == expected_rollover
         assert handler.next_switch_idx == 0
         assert handler.next_switch is None  # Not set until set_switch_dates() or reset()
         assert handler.must_reopen is None
         assert handler.skip_signal_this_bar is False
-
-    def test_initialization_with_rollover(self):
-        """Test handler initializes with rollover enabled."""
-        switch_dates = [pd.Timestamp('2025-03-01')]
-        handler = ContractSwitchHandler(switch_dates=switch_dates, rollover=True)
-
-        assert handler.rollover is True
-        assert handler.next_switch is None  # Not set until set_switch_dates() or reset()
-
-    def test_initialization_with_empty_switch_dates(self):
-        """Test handler initializes with empty switch dates."""
-        handler = ContractSwitchHandler(switch_dates=[], rollover=False)
-
-        assert handler.switch_dates == []
-        assert handler.next_switch is None
-
-    def test_initialization_with_none_switch_dates(self):
-        """Test handler initializes with None switch dates."""
-        handler = ContractSwitchHandler(switch_dates=None, rollover=False)
-
-        assert handler.switch_dates is None
-        assert handler.next_switch is None
-
-    def test_initialization_with_multiple_switch_dates(self):
-        """Test handler initializes with multiple switch dates."""
-        switch_dates = [
-            pd.Timestamp('2025-03-01'),
-            pd.Timestamp('2025-06-01'),
-            pd.Timestamp('2025-09-01'),
-            pd.Timestamp('2025-12-01')
-        ]
-        handler = ContractSwitchHandler(switch_dates=switch_dates, rollover=False)
-
-        assert len(handler.switch_dates) == 4
-        # Must call set_switch_dates() or reset() to initialize next_switch
-        handler.set_switch_dates(switch_dates)
-        assert handler.next_switch == switch_dates[0]
 
 
 class TestSetSwitchDates:

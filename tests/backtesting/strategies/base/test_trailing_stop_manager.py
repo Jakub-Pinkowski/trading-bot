@@ -51,28 +51,21 @@ def sample_timestamp():
 class TestTrailingStopManagerInitialization:
     """Test TrailingStopManager initialization."""
 
-    def test_initialization_with_percentage(self):
-        """Test trailing stop manager initializes with percentage."""
-        tsm = TrailingStopManager(trailing_percentage=3.0)
+    @pytest.mark.parametrize("trailing_percentage,callback", [
+        (3.0, None),
+        (5.0, lambda pos, price: None),
+        (1.0, None),
+        (10.0, None),
+    ])
+    def test_initialization_with_various_configs(self, trailing_percentage, callback):
+        """Test trailing stop manager initializes correctly with various configurations."""
+        tsm = TrailingStopManager(
+            trailing_percentage=trailing_percentage,
+            on_stop_triggered=callback
+        )
 
-        assert tsm.trailing_percentage == 3.0
-        assert tsm.on_stop_triggered is None
-
-    def test_initialization_with_callback(self):
-        """Test trailing stop manager initializes with callback."""
-        callback = lambda pos, price: None
-        tsm = TrailingStopManager(trailing_percentage=5.0, on_stop_triggered=callback)
-
-        assert tsm.trailing_percentage == 5.0
+        assert tsm.trailing_percentage == trailing_percentage
         assert tsm.on_stop_triggered == callback
-
-    def test_initialization_different_percentages(self):
-        """Test initialization with various percentages."""
-        percentages = [1.0, 2.5, 5.0, 10.0, 15.0]
-
-        for pct in percentages:
-            tsm = TrailingStopManager(trailing_percentage=pct)
-            assert tsm.trailing_percentage == pct
 
 
 class TestTrailingStopCalculation:

@@ -73,55 +73,28 @@ def sample_row():
 class TestPositionManagerInitialization:
     """Test PositionManager initialization and configuration."""
 
-    def test_initialization_with_basic_parameters(self):
-        """Test position manager initializes with basic parameters."""
+    @pytest.mark.parametrize("slippage_ticks,symbol,trailing", [
+        (2, 'CL', None),
+        (1, 'ES', 3.0),
+        (0, 'ZS', None),
+        (1, 'GC', 2.0),
+    ])
+    def test_initialization_with_various_configs(self, slippage_ticks, symbol, trailing):
+        """Test position manager initializes correctly with various configurations."""
         pm = PositionManager(
-            slippage_ticks=2,
-            symbol='CL',
-            trailing=None
+            slippage_ticks=slippage_ticks,
+            symbol=symbol,
+            trailing=trailing
         )
 
-        assert pm.slippage_ticks == 2
-        assert pm.symbol == 'CL'
-        assert pm.trailing is None
+        assert pm.slippage_ticks == slippage_ticks
+        assert pm.symbol == symbol
+        assert pm.trailing == trailing
         assert pm.position is None
         assert pm.entry_time is None
         assert pm.entry_price is None
         assert pm.trailing_stop is None
         assert pm.trades == []
-
-    def test_initialization_with_trailing_stop(self):
-        """Test position manager initializes with trailing stop enabled."""
-        pm = PositionManager(
-            slippage_ticks=1,
-            symbol='ES',
-            trailing=3.0
-        )
-
-        assert pm.trailing == 3.0
-        assert pm.trailing_stop is None  # Not set until position opened
-
-    def test_initialization_with_zero_slippage(self):
-        """Test position manager initializes with zero slippage."""
-        pm = PositionManager(
-            slippage_ticks=0,
-            symbol='ZS',
-            trailing=None
-        )
-
-        assert pm.slippage_ticks == 0
-
-    def test_initialization_different_symbols(self):
-        """Test position manager works with different symbols."""
-        symbols = ['ZS', 'CL', 'ES', 'GC', 'NQ']
-
-        for symbol in symbols:
-            pm = PositionManager(
-                slippage_ticks=1,
-                symbol=symbol,
-                trailing=None
-            )
-            assert pm.symbol == symbol
 
 
 class TestStateManagement:

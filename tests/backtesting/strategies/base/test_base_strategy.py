@@ -102,63 +102,38 @@ def sample_ohlcv_data():
 class TestBaseStrategyInitialization:
     """Test BaseStrategy initialization and configuration."""
 
-    def test_initialization_with_default_parameters(self):
-        """Test strategy initializes with default parameters."""
+    @pytest.mark.parametrize("rollover,trailing,slippage_ticks,symbol", [
+        (False, None, 0, 'ZS'),
+        (False, 2.0, 1, 'ZS'),
+        (True, None, 1, 'CL'),
+        (True, 3.0, 2, 'ES'),
+    ])
+    def test_initialization_with_various_configs(
+        self, rollover, trailing, slippage_ticks, symbol
+    ):
+        """Test strategy initializes correctly with various configurations."""
         strategy = ConcreteTestStrategy(
-            rollover=False,
-            trailing=None,
-            slippage_ticks=0,
-            symbol='ZS'
+            rollover=rollover,
+            trailing=trailing,
+            slippage_ticks=slippage_ticks,
+            symbol=symbol
         )
 
-        assert strategy.rollover == False
-        assert strategy.trailing is None
-        assert strategy.position_manager.slippage_ticks == 0
+        assert strategy.rollover == rollover
+        assert strategy.trailing == trailing
+        assert strategy.position_manager.slippage_ticks == slippage_ticks
+        assert strategy.position_manager.symbol == symbol
         assert strategy.position_manager is not None
         assert strategy.switch_handler is not None
         assert strategy.prev_row is None
         assert strategy.prev_time is None
         assert strategy.queued_signal is None
 
-    def test_initialization_with_trailing_stop(self):
-        """Test strategy initializes with trailing stop enabled."""
-        strategy = ConcreteTestStrategy(
-            rollover=False,
-            trailing=2.0,
-            slippage_ticks=1,
-            symbol='ZS'
-        )
-
-        assert strategy.trailing == 2.0
-        assert strategy.trailing_stop_manager is not None
-
-    def test_initialization_with_rollover(self):
-        """Test strategy initializes with rollover enabled."""
-        strategy = ConcreteTestStrategy(
-            rollover=True,
-            trailing=None,
-            slippage_ticks=1,
-            symbol='CL'
-        )
-
-        assert strategy.rollover is True
-        assert strategy.switch_handler is not None
-
-    def test_initialization_with_all_parameters(self):
-        """Test strategy initializes with all parameters enabled."""
-        strategy = ConcreteTestStrategy(
-            rollover=True,
-            trailing=3.0,
-            slippage_ticks=2,
-            symbol='ES'
-        )
-
-        assert strategy.rollover is True
-        assert strategy.trailing == 3.0
-        assert strategy.position_manager.slippage_ticks == 2
-        assert strategy.position_manager.symbol == 'ES'
-        assert strategy.trailing_stop_manager is not None
-        assert strategy.switch_handler is not None
+        # Verify trailing stop manager when enabled
+        if trailing is not None:
+            assert strategy.trailing_stop_manager is not None
+        else:
+            assert strategy.trailing_stop_manager is None
 
 
 class TestAbstractMethods:
