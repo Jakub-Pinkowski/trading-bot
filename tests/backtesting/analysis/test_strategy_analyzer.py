@@ -13,198 +13,54 @@ Test Coverage:
 - CSV export functionality
 - Edge cases and error handling
 """
-import os
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
 from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer
-from config import BACKTESTING_DIR
 
 
 # ==================== Fixtures ====================
+# Note: Core fixtures (base_strategy_results, real_results_file) are in conftest.py
 
 @pytest.fixture
-def sample_results_df():
-    """
-    Create sample backtest results DataFrame for testing.
-
-    Mirrors structure of real mass_test_results_all.parquet with various scenarios:
-    - Multiple symbols (ZS, CL, ES)
-    - Multiple intervals (1h, 4h, 1d)
-    - Multiple strategies with different performance characteristics
-    - Various trade counts and metrics
-
-    Returns:
-        DataFrame with 12 rows representing different strategy/symbol/interval combinations
-    """
-    return pd.DataFrame([
-        # High-performing strategy across multiple symbols
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'TopStrategy',
-         'total_trades': 100, 'win_rate': 65.0, 'average_trade_duration_hours': 4.5,
-         'total_wins_percentage_of_contract': 150.0, 'total_losses_percentage_of_contract': 50.0,
-         'total_return_percentage_of_contract': 100.0, 'average_trade_return_percentage_of_contract': 1.0,
-         'average_win_percentage_of_contract': 2.5, 'average_loss_percentage_of_contract': -1.5,
-         'profit_factor': 3.0, 'maximum_drawdown_percentage': 10.0, 'sharpe_ratio': 2.5,
-         'sortino_ratio': 3.0, 'calmar_ratio': 10.0, 'value_at_risk': 5.0,
-         'expected_shortfall': 7.0, 'ulcer_index': 3.0},
-
-        {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'TopStrategy',
-         'total_trades': 80, 'win_rate': 60.0, 'average_trade_duration_hours': 4.0,
-         'total_wins_percentage_of_contract': 120.0, 'total_losses_percentage_of_contract': 40.0,
-         'total_return_percentage_of_contract': 80.0, 'average_trade_return_percentage_of_contract': 1.0,
-         'average_win_percentage_of_contract': 2.5, 'average_loss_percentage_of_contract': -1.0,
-         'profit_factor': 3.0, 'maximum_drawdown_percentage': 12.0, 'sharpe_ratio': 2.0,
-         'sortino_ratio': 2.5, 'calmar_ratio': 6.67, 'value_at_risk': 6.0,
-         'expected_shortfall': 8.0, 'ulcer_index': 4.0},
-
-        {'month': '1!', 'symbol': 'ES', 'interval': '4h', 'strategy': 'TopStrategy',
-         'total_trades': 50, 'win_rate': 70.0, 'average_trade_duration_hours': 8.0,
-         'total_wins_percentage_of_contract': 105.0, 'total_losses_percentage_of_contract': 15.0,
-         'total_return_percentage_of_contract': 90.0, 'average_trade_return_percentage_of_contract': 1.8,
-         'average_win_percentage_of_contract': 3.0, 'average_loss_percentage_of_contract': -1.0,
-         'profit_factor': 7.0, 'maximum_drawdown_percentage': 5.0, 'sharpe_ratio': 3.0,
-         'sortino_ratio': 4.0, 'calmar_ratio': 18.0, 'value_at_risk': 3.0,
-         'expected_shortfall': 4.0, 'ulcer_index': 2.0},
-
-        # Medium-performing strategy
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'MediumStrategy',
-         'total_trades': 60, 'win_rate': 55.0, 'average_trade_duration_hours': 5.0,
-         'total_wins_percentage_of_contract': 60.0, 'total_losses_percentage_of_contract': 30.0,
-         'total_return_percentage_of_contract': 30.0, 'average_trade_return_percentage_of_contract': 0.5,
-         'average_win_percentage_of_contract': 2.0, 'average_loss_percentage_of_contract': -1.2,
-         'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
-         'sortino_ratio': 2.0, 'calmar_ratio': 2.0, 'value_at_risk': 8.0,
-         'expected_shortfall': 10.0, 'ulcer_index': 6.0},
-
-        {'month': '1!', 'symbol': 'CL', 'interval': '4h', 'strategy': 'MediumStrategy',
-         'total_trades': 40, 'win_rate': 50.0, 'average_trade_duration_hours': 6.0,
-         'total_wins_percentage_of_contract': 40.0, 'total_losses_percentage_of_contract': 20.0,
-         'total_return_percentage_of_contract': 20.0, 'average_trade_return_percentage_of_contract': 0.5,
-         'average_win_percentage_of_contract': 2.0, 'average_loss_percentage_of_contract': -1.0,
-         'profit_factor': 2.0, 'maximum_drawdown_percentage': 18.0, 'sharpe_ratio': 1.0,
-         'sortino_ratio': 1.5, 'calmar_ratio': 1.11, 'value_at_risk': 10.0,
-         'expected_shortfall': 12.0, 'ulcer_index': 8.0},
-
-        # Low-performing strategy (should be filtered out with min trades)
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1d', 'strategy': 'LowTradeStrategy',
-         'total_trades': 5, 'win_rate': 40.0, 'average_trade_duration_hours': 24.0,
-         'total_wins_percentage_of_contract': 10.0, 'total_losses_percentage_of_contract': 15.0,
-         'total_return_percentage_of_contract': -5.0, 'average_trade_return_percentage_of_contract': -1.0,
-         'average_win_percentage_of_contract': 5.0, 'average_loss_percentage_of_contract': -5.0,
-         'profit_factor': 0.67, 'maximum_drawdown_percentage': 25.0, 'sharpe_ratio': -0.5,
-         'sortino_ratio': -0.5, 'calmar_ratio': -0.2, 'value_at_risk': 15.0,
-         'expected_shortfall': 18.0, 'ulcer_index': 12.0},
-
-        # Single symbol strategy (for symbol count filtering)
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'SingleSymbolStrategy',
-         'total_trades': 90, 'win_rate': 58.0, 'average_trade_duration_hours': 3.0,
-         'total_wins_percentage_of_contract': 90.0, 'total_losses_percentage_of_contract': 40.0,
-         'total_return_percentage_of_contract': 50.0, 'average_trade_return_percentage_of_contract': 0.56,
-         'average_win_percentage_of_contract': 1.8, 'average_loss_percentage_of_contract': -1.1,
-         'profit_factor': 2.25, 'maximum_drawdown_percentage': 12.0, 'sharpe_ratio': 1.8,
-         'sortino_ratio': 2.2, 'calmar_ratio': 4.17, 'value_at_risk': 7.0,
-         'expected_shortfall': 9.0, 'ulcer_index': 5.0},
-
-        # Strategy with different slippage (for slippage filtering tests)
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'HighSlippageStrategy_slippage_5',
-         'total_trades': 70, 'win_rate': 52.0, 'average_trade_duration_hours': 4.0,
-         'total_wins_percentage_of_contract': 50.0, 'total_losses_percentage_of_contract': 30.0,
-         'total_return_percentage_of_contract': 20.0, 'average_trade_return_percentage_of_contract': 0.29,
-         'average_win_percentage_of_contract': 1.4, 'average_loss_percentage_of_contract': -0.9,
-         'profit_factor': 1.67, 'maximum_drawdown_percentage': 16.0, 'sharpe_ratio': 1.2,
-         'sortino_ratio': 1.6, 'calmar_ratio': 1.25, 'value_at_risk': 9.0,
-         'expected_shortfall': 11.0, 'ulcer_index': 7.0},
-
-        {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'HighSlippageStrategy_slippage_5',
-         'total_trades': 65, 'win_rate': 51.0, 'average_trade_duration_hours': 3.5,
-         'total_wins_percentage_of_contract': 45.0, 'total_losses_percentage_of_contract': 28.0,
-         'total_return_percentage_of_contract': 17.0, 'average_trade_return_percentage_of_contract': 0.26,
-         'average_win_percentage_of_contract': 1.4, 'average_loss_percentage_of_contract': -0.9,
-         'profit_factor': 1.61, 'maximum_drawdown_percentage': 17.0, 'sharpe_ratio': 1.1,
-         'sortino_ratio': 1.5, 'calmar_ratio': 1.0, 'value_at_risk': 9.5,
-         'expected_shortfall': 11.5, 'ulcer_index': 7.5},
-
-        # Additional variations for comprehensive testing
-        {'month': '1!', 'symbol': 'ES', 'interval': '1d', 'strategy': 'LongTermStrategy',
-         'total_trades': 25, 'win_rate': 64.0, 'average_trade_duration_hours': 48.0,
-         'total_wins_percentage_of_contract': 60.0, 'total_losses_percentage_of_contract': 20.0,
-         'total_return_percentage_of_contract': 40.0, 'average_trade_return_percentage_of_contract': 1.6,
-         'average_win_percentage_of_contract': 4.0, 'average_loss_percentage_of_contract': -2.5,
-         'profit_factor': 3.0, 'maximum_drawdown_percentage': 8.0, 'sharpe_ratio': 2.2,
-         'sortino_ratio': 2.8, 'calmar_ratio': 5.0, 'value_at_risk': 5.0,
-         'expected_shortfall': 6.5, 'ulcer_index': 3.5},
-
-        {'month': '1!', 'symbol': 'CL', 'interval': '1d', 'strategy': 'LongTermStrategy',
-         'total_trades': 30, 'win_rate': 60.0, 'average_trade_duration_hours': 40.0,
-         'total_wins_percentage_of_contract': 55.0, 'total_losses_percentage_of_contract': 25.0,
-         'total_return_percentage_of_contract': 30.0, 'average_trade_return_percentage_of_contract': 1.0,
-         'average_win_percentage_of_contract': 3.5, 'average_loss_percentage_of_contract': -2.3,
-         'profit_factor': 2.2, 'maximum_drawdown_percentage': 10.0, 'sharpe_ratio': 1.8,
-         'sortino_ratio': 2.3, 'calmar_ratio': 3.0, 'value_at_risk': 6.0,
-         'expected_shortfall': 7.5, 'ulcer_index': 4.5},
-
-        {'month': '1!', 'symbol': 'ZS', 'interval': '4h', 'strategy': 'LongTermStrategy',
-         'total_trades': 35, 'win_rate': 62.0, 'average_trade_duration_hours': 36.0,
-         'total_wins_percentage_of_contract': 58.0, 'total_losses_percentage_of_contract': 22.0,
-         'total_return_percentage_of_contract': 36.0, 'average_trade_return_percentage_of_contract': 1.03,
-         'average_win_percentage_of_contract': 3.7, 'average_loss_percentage_of_contract': -1.9,
-         'profit_factor': 2.64, 'maximum_drawdown_percentage': 9.0, 'sharpe_ratio': 2.0,
-         'sortino_ratio': 2.5, 'calmar_ratio': 4.0, 'value_at_risk': 5.5,
-         'expected_shortfall': 7.0, 'ulcer_index': 4.0},
-    ])
-
-
-@pytest.fixture
-def temp_results_file(sample_results_df, tmp_path):
+def temp_results_file(base_strategy_results, tmp_path):
     """
     Create a temporary parquet file with sample results.
 
     Args:
-        sample_results_df: Sample DataFrame fixture
+        base_strategy_results: Sample DataFrame fixture from conftest
         tmp_path: pytest's temporary directory fixture
 
     Returns:
         Path to temporary parquet file
     """
     temp_file = tmp_path / "test_results.parquet"
-    sample_results_df.to_parquet(temp_file)
+    base_strategy_results.to_parquet(temp_file)
     return str(temp_file)
 
 
 @pytest.fixture
-def analyzer_with_data(temp_results_file, sample_results_df):
+def analyzer_with_data(base_strategy_results, monkeypatch):
     """
     Create StrategyAnalyzer instance with sample data.
 
-    Uses mock to override the default file path so tests don't depend on
+    Uses monkeypatch to override the default file loading so tests don't depend on
     the actual mass_test_results_all.parquet file existing.
 
     Args:
-        temp_results_file: Path to temporary test data file
-        sample_results_df: Sample DataFrame for direct assignment
+        base_strategy_results: Sample DataFrame fixture from conftest
+        monkeypatch: pytest's monkeypatch fixture for mocking
 
     Returns:
         StrategyAnalyzer instance loaded with test data
     """
-    # Create analyzer but prevent it from loading the default file
-    with patch('app.backtesting.analysis.strategy_analyzer.pd.read_parquet') as mock_read:
-        mock_read.return_value = sample_results_df
-        analyzer = StrategyAnalyzer()
-        return analyzer
-
-
-@pytest.fixture
-def real_results_file():
-    """
-    Path to real backtest results file (if it exists).
-
-    Returns:
-        Path to real results file or None if not found
-    """
-    file_path = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
-    return file_path if os.path.exists(file_path) else None
+    # Mock pd.read_parquet to return our test data
+    monkeypatch.setattr(
+        'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+        lambda *args, **kwargs: base_strategy_results
+    )
+    return StrategyAnalyzer()
 
 
 # ==================== Test Classes ====================
@@ -224,24 +80,31 @@ class TestStrategyAnalyzerInitialization:
         assert not analyzer.results_df.empty
         assert len(analyzer.results_df) > 0
 
-    def test_initialization_with_custom_data(self, temp_results_file, sample_results_df):
+    def test_initialization_with_custom_data(self, temp_results_file, base_strategy_results, monkeypatch):
         """Test initialization with custom data file."""
-        with patch('app.backtesting.analysis.strategy_analyzer.pd.read_parquet') as mock_read:
-            mock_read.return_value = sample_results_df
-            analyzer = StrategyAnalyzer()
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+            lambda *args, **kwargs: base_strategy_results
+        )
+        analyzer = StrategyAnalyzer()
 
-            assert analyzer.results_df is not None
-            assert len(analyzer.results_df) == 12  # Sample data has 12 rows
+        assert analyzer.results_df is not None
+        assert len(analyzer.results_df) == 12  # Sample data has 12 rows
 
-    def test_load_results_with_missing_file(self):
+    def test_load_results_with_missing_file(self, monkeypatch):
         """Test error handling when results file doesn't exist."""
-        # Create an analyzer instance (mocked so it doesn't fail)
-        with patch('app.backtesting.analysis.strategy_analyzer.pd.read_parquet') as mock_read:
-            mock_read.side_effect = FileNotFoundError("File not found")
 
-            # Should raise exception during initialization
-            with pytest.raises(Exception):
-                analyzer = StrategyAnalyzer()
+        def raise_file_not_found(*args, **kwargs):
+            raise FileNotFoundError("File not found")
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+            raise_file_not_found
+        )
+
+        # Should raise exception during initialization
+        with pytest.raises(Exception):
+            analyzer = StrategyAnalyzer()
 
     def test_results_dataframe_has_required_columns(self, analyzer_with_data):
         """Test that loaded results have all required columns."""
@@ -274,24 +137,24 @@ class TestGetTopStrategiesBasic:
         assert result.iloc[0]['symbol'] == 'ES'
         assert result.iloc[0]['profit_factor'] == 7.0
 
-    def test_get_top_strategies_applies_limit(self, analyzer_with_data, tmp_path):
+    def test_get_top_strategies_applies_limit(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test that limit parameter affects CSV export (not returned DataFrame)."""
-        # Note: The limit parameter only affects CSV export, not the returned DataFrame
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            result = analyzer_with_data.get_top_strategies(
-                metric='win_rate',
-                min_avg_trades_per_combination=0,
-                limit=3,
-                aggregate=False
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            # Returned DataFrame contains all results (12 rows)
-            assert len(result) == 12
+        result = analyzer_with_data.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=3,
+            aggregate=False
+        )
 
-            # But CSV file should only have 3 rows (limit applied)
-            csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-            csv_df = pd.read_csv(csv_file)
-            assert len(csv_df) == 3
+        # Returned DataFrame contains all results (12 rows)
+        assert len(result) == 12
+
+        # But CSV file should only have 3 rows (limit applied)
+        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
+        csv_df = pd.read_csv(csv_file)
+        assert len(csv_df) == 3
 
     def test_get_top_strategies_with_no_limit(self, analyzer_with_data):
         """Test getting all strategies when limit is None."""
@@ -553,100 +416,108 @@ class TestGetTopStrategiesMetrics:
 class TestCSVExport:
     """Test CSV export functionality."""
 
-    def test_saves_csv_file(self, analyzer_with_data, tmp_path):
+    def test_saves_csv_file(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test that results are saved to CSV file."""
         # Mock the BACKTESTING_DIR to use temp directory
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            result = analyzer_with_data.get_top_strategies(
-                metric='profit_factor',
-                min_avg_trades_per_combination=0,
-                limit=5,
-                aggregate=False
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            # Check that CSV was created
-            csv_dir = tmp_path / 'csv_results'
-            assert csv_dir.exists()
+        result = analyzer_with_data.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=5,
+            aggregate=False
+        )
 
-            # Check that a CSV file was created
-            csv_files = list(csv_dir.glob('*.csv'))
-            assert len(csv_files) > 0
+        # Check that CSV was created
+        csv_dir = tmp_path / 'csv_results'
+        assert csv_dir.exists()
 
-    def test_csv_filename_includes_metric(self, analyzer_with_data, tmp_path):
+        # Check that a CSV file was created
+        csv_files = list(csv_dir.glob('*.csv'))
+        assert len(csv_files) > 0
+
+    def test_csv_filename_includes_metric(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test that CSV filename includes the ranking metric."""
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            analyzer_with_data.get_top_strategies(
-                metric='sharpe_ratio',
-                min_avg_trades_per_combination=0,
-                limit=5,
-                aggregate=False
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            csv_files = list((tmp_path / 'csv_results').glob('*.csv'))
-            assert any('sharpe_ratio' in f.name for f in csv_files)
+        analyzer_with_data.get_top_strategies(
+            metric='sharpe_ratio',
+            min_avg_trades_per_combination=0,
+            limit=5,
+            aggregate=False
+        )
 
-    def test_csv_content_matches_dataframe(self, analyzer_with_data, tmp_path):
+        csv_files = list((tmp_path / 'csv_results').glob('*.csv'))
+        assert any('sharpe_ratio' in f.name for f in csv_files)
+
+    def test_csv_content_matches_dataframe(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test that CSV file content matches returned DataFrame."""
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            result = analyzer_with_data.get_top_strategies(
-                metric='profit_factor',
-                min_avg_trades_per_combination=0,
-                limit=3,
-                aggregate=False
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            # Read the CSV file
-            csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-            csv_df = pd.read_csv(csv_file)
+        result = analyzer_with_data.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=3,
+            aggregate=False
+        )
 
-            # Should have same number of rows (limited to 3)
-            assert len(csv_df) == 3
+        # Read the CSV file
+        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
+        csv_df = pd.read_csv(csv_file)
 
-    def test_csv_respects_limit(self, analyzer_with_data, tmp_path):
+        # Should have same number of rows (limited to 3)
+        assert len(csv_df) == 3
+
+    def test_csv_respects_limit(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test that CSV file respects the limit parameter."""
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            analyzer_with_data.get_top_strategies(
-                metric='win_rate',
-                min_avg_trades_per_combination=0,
-                limit=10,
-                aggregate=False
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-            csv_df = pd.read_csv(csv_file)
+        analyzer_with_data.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=10,
+            aggregate=False
+        )
 
-            # Should have at most 10 rows
-            assert len(csv_df) <= 10
+        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
+        csv_df = pd.read_csv(csv_file)
+
+        # Should have at most 10 rows
+        assert len(csv_df) <= 10
 
 
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_empty_results_raises_error(self):
+    def test_empty_results_raises_error(self, monkeypatch):
         """Test that calling get_top_strategies with no data raises error."""
-        with patch.object(StrategyAnalyzer, '_load_results'):
-            analyzer = StrategyAnalyzer()
-            analyzer.results_df = None
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda self, file_path: None)
 
-            with pytest.raises(ValueError, match='No results available'):
-                analyzer.get_top_strategies(
-                    metric='profit_factor',
-                    min_avg_trades_per_combination=0,
-                    limit=5
-                )
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = None
 
-    def test_empty_dataframe_raises_error(self):
+        with pytest.raises(ValueError, match='No results available'):
+            analyzer.get_top_strategies(
+                metric='profit_factor',
+                min_avg_trades_per_combination=0,
+                limit=5
+            )
+
+    def test_empty_dataframe_raises_error(self, monkeypatch):
         """Test that empty DataFrame raises error."""
-        with patch.object(StrategyAnalyzer, '_load_results'):
-            analyzer = StrategyAnalyzer()
-            analyzer.results_df = pd.DataFrame()  # Empty DataFrame
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda self, file_path: None)
 
-            with pytest.raises(ValueError, match='No results available'):
-                analyzer.get_top_strategies(
-                    metric='profit_factor',
-                    min_avg_trades_per_combination=0,
-                    limit=5
-                )
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = pd.DataFrame()  # Empty DataFrame
+
+        with pytest.raises(ValueError, match='No results available'):
+            analyzer.get_top_strategies(
+                metric='profit_factor',
+                min_avg_trades_per_combination=0,
+                limit=5
+            )
 
     def test_all_strategies_filtered_returns_empty(self, analyzer_with_data):
         """Test that overly strict filters return empty DataFrame gracefully."""
@@ -660,23 +531,24 @@ class TestEdgeCases:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
-    def test_single_strategy_result(self, analyzer_with_data, tmp_path):
+    def test_single_strategy_result(self, analyzer_with_data, tmp_path, monkeypatch):
         """Test handling of results when filtering to a single strategy."""
         # Filter to get only one specific strategy by using symbol and interval filters
-        with patch('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path)):
-            result = analyzer_with_data.get_top_strategies(
-                metric='profit_factor',
-                min_avg_trades_per_combination=0,
-                limit=None,
-                aggregate=False,
-                symbol='ZS',
-                interval='1d'
-            )
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
-            # LowTradeStrategy is the only strategy with ZS and 1d
-            assert len(result) == 1
-            assert isinstance(result, pd.DataFrame)
-            assert result.iloc[0]['strategy'] == 'LowTradeStrategy'
+        result = analyzer_with_data.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=False,
+            symbol='ZS',
+            interval='1d'
+        )
+
+        # LowTradeStrategy is the only strategy with ZS and 1d
+        assert len(result) == 1
+        assert isinstance(result, pd.DataFrame)
+        assert result.iloc[0]['strategy'] == 'LowTradeStrategy'
 
     def test_aggregation_with_no_matching_strategies(self, analyzer_with_data):
         """Test aggregation when filters exclude all strategies."""

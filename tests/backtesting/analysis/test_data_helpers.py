@@ -27,46 +27,7 @@ from app.backtesting.analysis.data_helpers import (
 
 
 # ==================== Fixtures ====================
-
-@pytest.fixture
-def sample_strategy_data():
-    """
-    Create sample strategy results DataFrame for filtering tests.
-
-    Returns:
-        DataFrame with multiple strategies, symbols, intervals for testing filters
-    """
-    return pd.DataFrame([
-        # HighPerformer - multiple symbols/intervals
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'ZS', 'interval': '1h',
-         'total_trades': 100, 'win_rate': 65.0, 'profit_factor': 3.0,
-         'sharpe_ratio': 2.5, 'maximum_drawdown_percentage': 10.0},
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'CL', 'interval': '1h',
-         'total_trades': 80, 'win_rate': 60.0, 'profit_factor': 2.8,
-         'sharpe_ratio': 2.3, 'maximum_drawdown_percentage': 12.0},
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'ES', 'interval': '4h',
-         'total_trades': 50, 'win_rate': 70.0, 'profit_factor': 3.5,
-         'sharpe_ratio': 3.0, 'maximum_drawdown_percentage': 8.0},
-
-        # MediumPerformer - fewer trades
-        {'strategy': 'MediumPerformer_slippage_ticks_2.0', 'symbol': 'ZS', 'interval': '1h',
-         'total_trades': 30, 'win_rate': 55.0, 'profit_factor': 2.0,
-         'sharpe_ratio': 1.5, 'maximum_drawdown_percentage': 15.0},
-        {'strategy': 'MediumPerformer_slippage_ticks_2.0', 'symbol': 'CL', 'interval': '4h',
-         'total_trades': 25, 'win_rate': 50.0, 'profit_factor': 1.8,
-         'sharpe_ratio': 1.3, 'maximum_drawdown_percentage': 18.0},
-
-        # LowTradeStrategy - insufficient trades
-        {'strategy': 'LowTradeStrategy_slippage_ticks_0.5', 'symbol': 'ZS', 'interval': '1d',
-         'total_trades': 5, 'win_rate': 40.0, 'profit_factor': 0.8,
-         'sharpe_ratio': 0.5, 'maximum_drawdown_percentage': 25.0},
-
-        # SingleSymbolStrategy - only one symbol
-        {'strategy': 'SingleSymbolStrategy_slippage_ticks_1.5', 'symbol': 'ES', 'interval': '1h',
-         'total_trades': 60, 'win_rate': 58.0, 'profit_factor': 2.2,
-         'sharpe_ratio': 1.8, 'maximum_drawdown_percentage': 13.0},
-    ])
-
+# Note: Core fixtures (filtering_strategy_data) are in conftest.py
 
 @pytest.fixture
 def weighted_calculation_data():
@@ -93,7 +54,7 @@ def weighted_calculation_data():
 class TestDataFrameFiltering:
     """Test DataFrame filtering functionality."""
 
-    def test_filter_by_min_avg_trades_per_combination(self, sample_strategy_data):
+    def test_filter_by_min_avg_trades_per_combination(self, filtering_strategy_data):
         """Test filtering strategies by minimum average trades per combination."""
         # HighPerformer: 230 total trades / (3 symbols * 2 intervals) = 38.33 avg
         # MediumPerformer: 55 total trades / (2 symbols * 2 intervals) = 13.75 avg
@@ -101,7 +62,7 @@ class TestDataFrameFiltering:
         # SingleSymbolStrategy: 60 total trades / (1 symbol * 1 interval) = 60 avg
 
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=20,
             interval=None,
             symbol=None,
@@ -117,10 +78,10 @@ class TestDataFrameFiltering:
         assert 'MediumPerformer_slippage_ticks_2.0' not in unique_strategies
         assert 'LowTradeStrategy_slippage_ticks_0.5' not in unique_strategies
 
-    def test_filter_by_symbol(self, sample_strategy_data):
+    def test_filter_by_symbol(self, filtering_strategy_data):
         """Test filtering by specific symbol."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval=None,
             symbol='ZS',
@@ -132,10 +93,10 @@ class TestDataFrameFiltering:
         assert all(result['symbol'] == 'ZS')
         assert len(result) == 3  # HighPerformer, MediumPerformer, LowTradeStrategy
 
-    def test_filter_by_interval(self, sample_strategy_data):
+    def test_filter_by_interval(self, filtering_strategy_data):
         """Test filtering by specific interval."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval='1h',
             symbol=None,
@@ -147,10 +108,10 @@ class TestDataFrameFiltering:
         assert all(result['interval'] == '1h')
         assert len(result) == 4  # HighPerformer ZS, HighPerformer CL, MediumPerformer ZS, SingleSymbolStrategy
 
-    def test_filter_by_symbol_and_interval(self, sample_strategy_data):
+    def test_filter_by_symbol_and_interval(self, filtering_strategy_data):
         """Test filtering by both symbol and interval."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval='1h',
             symbol='ZS',
@@ -162,10 +123,10 @@ class TestDataFrameFiltering:
         assert all(result['interval'] == '1h')
         assert len(result) == 2  # HighPerformer and MediumPerformer
 
-    def test_filter_by_min_slippage_ticks(self, sample_strategy_data):
+    def test_filter_by_min_slippage_ticks(self, filtering_strategy_data):
         """Test filtering by minimum slippage ticks."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval=None,
             symbol=None,
@@ -184,10 +145,10 @@ class TestDataFrameFiltering:
             # Should include strategies with slippage >= 1.0
             assert len(unique_strategies) > 0
 
-    def test_filter_by_min_symbol_count(self, sample_strategy_data):
+    def test_filter_by_min_symbol_count(self, filtering_strategy_data):
         """Test filtering by minimum number of unique symbols."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval=None,
             symbol=None,
@@ -204,10 +165,10 @@ class TestDataFrameFiltering:
         assert 'LowTradeStrategy_slippage_ticks_0.5' not in unique_strategies
         assert 'SingleSymbolStrategy_slippage_ticks_1.5' not in unique_strategies
 
-    def test_filter_with_multiple_criteria(self, sample_strategy_data):
+    def test_filter_with_multiple_criteria(self, filtering_strategy_data):
         """Test filtering with multiple criteria combined."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=15,
             interval='1h',
             symbol=None,
@@ -223,10 +184,10 @@ class TestDataFrameFiltering:
         if len(result) > 0:
             assert all(result['interval'] == '1h')
 
-    def test_filter_returns_empty_when_no_matches(self, sample_strategy_data):
+    def test_filter_returns_empty_when_no_matches(self, filtering_strategy_data):
         """Test that filtering returns empty DataFrame when no strategies match."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=1000,  # Impossible requirement
             interval=None,
             symbol=None,
@@ -237,10 +198,10 @@ class TestDataFrameFiltering:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
-    def test_filter_with_no_filters_returns_copy(self, sample_strategy_data):
+    def test_filter_with_no_filters_returns_copy(self, filtering_strategy_data):
         """Test that filtering with no criteria returns all data."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
             interval=None,
             symbol=None,
@@ -248,8 +209,8 @@ class TestDataFrameFiltering:
             min_symbol_count=None
         )
 
-        assert len(result) == len(sample_strategy_data)
-        assert list(result.columns) == list(sample_strategy_data.columns)
+        assert len(result) == len(filtering_strategy_data)
+        assert list(result.columns) == list(filtering_strategy_data.columns)
 
     def test_filter_with_missing_required_columns(self):
         """Test that filtering raises error when required columns are missing."""
@@ -626,10 +587,10 @@ class TestEdgeCases:
         result = calculate_weighted_win_rate(df, grouped)
         assert pd.isna(result['A']) or np.isinf(result['A'])
 
-    def test_filter_preserves_dataframe_structure(self, sample_strategy_data):
+    def test_filter_preserves_dataframe_structure(self, filtering_strategy_data):
         """Test that filtering preserves DataFrame structure and column types."""
         result = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=10,
             interval=None,
             symbol=None,
@@ -638,11 +599,11 @@ class TestEdgeCases:
         )
 
         # Same columns should exist
-        assert set(result.columns) == set(sample_strategy_data.columns)
+        assert set(result.columns) == set(filtering_strategy_data.columns)
 
         # Column types should be preserved
         for col in result.columns:
-            assert result[col].dtype == sample_strategy_data[col].dtype
+            assert result[col].dtype == filtering_strategy_data[col].dtype
 
     def test_filter_with_special_characters_in_strategy_name(self):
         """Test filtering works with special characters in strategy names."""
@@ -679,11 +640,11 @@ class TestEdgeCases:
 class TestIntegrationScenarios:
     """Test complete filtering and calculation workflows."""
 
-    def test_filter_then_calculate_workflow(self, sample_strategy_data):
+    def test_filter_then_calculate_workflow(self, filtering_strategy_data):
         """Test typical workflow of filtering then calculating metrics."""
         # Filter by criteria
         filtered = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=15,
             interval=None,
             symbol=None,
@@ -701,15 +662,15 @@ class TestIntegrationScenarios:
         )
 
         # Results should only include filtered strategies
-        assert len(win_rate) <= len(sample_strategy_data['strategy'].unique())
+        assert len(win_rate) <= len(filtering_strategy_data['strategy'].unique())
         assert len(avg_sharpe) == len(win_rate)
         assert list(win_rate.index) == list(avg_sharpe.index)
 
-    def test_multiple_filters_then_calculations(self, sample_strategy_data):
+    def test_multiple_filters_then_calculations(self, filtering_strategy_data):
         """Test applying multiple filters before calculations."""
         # Apply strict filters
         filtered = filter_dataframe(
-            df=sample_strategy_data,
+            df=filtering_strategy_data,
             min_avg_trades_per_combination=20,
             interval='1h',
             symbol=None,

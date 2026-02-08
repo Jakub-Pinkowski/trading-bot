@@ -29,53 +29,7 @@ from app.backtesting.analysis.formatters import (
 
 
 # ==================== Fixtures ====================
-
-@pytest.fixture
-def sample_strategy_results():
-    """
-    Create sample strategy results DataFrame with various column types.
-
-    Includes typical columns found in backtest results with realistic values
-    and numeric precision that needs rounding.
-
-    Returns:
-        DataFrame with strategy results including strategy name, metrics, symbols
-    """
-    return pd.DataFrame([
-        {
-            'strategy': 'RSI(period=14,lower=30,upper=70,rollover=True,trailing=2.5,slippage_ticks=1.0)',
-            'symbol': 'ZS',
-            'interval': '1h',
-            'total_trades': 100,
-            'win_rate': 65.5555,
-            'profit_factor': 3.141592653589793,
-            'average_trade_return_percentage_of_contract': 1.23456789,
-            'maximum_drawdown_percentage': 10.987654321,
-            'sharpe_ratio': 2.5678901234,
-            'sortino_ratio': 3.0123456789,
-            'calmar_ratio': 10.5555555555,
-            'value_at_risk': 5.12345,
-            'expected_shortfall': 7.98765,
-            'ulcer_index': 3.456789
-        },
-        {
-            'strategy': 'MACD(fast=12,slow=26,signal=9,rollover=False,trailing=None,slippage_ticks=2.0)',
-            'symbol': 'CL',
-            'interval': '4h',
-            'total_trades': 50,
-            'win_rate': 55.0,
-            'profit_factor': 2.0,
-            'average_trade_return_percentage_of_contract': 0.5,
-            'maximum_drawdown_percentage': 15.0,
-            'sharpe_ratio': 1.5,
-            'sortino_ratio': 2.0,
-            'calmar_ratio': 3.33,
-            'value_at_risk': 8.0,
-            'expected_shortfall': 10.0,
-            'ulcer_index': 6.0
-        }
-    ])
-
+# Note: Core fixtures (formatting_strategy_data) are in conftest.py
 
 @pytest.fixture
 def aggregated_strategy_results():
@@ -197,9 +151,9 @@ class TestStrategyNameParsing:
 class TestDataFrameFormatting:
     """Test DataFrame formatting for CSV export."""
 
-    def test_format_dataframe_parses_strategy_names(self, sample_strategy_results):
+    def test_format_dataframe_parses_strategy_names(self, formatting_strategy_data):
         """Test that strategy names are parsed and parameters extracted."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # Strategy column should be cleaned
         assert all('rollover' not in str(s) for s in formatted['Strategy'].values)
@@ -211,9 +165,9 @@ class TestDataFrameFormatting:
         assert 'Trailing' in formatted.columns
         assert 'Slippage' in formatted.columns
 
-    def test_format_dataframe_creates_parameter_columns(self, sample_strategy_results):
+    def test_format_dataframe_creates_parameter_columns(self, formatting_strategy_data):
         """Test that parameter columns are created with correct values."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # First row: rollover=True, trailing=2.5, slippage=1.0
         assert bool(formatted.iloc[0]['Rollover']) is True
@@ -225,9 +179,9 @@ class TestDataFrameFormatting:
         assert pd.isna(formatted.iloc[1]['Trailing'])  # None becomes NaN in DataFrame
         assert formatted.iloc[1]['Slippage'] == 2.0
 
-    def test_format_dataframe_rounds_numeric_columns(self, sample_strategy_results):
+    def test_format_dataframe_rounds_numeric_columns(self, formatting_strategy_data):
         """Test that numeric columns are rounded to DECIMAL_PLACES."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # Win rate should be rounded (65.5555 → 65.56 with DECIMAL_PLACES=2)
         assert formatted.iloc[0]['Win Rate %'] == round(65.5555, DECIMAL_PLACES)
@@ -243,9 +197,9 @@ class TestDataFrameFormatting:
                     decimal_str = str(float(val)).split('.')[-1]
                     assert len(decimal_str) <= DECIMAL_PLACES
 
-    def test_format_dataframe_transforms_column_names(self, sample_strategy_results):
+    def test_format_dataframe_transforms_column_names(self, formatting_strategy_data):
         """Test that column names are transformed to Title Case."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # Check specific transformations
         assert 'Avg Return %' in formatted.columns
@@ -261,9 +215,9 @@ class TestDataFrameFormatting:
         assert 'average_trade_return_percentage_of_contract' not in formatted.columns
         assert 'maximum_drawdown_percentage' not in formatted.columns
 
-    def test_format_dataframe_reorders_columns(self, sample_strategy_results):
+    def test_format_dataframe_reorders_columns(self, formatting_strategy_data):
         """Test that columns are reordered with parameters after strategy."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         cols = list(formatted.columns)
         strategy_idx = cols.index('Strategy')
@@ -290,9 +244,9 @@ class TestDataFrameFormatting:
         assert 'Rollover' not in formatted.columns
         assert 'Trailing' not in formatted.columns
 
-    def test_format_dataframe_preserves_non_numeric_columns(self, sample_strategy_results):
+    def test_format_dataframe_preserves_non_numeric_columns(self, formatting_strategy_data):
         """Test that non-numeric columns are preserved unchanged."""
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # Symbol and interval should be unchanged (except column name format)
         assert 'Symbol' in formatted.columns
@@ -699,10 +653,10 @@ class TestEdgeCases:
 class TestIntegrationScenarios:
     """Test complete formatting workflows."""
 
-    def test_complete_export_workflow(self, sample_strategy_results):
+    def test_complete_export_workflow(self, formatting_strategy_data):
         """Test complete workflow from raw results to formatted export."""
         # Format the DataFrame
-        formatted = format_dataframe_for_export(sample_strategy_results)
+        formatted = format_dataframe_for_export(formatting_strategy_data)
 
         # Verify all transformations happened
         assert 'Strategy' in formatted.columns
