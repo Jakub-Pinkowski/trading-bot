@@ -11,12 +11,13 @@ Tests cover:
 - Real trade sequences from strategy backtests
 
 All tests use realistic trade data with proper metric calculations.
+
+Note: This file uses shared fixtures from conftest.py:
+- trade_factory: For creating individual trades
+- trades_factory: For creating trade sequences
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
-import pytest
-
-from app.backtesting.metrics.per_trade_metrics import calculate_trade_metrics
 from app.backtesting.metrics.summary_metrics import (
     SummaryMetrics,
     MIN_RETURNS_FOR_SHARPE,
@@ -27,92 +28,14 @@ from app.backtesting.metrics.summary_metrics import (
 )
 
 
-# ==================== Fixtures ====================
-
-@pytest.fixture
-def winning_trade_zs():
-    """Create a winning trade for ZS."""
-    trade = {
-        'entry_time': datetime(2024, 1, 15, 10, 0),
-        'exit_time': datetime(2024, 1, 15, 14, 0),
-        'entry_price': 1200.0,
-        'exit_price': 1210.0,
-        'side': 'long'
-    }
-    return calculate_trade_metrics(trade, 'ZS')
-
-
-@pytest.fixture
-def losing_trade_zs():
-    """Create a losing trade for ZS."""
-    trade = {
-        'entry_time': datetime(2024, 1, 16, 10, 0),
-        'exit_time': datetime(2024, 1, 16, 14, 0),
-        'entry_price': 1200.0,
-        'exit_price': 1195.0,
-        'side': 'long'
-    }
-    return calculate_trade_metrics(trade, 'ZS')
-
-
-@pytest.fixture
-def breakeven_trade_zs():
-    """Create a breakeven trade for ZS."""
-    trade = {
-        'entry_time': datetime(2024, 1, 17, 10, 0),
-        'exit_time': datetime(2024, 1, 17, 14, 0),
-        'entry_price': 1200.0,
-        'exit_price': 1200.0,
-        'side': 'long'
-    }
-    return calculate_trade_metrics(trade, 'ZS')
-
-
-@pytest.fixture
-def mixed_trades(winning_trade_zs, losing_trade_zs):
-    """Create a list of mixed winning and losing trades."""
-    return [winning_trade_zs, losing_trade_zs]
-
-
-@pytest.fixture
-def all_winning_trades():
-    """Create a list of all winning trades."""
-    trades = []
-    for i in range(5):
-        trade = {
-            'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-            'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1200.0 + (i + 1) * 5,  # Increasing profits
-            'side': 'long'
-        }
-        trades.append(calculate_trade_metrics(trade, 'ZS'))
-    return trades
-
-
-@pytest.fixture
-def all_losing_trades():
-    """Create a list of all losing trades."""
-    trades = []
-    for i in range(5):
-        trade = {
-            'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-            'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1200.0 - (i + 1) * 5,  # Increasing losses
-            'side': 'long'
-        }
-        trades.append(calculate_trade_metrics(trade, 'ZS'))
-    return trades
-
-
 # ==================== Test Classes ====================
 
 class TestSummaryMetricsInitialization:
     """Test SummaryMetrics class initialization."""
 
-    def test_initialization_with_trades(self, mixed_trades):
+    def test_initialization_with_trades(self, trades_factory):
         """Test SummaryMetrics initializes correctly with trades."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
 
         assert metrics.trades == mixed_trades
@@ -141,8 +64,9 @@ class TestSummaryMetricsInitialization:
 class TestBasicTradeStatistics:
     """Test basic trade statistics calculations."""
 
-    def test_win_rate_calculation(self, mixed_trades):
+    def test_win_rate_calculation(self, trades_factory):
         """Test win rate is calculated correctly."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -151,33 +75,37 @@ class TestBasicTradeStatistics:
         assert result['winning_trades'] == 1
         assert result['losing_trades'] == 1
 
-    def test_all_winning_trades_win_rate(self, all_winning_trades):
+    def test_all_winning_trades_win_rate(self, trades_factory):
         """Test win rate with all winning trades."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         assert result['win_rate'] == 100.0
         assert result['winning_trades'] == 5
         assert result['losing_trades'] == 0
 
-    def test_all_losing_trades_win_rate(self, all_losing_trades):
+    def test_all_losing_trades_win_rate(self, trades_factory):
         """Test win rate with all losing trades."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         assert result['win_rate'] == 0.0
         assert result['winning_trades'] == 0
         assert result['losing_trades'] == 5
 
-    def test_total_trades_count(self, all_winning_trades):
+    def test_total_trades_count(self, trades_factory):
         """Test total trades count is correct."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         assert result['total_trades'] == 5
 
-    def test_average_trade_duration(self, mixed_trades):
+    def test_average_trade_duration(self, trades_factory):
         """Test average trade duration calculation."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -188,8 +116,9 @@ class TestBasicTradeStatistics:
 class TestReturnMetrics:
     """Test return-based metrics calculations."""
 
-    def test_total_return_percentage(self, mixed_trades):
+    def test_total_return_percentage(self, trades_factory):
         """Test total return percentage calculation."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -197,8 +126,9 @@ class TestReturnMetrics:
         expected = sum(t['return_percentage_of_contract'] for t in mixed_trades)
         assert result['total_return_percentage_of_contract'] == round(expected, 2)
 
-    def test_average_trade_return(self, mixed_trades):
+    def test_average_trade_return(self, trades_factory):
         """Test average trade return calculation."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -207,26 +137,29 @@ class TestReturnMetrics:
         expected_avg = total_return / len(mixed_trades)
         assert result['average_trade_return_percentage_of_contract'] == round(expected_avg, 2)
 
-    def test_average_win_percentage(self, all_winning_trades):
+    def test_average_win_percentage(self, trades_factory):
         """Test average win percentage calculation."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
-        winning_returns = [t['return_percentage_of_contract'] for t in all_winning_trades]
+        winning_returns = [t['return_percentage_of_contract'] for t in all_winning]
         expected_avg = sum(winning_returns) / len(winning_returns)
         assert result['average_win_percentage_of_contract'] == round(expected_avg, 2)
 
-    def test_average_loss_percentage(self, all_losing_trades):
+    def test_average_loss_percentage(self, trades_factory):
         """Test average loss percentage calculation."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
-        losing_returns = [t['return_percentage_of_contract'] for t in all_losing_trades]
+        losing_returns = [t['return_percentage_of_contract'] for t in all_losing]
         expected_avg = sum(losing_returns) / len(losing_returns)
         assert result['average_loss_percentage_of_contract'] == round(expected_avg, 2)
 
-    def test_total_wins_percentage(self, mixed_trades):
+    def test_total_wins_percentage(self, trades_factory):
         """Test total wins percentage calculation."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -234,8 +167,9 @@ class TestReturnMetrics:
         expected = sum(t['return_percentage_of_contract'] for t in winning_trades)
         assert result['total_wins_percentage_of_contract'] == round(expected, 2)
 
-    def test_total_losses_percentage(self, mixed_trades):
+    def test_total_losses_percentage(self, trades_factory):
         """Test total losses percentage calculation."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -247,8 +181,9 @@ class TestReturnMetrics:
 class TestProfitFactor:
     """Test profit factor calculations."""
 
-    def test_profit_factor_with_mixed_trades(self, mixed_trades):
+    def test_profit_factor_with_mixed_trades(self, trades_factory):
         """Test profit factor with both wins and losses."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -256,17 +191,19 @@ class TestProfitFactor:
         assert result['profit_factor'] > 0
         assert isinstance(result['profit_factor'], float)
 
-    def test_profit_factor_all_wins(self, all_winning_trades):
+    def test_profit_factor_all_wins(self, trades_factory):
         """Test profit factor with only winning trades."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # No losses = infinity replacement
         assert result['profit_factor'] == INFINITY_REPLACEMENT
 
-    def test_profit_factor_all_losses(self, all_losing_trades):
+    def test_profit_factor_all_losses(self, trades_factory):
         """Test profit factor with only losing trades."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # No wins = 0
@@ -276,8 +213,9 @@ class TestProfitFactor:
 class TestDrawdownCalculations:
     """Test drawdown-related metrics."""
 
-    def test_maximum_drawdown_calculation(self, mixed_trades):
+    def test_maximum_drawdown_calculation(self, trades_factory):
         """Test maximum drawdown is calculated."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -285,24 +223,27 @@ class TestDrawdownCalculations:
         assert 'maximum_drawdown_percentage' in result
         assert isinstance(result['maximum_drawdown_percentage'], float)
 
-    def test_maximum_drawdown_all_wins(self, all_winning_trades):
+    def test_maximum_drawdown_all_wins(self, trades_factory):
         """Test maximum drawdown with all winning trades."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # All wins = minimal or zero drawdown
         assert result['maximum_drawdown_percentage'] >= 0
 
-    def test_maximum_drawdown_all_losses(self, all_losing_trades):
+    def test_maximum_drawdown_all_losses(self, trades_factory):
         """Test maximum drawdown with all losing trades."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # All losses = significant drawdown
         assert result['maximum_drawdown_percentage'] > 0
 
-    def test_ulcer_index_calculation(self, mixed_trades):
+    def test_ulcer_index_calculation(self, trades_factory):
         """Test Ulcer Index is calculated."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -310,16 +251,9 @@ class TestDrawdownCalculations:
         assert isinstance(result['ulcer_index'], float)
         assert result['ulcer_index'] >= 0
 
-    def test_single_negative_trade_from_zero(self):
+    def test_single_negative_trade_from_zero(self, trade_factory):
         """Test drawdown from zero starting equity with single losing trade."""
-        trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 14, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1190.0,  # Losing trade
-            'side': 'long'
-        }
-        trades = [calculate_trade_metrics(trade, 'ZS')]
+        trades = [trade_factory('ZS', 1200.0, 1190.0)]
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -330,11 +264,10 @@ class TestDrawdownCalculations:
         expected_dd = abs(trades[0]['return_percentage_of_contract'])
         assert round(result['maximum_drawdown_percentage'], 2) == round(expected_dd, 2)
 
-    def test_multiple_drawdown_periods(self):
+    def test_multiple_drawdown_periods(self, trades_factory):
         """Test multiple separate drawdown periods are tracked correctly."""
         # Create pattern: Win -> Loss -> Win -> Bigger Loss -> Win
-        trades = []
-        prices = [
+        price_specs = [
             (1200.0, 1210.0),  # Win +10
             (1210.0, 1205.0),  # Loss -5 (first drawdown)
             (1205.0, 1220.0),  # Win +15 (recovery)
@@ -342,15 +275,7 @@ class TestDrawdownCalculations:
             (1200.0, 1215.0),  # Win +15 (recovery)
         ]
 
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -358,10 +283,10 @@ class TestDrawdownCalculations:
         # Should capture the largest drawdown (second period)
         assert result['maximum_drawdown_percentage'] > 0
 
-    def test_complex_peak_trough_scenario(self):
+    def test_complex_peak_trough_scenario(self, trades_factory):
         """Test complex scenario with multiple peaks and troughs."""
         # Pattern: Peak -> Drop -> Small recovery -> Further drop -> Recovery
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Big win to peak
             (1250.0, 1230.0),  # Drop
             (1230.0, 1240.0),  # Small recovery
@@ -369,16 +294,7 @@ class TestDrawdownCalculations:
             (1210.0, 1245.0),  # Recovery
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         max_dd, max_dd_pct = metrics._calculate_max_drawdown()
@@ -387,25 +303,16 @@ class TestDrawdownCalculations:
         assert max_dd > 0
         assert max_dd_pct > 0
 
-    def test_drawdown_with_recovery(self):
+    def test_drawdown_with_recovery(self, trades_factory):
         """Test drawdown calculation followed by full recovery."""
         # Pattern: Win to peak -> Loss (drawdown) -> Win (full recovery)
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Win to peak
             (1250.0, 1220.0),  # Loss (drawdown)
             (1220.0, 1250.0),  # Recovery to previous peak
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -413,24 +320,15 @@ class TestDrawdownCalculations:
         # Drawdown should still be recorded even after recovery
         assert result['maximum_drawdown_percentage'] > 0
 
-    def test_drawdown_calculation_accuracy(self):
+    def test_drawdown_calculation_accuracy(self, trades_factory):
         """Test precise drawdown percentage calculation."""
         # Create specific scenario with known drawdown
-        prices = [
+        price_specs = [
             (1000.0, 1100.0),  # +10% (cumulative: 10%)
             (1100.0, 1050.0),  # -4.55% (cumulative: ~5.45%)
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         # Drawdown from peak should be measurable
@@ -440,27 +338,29 @@ class TestDrawdownCalculations:
 class TestSharpeRatio:
     """Test Sharpe ratio calculations."""
 
-    def test_sharpe_ratio_with_sufficient_trades(self, all_winning_trades):
+    def test_sharpe_ratio_with_sufficient_trades(self, trades_factory):
         """Test Sharpe ratio with enough trades."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # With 5 trades, should calculate Sharpe
         assert 'sharpe_ratio' in result
         assert isinstance(result['sharpe_ratio'], float)
 
-    def test_sharpe_ratio_insufficient_trades(self, winning_trade_zs):
+    def test_sharpe_ratio_insufficient_trades(self, trade_factory):
         """Test Sharpe ratio with insufficient trades."""
-        metrics = SummaryMetrics([winning_trade_zs])
+        winning_trade = trade_factory('ZS', 1200.0, 1210.0)
+        metrics = SummaryMetrics([winning_trade])
         result = metrics.calculate_all_metrics()
 
         # Less than MIN_RETURNS_FOR_SHARPE = 0
         assert result['sharpe_ratio'] == 0.0
 
-    def test_sharpe_ratio_high_volatility(self):
+    def test_sharpe_ratio_high_volatility(self, trades_factory):
         """Test Sharpe ratio with high volatility returns."""
         # Create trades with high variance: large wins and large losses
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Big win
             (1250.0, 1210.0),  # Big loss
             (1210.0, 1260.0),  # Big win
@@ -468,16 +368,7 @@ class TestSharpeRatio:
             (1215.0, 1265.0),  # Big win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -487,30 +378,21 @@ class TestSharpeRatio:
         assert result['sharpe_ratio'] is not None
         assert isinstance(result['sharpe_ratio'], float)
 
-    def test_sharpe_ratio_negative_returns(self):
+    def test_sharpe_ratio_negative_returns(self, trades_factory):
         """Test Sharpe ratio with predominantly negative returns."""
         # Create mostly losing trades
-        trades = []
-        for i in range(5):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': 1200.0 - (i + 1) * 10,  # Increasing losses
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        all_losing = trades_factory.all_losing(count=5)
 
-        metrics = SummaryMetrics(trades)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # Negative average return should give negative Sharpe
         assert result['sharpe_ratio'] < 0
 
-    def test_sharpe_ratio_single_large_outlier(self):
+    def test_sharpe_ratio_single_large_outlier(self, trades_factory):
         """Test Sharpe ratio with single large outlier affecting std dev."""
         # Create mostly small wins with one huge win
-        prices = [
+        price_specs = [
             (1200.0, 1202.0),  # Small win
             (1202.0, 1204.0),  # Small win
             (1204.0, 1206.0),  # Small win
@@ -518,16 +400,7 @@ class TestSharpeRatio:
             (1208.0, 1300.0),  # Huge outlier win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -536,10 +409,10 @@ class TestSharpeRatio:
         assert result['sharpe_ratio'] > 0
         assert isinstance(result['sharpe_ratio'], float)
 
-    def test_sharpe_ratio_with_mixed_returns(self):
+    def test_sharpe_ratio_with_mixed_returns(self, trades_factory):
         """Test Sharpe ratio with balanced wins and losses."""
         # Create alternating wins and losses
-        prices = [
+        price_specs = [
             (1200.0, 1210.0),  # Win
             (1210.0, 1205.0),  # Loss
             (1205.0, 1215.0),  # Win
@@ -547,16 +420,7 @@ class TestSharpeRatio:
             (1210.0, 1220.0),  # Win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -568,56 +432,49 @@ class TestSharpeRatio:
 class TestSortinoRatio:
     """Test Sortino ratio calculations."""
 
-    def test_sortino_ratio_with_losses(self, mixed_trades):
+    def test_sortino_ratio_with_losses(self, trades_factory):
         """Test Sortino ratio with both wins and losses."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
         assert 'sortino_ratio' in result
         assert isinstance(result['sortino_ratio'], float)
 
-    def test_sortino_ratio_no_negative_returns(self, all_winning_trades):
+    def test_sortino_ratio_no_negative_returns(self, trades_factory):
         """Test Sortino ratio with no negative returns."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # No downside deviation = infinity replacement
         assert result['sortino_ratio'] == INFINITY_REPLACEMENT
 
-    def test_sortino_ratio_all_downside_returns(self, all_losing_trades):
+    def test_sortino_ratio_all_downside_returns(self, trades_factory):
         """Test Sortino ratio when all returns are below risk-free rate."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # All negative returns should give negative Sortino ratio
         assert result['sortino_ratio'] < 0
 
-    def test_sortino_ratio_asymmetric_returns(self):
+    def test_sortino_ratio_asymmetric_returns(self, trades_factory):
         """Test Sortino ratio with asymmetric return distribution (large wins, small losses)."""
         # Create asymmetric distribution: few large wins, many small losses
         trades = []
 
         # Many small losses
         for i in range(7):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': 1198.0,  # Small consistent losses
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1198.0,
+                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
 
         # Few large wins
         for i in range(3):
-            trade = {
-                'entry_time': datetime(2024, 1, 17 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 17 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': 1250.0 + i * 10,  # Large wins
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1250.0 + i * 10,
+                                                       entry_time=datetime(2024, 1, 17 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 17 + i, 14, 0)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -626,10 +483,10 @@ class TestSortinoRatio:
         assert result['sortino_ratio'] is not None
         assert isinstance(result['sortino_ratio'], float)
 
-    def test_sortino_vs_sharpe_comparison(self):
+    def test_sortino_vs_sharpe_comparison(self, trades_factory):
         """Test that Sortino ratio differs from Sharpe ratio appropriately."""
         # Create scenario with downside volatility
-        prices = [
+        price_specs = [
             (1200.0, 1220.0),  # Win
             (1220.0, 1200.0),  # Loss
             (1200.0, 1225.0),  # Win
@@ -637,16 +494,7 @@ class TestSortinoRatio:
             (1205.0, 1230.0),  # Win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -657,10 +505,10 @@ class TestSortinoRatio:
         # Sortino typically higher (penalizes only downside)
         # But both should be positive for net positive returns
 
-    def test_sortino_with_small_downside(self):
+    def test_sortino_with_small_downside(self, trades_factory):
         """Test Sortino ratio with minimal downside volatility."""
         # Create mostly wins with one tiny loss
-        prices = [
+        price_specs = [
             (1200.0, 1210.0),  # Win
             (1210.0, 1220.0),  # Win
             (1220.0, 1219.0),  # Tiny loss
@@ -668,16 +516,7 @@ class TestSortinoRatio:
             (1230.0, 1240.0),  # Win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -689,41 +528,34 @@ class TestSortinoRatio:
 class TestCalmarRatio:
     """Test Calmar ratio calculations."""
 
-    def test_calmar_ratio_calculation(self, mixed_trades):
+    def test_calmar_ratio_calculation(self, trades_factory):
         """Test Calmar ratio is calculated."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
         assert 'calmar_ratio' in result
         assert isinstance(result['calmar_ratio'], float)
 
-    def test_calmar_ratio_zero_drawdown(self, all_winning_trades):
+    def test_calmar_ratio_zero_drawdown(self, trades_factory):
         """Test Calmar ratio with zero or minimal drawdown."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # Zero/minimal drawdown might give very high value
         assert result['calmar_ratio'] >= 0
 
-    def test_calmar_ratio_small_drawdown(self):
+    def test_calmar_ratio_small_drawdown(self, trades_factory):
         """Test Calmar ratio with small drawdown relative to returns."""
         # Pattern: Large wins with small drawdown
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Large win
             (1250.0, 1245.0),  # Small drawdown
             (1245.0, 1280.0),  # Large win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -731,25 +563,16 @@ class TestCalmarRatio:
         # Small drawdown with good returns = high Calmar
         assert result['calmar_ratio'] > 0
 
-    def test_calmar_ratio_large_drawdown(self):
+    def test_calmar_ratio_large_drawdown(self, trades_factory):
         """Test Calmar ratio with large drawdown relative to returns."""
         # Pattern: Small net return with large drawdown
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Win to peak
             (1250.0, 1180.0),  # Large drawdown
             (1180.0, 1210.0),  # Small recovery
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -757,25 +580,16 @@ class TestCalmarRatio:
         # Large drawdown with small return = low Calmar
         assert result['calmar_ratio'] > 0  # Still positive if net return is positive
 
-    def test_calmar_ratio_negative_returns(self):
+    def test_calmar_ratio_negative_returns(self, trades_factory):
         """Test Calmar ratio with negative total returns."""
         # All losing trades
-        prices = [
+        price_specs = [
             (1200.0, 1190.0),
             (1190.0, 1180.0),
             (1180.0, 1170.0),
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -783,25 +597,16 @@ class TestCalmarRatio:
         # Negative returns = negative Calmar ratio
         assert result['calmar_ratio'] < 0
 
-    def test_calmar_ratio_recovery_periods(self):
+    def test_calmar_ratio_recovery_periods(self, trades_factory):
         """Test Calmar ratio accounts for drawdown even after recovery."""
         # Pattern: Drawdown followed by full recovery
-        prices = [
+        price_specs = [
             (1200.0, 1300.0),  # Peak
             (1300.0, 1250.0),  # Drawdown
             (1250.0, 1350.0),  # Recovery beyond peak
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -814,51 +619,43 @@ class TestCalmarRatio:
 class TestValueAtRisk:
     """Test Value at Risk (VaR) calculations."""
 
-    def test_var_with_sufficient_trades(self, all_losing_trades):
+    def test_var_with_sufficient_trades(self, trades_factory):
         """Test VaR with enough trades."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # Should calculate VaR
         assert 'value_at_risk' in result
         assert result['value_at_risk'] >= 0
 
-    def test_var_insufficient_trades(self, winning_trade_zs):
+    def test_var_insufficient_trades(self, trade_factory):
         """Test VaR with insufficient trades."""
         # Less than MIN_RETURNS_FOR_VAR
-        trades = [winning_trade_zs]
+        winning_trade = trade_factory('ZS', 1200.0, 1210.0)
+        trades = [winning_trade]
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
 
         # Not enough returns = 0
         assert result['value_at_risk'] == 0.0
 
-    def test_var_with_skewed_distribution(self):
+    def test_var_with_skewed_distribution(self, trades_factory):
         """Test VaR with negatively skewed return distribution (many small wins, few big losses)."""
         # Create skewed distribution: 7 small wins, 3 big losses
         trades = []
 
         # Small wins
         for i in range(7):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': 1202.0,  # Small consistent wins
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1202.0,
+                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
 
         # Big losses
         for i in range(3):
-            trade = {
-                'entry_time': datetime(2024, 1, 17 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 17 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': 1170.0 - i * 5,  # Big losses
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1170.0 - i * 5,
+                                                       entry_time=datetime(2024, 1, 17 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 17 + i, 14, 0)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -866,10 +663,10 @@ class TestValueAtRisk:
         # VaR should capture the tail risk from big losses
         assert result['value_at_risk'] > 0
 
-    def test_var_with_fat_tails(self):
+    def test_var_with_fat_tails(self, trades_factory):
         """Test VaR with fat-tailed distribution (more extreme events than normal distribution)."""
         # Create distribution with extreme outliers
-        prices = [
+        price_specs = [
             (1200.0, 1205.0),  # Small win
             (1205.0, 1210.0),  # Small win
             (1210.0, 1215.0),  # Small win
@@ -878,16 +675,7 @@ class TestValueAtRisk:
             (1225.0, 1150.0),  # Extreme loss (fat tail)
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -895,30 +683,21 @@ class TestValueAtRisk:
         # VaR should be significant due to extreme loss
         assert result['value_at_risk'] > 0
 
-    def test_var_with_extreme_losses(self):
+    def test_var_with_extreme_losses(self, trades_factory):
         """Test VaR calculation with several extreme losses."""
         # Create scenario with multiple extreme losses
         trades = []
         for i in range(10):
             if i < 5:
                 # Normal trades
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1205.0,
-                    'side': 'long'
-                }
+                trades.append(trades_factory.trade_factory('ZS', 1200.0, 1205.0,
+                                                           entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                           exit_time=datetime(2024, 1, 10 + i, 14, 0)))
             else:
                 # Extreme losses
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1150.0 - (i - 5) * 10,  # Increasingly extreme losses
-                    'side': 'long'
-                }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+                trades.append(trades_factory.trade_factory('ZS', 1200.0, 1150.0 - (i - 5) * 10,
+                                                           entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                           exit_time=datetime(2024, 1, 10 + i, 14, 0)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -926,7 +705,7 @@ class TestValueAtRisk:
         # VaR should be high due to extreme losses
         assert result['value_at_risk'] > 0
 
-    def test_var_with_normal_distribution(self):
+    def test_var_with_normal_distribution(self, trades_factory):
         """Test VaR with approximately normal return distribution."""
         # Create returns clustered around mean
         import random
@@ -936,14 +715,9 @@ class TestValueAtRisk:
         for i in range(20):
             # Generate returns around 1% with small variance
             price_change = 1200.0 * (1 + random.gauss(0.01, 0.005))
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': 1200.0,
-                'exit_price': price_change,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, price_change,
+                                                       entry_time=datetime(2024, 1, 10, 10, 0) + timedelta(days=i),
+                                                       exit_time=datetime(2024, 1, 10, 14, 0) + timedelta(days=i)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -955,9 +729,10 @@ class TestValueAtRisk:
 class TestUlcerIndex:
     """Test Ulcer Index calculations for downside risk measurement."""
 
-    def test_ulcer_index_no_drawdown(self, all_winning_trades):
+    def test_ulcer_index_no_drawdown(self, trades_factory):
         """Test Ulcer Index with no drawdown (all winning trades)."""
-        metrics = SummaryMetrics(all_winning_trades)
+        all_winning = trades_factory.all_winning(count=5)
+        metrics = SummaryMetrics(all_winning)
         result = metrics.calculate_all_metrics()
 
         # No drawdown should give very low or zero Ulcer Index
@@ -965,25 +740,16 @@ class TestUlcerIndex:
         # With all wins, ulcer index should be minimal
         assert result['ulcer_index'] < 1.0  # Should be very small
 
-    def test_ulcer_index_single_drawdown(self):
+    def test_ulcer_index_single_drawdown(self, trades_factory):
         """Test Ulcer Index with single drawdown period."""
         # Pattern: Win -> Loss -> Recovery
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Win (peak)
             (1250.0, 1220.0),  # Loss (drawdown)
             (1220.0, 1245.0),  # Recovery
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -991,10 +757,10 @@ class TestUlcerIndex:
         # Single drawdown should register in Ulcer Index
         assert result['ulcer_index'] > 0
 
-    def test_ulcer_index_multiple_drawdowns(self):
+    def test_ulcer_index_multiple_drawdowns(self, trades_factory):
         """Test Ulcer Index with multiple drawdown periods."""
         # Pattern: Win -> Loss -> Win -> Loss -> Win
-        prices = [
+        price_specs = [
             (1200.0, 1230.0),  # Win
             (1230.0, 1220.0),  # Loss (first drawdown)
             (1220.0, 1240.0),  # Win
@@ -1002,16 +768,7 @@ class TestUlcerIndex:
             (1210.0, 1235.0),  # Win
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -1019,10 +776,10 @@ class TestUlcerIndex:
         # Multiple drawdowns should increase Ulcer Index
         assert result['ulcer_index'] > 0
 
-    def test_ulcer_index_sustained_drawdown(self):
+    def test_ulcer_index_sustained_drawdown(self, trades_factory):
         """Test Ulcer Index with sustained (long duration) drawdown."""
         # Pattern: Peak -> Sustained losses
-        prices = [
+        price_specs = [
             (1200.0, 1250.0),  # Peak
             (1250.0, 1240.0),  # Small loss
             (1240.0, 1230.0),  # Another loss
@@ -1030,16 +787,7 @@ class TestUlcerIndex:
             (1220.0, 1210.0),  # Another loss (sustained decline)
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics_sustained = SummaryMetrics(trades)
         result_sustained = metrics_sustained.calculate_all_metrics()
@@ -1047,7 +795,7 @@ class TestUlcerIndex:
         # Sustained drawdown should give significant Ulcer Index
         assert result_sustained['ulcer_index'] > 0
 
-    def test_ulcer_index_sharp_drawdown_vs_sustained(self):
+    def test_ulcer_index_sharp_drawdown_vs_sustained(self, trades_factory):
         """Test that sustained drawdown has higher Ulcer Index than sharp recovery."""
         # Sharp drawdown with quick recovery
         sharp_prices = [
@@ -1064,27 +812,8 @@ class TestUlcerIndex:
             (1220.0, 1205.0),  # Still declining
         ]
 
-        sharp_trades = []
-        for i, (entry, exit) in enumerate(sharp_prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            sharp_trades.append(calculate_trade_metrics(trade, 'ZS'))
-
-        sustained_trades = []
-        for i, (entry, exit) in enumerate(sustained_prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            sustained_trades.append(calculate_trade_metrics(trade, 'ZS'))
+        sharp_trades = trades_factory.create_sequence(sharp_prices, symbol='ZS')
+        sustained_trades = trades_factory.create_sequence(sustained_prices, symbol='ZS')
 
         sharp_metrics = SummaryMetrics(sharp_trades)
         sustained_metrics = SummaryMetrics(sustained_trades)
@@ -1096,25 +825,16 @@ class TestUlcerIndex:
         assert sustained_result['ulcer_index'] > 0
         assert sharp_result['ulcer_index'] > 0
 
-    def test_ulcer_index_vs_max_drawdown_comparison(self):
+    def test_ulcer_index_vs_max_drawdown_comparison(self, trades_factory):
         """Test relationship between Ulcer Index and Max Drawdown."""
         # Create scenario with known drawdown
-        prices = [
+        price_specs = [
             (1200.0, 1300.0),  # Win to peak
             (1300.0, 1250.0),  # Drawdown
             (1250.0, 1295.0),  # Recovery
         ]
 
-        trades = []
-        for i, (entry, exit) in enumerate(prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+        trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -1124,7 +844,7 @@ class TestUlcerIndex:
         assert result['maximum_drawdown_percentage'] > 0
         # Ulcer Index considers duration, Max DD only considers depth
 
-    def test_ulcer_index_recovery_impact(self):
+    def test_ulcer_index_recovery_impact(self, trades_factory):
         """Test how recovery affects Ulcer Index."""
         # Scenario with recovery
         recovery_prices = [
@@ -1140,27 +860,8 @@ class TestUlcerIndex:
             (1220.0, 1225.0),  # Partial recovery only
         ]
 
-        recovery_trades = []
-        for i, (entry, exit) in enumerate(recovery_prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            recovery_trades.append(calculate_trade_metrics(trade, 'ZS'))
-
-        no_recovery_trades = []
-        for i, (entry, exit) in enumerate(no_recovery_prices):
-            trade = {
-                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                'entry_price': entry,
-                'exit_price': exit,
-                'side': 'long'
-            }
-            no_recovery_trades.append(calculate_trade_metrics(trade, 'ZS'))
+        recovery_trades = trades_factory.create_sequence(recovery_prices, symbol='ZS')
+        no_recovery_trades = trades_factory.create_sequence(no_recovery_prices, symbol='ZS')
 
         recovery_metrics = SummaryMetrics(recovery_trades)
         no_recovery_metrics = SummaryMetrics(no_recovery_trades)
@@ -1174,25 +875,28 @@ class TestUlcerIndex:
 
     """Test Expected Shortfall (CVaR) calculations."""
 
-    def test_expected_shortfall_with_sufficient_trades(self, all_losing_trades):
+    def test_expected_shortfall_with_sufficient_trades(self, trades_factory):
         """Test Expected Shortfall with enough trades."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         assert 'expected_shortfall' in result
         assert result['expected_shortfall'] >= 0
 
-    def test_expected_shortfall_insufficient_trades(self, winning_trade_zs):
+    def test_expected_shortfall_insufficient_trades(self, trade_factory):
         """Test Expected Shortfall with insufficient trades."""
-        trades = [winning_trade_zs]
+        winning_trade = trade_factory('ZS', 1200.0, 1210.0)
+        trades = [winning_trade]
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
 
         assert result['expected_shortfall'] == 0.0
 
-    def test_expected_shortfall_greater_than_var(self, all_losing_trades):
+    def test_expected_shortfall_greater_than_var(self, trades_factory):
         """Test Expected Shortfall is typically >= VaR."""
-        metrics = SummaryMetrics(all_losing_trades)
+        all_losing = trades_factory.all_losing(count=5)
+        metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         # ES should be >= VaR (average of worst cases vs threshold)
@@ -1217,9 +921,10 @@ class TestEdgeCases:
 
         assert result == {}
 
-    def test_single_winning_trade(self, winning_trade_zs):
+    def test_single_winning_trade(self, trade_factory):
         """Test metrics with single winning trade."""
-        metrics = SummaryMetrics([winning_trade_zs])
+        winning_trade = trade_factory('ZS', 1200.0, 1210.0)
+        metrics = SummaryMetrics([winning_trade])
         result = metrics.calculate_all_metrics()
 
         assert result['total_trades'] == 1
@@ -1227,9 +932,10 @@ class TestEdgeCases:
         assert result['winning_trades'] == 1
         assert result['losing_trades'] == 0
 
-    def test_single_losing_trade(self, losing_trade_zs):
+    def test_single_losing_trade(self, trade_factory):
         """Test metrics with single losing trade."""
-        metrics = SummaryMetrics([losing_trade_zs])
+        losing_trade = trade_factory('ZS', 1200.0, 1195.0)
+        metrics = SummaryMetrics([losing_trade])
         result = metrics.calculate_all_metrics()
 
         assert result['total_trades'] == 1
@@ -1237,9 +943,10 @@ class TestEdgeCases:
         assert result['winning_trades'] == 0
         assert result['losing_trades'] == 1
 
-    def test_breakeven_trade_counted_as_loss(self, breakeven_trade_zs):
+    def test_breakeven_trade_counted_as_loss(self, trade_factory):
         """Test breakeven trade is counted as losing trade."""
-        metrics = SummaryMetrics([breakeven_trade_zs])
+        breakeven_trade = trade_factory('ZS', 1200.0, 1200.0)
+        metrics = SummaryMetrics([breakeven_trade])
         result = metrics.calculate_all_metrics()
 
         # Breakeven (including commission) should be <= 0
@@ -1250,8 +957,9 @@ class TestEdgeCases:
 class TestMetricsRounding:
     """Test that all metrics are properly rounded."""
 
-    def test_all_metrics_rounded_to_two_decimals(self, mixed_trades):
+    def test_all_metrics_rounded_to_two_decimals(self, trades_factory):
         """Test all metrics are rounded to 2 decimal places."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         result = metrics.calculate_all_metrics()
 
@@ -1267,28 +975,33 @@ class TestMetricsRounding:
 class TestPrivateMethods:
     """Test private helper methods."""
 
-    def test_has_trades_method(self, mixed_trades):
+    def test_has_trades_method(self, trades_factory):
         """Test _has_trades helper method."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         assert metrics._has_trades() is True
 
         empty_metrics = SummaryMetrics([])
         assert empty_metrics._has_trades() is False
 
-    def test_has_winning_trades_method(self, mixed_trades):
+    def test_has_winning_trades_method(self, trades_factory):
         """Test _has_winning_trades helper method."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         assert metrics._has_winning_trades() is True
 
-        losing_metrics = SummaryMetrics([mixed_trades[1]])  # Only losing trade
+        losing_only = trades_factory.all_losing(count=1)
+        losing_metrics = SummaryMetrics(losing_only)
         assert losing_metrics._has_winning_trades() is False
 
-    def test_has_losing_trades_method(self, mixed_trades):
+    def test_has_losing_trades_method(self, trades_factory):
         """Test _has_losing_trades helper method."""
+        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
         metrics = SummaryMetrics(mixed_trades)
         assert metrics._has_losing_trades() is True
 
-        winning_metrics = SummaryMetrics([mixed_trades[0]])  # Only winning trade
+        winning_only = trades_factory.all_winning(count=1)
+        winning_metrics = SummaryMetrics(winning_only)
         assert winning_metrics._has_losing_trades() is False
 
 
@@ -1319,28 +1032,22 @@ class TestConstants:
 class TestRealWorldScenarios:
     """Test with realistic trade sequences."""
 
-    def test_profitable_strategy(self):
+    def test_profitable_strategy(self, trades_factory):
         """Test metrics for overall profitable strategy."""
         # 7 wins, 3 losses
         trades = []
-        for i in range(10):
-            if i < 7:  # Winning trades
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1205.0 + i,
-                    'side': 'long'
-                }
-            else:  # Losing trades
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1198.0,
-                    'side': 'long'
-                }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        # 7 winning trades
+        for i in range(7):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1205.0 + i,
+                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
+
+        # 3 losing trades
+        for i in range(3):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1198.0,
+                                                       entry_time=datetime(2024, 1, 17 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 17 + i, 14, 0)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -1350,28 +1057,22 @@ class TestRealWorldScenarios:
         assert result['total_return_percentage_of_contract'] > 0
         assert result['profit_factor'] > 1.0
 
-    def test_losing_strategy(self):
+    def test_losing_strategy(self, trades_factory):
         """Test metrics for overall losing strategy."""
         # 3 wins, 7 losses
         trades = []
-        for i in range(10):
-            if i < 3:  # Winning trades
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1202.0,
-                    'side': 'long'
-                }
-            else:  # Losing trades
-                trade = {
-                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
-                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
-                    'entry_price': 1200.0,
-                    'exit_price': 1195.0 - i,
-                    'side': 'long'
-                }
-            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        # 3 winning trades
+        for i in range(3):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1202.0,
+                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
+
+        # 7 losing trades
+        for i in range(7):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1195.0 - i,
+                                                       entry_time=datetime(2024, 1, 13 + i, 10, 0),
+                                                       exit_time=datetime(2024, 1, 13 + i, 14, 0)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()

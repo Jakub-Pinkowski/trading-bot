@@ -11,6 +11,11 @@ Tests cover:
 - Real trade data from strategy backtests
 
 All tests use realistic trade scenarios with actual futures symbols.
+
+Note: This file uses shared fixtures from conftest.py:
+- trade_factory: For creating individual trades
+- trades_factory: For creating trade sequences
+- symbol_test_data: For symbol reference data
 """
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -28,74 +33,22 @@ from app.backtesting.metrics.per_trade_metrics import (
 from config import CONTRACT_MULTIPLIERS
 
 
-# ==================== Fixtures ====================
-
-@pytest.fixture
-def sample_long_trade_zs():
-    """Sample long trade in ZS (soybeans) for testing."""
-    return {
-        'entry_time': datetime(2024, 1, 15, 10, 0),
-        'exit_time': datetime(2024, 1, 15, 14, 30),
-        'entry_price': 1200.0,  # cents per bushel
-        'exit_price': 1210.0,  # cents per bushel (profitable)
-        'side': 'long'
-    }
-
-
-@pytest.fixture
-def sample_short_trade_cl():
-    """Sample short trade in CL (crude oil) for testing."""
-    return {
-        'entry_time': datetime(2024, 2, 20, 9, 30),
-        'exit_time': datetime(2024, 2, 20, 15, 45),
-        'entry_price': 75.50,  # dollars per barrel
-        'exit_price': 74.80,  # dollars per barrel (profitable short)
-        'side': 'short'
-    }
-
-
-@pytest.fixture
-def sample_losing_trade_es():
-    """Sample losing long trade in ES (E-mini S&P 500) for testing."""
-    return {
-        'entry_time': datetime(2024, 3, 10, 13, 0),
-        'exit_time': datetime(2024, 3, 10, 16, 0),
-        'entry_price': 5000.00,
-        'exit_price': 4985.00,  # Loss of 15 points
-        'side': 'long'
-    }
-
-
-@pytest.fixture
-def breakeven_trade_gc():
-    """Sample breakeven trade in GC (gold) for testing."""
-    return {
-        'entry_time': datetime(2024, 4, 5, 11, 0),
-        'exit_time': datetime(2024, 4, 5, 12, 0),
-        'entry_price': 2050.0,
-        'exit_price': 2050.0,  # No price movement
-        'side': 'long'
-    }
-
-
 # ==================== Test Classes ====================
 
 class TestTradeMetricsCalculation:
     """Test basic trade metric calculations."""
 
-    def test_long_trade_metrics_calculation(self, sample_long_trade_zs):
+    def test_long_trade_metrics_calculation(self, trade_factory):
         """Test metrics calculation for profitable long trade."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.5)
 
         # Original trade data preserved
-        assert metrics['entry_time'] == sample_long_trade_zs['entry_time']
-        assert metrics['exit_time'] == sample_long_trade_zs['exit_time']
-        assert metrics['entry_price'] == sample_long_trade_zs['entry_price']
-        assert metrics['exit_price'] == sample_long_trade_zs['exit_price']
+        assert metrics['entry_price'] == 1200.0
+        assert metrics['exit_price'] == 1210.0
         assert metrics['side'] == 'long'
 
         # Duration calculated correctly
-        assert metrics['duration'] == timedelta(hours=4, minutes=30)
+        assert metrics['duration'] == timedelta(hours=4.5)
         assert metrics['duration_hours'] == 4.5
 
         # Commission applied
@@ -116,9 +69,9 @@ class TestTradeMetricsCalculation:
         # Return % of margin: ($496 / $4,800) * 100 = 10.33%
         assert round(metrics['return_percentage_of_margin'], 2) == 10.33
 
-    def test_short_trade_metrics_calculation(self, sample_short_trade_cl):
+    def test_short_trade_metrics_calculation(self, trade_factory):
         """Test metrics calculation for profitable short trade."""
-        metrics = calculate_trade_metrics(sample_short_trade_cl, 'CL')
+        metrics = trade_factory('CL', 75.50, 74.80, side='short', duration_hours=6.25)
 
         # Original trade data preserved
         assert metrics['side'] == 'short'
@@ -126,8 +79,6 @@ class TestTradeMetricsCalculation:
         assert metrics['exit_price'] == 74.80
 
         # Duration calculated
-        expected_duration = timedelta(hours=6, minutes=15)
-        assert metrics['duration'] == expected_duration
         assert metrics['duration_hours'] == 6.25
 
         # PnL calculated correctly for short
@@ -144,9 +95,9 @@ class TestTradeMetricsCalculation:
         # ($696 / $18,875) * 100 = 3.69%
         assert round(metrics['return_percentage_of_margin'], 2) == 3.69
 
-    def test_losing_trade_metrics(self, sample_losing_trade_es):
+    def test_losing_trade_metrics(self, trade_factory):
         """Test metrics calculation for losing trade."""
-        metrics = calculate_trade_metrics(sample_losing_trade_es, 'ES')
+        metrics = trade_factory('ES', 5000.00, 4985.00)
 
         # PnL should be negative
         # ES: (4985 - 5000) * 50 = -$750
@@ -160,9 +111,9 @@ class TestTradeMetricsCalculation:
         # Return: (-$754 / $20,000) * 100 = -3.77%
         assert round(metrics['return_percentage_of_margin'], 2) == -3.77
 
-    def test_breakeven_trade_metrics(self, breakeven_trade_gc):
+    def test_breakeven_trade_metrics(self, trade_factory):
         """Test metrics calculation for breakeven trade (no price movement)."""
-        metrics = calculate_trade_metrics(breakeven_trade_gc, 'GC')
+        metrics = trade_factory('GC', 2050.0, 2050.0, duration_hours=1.0)
 
         # Gross PnL is zero
         # Net PnL: 0 - $4 commission = -$4
@@ -179,17 +130,17 @@ class TestTradeMetricsCalculation:
 class TestReturnPercentageCalculations:
     """Test return percentage calculations."""
 
-    def test_return_percentage_of_margin(self, sample_long_trade_zs):
+    def test_return_percentage_of_margin(self, trade_factory):
         """Test return percentage based on margin requirement."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Return % of margin = (net_pnl / margin_requirement) * 100
         expected_return = (metrics['net_pnl'] / metrics['margin_requirement']) * 100
         assert round(metrics['return_percentage_of_margin'], 2) == round(expected_return, 2)
 
-    def test_return_percentage_of_contract_value(self, sample_long_trade_zs):
+    def test_return_percentage_of_contract_value(self, trade_factory):
         """Test return percentage based on contract value."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Contract value = entry_price * contract_multiplier
         contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
@@ -197,18 +148,18 @@ class TestReturnPercentageCalculations:
 
         assert round(metrics['return_percentage_of_contract'], 2) == round(expected_return, 2)
 
-    def test_both_return_percentages_present(self, sample_short_trade_cl):
+    def test_both_return_percentages_present(self, trade_factory):
         """Test both return percentage types are calculated."""
-        metrics = calculate_trade_metrics(sample_short_trade_cl, 'CL')
+        metrics = trade_factory('CL', 75.50, 74.80, side='short')
 
         assert 'return_percentage_of_margin' in metrics
         assert 'return_percentage_of_contract' in metrics
         assert isinstance(metrics['return_percentage_of_margin'], float)
         assert isinstance(metrics['return_percentage_of_contract'], float)
 
-    def test_margin_based_return_higher_than_contract_based(self, sample_long_trade_zs):
+    def test_margin_based_return_higher_than_contract_based(self, trade_factory):
         """Test margin-based return is higher due to leverage."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Margin-based return should be higher because margin < contract value
         assert metrics['return_percentage_of_margin'] > metrics['return_percentage_of_contract']
@@ -217,16 +168,16 @@ class TestReturnPercentageCalculations:
 class TestCommissionHandling:
     """Test commission calculations."""
 
-    def test_commission_applied_to_trade(self, sample_long_trade_zs):
+    def test_commission_applied_to_trade(self, trade_factory):
         """Test fixed commission is applied to every trade."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         assert metrics['commission'] == COMMISSION_PER_TRADE
         assert metrics['commission'] == 4.0
 
-    def test_commission_reduces_profit(self, sample_long_trade_zs):
+    def test_commission_reduces_profit(self, trade_factory):
         """Test commission reduces net PnL for profitable trade."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Calculate gross PnL
         pnl_points = 1210.0 - 1200.0  # 10 cents
@@ -236,9 +187,9 @@ class TestCommissionHandling:
         expected_net = gross_pnl - COMMISSION_PER_TRADE
         assert metrics['net_pnl'] == expected_net
 
-    def test_commission_increases_loss(self, sample_losing_trade_es):
+    def test_commission_increases_loss(self, trade_factory):
         """Test commission increases net loss for losing trade."""
-        metrics = calculate_trade_metrics(sample_losing_trade_es, 'ES')
+        metrics = trade_factory('ES', 5000.0, 4985.0)
 
         # Calculate gross loss
         pnl_points = 4985.0 - 5000.0  # -15 points
@@ -253,57 +204,41 @@ class TestCommissionHandling:
 class TestTradeDurationCalculations:
     """Test trade duration calculations."""
 
-    def test_duration_timedelta_object(self, sample_long_trade_zs):
+    def test_duration_timedelta_object(self, trade_factory):
         """Test duration is returned as timedelta object."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.5)
 
         assert isinstance(metrics['duration'], timedelta)
-        assert metrics['duration'] == timedelta(hours=4, minutes=30)
+        assert metrics['duration'] == timedelta(hours=4.5)
 
-    def test_duration_hours_float(self, sample_short_trade_cl):
+    def test_duration_hours_float(self, trade_factory):
         """Test duration_hours is float with 2 decimal places."""
-        metrics = calculate_trade_metrics(sample_short_trade_cl, 'CL')
+        metrics = trade_factory('CL', 75.50, 74.80, side='short', duration_hours=6.25)
 
         assert isinstance(metrics['duration_hours'], float)
         assert metrics['duration_hours'] == 6.25
 
-    def test_very_short_duration(self):
+    def test_very_short_duration(self, trade_factory):
         """Test trade with very short duration (minutes)."""
-        short_trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 10, 15),  # 15 minutes
-            'entry_price': 1200.0,
-            'exit_price': 1205.0,
-            'side': 'long'
-        }
-
-        metrics = calculate_trade_metrics(short_trade, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1205.0, duration_hours=0.25)
 
         assert metrics['duration'] == timedelta(minutes=15)
         assert metrics['duration_hours'] == 0.25
 
-    def test_very_long_duration(self):
+    def test_very_long_duration(self, trade_factory):
         """Test trade with very long duration (days)."""
-        long_trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 20, 14, 30),  # ~5 days
-            'entry_price': 75.0,
-            'exit_price': 78.0,
-            'side': 'long'
-        }
-
-        metrics = calculate_trade_metrics(long_trade, 'CL')
-
         expected_hours = (5 * 24) + 4.5  # 5 days + 4.5 hours
+        metrics = trade_factory('CL', 75.0, 78.0, duration_hours=expected_hours)
+
         assert metrics['duration_hours'] == expected_hours
 
 
 class TestMarginRequirementCalculations:
     """Test margin requirement calculations."""
 
-    def test_margin_requirement_grains(self, sample_long_trade_zs):
+    def test_margin_requirement_grains(self, trade_factory):
         """Test margin calculation for grains category."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # ZS is grains (8% margin ratio)
         contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
@@ -311,9 +246,9 @@ class TestMarginRequirementCalculations:
 
         assert metrics['margin_requirement'] == expected_margin
 
-    def test_margin_requirement_energies(self, sample_short_trade_cl):
+    def test_margin_requirement_energies(self, trade_factory):
         """Test margin calculation for energies category."""
-        metrics = calculate_trade_metrics(sample_short_trade_cl, 'CL')
+        metrics = trade_factory('CL', 75.50, 74.80, side='short')
 
         # CL is energies (25% margin ratio)
         contract_value = 75.50 * CONTRACT_MULTIPLIERS['CL']
@@ -321,9 +256,9 @@ class TestMarginRequirementCalculations:
 
         assert metrics['margin_requirement'] == expected_margin
 
-    def test_margin_requirement_indices(self, sample_losing_trade_es):
+    def test_margin_requirement_indices(self, trade_factory):
         """Test margin calculation for indices category."""
-        metrics = calculate_trade_metrics(sample_losing_trade_es, 'ES')
+        metrics = trade_factory('ES', 5000.0, 4985.0)
 
         # ES is indices (8% margin ratio)
         contract_value = 5000.0 * CONTRACT_MULTIPLIERS['ES']
@@ -331,9 +266,9 @@ class TestMarginRequirementCalculations:
 
         assert metrics['margin_requirement'] == expected_margin
 
-    def test_margin_requirement_metals(self, breakeven_trade_gc):
+    def test_margin_requirement_metals(self, trade_factory):
         """Test margin calculation for metals category."""
-        metrics = calculate_trade_metrics(breakeven_trade_gc, 'GC')
+        metrics = trade_factory('GC', 2050.0, 2050.0)
 
         # GC is metals (12% margin ratio)
         contract_value = 2050.0 * CONTRACT_MULTIPLIERS['GC']
@@ -436,54 +371,45 @@ class TestEstimateMargin:
 class TestEdgeCases:
     """Test edge cases in trade metric calculations."""
 
-    def test_same_entry_exit_price(self, breakeven_trade_gc):
+    def test_same_entry_exit_price(self, trade_factory):
         """Test trade with no price movement (only commission loss)."""
-        metrics = calculate_trade_metrics(breakeven_trade_gc, 'GC')
+        metrics = trade_factory('GC', 2050.0, 2050.0)
 
         # Gross PnL should be 0
         # Net PnL should be -commission
         assert metrics['net_pnl'] == -COMMISSION_PER_TRADE
 
-    def test_very_small_profit(self):
+    def test_very_small_profit(self, trade_factory):
         """Test trade with very small profit."""
-        small_profit_trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 11, 0),
-            'entry_price': 1200.00,
-            'exit_price': 1200.25,  # 0.25 cent profit
-            'side': 'long'
-        }
-
-        metrics = calculate_trade_metrics(small_profit_trade, 'ZS')
+        metrics = trade_factory('ZS', 1200.00, 1200.25)
 
         # Gross: 0.25 * 5000 = $12.50
         # Net: $12.50 - $4 = $8.50
         assert metrics['net_pnl'] == 8.50
 
-    def test_very_large_profit(self):
+    def test_very_large_profit(self, trade_factory):
         """Test trade with very large profit."""
-        large_profit_trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 16, 10, 0),
-            'entry_price': 50.00,
-            'exit_price': 65.00,  # $15 move in CL
-            'side': 'long'
-        }
-
-        metrics = calculate_trade_metrics(large_profit_trade, 'CL')
+        metrics = trade_factory('CL', 50.00, 65.00, duration_hours=24.0)
 
         # Gross: 15 * 1000 = $15,000
         # Net: $15,000 - $4 = $14,996
         assert metrics['net_pnl'] == 14996.0
 
-    def test_invalid_symbol_raises_error(self, sample_long_trade_zs):
+    def test_invalid_symbol_raises_error(self):
         """Test invalid symbol raises ValueError."""
+        trade = {
+            'entry_time': datetime(2024, 1, 15, 10, 0),
+            'exit_time': datetime(2024, 1, 15, 11, 0),
+            'entry_price': 1200.0,
+            'exit_price': 1210.0,
+            'side': 'long'
+        }
         with pytest.raises(ValueError, match="No contract multiplier found"):
-            calculate_trade_metrics(sample_long_trade_zs, 'INVALID')
+            calculate_trade_metrics(trade, 'INVALID')
 
     def test_invalid_side_raises_error(self):
         """Test invalid trade side raises ValueError."""
-        invalid_trade = {
+        trade = {
             'entry_time': datetime(2024, 1, 15, 10, 0),
             'exit_time': datetime(2024, 1, 15, 11, 0),
             'entry_price': 1200.0,
@@ -492,19 +418,11 @@ class TestEdgeCases:
         }
 
         with pytest.raises(ValueError, match="Unknown trade side"):
-            calculate_trade_metrics(invalid_trade, 'ZS')
+            calculate_trade_metrics(trade, 'ZS')
 
-    def test_zero_duration_trade(self):
+    def test_zero_duration_trade(self, trade_factory):
         """Test trade with same entry and exit time."""
-        zero_duration_trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 10, 0),  # Same time
-            'entry_price': 1200.0,
-            'exit_price': 1205.0,
-            'side': 'long'
-        }
-
-        metrics = calculate_trade_metrics(zero_duration_trade, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1205.0, duration_hours=0.0)
 
         assert metrics['duration'] == timedelta(0)
         assert metrics['duration_hours'] == 0.0
@@ -513,30 +431,37 @@ class TestEdgeCases:
 class TestTradeDataPreservation:
     """Test that original trade data is preserved in metrics."""
 
-    def test_all_original_fields_preserved(self, sample_long_trade_zs):
+    def test_all_original_fields_preserved(self, trade_factory):
         """Test all original trade fields are in metrics output."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # All original fields should be present
-        for key in sample_long_trade_zs.keys():
+        required_original_fields = ['entry_time', 'exit_time', 'entry_price', 'exit_price', 'side']
+        for key in required_original_fields:
             assert key in metrics
-            assert metrics[key] == sample_long_trade_zs[key]
 
-    def test_original_trade_not_modified(self, sample_long_trade_zs):
+    def test_original_trade_not_modified(self):
         """Test original trade dict is not modified."""
-        original_keys = set(sample_long_trade_zs.keys())
-        original_values = {k: v for k, v in sample_long_trade_zs.items()}
+        original_trade = {
+            'entry_time': datetime(2024, 1, 15, 10, 0),
+            'exit_time': datetime(2024, 1, 15, 14, 0),
+            'entry_price': 1200.0,
+            'exit_price': 1210.0,
+            'side': 'long'
+        }
+        original_keys = set(original_trade.keys())
+        original_values = {k: v for k, v in original_trade.items()}
 
-        calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        calculate_trade_metrics(original_trade, 'ZS')
 
         # Original trade should be unchanged
-        assert set(sample_long_trade_zs.keys()) == original_keys
+        assert set(original_trade.keys()) == original_keys
         for key, value in original_values.items():
-            assert sample_long_trade_zs[key] == value
+            assert original_trade[key] == value
 
-    def test_additional_metrics_added(self, sample_long_trade_zs):
+    def test_additional_metrics_added(self, trade_factory):
         """Test additional metric fields are added to output."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Additional fields that should be present
         additional_fields = [
@@ -584,9 +509,9 @@ class TestMultipleSymbols:
 class TestPrintTradeMetrics:
     """Test print_trade_metrics function output."""
 
-    def test_print_profitable_trade(self, sample_long_trade_zs, capsys):
+    def test_print_profitable_trade(self, trade_factory, capsys):
         """Test printing metrics for profitable trade (green color)."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         print_trade_metrics(metrics)
 
@@ -606,9 +531,9 @@ class TestPrintTradeMetrics:
         # Verify green color code is used for profitable trade
         assert '\033[92m' in output  # Green color
 
-    def test_print_losing_trade(self, sample_losing_trade_es, capsys):
+    def test_print_losing_trade(self, trade_factory, capsys):
         """Test printing metrics for losing trade (red color)."""
-        metrics = calculate_trade_metrics(sample_losing_trade_es, 'ES')
+        metrics = trade_factory('ES', 5000.0, 4985.0)
 
         print_trade_metrics(metrics)
 
@@ -622,9 +547,9 @@ class TestPrintTradeMetrics:
         # Verify red color code is used for losing trade
         assert '\033[91m' in output  # Red color
 
-    def test_print_breakeven_trade(self, breakeven_trade_gc, capsys):
+    def test_print_breakeven_trade(self, trade_factory, capsys):
         """Test printing metrics for breakeven trade (no color)."""
-        metrics = calculate_trade_metrics(breakeven_trade_gc, 'GC')
+        metrics = trade_factory('GC', 2050.0, 2050.0)
 
         # Manually set return to exactly 0 for this test
         metrics['return_percentage_of_contract'] = 0.0
@@ -637,9 +562,9 @@ class TestPrintTradeMetrics:
         # Verify information is printed
         assert 'TRADE METRICS' in output
 
-    def test_print_trade_with_duration(self, sample_long_trade_zs, capsys):
+    def test_print_trade_with_duration(self, trade_factory, capsys):
         """Test duration information is printed correctly."""
-        metrics = calculate_trade_metrics(sample_long_trade_zs, 'ZS')
+        metrics = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.5)
 
         print_trade_metrics(metrics)
 
@@ -751,11 +676,19 @@ class TestErrorHandling:
 class TestLoggerCalls:
     """Test that logger is called appropriately for errors."""
 
-    def test_logger_called_for_invalid_symbol(self, sample_long_trade_zs):
+    def test_logger_called_for_invalid_symbol(self):
         """Test logger.error is called for invalid symbol."""
+        trade = {
+            'entry_time': datetime(2024, 1, 15, 10, 0),
+            'exit_time': datetime(2024, 1, 15, 14, 0),
+            'entry_price': 1200.0,
+            'exit_price': 1210.0,
+            'side': 'long'
+        }
+
         with patch('app.backtesting.metrics.per_trade_metrics.logger') as mock_logger:
             with pytest.raises(ValueError):
-                calculate_trade_metrics(sample_long_trade_zs, 'INVALID')
+                calculate_trade_metrics(trade, 'INVALID')
 
             # Verify logger was called
             mock_logger.error.assert_called_once()
