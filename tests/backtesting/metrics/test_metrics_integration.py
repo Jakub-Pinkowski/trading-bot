@@ -9,7 +9,9 @@ Coverage:
 - Data structure compatibility between modules
 - Edge case handling across module boundaries
 - Field presence and usage verification
+- Performance tests (with 10,000 trades - runs in ~0.1s)
 """
+import time
 from datetime import datetime
 
 from app.backtesting.metrics.per_trade_metrics import calculate_trade_metrics
@@ -319,3 +321,54 @@ class TestMetricsIntegration:
 
         # Small profit should still register as winning trade
         assert result['winning_trades'] == 1
+
+    def test_large_scale_performance(self, trades_factory):
+        """
+        Performance test with 10,000 trades.
+
+        Verifies that metrics calculation scales efficiently with large datasets.
+        Runs quickly (~0.1s) so included in default test suite.
+        """
+        # Create 10,000 trades
+        trades = trades_factory.mixed(win_count=6000, loss_count=4000, symbol='ZS')
+
+        # Measure time for summary metrics calculation
+        start = time.perf_counter()
+        summary = SummaryMetrics(trades)
+        result = summary.calculate_all_metrics()
+        end = time.perf_counter()
+
+        # Check basic metrics
+        assert result['total_trades'] == 10000
+        assert result['win_rate'] == 60.0
+
+        # Ensure performance is acceptable
+        assert end - start < 2.0, "Performance test exceeded time limit"
+
+    def test_memory_usage_performance(self, trades_factory):
+        """
+        Memory usage test with 10,000 trades.
+
+        Verifies memory consumption stays within reasonable limits.
+        Runs quickly so included in default test suite.
+        """
+        trades = trades_factory.mixed(win_count=6000, loss_count=4000, symbol='ZS')
+
+        # Measure memory usage
+        import tracemalloc
+        tracemalloc.start()
+
+        summary = SummaryMetrics(trades)
+        summary.calculate_all_metrics()
+
+        # Get current, peak memory usage
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        # Convert to MB
+        current_mb = current / (1024 * 1024)
+        peak_mb = peak / (1024 * 1024)
+
+        # Check memory usage is within limits
+        assert current_mb < 50.0, "Current memory usage exceeded limit"
+        assert peak_mb < 100.0, "Peak memory usage exceeded limit"
