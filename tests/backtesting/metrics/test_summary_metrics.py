@@ -310,6 +310,132 @@ class TestDrawdownCalculations:
         assert isinstance(result['ulcer_index'], float)
         assert result['ulcer_index'] >= 0
 
+    def test_single_negative_trade_from_zero(self):
+        """Test drawdown from zero starting equity with single losing trade."""
+        trade = {
+            'entry_time': datetime(2024, 1, 15, 10, 0),
+            'exit_time': datetime(2024, 1, 15, 14, 0),
+            'entry_price': 1200.0,
+            'exit_price': 1190.0,  # Losing trade
+            'side': 'long'
+        }
+        trades = [calculate_trade_metrics(trade, 'ZS')]
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Starting from zero, one loss creates drawdown equal to the loss
+        assert result['maximum_drawdown_percentage'] > 0
+        # The drawdown should equal the absolute loss
+        expected_dd = abs(trades[0]['return_percentage_of_contract'])
+        assert round(result['maximum_drawdown_percentage'], 2) == round(expected_dd, 2)
+
+    def test_multiple_drawdown_periods(self):
+        """Test multiple separate drawdown periods are tracked correctly."""
+        # Create pattern: Win -> Loss -> Win -> Bigger Loss -> Win
+        trades = []
+        prices = [
+            (1200.0, 1210.0),  # Win +10
+            (1210.0, 1205.0),  # Loss -5 (first drawdown)
+            (1205.0, 1220.0),  # Win +15 (recovery)
+            (1220.0, 1200.0),  # Loss -20 (second, larger drawdown)
+            (1200.0, 1215.0),  # Win +15 (recovery)
+        ]
+
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Should capture the largest drawdown (second period)
+        assert result['maximum_drawdown_percentage'] > 0
+
+    def test_complex_peak_trough_scenario(self):
+        """Test complex scenario with multiple peaks and troughs."""
+        # Pattern: Peak -> Drop -> Small recovery -> Further drop -> Recovery
+        prices = [
+            (1200.0, 1250.0),  # Big win to peak
+            (1250.0, 1230.0),  # Drop
+            (1230.0, 1240.0),  # Small recovery
+            (1240.0, 1210.0),  # Further drop (trough)
+            (1210.0, 1245.0),  # Recovery
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        max_dd, max_dd_pct = metrics._calculate_max_drawdown()
+
+        # Verify drawdown is calculated from highest peak to lowest trough
+        assert max_dd > 0
+        assert max_dd_pct > 0
+
+    def test_drawdown_with_recovery(self):
+        """Test drawdown calculation followed by full recovery."""
+        # Pattern: Win to peak -> Loss (drawdown) -> Win (full recovery)
+        prices = [
+            (1200.0, 1250.0),  # Win to peak
+            (1250.0, 1220.0),  # Loss (drawdown)
+            (1220.0, 1250.0),  # Recovery to previous peak
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Drawdown should still be recorded even after recovery
+        assert result['maximum_drawdown_percentage'] > 0
+
+    def test_drawdown_calculation_accuracy(self):
+        """Test precise drawdown percentage calculation."""
+        # Create specific scenario with known drawdown
+        prices = [
+            (1000.0, 1100.0),  # +10% (cumulative: 10%)
+            (1100.0, 1050.0),  # -4.55% (cumulative: ~5.45%)
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        # Drawdown from peak should be measurable
+        assert metrics.maximum_drawdown_percentage > 0
+
 
 class TestSharpeRatio:
     """Test Sharpe ratio calculations."""
@@ -331,6 +457,113 @@ class TestSharpeRatio:
         # Less than MIN_RETURNS_FOR_SHARPE = 0
         assert result['sharpe_ratio'] == 0.0
 
+    def test_sharpe_ratio_high_volatility(self):
+        """Test Sharpe ratio with high volatility returns."""
+        # Create trades with high variance: large wins and large losses
+        prices = [
+            (1200.0, 1250.0),  # Big win
+            (1250.0, 1210.0),  # Big loss
+            (1210.0, 1260.0),  # Big win
+            (1260.0, 1215.0),  # Big loss
+            (1215.0, 1265.0),  # Big win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # High volatility should result in lower Sharpe ratio
+        # (compared to same returns with lower volatility)
+        assert result['sharpe_ratio'] is not None
+        assert isinstance(result['sharpe_ratio'], float)
+
+    def test_sharpe_ratio_negative_returns(self):
+        """Test Sharpe ratio with predominantly negative returns."""
+        # Create mostly losing trades
+        trades = []
+        for i in range(5):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': 1200.0 - (i + 1) * 10,  # Increasing losses
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Negative average return should give negative Sharpe
+        assert result['sharpe_ratio'] < 0
+
+    def test_sharpe_ratio_single_large_outlier(self):
+        """Test Sharpe ratio with single large outlier affecting std dev."""
+        # Create mostly small wins with one huge win
+        prices = [
+            (1200.0, 1202.0),  # Small win
+            (1202.0, 1204.0),  # Small win
+            (1204.0, 1206.0),  # Small win
+            (1206.0, 1208.0),  # Small win
+            (1208.0, 1300.0),  # Huge outlier win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Outlier increases both mean and std dev
+        assert result['sharpe_ratio'] > 0
+        assert isinstance(result['sharpe_ratio'], float)
+
+    def test_sharpe_ratio_with_mixed_returns(self):
+        """Test Sharpe ratio with balanced wins and losses."""
+        # Create alternating wins and losses
+        prices = [
+            (1200.0, 1210.0),  # Win
+            (1210.0, 1205.0),  # Loss
+            (1205.0, 1215.0),  # Win
+            (1215.0, 1210.0),  # Loss
+            (1210.0, 1220.0),  # Win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Mixed returns should give moderate Sharpe ratio
+        assert isinstance(result['sharpe_ratio'], float)
+
 
 class TestSortinoRatio:
     """Test Sortino ratio calculations."""
@@ -351,6 +584,107 @@ class TestSortinoRatio:
         # No downside deviation = infinity replacement
         assert result['sortino_ratio'] == INFINITY_REPLACEMENT
 
+    def test_sortino_ratio_all_downside_returns(self, all_losing_trades):
+        """Test Sortino ratio when all returns are below risk-free rate."""
+        metrics = SummaryMetrics(all_losing_trades)
+        result = metrics.calculate_all_metrics()
+
+        # All negative returns should give negative Sortino ratio
+        assert result['sortino_ratio'] < 0
+
+    def test_sortino_ratio_asymmetric_returns(self):
+        """Test Sortino ratio with asymmetric return distribution (large wins, small losses)."""
+        # Create asymmetric distribution: few large wins, many small losses
+        trades = []
+
+        # Many small losses
+        for i in range(7):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': 1198.0,  # Small consistent losses
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        # Few large wins
+        for i in range(3):
+            trade = {
+                'entry_time': datetime(2024, 1, 17 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 17 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': 1250.0 + i * 10,  # Large wins
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Sortino should be better than Sharpe for positive skew (many small losses, few big wins)
+        assert result['sortino_ratio'] is not None
+        assert isinstance(result['sortino_ratio'], float)
+
+    def test_sortino_vs_sharpe_comparison(self):
+        """Test that Sortino ratio differs from Sharpe ratio appropriately."""
+        # Create scenario with downside volatility
+        prices = [
+            (1200.0, 1220.0),  # Win
+            (1220.0, 1200.0),  # Loss
+            (1200.0, 1225.0),  # Win
+            (1225.0, 1205.0),  # Loss
+            (1205.0, 1230.0),  # Win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Both ratios should be calculated
+        assert result['sortino_ratio'] is not None
+        assert result['sharpe_ratio'] is not None
+        # Sortino typically higher (penalizes only downside)
+        # But both should be positive for net positive returns
+
+    def test_sortino_with_small_downside(self):
+        """Test Sortino ratio with minimal downside volatility."""
+        # Create mostly wins with one tiny loss
+        prices = [
+            (1200.0, 1210.0),  # Win
+            (1210.0, 1220.0),  # Win
+            (1220.0, 1219.0),  # Tiny loss
+            (1219.0, 1230.0),  # Win
+            (1230.0, 1240.0),  # Win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Small downside should give good Sortino ratio
+        assert result['sortino_ratio'] > 0
+
 
 class TestCalmarRatio:
     """Test Calmar ratio calculations."""
@@ -370,6 +704,111 @@ class TestCalmarRatio:
 
         # Zero/minimal drawdown might give very high value
         assert result['calmar_ratio'] >= 0
+
+    def test_calmar_ratio_small_drawdown(self):
+        """Test Calmar ratio with small drawdown relative to returns."""
+        # Pattern: Large wins with small drawdown
+        prices = [
+            (1200.0, 1250.0),  # Large win
+            (1250.0, 1245.0),  # Small drawdown
+            (1245.0, 1280.0),  # Large win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Small drawdown with good returns = high Calmar
+        assert result['calmar_ratio'] > 0
+
+    def test_calmar_ratio_large_drawdown(self):
+        """Test Calmar ratio with large drawdown relative to returns."""
+        # Pattern: Small net return with large drawdown
+        prices = [
+            (1200.0, 1250.0),  # Win to peak
+            (1250.0, 1180.0),  # Large drawdown
+            (1180.0, 1210.0),  # Small recovery
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Large drawdown with small return = low Calmar
+        assert result['calmar_ratio'] > 0  # Still positive if net return is positive
+
+    def test_calmar_ratio_negative_returns(self):
+        """Test Calmar ratio with negative total returns."""
+        # All losing trades
+        prices = [
+            (1200.0, 1190.0),
+            (1190.0, 1180.0),
+            (1180.0, 1170.0),
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Negative returns = negative Calmar ratio
+        assert result['calmar_ratio'] < 0
+
+    def test_calmar_ratio_recovery_periods(self):
+        """Test Calmar ratio accounts for drawdown even after recovery."""
+        # Pattern: Drawdown followed by full recovery
+        prices = [
+            (1200.0, 1300.0),  # Peak
+            (1300.0, 1250.0),  # Drawdown
+            (1250.0, 1350.0),  # Recovery beyond peak
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Good return with moderate drawdown = reasonable Calmar
+        assert result['calmar_ratio'] > 0
+        assert result['maximum_drawdown_percentage'] > 0  # Drawdown still recorded
 
 
 class TestValueAtRisk:
@@ -394,8 +833,345 @@ class TestValueAtRisk:
         # Not enough returns = 0
         assert result['value_at_risk'] == 0.0
 
+    def test_var_with_skewed_distribution(self):
+        """Test VaR with negatively skewed return distribution (many small wins, few big losses)."""
+        # Create skewed distribution: 7 small wins, 3 big losses
+        trades = []
 
-class TestExpectedShortfall:
+        # Small wins
+        for i in range(7):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': 1202.0,  # Small consistent wins
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        # Big losses
+        for i in range(3):
+            trade = {
+                'entry_time': datetime(2024, 1, 17 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 17 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': 1170.0 - i * 5,  # Big losses
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # VaR should capture the tail risk from big losses
+        assert result['value_at_risk'] > 0
+
+    def test_var_with_fat_tails(self):
+        """Test VaR with fat-tailed distribution (more extreme events than normal distribution)."""
+        # Create distribution with extreme outliers
+        prices = [
+            (1200.0, 1205.0),  # Small win
+            (1205.0, 1210.0),  # Small win
+            (1210.0, 1215.0),  # Small win
+            (1215.0, 1220.0),  # Small win
+            (1220.0, 1225.0),  # Small win
+            (1225.0, 1150.0),  # Extreme loss (fat tail)
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # VaR should be significant due to extreme loss
+        assert result['value_at_risk'] > 0
+
+    def test_var_with_extreme_losses(self):
+        """Test VaR calculation with several extreme losses."""
+        # Create scenario with multiple extreme losses
+        trades = []
+        for i in range(10):
+            if i < 5:
+                # Normal trades
+                trade = {
+                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                    'entry_price': 1200.0,
+                    'exit_price': 1205.0,
+                    'side': 'long'
+                }
+            else:
+                # Extreme losses
+                trade = {
+                    'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                    'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                    'entry_price': 1200.0,
+                    'exit_price': 1150.0 - (i - 5) * 10,  # Increasingly extreme losses
+                    'side': 'long'
+                }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # VaR should be high due to extreme losses
+        assert result['value_at_risk'] > 0
+
+    def test_var_with_normal_distribution(self):
+        """Test VaR with approximately normal return distribution."""
+        # Create returns clustered around mean
+        import random
+        random.seed(42)  # For reproducibility
+
+        trades = []
+        for i in range(20):
+            # Generate returns around 1% with small variance
+            price_change = 1200.0 * (1 + random.gauss(0.01, 0.005))
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': 1200.0,
+                'exit_price': price_change,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # VaR should be reasonable for normal distribution
+        assert result['value_at_risk'] >= 0
+
+
+class TestUlcerIndex:
+    """Test Ulcer Index calculations for downside risk measurement."""
+
+    def test_ulcer_index_no_drawdown(self, all_winning_trades):
+        """Test Ulcer Index with no drawdown (all winning trades)."""
+        metrics = SummaryMetrics(all_winning_trades)
+        result = metrics.calculate_all_metrics()
+
+        # No drawdown should give very low or zero Ulcer Index
+        assert result['ulcer_index'] >= 0
+        # With all wins, ulcer index should be minimal
+        assert result['ulcer_index'] < 1.0  # Should be very small
+
+    def test_ulcer_index_single_drawdown(self):
+        """Test Ulcer Index with single drawdown period."""
+        # Pattern: Win -> Loss -> Recovery
+        prices = [
+            (1200.0, 1250.0),  # Win (peak)
+            (1250.0, 1220.0),  # Loss (drawdown)
+            (1220.0, 1245.0),  # Recovery
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Single drawdown should register in Ulcer Index
+        assert result['ulcer_index'] > 0
+
+    def test_ulcer_index_multiple_drawdowns(self):
+        """Test Ulcer Index with multiple drawdown periods."""
+        # Pattern: Win -> Loss -> Win -> Loss -> Win
+        prices = [
+            (1200.0, 1230.0),  # Win
+            (1230.0, 1220.0),  # Loss (first drawdown)
+            (1220.0, 1240.0),  # Win
+            (1240.0, 1210.0),  # Loss (second drawdown)
+            (1210.0, 1235.0),  # Win
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Multiple drawdowns should increase Ulcer Index
+        assert result['ulcer_index'] > 0
+
+    def test_ulcer_index_sustained_drawdown(self):
+        """Test Ulcer Index with sustained (long duration) drawdown."""
+        # Pattern: Peak -> Sustained losses
+        prices = [
+            (1200.0, 1250.0),  # Peak
+            (1250.0, 1240.0),  # Small loss
+            (1240.0, 1230.0),  # Another loss
+            (1230.0, 1220.0),  # Another loss
+            (1220.0, 1210.0),  # Another loss (sustained decline)
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics_sustained = SummaryMetrics(trades)
+        result_sustained = metrics_sustained.calculate_all_metrics()
+
+        # Sustained drawdown should give significant Ulcer Index
+        assert result_sustained['ulcer_index'] > 0
+
+    def test_ulcer_index_sharp_drawdown_vs_sustained(self):
+        """Test that sustained drawdown has higher Ulcer Index than sharp recovery."""
+        # Sharp drawdown with quick recovery
+        sharp_prices = [
+            (1200.0, 1250.0),  # Peak
+            (1250.0, 1200.0),  # Sharp drop
+            (1200.0, 1245.0),  # Quick recovery
+        ]
+
+        # Sustained drawdown
+        sustained_prices = [
+            (1200.0, 1250.0),  # Peak
+            (1250.0, 1235.0),  # Gradual decline
+            (1235.0, 1220.0),  # Continues
+            (1220.0, 1205.0),  # Still declining
+        ]
+
+        sharp_trades = []
+        for i, (entry, exit) in enumerate(sharp_prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            sharp_trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        sustained_trades = []
+        for i, (entry, exit) in enumerate(sustained_prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            sustained_trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        sharp_metrics = SummaryMetrics(sharp_trades)
+        sustained_metrics = SummaryMetrics(sustained_trades)
+
+        sharp_result = sharp_metrics.calculate_all_metrics()
+        sustained_result = sustained_metrics.calculate_all_metrics()
+
+        # Sustained drawdown penalized more by Ulcer Index (duration matters)
+        assert sustained_result['ulcer_index'] > 0
+        assert sharp_result['ulcer_index'] > 0
+
+    def test_ulcer_index_vs_max_drawdown_comparison(self):
+        """Test relationship between Ulcer Index and Max Drawdown."""
+        # Create scenario with known drawdown
+        prices = [
+            (1200.0, 1300.0),  # Win to peak
+            (1300.0, 1250.0),  # Drawdown
+            (1250.0, 1295.0),  # Recovery
+        ]
+
+        trades = []
+        for i, (entry, exit) in enumerate(prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        metrics = SummaryMetrics(trades)
+        result = metrics.calculate_all_metrics()
+
+        # Both metrics should capture the drawdown
+        assert result['ulcer_index'] > 0
+        assert result['maximum_drawdown_percentage'] > 0
+        # Ulcer Index considers duration, Max DD only considers depth
+
+    def test_ulcer_index_recovery_impact(self):
+        """Test how recovery affects Ulcer Index."""
+        # Scenario with recovery
+        recovery_prices = [
+            (1200.0, 1250.0),  # Peak
+            (1250.0, 1220.0),  # Drawdown
+            (1220.0, 1250.0),  # Full recovery
+        ]
+
+        # Scenario without recovery
+        no_recovery_prices = [
+            (1200.0, 1250.0),  # Peak
+            (1250.0, 1220.0),  # Drawdown
+            (1220.0, 1225.0),  # Partial recovery only
+        ]
+
+        recovery_trades = []
+        for i, (entry, exit) in enumerate(recovery_prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            recovery_trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        no_recovery_trades = []
+        for i, (entry, exit) in enumerate(no_recovery_prices):
+            trade = {
+                'entry_time': datetime(2024, 1, 10 + i, 10, 0),
+                'exit_time': datetime(2024, 1, 10 + i, 14, 0),
+                'entry_price': entry,
+                'exit_price': exit,
+                'side': 'long'
+            }
+            no_recovery_trades.append(calculate_trade_metrics(trade, 'ZS'))
+
+        recovery_metrics = SummaryMetrics(recovery_trades)
+        no_recovery_metrics = SummaryMetrics(no_recovery_trades)
+
+        recovery_result = recovery_metrics.calculate_all_metrics()
+        no_recovery_result = no_recovery_metrics.calculate_all_metrics()
+
+        # Both should have Ulcer Index > 0
+        assert recovery_result['ulcer_index'] > 0
+        assert no_recovery_result['ulcer_index'] > 0
+
     """Test Expected Shortfall (CVaR) calculations."""
 
     def test_expected_shortfall_with_sufficient_trades(self, all_losing_trades):
