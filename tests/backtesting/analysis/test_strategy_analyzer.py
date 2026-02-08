@@ -276,8 +276,9 @@ class TestGetTopStrategiesFiltering:
             min_slippage_ticks=5
         )
 
-        # Should only include HighSlippageStrategy_slippage_5
-        assert all('slippage_5' in str(name) for name in result['strategy'].values)
+        # Should only include HighSlippageStrategy with slippage_ticks=5.0
+        assert len(result) > 0, "Should find strategies with slippage_ticks >= 5"
+        assert all('slippage_ticks=5.0' in str(name) for name in result['strategy'].values)
 
     def test_no_results_with_strict_filters(self, analyzer_with_data):
         """Test that empty DataFrame is returned when no strategies match filters."""

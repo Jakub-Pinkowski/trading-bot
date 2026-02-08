@@ -73,10 +73,10 @@ class TestDataFrameFiltering:
         # Should include HighPerformer (38.33) and SingleSymbolStrategy (60)
         # Should exclude MediumPerformer (13.75) and LowTradeStrategy (5)
         unique_strategies = result['strategy'].unique()
-        assert 'HighPerformer_slippage_ticks_1.0' in unique_strategies
-        assert 'SingleSymbolStrategy_slippage_ticks_1.5' in unique_strategies
-        assert 'MediumPerformer_slippage_ticks_2.0' not in unique_strategies
-        assert 'LowTradeStrategy_slippage_ticks_0.5' not in unique_strategies
+        assert 'HighPerformer(slippage_ticks=1.0)' in unique_strategies
+        assert 'SingleSymbolStrategy(slippage_ticks=1.5)' in unique_strategies
+        assert 'MediumPerformer(slippage_ticks=2.0)' not in unique_strategies
+        assert 'LowTradeStrategy(slippage_ticks=0.5)' not in unique_strategies
 
     def test_filter_by_symbol(self, filtering_strategy_data):
         """Test filtering by specific symbol."""
@@ -160,10 +160,10 @@ class TestDataFrameFiltering:
         # HighPerformer (3 symbols), MediumPerformer (2 symbols)
         # Should exclude LowTradeStrategy (1 symbol), SingleSymbolStrategy (1 symbol)
         unique_strategies = result['strategy'].unique()
-        assert 'HighPerformer_slippage_ticks_1.0' in unique_strategies
-        assert 'MediumPerformer_slippage_ticks_2.0' in unique_strategies
-        assert 'LowTradeStrategy_slippage_ticks_0.5' not in unique_strategies
-        assert 'SingleSymbolStrategy_slippage_ticks_1.5' not in unique_strategies
+        assert 'HighPerformer(slippage_ticks=1.0)' in unique_strategies
+        assert 'MediumPerformer(slippage_ticks=2.0)' in unique_strategies
+        assert 'LowTradeStrategy(slippage_ticks=0.5)' not in unique_strategies
+        assert 'SingleSymbolStrategy(slippage_ticks=1.5)' not in unique_strategies
 
     def test_filter_with_multiple_criteria(self, filtering_strategy_data):
         """Test filtering with multiple criteria combined."""

@@ -99,7 +99,7 @@ def base_strategy_results():
          'expected_shortfall': 9.0, 'ulcer_index': 5.0},
 
         # Strategy with different slippage (for slippage filtering tests)
-        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'HighSlippageStrategy_slippage_5',
+        {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'HighSlippageStrategy(slippage_ticks=5.0)',
          'total_trades': 70, 'win_rate': 52.0, 'average_trade_duration_hours': 4.0,
          'total_wins_percentage_of_contract': 50.0, 'total_losses_percentage_of_contract': 30.0,
          'total_return_percentage_of_contract': 20.0, 'average_trade_return_percentage_of_contract': 0.29,
@@ -108,7 +108,7 @@ def base_strategy_results():
          'sortino_ratio': 1.6, 'calmar_ratio': 1.25, 'value_at_risk': 9.0,
          'expected_shortfall': 11.0, 'ulcer_index': 7.0},
 
-        {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'HighSlippageStrategy_slippage_5',
+        {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'HighSlippageStrategy(slippage_ticks=5.0)',
          'total_trades': 65, 'win_rate': 51.0, 'average_trade_duration_hours': 3.5,
          'total_wins_percentage_of_contract': 45.0, 'total_losses_percentage_of_contract': 28.0,
          'total_return_percentage_of_contract': 17.0, 'average_trade_return_percentage_of_contract': 0.26,
@@ -165,31 +165,31 @@ def filtering_strategy_data():
     """
     return pd.DataFrame([
         # HighPerformer - multiple symbols/intervals
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'ZS', 'interval': '1h',
+        {'strategy': 'HighPerformer(slippage_ticks=1.0)', 'symbol': 'ZS', 'interval': '1h',
          'total_trades': 100, 'win_rate': 65.0, 'profit_factor': 3.0,
          'sharpe_ratio': 2.5, 'maximum_drawdown_percentage': 10.0},
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'CL', 'interval': '1h',
+        {'strategy': 'HighPerformer(slippage_ticks=1.0)', 'symbol': 'CL', 'interval': '1h',
          'total_trades': 80, 'win_rate': 60.0, 'profit_factor': 2.8,
          'sharpe_ratio': 2.3, 'maximum_drawdown_percentage': 12.0},
-        {'strategy': 'HighPerformer_slippage_ticks_1.0', 'symbol': 'ES', 'interval': '4h',
+        {'strategy': 'HighPerformer(slippage_ticks=1.0)', 'symbol': 'ES', 'interval': '4h',
          'total_trades': 50, 'win_rate': 70.0, 'profit_factor': 3.5,
          'sharpe_ratio': 3.0, 'maximum_drawdown_percentage': 8.0},
 
         # MediumPerformer - fewer trades
-        {'strategy': 'MediumPerformer_slippage_ticks_2.0', 'symbol': 'ZS', 'interval': '1h',
+        {'strategy': 'MediumPerformer(slippage_ticks=2.0)', 'symbol': 'ZS', 'interval': '1h',
          'total_trades': 30, 'win_rate': 55.0, 'profit_factor': 2.0,
          'sharpe_ratio': 1.5, 'maximum_drawdown_percentage': 15.0},
-        {'strategy': 'MediumPerformer_slippage_ticks_2.0', 'symbol': 'CL', 'interval': '4h',
+        {'strategy': 'MediumPerformer(slippage_ticks=2.0)', 'symbol': 'CL', 'interval': '4h',
          'total_trades': 25, 'win_rate': 50.0, 'profit_factor': 1.8,
          'sharpe_ratio': 1.3, 'maximum_drawdown_percentage': 18.0},
 
         # LowTradeStrategy - insufficient trades
-        {'strategy': 'LowTradeStrategy_slippage_ticks_0.5', 'symbol': 'ZS', 'interval': '1d',
+        {'strategy': 'LowTradeStrategy(slippage_ticks=0.5)', 'symbol': 'ZS', 'interval': '1d',
          'total_trades': 5, 'win_rate': 40.0, 'profit_factor': 0.8,
          'sharpe_ratio': 0.5, 'maximum_drawdown_percentage': 25.0},
 
         # SingleSymbolStrategy - only one symbol
-        {'strategy': 'SingleSymbolStrategy_slippage_ticks_1.5', 'symbol': 'ES', 'interval': '1h',
+        {'strategy': 'SingleSymbolStrategy(slippage_ticks=1.5)', 'symbol': 'ES', 'interval': '1h',
          'total_trades': 60, 'win_rate': 58.0, 'profit_factor': 2.2,
          'sharpe_ratio': 1.8, 'maximum_drawdown_percentage': 13.0},
     ])
