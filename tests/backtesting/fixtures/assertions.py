@@ -64,3 +64,54 @@ def assert_valid_indicator(series, name, min_val=None, max_val=None, allow_nan=T
 
     # Check for infinite values
     assert not np.isinf(valid_values).any(), f"{name} contains infinite values"
+
+
+def assert_indicator_varies(series, name, min_std=0.1):
+    """
+    Assert indicator shows variation (not constant).
+
+    Validates that an indicator actually responds to price changes rather than
+    remaining constant. Useful for detecting calculation errors.
+
+    Used across both indicator and strategy tests.
+
+    Args:
+        series: Pandas Series containing indicator values
+        name: Indicator name for error messages
+        min_std: Minimum standard deviation expected
+
+    Raises:
+        AssertionError: If indicator is too constant
+    """
+    valid_values = series.dropna()
+    assert len(valid_values) > 1, f"{name} has insufficient valid values"
+
+    std = valid_values.std()
+    assert std >= min_std, \
+        f"{name} has insufficient variation (std={std:.4f}, min={min_std})"
+
+
+def assert_band_relationships(df, upper_col, middle_col, lower_col, indicator_name='Bands'):
+    """
+    Assert proper band relationships (upper >= middle >= lower).
+
+    Common for indicators with bands (Bollinger Bands, Ichimoku, etc.)
+    Used across both indicator and strategy tests.
+
+    Args:
+        df: DataFrame with band columns
+        upper_col: Name of upper band column
+        middle_col: Name of middle band column
+        lower_col: Name of lower band column
+        indicator_name: Name for error messages
+
+    Example:
+        bb = calculate_bollinger_bands(data)
+        assert_band_relationships(bb, 'upper_band', 'middle_band', 'lower_band', 'BB')
+    """
+    valid_df = df.dropna()
+
+    assert (valid_df[upper_col] >= valid_df[middle_col]).all(), \
+        f"{indicator_name}: {upper_col} must be >= {middle_col}"
+    assert (valid_df[middle_col] >= valid_df[lower_col]).all(), \
+        f"{indicator_name}: {middle_col} must be >= {lower_col}"

@@ -15,7 +15,8 @@ import pytest
 from app.backtesting.strategies import BollingerBandsStrategy
 from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
-
+    assert_band_relationships,
+    assert_indicator_varies,
 )
 from tests.backtesting.strategies.strategy_test_utils import (
     assert_trades_have_both_directions,
@@ -127,12 +128,9 @@ class TestBollingerBandsStrategyIndicators:
         assert_valid_indicator(df['lower_band'], 'Lower_Band', min_val=0, allow_nan=True)
 
         # Verify bands respond to price changes (not constant)
-        valid_middle = df['middle_band'].dropna()
-        valid_upper = df['upper_band'].dropna()
-        valid_lower = df['lower_band'].dropna()
-        assert valid_middle.std() > 1.0, "Middle band should vary with price changes"
-        assert valid_upper.std() > 1.0, "Upper band should vary with price changes"
-        assert valid_lower.std() > 1.0, "Lower band should vary with price changes"
+        assert_indicator_varies(df['middle_band'], 'Middle_Band', min_std=1.0)
+        assert_indicator_varies(df['upper_band'], 'Upper_Band', min_std=1.0)
+        assert_indicator_varies(df['lower_band'], 'Lower_Band', min_std=1.0)
 
         # Verify warmup period (period = 20 bars for standard Bollinger Bands)
         middle_warmup_nans = df['middle_band'].iloc[:20].isna().sum()
@@ -140,29 +138,17 @@ class TestBollingerBandsStrategyIndicators:
         assert middle_warmup_nans > 0, "Middle band should have warmup period"
         assert upper_warmup_nans > 0, "Upper band should have warmup period"
 
-    def test_upper_band_above_lower_band(self, standard_bollinger_strategy, zs_1h_data):
-        """Test that upper band is always above lower band."""
-        df = standard_bollinger_strategy.add_indicators(zs_1h_data.copy())
-
-        # Remove NaN values for comparison
-        valid_data = df.dropna(subset=['upper_band', 'lower_band'])
-
-        # Upper band should always be >= lower band
-        assert (valid_data['upper_band'] >= valid_data['lower_band']).all(), \
-            "Upper band should always be above or equal to lower band"
-
     def test_middle_band_between_upper_and_lower(self, standard_bollinger_strategy, zs_1h_data):
         """Test that middle band is between upper and lower bands."""
         df = standard_bollinger_strategy.add_indicators(zs_1h_data.copy())
 
-        # Remove NaN values for comparison
-        valid_data = df.dropna(subset=['middle_band', 'upper_band', 'lower_band'])
-
-        # Middle band should be between upper and lower
-        assert (valid_data['middle_band'] >= valid_data['lower_band']).all(), \
-            "Middle band should be above or equal to lower band"
-        assert (valid_data['middle_band'] <= valid_data['upper_band']).all(), \
-            "Middle band should be below or equal to upper band"
+        assert_band_relationships(
+            df,
+            'upper_band',
+            'middle_band',
+            'lower_band',
+            'Bollinger Bands'
+        )
 
     def test_wider_std_dev_creates_wider_bands(self, zs_1h_data):
         """Test that higher standard deviation creates wider bands."""

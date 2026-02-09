@@ -11,13 +11,17 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_macd
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.indicators.indicator_test_utils import (assert_indicator_varies,
-                                                               setup_cache_test,
-                                                               assert_cache_hit_on_second_call,
-                                                               assert_longer_period_smoother,
-                                                               assert_different_params_use_different_cache,
-                                                               assert_cache_distinguishes_different_data,
-                                                               assert_empty_series_returns_empty)
+from tests.backtesting.fixtures.assertions import (
+    assert_indicator_varies,
+)
+from tests.backtesting.indicators.indicator_test_utils import (
+    setup_cache_test,
+    assert_cache_hit_on_second_call,
+    assert_longer_period_smoother,
+    assert_different_params_use_different_cache,
+    assert_cache_distinguishes_different_data,
+    assert_empty_series_returns_empty,
+)
 
 
 # ==================== Helper Function ====================
