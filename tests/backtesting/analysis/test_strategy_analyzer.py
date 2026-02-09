@@ -573,6 +573,25 @@ class TestEdgeCases:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
+    def test_save_results_with_no_data_and_no_results_df_raises_error(self, monkeypatch):
+        """Test that _save_results_to_csv raises error when no data is available at all."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = None
+
+        with pytest.raises(ValueError, match='No results available to save'):
+            analyzer._save_results_to_csv(
+                metric='profit_factor',
+                limit=5,
+                df_to_save=None,
+                aggregate=False,
+                interval=None,
+                symbol=None,
+                weighted=False
+            )
+
+
 
 class TestRealDataIntegration:
     """Test with real backtest results data (if available)."""
