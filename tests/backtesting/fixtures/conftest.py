@@ -2,7 +2,7 @@
 Conftest for fixtures directory.
 
 This file makes fixtures from data_fixtures.py, strategy_fixtures.py,
-mock_fixtures.py, and indicator_test_data.py available to pytest.
+and indicator_test_data.py available to pytest.
 """
 
 # ==================== Fixture Modules Registration ====================
@@ -10,7 +10,6 @@ mock_fixtures.py, and indicator_test_data.py available to pytest.
 # Register fixture modules as pytest plugins
 from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
 from tests.backtesting.fixtures.indicator_test_data import *  # noqa: F401, F403
-from tests.backtesting.fixtures.mock_fixtures import *  # noqa: F401, F403
 from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
