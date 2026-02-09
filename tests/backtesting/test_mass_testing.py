@@ -1479,9 +1479,11 @@ class TestMassTesterPerformanceOptimizations:
 
         # Mock time.time() to return incrementing values
         time_counter = [0]
+
         def mock_time_func():
             time_counter[0] += 1
             return time_counter[0]
+
         mock_time.side_effect = mock_time_func
 
         # Create mock results

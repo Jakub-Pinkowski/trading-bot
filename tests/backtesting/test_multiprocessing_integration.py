@@ -343,7 +343,8 @@ class TestPicklingValidation:
             ),
             (
                 'bollinger',
-                {'period': 20, 'number_of_standard_deviations': 2, 'rollover': False, 'trailing': None, 'slippage_ticks': 0,
+                {'period': 20, 'number_of_standard_deviations': 2, 'rollover': False, 'trailing': None,
+                 'slippage_ticks': 0,
                  'symbol': None}
             ),
             (

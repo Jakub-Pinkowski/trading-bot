@@ -403,9 +403,11 @@ class TestHelperFunctions:
         ('atr', 'calculate_atr', {'period': 14}),
         ('single_price', 'calculate_bollinger_bands', {'period': 20, 'number_of_standard_deviations': 2}),
         ('single_price', 'calculate_ema', {'period': 9}),
-        ('ichimoku', 'calculate_ichimoku_cloud', {
-            'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26
-        }),
+        (
+                'ichimoku', 'calculate_ichimoku_cloud', {
+                'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26
+            }
+        ),
         ('single_price', 'calculate_macd', {'fast_period': 12, 'slow_period': 26, 'signal_period': 9}),
         ('single_price', 'calculate_rsi', {'period': 14}),
     ])
