@@ -744,3 +744,149 @@ class TestMassTesterIntegration:
             names = [name for name, _ in tester.strategies]
             assert "rsi_14_30_70" in names[0].lower()
             assert "rsi_21_30_70" in names[1].lower()
+
+
+# ==================== Strategy Instance Validation Tests ====================
+
+class TestStrategyInstanceValidation:
+    """Test that actual strategy instances are created correctly (no mocking)."""
+
+    def test_macd_strategy_instances_have_correct_attributes(self):
+        """Test MACD strategies are created with correct parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        # Don't mock - test real strategy creation
+        tester.add_macd_tests(
+            fast_periods=[12],
+            slow_periods=[26],
+            signal_periods=[9],
+            rollovers=[True],
+            trailing_stops=[2.0],
+            slippage_ticks_list=[1]
+        )
+
+        # Verify strategy instance
+        assert len(tester.strategies) == 1
+        strategy_name, strategy_instance = tester.strategies[0]
+
+        # Verify attributes
+        assert strategy_instance.fast_period == 12
+        assert strategy_instance.slow_period == 26
+        assert strategy_instance.signal_period == 9
+        assert strategy_instance.rollover is True
+        assert strategy_instance.trailing == 2.0
+        assert strategy_instance.position_manager.slippage_ticks == 1
+
+    def test_bollinger_strategy_instances_have_correct_attributes(self):
+        """Test Bollinger strategies are created with correct parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        tester.add_bollinger_bands_tests(
+            periods=[20],
+            number_of_standard_deviations_list=[2.0],
+            rollovers=[False],
+            trailing_stops=[None],
+            slippage_ticks_list=[2]
+        )
+
+        assert len(tester.strategies) == 1
+        strategy_name, strategy_instance = tester.strategies[0]
+
+        assert strategy_instance.period == 20
+        assert strategy_instance.number_of_standard_deviations == 2.0
+        assert strategy_instance.rollover is False
+        assert strategy_instance.trailing is None
+        assert strategy_instance.position_manager.slippage_ticks == 2
+
+    def test_ichimoku_strategy_instances_have_correct_attributes(self):
+        """Test Ichimoku strategies are created with correct parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        tester.add_ichimoku_cloud_tests(
+            tenkan_periods=[9],
+            kijun_periods=[26],
+            senkou_span_b_periods=[52],
+            displacements=[26],
+            rollovers=[True],
+            trailing_stops=[3.0],
+            slippage_ticks_list=[1]
+        )
+
+        assert len(tester.strategies) == 1
+        strategy_name, strategy_instance = tester.strategies[0]
+
+        assert strategy_instance.tenkan_period == 9
+        assert strategy_instance.kijun_period == 26
+        assert strategy_instance.senkou_span_b_period == 52
+        assert strategy_instance.displacement == 26
+        assert strategy_instance.rollover is True
+        assert strategy_instance.trailing == 3.0
+        assert strategy_instance.position_manager.slippage_ticks == 1
+
+    def test_rsi_strategy_instances_have_correct_attributes(self):
+        """Test RSI strategies are created with correct parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        tester.add_rsi_tests(
+            rsi_periods=[14],
+            lower_thresholds=[30],
+            upper_thresholds=[70],
+            rollovers=[True],
+            trailing_stops=[2.5],
+            slippage_ticks_list=[1]
+        )
+
+        assert len(tester.strategies) == 1
+        strategy_name, strategy_instance = tester.strategies[0]
+
+        assert strategy_instance.rsi_period == 14
+        assert strategy_instance.lower_threshold == 30
+        assert strategy_instance.upper_threshold == 70
+        assert strategy_instance.rollover is True
+        assert strategy_instance.trailing == 2.5
+        assert strategy_instance.position_manager.slippage_ticks == 1
+
+    def test_ema_strategy_instances_have_correct_attributes(self):
+        """Test EMA strategies are created with correct parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        tester.add_ema_crossover_tests(
+            short_ema_periods=[9],
+            long_ema_periods=[21],
+            rollovers=[False],
+            trailing_stops=[1.5],
+            slippage_ticks_list=[2]
+        )
+
+        assert len(tester.strategies) == 1
+        strategy_name, strategy_instance = tester.strategies[0]
+
+        assert strategy_instance.short_ema_period == 9
+        assert strategy_instance.long_ema_period == 21
+        assert strategy_instance.rollover is False
+        assert strategy_instance.trailing == 1.5
+        assert strategy_instance.position_manager.slippage_ticks == 2
+
+    def test_multiple_strategy_instances_with_different_parameters(self):
+        """Test that multiple strategies are created with varying parameters."""
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+
+        tester.add_rsi_tests(
+            rsi_periods=[14, 21],
+            lower_thresholds=[30],
+            upper_thresholds=[70],
+            rollovers=[True],
+            trailing_stops=[None],
+            slippage_ticks_list=[1]
+        )
+
+        # Should create 2 strategies (2 periods)
+        assert len(tester.strategies) == 2
+
+        # Verify each has correct period
+        periods_found = []
+        for strategy_name, strategy_instance in tester.strategies:
+            periods_found.append(strategy_instance.rsi_period)
+
+        assert 14 in periods_found
+        assert 21 in periods_found
