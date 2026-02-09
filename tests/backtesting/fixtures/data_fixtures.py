@@ -96,6 +96,102 @@ def load_real_data():
     return _load_data
 
 
+# ==================== Sample OHLCV Data Generation ====================
+
+def _create_ohlcv_data(periods, symbol='CME:ES2!', base_price=4500, trend='neutral', freq='h', start='2023-01-01'):
+    """
+    Single source of truth for generating test OHLCV data.
+
+    Creates realistic OHLCV data matching actual historical data format:
+    - Index: DatetimeIndex named 'datetime'
+    - Columns: 'symbol', 'open', 'high', 'low', 'close', 'volume'
+    - Symbol: Exchange-specific format like 'CME:ES2!' or 'CBOT:ZC2!'
+
+    Args:
+        periods: Number of periods to generate
+        symbol: Symbol string (e.g., 'CME:ES2!', 'CBOT:ZC2!')
+        base_price: Starting price
+        trend: 'up', 'down', or 'neutral' for price pattern
+        freq: Frequency string ('h', 'd', '5min', etc.)
+        start: Start date string
+
+    Returns:
+        DataFrame with realistic OHLCV data in actual historical format
+    """
+
+    dates = pd.date_range(start, periods=periods, freq=freq)
+
+    # Generate price data based on trend
+    if trend == 'up':
+        close_prices = [base_price + i * 0.5 for i in range(periods)]
+    elif trend == 'down':
+        close_prices = [base_price - i * 0.5 for i in range(periods)]
+    else:  # neutral with small upward drift
+        close_prices = [base_price + i * 0.5 for i in range(periods)]
+
+    df = pd.DataFrame({
+        'symbol': [symbol] * periods,
+        'open': close_prices,
+        'high': [p + 5 for p in close_prices],
+        'low': [p - 5 for p in close_prices],
+        'close': [p + 2 for p in close_prices],
+        'volume': [10000.0] * periods
+    }, index=pd.DatetimeIndex(dates, name='datetime'))
+
+    return df
+
+
+@pytest.fixture
+def sample_ohlcv_data():
+    """
+    Standard test OHLCV data (200 periods).
+
+    Provides realistic test data matching actual historical data format.
+    Primary test dataset for strategy and indicator tests.
+
+    Returns:
+        DataFrame with 200 periods of OHLCV data
+    """
+    return _create_ohlcv_data(periods=200, symbol='CME:ES2!', base_price=4500)
+
+
+@pytest.fixture
+def sample_ohlcv_data_short():
+    """
+    Short test OHLCV data (50 periods).
+
+    Useful for tests that need less data (e.g., testing error handling,
+    edge cases with minimal data).
+
+    Returns:
+        DataFrame with 50 periods of OHLCV data
+    """
+    return _create_ohlcv_data(periods=50, symbol='CME:ES2!', base_price=4500)
+
+
+@pytest.fixture
+def sample_ohlcv_data_small():
+    """
+    Minimal test OHLCV data (3 periods).
+
+    Very small dataset for basic unit tests and quick validation.
+
+    Returns:
+        DataFrame with 3 periods of OHLCV data
+    """
+    dates = pd.date_range('2023-01-01', periods=3, freq='h')
+    df = pd.DataFrame({
+        'symbol': ['CME:ES2!'] * 3,
+        'open': [100.0, 101.0, 102.0],
+        'high': [105.0, 106.0, 107.0],
+        'low': [95.0, 96.0, 97.0],
+        'close': [102.0, 103.0, 104.0],
+        'volume': [1000.0, 1000.0, 1000.0]
+    }, index=pd.DatetimeIndex(dates, name='datetime'))
+    return df
+
+
+
 # ==================== Pre-loaded ZS (Soybeans) Fixtures ====================
 
 @pytest.fixture(scope="module")

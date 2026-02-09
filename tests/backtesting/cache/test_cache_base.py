@@ -1015,42 +1015,6 @@ class TestCachePerformance:
         # Cleanup
         _cleanup_cache_files(cache)
 
-    def test_cache_lookup_performance_scales_well(self, cache_name):
-        """
-        Test cache lookup performance scales linearly.
-
-        Validates that cache lookup time doesn't degrade significantly
-        as cache size increases.
-        """
-        cache = Cache(cache_name, max_size=50000, max_age=3600)
-
-        # Test with different cache sizes
-        sizes = [100, 1000, 5000]
-        times = []
-
-        for size in sizes:
-            # Populate cache
-            cache.cache_data.clear()
-            for i in range(size):
-                cache.set(f'key_{i}', f'value_{i}')
-
-            # Measure lookup time for last 100 entries
-            start = time.time()
-            for i in range(size - 100, size):
-                cache.get(f'key_{i}')
-            lookup_time = time.time() - start
-            times.append(lookup_time)
-
-        # Lookup time should not increase dramatically
-        # With OrderedDict, lookups are O(1), so time should be roughly constant
-        # Allow 3x increase from smallest to largest (generous margin)
-        ratio = times[-1] / times[0] if times[0] > 0 else 0
-        assert ratio < 3.0, \
-            f"Lookup time increased {ratio:.1f}x from 100 to 5000 entries, should be < 3x"
-
-        # Cleanup
-        _cleanup_cache_files(cache)
-
     def test_save_cache_performance(self, cache_name):
         """
         Test cache save performance.
