@@ -4,40 +4,14 @@ Real data loading fixtures for backtesting tests.
 Provides fixtures for loading actual historical data from parquet files
 and creating scenario-based datasets for testing.
 """
+
 from pathlib import Path
 
 import pandas as pd
 import pytest
-import yaml
 
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
+from config import HISTORICAL_DATA_DIR
 
-
-# ==================== Configuration Fixtures ====================
-
-@pytest.fixture(scope="session")
-def contract_switch_dates():
-    """
-    Load contract switch dates from YAML file.
-
-    Returns:
-        Dictionary mapping symbols to list of pandas Timestamps
-    """
-    with open(SWITCH_DATES_FILE_PATH, 'r') as f:
-        dates_dict = yaml.safe_load(f)
-
-    # Convert string dates to pandas Timestamps (skip non-list entries like symbol mappings)
-    for symbol in list(dates_dict.keys()):
-        if isinstance(dates_dict[symbol], list):
-            dates_dict[symbol] = [pd.Timestamp(date) for date in dates_dict[symbol]]
-        else:
-            # Remove non-list entries (e.g., "MCL: CL" mappings)
-            del dates_dict[symbol]
-
-    return dates_dict
-
-
-# ==================== Data Loading Factory Fixtures ====================
 
 @pytest.fixture(scope="session")
 def load_real_data():
@@ -66,65 +40,6 @@ def load_real_data():
         return df
 
     return _load_data
-
-
-# ==================== Sample OHLCV Data Generation ====================
-
-def _create_ohlcv_data(periods, symbol='CME:ES2!', base_price=4500, trend='neutral', freq='h', start='2023-01-01'):
-    """
-    Single source of truth for generating test OHLCV data.
-
-    Creates realistic OHLCV data matching actual historical data format:
-    - Index: DatetimeIndex named 'datetime'
-    - Columns: 'symbol', 'open', 'high', 'low', 'close', 'volume'
-    - Symbol: Exchange-specific format like 'CME:ES2!' or 'CBOT:ZC2!'
-
-    Args:
-        periods: Number of periods to generate
-        symbol: Symbol string (e.g., 'CME:ES2!', 'CBOT:ZC2!')
-        base_price: Starting price
-        trend: 'up', 'down', or 'neutral' for price pattern
-        freq: Frequency string ('h', 'd', '5min', etc.)
-        start: Start date string
-
-    Returns:
-        DataFrame with realistic OHLCV data in actual historical format
-    """
-
-    dates = pd.date_range(start, periods=periods, freq=freq)
-
-    # Generate price data based on trend
-    if trend == 'up':
-        close_prices = [base_price + i * 0.5 for i in range(periods)]
-    elif trend == 'down':
-        close_prices = [base_price - i * 0.5 for i in range(periods)]
-    else:  # neutral with small upward drift
-        close_prices = [base_price + i * 0.5 for i in range(periods)]
-
-    df = pd.DataFrame({
-        'symbol': [symbol] * periods,
-        'open': close_prices,
-        'high': [p + 5 for p in close_prices],
-        'low': [p - 5 for p in close_prices],
-        'close': [p + 2 for p in close_prices],
-        'volume': [10000.0] * periods
-    }, index=pd.DatetimeIndex(dates, name='datetime'))
-
-    return df
-
-
-@pytest.fixture
-def sample_ohlcv_data():
-    """
-    Standard test OHLCV data (200 periods).
-
-    Provides realistic test data matching actual historical data format.
-    Primary test dataset for strategy and indicator tests.
-
-    Returns:
-        DataFrame with 200 periods of OHLCV data
-    """
-    return _create_ohlcv_data(periods=200, symbol='CME:ES2!', base_price=4500)
 
 
 # ==================== Pre-loaded ZS (Soybeans) Fixtures ====================
