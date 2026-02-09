@@ -26,6 +26,12 @@ from app.backtesting.validators.constants import (
     EMA_SHORT_MIN,
 )
 from app.backtesting.validators.ema_validator import EMAValidator
+from tests.backtesting.validators.validator_test_utils import (
+    assert_validator_base_attributes,
+    assert_validators_independent,
+    assert_warnings_list_fresh,
+    assert_warnings_reset_between_calls,
+)
 
 
 # ==================== Initialization Tests ====================
@@ -36,23 +42,14 @@ class TestEMAValidatorInitialization:
     def test_inherits_from_validator_base(self):
         """EMAValidator should inherit from Validator base class."""
         validator = EMAValidator()
-
-        assert hasattr(validator, 'warnings')
-        assert hasattr(validator, 'reset_warnings')
-        assert hasattr(validator, 'validate')
-        assert validator.warnings == []
+        assert_validator_base_attributes(validator)
 
     def test_multiple_instances_independent(self):
         """Multiple validator instances should have independent state."""
-        validator1 = EMAValidator()
-        validator2 = EMAValidator()
-
-        validator1.validate(short_ema_period=9, long_ema_period=21)
-        validator2.validate(short_ema_period=12, long_ema_period=26)
-
-        # Validators should have different warning states
-        assert validator1.warnings != validator2.warnings or (
-                len(validator1.warnings) == 0 and len(validator2.warnings) == 0
+        assert_validators_independent(
+            EMAValidator,
+            {'short_ema_period': 9, 'long_ema_period': 21},
+            {'short_ema_period': 12, 'long_ema_period': 26}
         )
 
 
@@ -514,41 +511,18 @@ class TestWarningReset:
 
     def test_warnings_reset_between_calls(self):
         """Warnings should be cleared on each validate() call."""
-        validator = EMAValidator()
-
-        # First validation with warnings
-        warnings1 = validator.validate(
-            short_ema_period=EMA_SHORT_MIN - 1,
-            long_ema_period=50
+        assert_warnings_reset_between_calls(
+            EMAValidator(),
+            {'short_ema_period': EMA_SHORT_MIN - 1, 'long_ema_period': 50},
+            {'short_ema_period': 9, 'long_ema_period': 21}
         )
-        assert len(warnings1) > 0
-
-        # Second validation without warnings
-        warnings2 = validator.validate(
-            short_ema_period=9,
-            long_ema_period=21
-        )
-        assert len(warnings2) == 0
-
-        # Third validation with different warnings
-        warnings3 = validator.validate(
-            short_ema_period=9,
-            long_ema_period=EMA_LONG_MAX + 1
-        )
-        assert len(warnings3) > 0
-        assert warnings3 != warnings1
 
     def test_warnings_list_is_fresh_each_call(self):
         """Each validate() call should return a fresh warnings list."""
-        validator = EMAValidator()
-
-        warnings1 = validator.validate(short_ema_period=9, long_ema_period=21)
-        warnings2 = validator.validate(short_ema_period=9, long_ema_period=21)
-
-        # Should have same content but be independent lists
-        assert warnings1 == warnings2
-        warnings1.append("extra")
-        assert len(warnings1) != len(warnings2)
+        assert_warnings_list_fresh(
+            EMAValidator(),
+            {'short_ema_period': 9, 'long_ema_period': 21}
+        )
 
 
 # ==================== Kwargs Handling Tests ====================

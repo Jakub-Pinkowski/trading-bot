@@ -21,6 +21,12 @@ from app.backtesting.validators.constants import (
     BB_STD_MIN,
     BB_STD_STANDARD,
 )
+from tests.backtesting.validators.validator_test_utils import (
+    assert_validator_base_attributes,
+    assert_validators_independent,
+    assert_warnings_list_fresh,
+    assert_warnings_reset_between_calls,
+)
 
 
 # ==================== Initialization Tests ====================
@@ -31,23 +37,14 @@ class TestBollingerValidatorInitialization:
     def test_inherits_from_validator_base(self):
         """BollingerValidator should inherit from Validator base class."""
         validator = BollingerValidator()
-
-        assert hasattr(validator, 'warnings')
-        assert hasattr(validator, 'reset_warnings')
-        assert hasattr(validator, 'validate')
-        assert validator.warnings == []
+        assert_validator_base_attributes(validator)
 
     def test_multiple_instances_independent(self):
         """Multiple validator instances should have independent state."""
-        validator1 = BollingerValidator()
-        validator2 = BollingerValidator()
-
-        validator1.validate(period=20, number_of_standard_deviations=2.0)
-        validator2.validate(period=15, number_of_standard_deviations=1.5)
-
-        # Validators should have different warning states
-        assert validator1.warnings != validator2.warnings or (
-                len(validator1.warnings) == 0 and len(validator2.warnings) == 0
+        assert_validators_independent(
+            BollingerValidator,
+            {'period': 20, 'number_of_standard_deviations': 2.0},
+            {'period': 15, 'number_of_standard_deviations': 1.5}
         )
 
 
@@ -361,41 +358,18 @@ class TestWarningReset:
 
     def test_warnings_reset_between_calls(self):
         """Warnings should be cleared on each validate() call."""
-        validator = BollingerValidator()
-
-        # First validation with warnings
-        warnings1 = validator.validate(
-            period=BB_PERIOD_MIN - 1,
-            number_of_standard_deviations=2.0
+        assert_warnings_reset_between_calls(
+            BollingerValidator(),
+            {'period': BB_PERIOD_MIN - 1, 'number_of_standard_deviations': 2.0},
+            {'period': 20, 'number_of_standard_deviations': 2.0}
         )
-        assert len(warnings1) > 0
-
-        # Second validation without warnings
-        warnings2 = validator.validate(
-            period=20,
-            number_of_standard_deviations=2.0
-        )
-        assert len(warnings2) == 0
-
-        # Third validation with different warnings
-        warnings3 = validator.validate(
-            period=20,
-            number_of_standard_deviations=BB_STD_MAX + 0.5
-        )
-        assert len(warnings3) > 0
-        assert warnings3 != warnings1
 
     def test_warnings_list_is_fresh_each_call(self):
         """Each validate() call should return a fresh warnings list."""
-        validator = BollingerValidator()
-
-        warnings1 = validator.validate(period=20, number_of_standard_deviations=2.0)
-        warnings2 = validator.validate(period=20, number_of_standard_deviations=2.0)
-
-        # Should have same content but be independent lists
-        assert warnings1 == warnings2
-        warnings1.append("extra")
-        assert len(warnings1) != len(warnings2)
+        assert_warnings_list_fresh(
+            BollingerValidator(),
+            {'period': 20, 'number_of_standard_deviations': 2.0}
+        )
 
 
 # ==================== Kwargs Handling Tests ====================

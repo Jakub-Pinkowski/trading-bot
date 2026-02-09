@@ -26,6 +26,12 @@ from app.backtesting.validators.constants import (
     MACD_SLOW_STANDARD,
 )
 from app.backtesting.validators.macd_validator import MACDValidator
+from tests.backtesting.validators.validator_test_utils import (
+    assert_validator_base_attributes,
+    assert_validators_independent,
+    assert_warnings_list_fresh,
+    assert_warnings_reset_between_calls,
+)
 
 
 # ==================== Initialization Tests ====================
@@ -36,23 +42,14 @@ class TestMACDValidatorInitialization:
     def test_inherits_from_validator_base(self):
         """MACDValidator should inherit from Validator base class."""
         validator = MACDValidator()
-
-        assert hasattr(validator, 'warnings')
-        assert hasattr(validator, 'reset_warnings')
-        assert hasattr(validator, 'validate')
-        assert validator.warnings == []
+        assert_validator_base_attributes(validator)
 
     def test_multiple_instances_independent(self):
         """Multiple validator instances should have independent state."""
-        validator1 = MACDValidator()
-        validator2 = MACDValidator()
-
-        validator1.validate(fast_period=12, slow_period=26, signal_period=9)
-        validator2.validate(fast_period=8, slow_period=20, signal_period=7)
-
-        # Validators should have different warning states
-        assert validator1.warnings != validator2.warnings or (
-                len(validator1.warnings) == 0 and len(validator2.warnings) == 0
+        assert_validators_independent(
+            MACDValidator,
+            {'fast_period': 12, 'slow_period': 26, 'signal_period': 9},
+            {'fast_period': 8, 'slow_period': 20, 'signal_period': 7}
         )
 
 
@@ -388,35 +385,18 @@ class TestWarningReset:
 
     def test_warnings_reset_between_calls(self):
         """Warnings should be cleared on each validate() call."""
-        validator = MACDValidator()
-
-        # First validation with warnings
-        warnings1 = validator.validate(
-            fast_period=MACD_FAST_MIN - 1,
-            slow_period=26,
-            signal_period=9
+        assert_warnings_reset_between_calls(
+            MACDValidator(),
+            {'fast_period': MACD_FAST_MIN - 1, 'slow_period': 26, 'signal_period': 9},
+            {'fast_period': 12, 'slow_period': 26, 'signal_period': 9}
         )
-        assert len(warnings1) > 0
-
-        # Second validation without warnings
-        warnings2 = validator.validate(
-            fast_period=12,
-            slow_period=26,
-            signal_period=9
-        )
-        assert len(warnings2) == 0
 
     def test_warnings_list_is_fresh_each_call(self):
         """Each validate() call should return a fresh warnings list."""
-        validator = MACDValidator()
-
-        warnings1 = validator.validate(fast_period=12, slow_period=26, signal_period=9)
-        warnings2 = validator.validate(fast_period=12, slow_period=26, signal_period=9)
-
-        # Should have same content but be independent lists
-        assert warnings1 == warnings2
-        warnings1.append("extra")
-        assert len(warnings1) != len(warnings2)
+        assert_warnings_list_fresh(
+            MACDValidator(),
+            {'fast_period': 12, 'slow_period': 26, 'signal_period': 9}
+        )
 
 
 # ==================== Kwargs Handling Tests ====================

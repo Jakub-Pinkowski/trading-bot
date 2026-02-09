@@ -35,6 +35,12 @@ from app.backtesting.validators.constants import (
     ICHIMOKU_TENKAN_STANDARD,
 )
 from app.backtesting.validators.ichimoku_validator import IchimokuValidator
+from tests.backtesting.validators.validator_test_utils import (
+    assert_validator_base_attributes,
+    assert_validators_independent,
+    assert_warnings_list_fresh,
+    assert_warnings_reset_between_calls,
+)
 
 
 # ==================== Initialization Tests ====================
@@ -45,33 +51,14 @@ class TestIchimokuValidatorInitialization:
     def test_inherits_from_validator_base(self):
         """IchimokuValidator should inherit from Validator base class."""
         validator = IchimokuValidator()
-
-        assert hasattr(validator, 'warnings')
-        assert hasattr(validator, 'reset_warnings')
-        assert hasattr(validator, 'validate')
-        assert validator.warnings == []
+        assert_validator_base_attributes(validator)
 
     def test_multiple_instances_independent(self):
         """Multiple validator instances should have independent state."""
-        validator1 = IchimokuValidator()
-        validator2 = IchimokuValidator()
-
-        validator1.validate(
-            tenkan_period=9,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26
-        )
-        validator2.validate(
-            tenkan_period=7,
-            kijun_period=22,
-            senkou_span_b_period=44,
-            displacement=22
-        )
-
-        # Validators should have different warning states
-        assert validator1.warnings != validator2.warnings or (
-                len(validator1.warnings) == 0 and len(validator2.warnings) == 0
+        assert_validators_independent(
+            IchimokuValidator,
+            {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26},
+            {'tenkan_period': 7, 'kijun_period': 22, 'senkou_span_b_period': 44, 'displacement': 22}
         )
 
 
@@ -652,47 +639,19 @@ class TestWarningReset:
 
     def test_warnings_reset_between_calls(self):
         """Warnings should be cleared on each validate() call."""
-        validator = IchimokuValidator()
-
-        # First validation with warnings
-        warnings1 = validator.validate(
-            tenkan_period=ICHIMOKU_TENKAN_MIN - 1,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26
+        assert_warnings_reset_between_calls(
+            IchimokuValidator(),
+            {'tenkan_period': ICHIMOKU_TENKAN_MIN - 1, 'kijun_period': 26, 'senkou_span_b_period': 52,
+             'displacement': 26},
+            {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26}
         )
-        assert len(warnings1) > 0
-
-        # Second validation without warnings
-        warnings2 = validator.validate(
-            tenkan_period=9,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26
-        )
-        assert len(warnings2) == 0
 
     def test_warnings_list_is_fresh_each_call(self):
         """Each validate() call should return a fresh warnings list."""
-        validator = IchimokuValidator()
-
-        warnings1 = validator.validate(
-            tenkan_period=9,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26
+        assert_warnings_list_fresh(
+            IchimokuValidator(),
+            {'tenkan_period': 9, 'kijun_period': 26, 'senkou_span_b_period': 52, 'displacement': 26}
         )
-        warnings2 = validator.validate(
-            tenkan_period=9,
-            kijun_period=26,
-            senkou_span_b_period=52,
-            displacement=26
-        )
-
-        # Should have same content but be independent lists
-        assert warnings1 == warnings2
-        warnings1.append("extra")
-        assert len(warnings1) != len(warnings2)
 
 
 # ==================== Kwargs Handling Tests ====================
