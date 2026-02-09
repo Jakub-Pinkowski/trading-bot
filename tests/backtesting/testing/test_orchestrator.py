@@ -31,13 +31,12 @@ from app.backtesting.testing.orchestrator import (
 class TestRunTests:
     """Test the main run_tests orchestration function."""
 
-    def test_run_tests_raises_error_when_no_strategies(self):
+    def test_run_tests_raises_error_when_no_strategies(self, mock_tester):
         """Test that run_tests raises ValueError when no strategies are added."""
-        tester = MagicMock()
-        tester.strategies = []
+        mock_tester.strategies = []
 
         with pytest.raises(ValueError, match='No strategies added for testing'):
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+            run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
     def test_run_tests_raises_error_when_strategies_attribute_missing(self):
         """Test that run_tests raises ValueError when strategies attribute is missing."""
@@ -46,40 +45,18 @@ class TestRunTests:
         with pytest.raises(ValueError, match='No strategies added for testing'):
             run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-    def test_run_tests_resets_cache_statistics(self):
+    def test_run_tests_resets_cache_statistics(self, mock_tester, mock_orchestrator_environment):
         """Test that run_tests resets cache statistics at start."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = []
+        mocks = mock_orchestrator_environment
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind_cache, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df_cache, \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_as_completed.return_value = []
+        run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        # Verify caches were reset
+        mocks['indicator_cache'].reset_stats.assert_called_once()
+        mocks['dataframe_cache'].reset_stats.assert_called_once()
 
-            # Verify caches were reset
-            mock_ind_cache.reset_stats.assert_called_once()
-            mock_df_cache.reset_stats.assert_called_once()
-
-    def test_run_tests_loads_existing_results_when_skip_existing_true(self):
+    def test_run_tests_loads_existing_results_when_skip_existing_true(self, mock_tester):
         """Test that existing results are loaded when skip_existing is True."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = []
-
         existing_df = pd.DataFrame({'test': [1, 2, 3]})
         existing_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
 
@@ -91,67 +68,33 @@ class TestRunTests:
             mock_load.return_value = (existing_df, existing_set)
             mock_as_completed.return_value = []
 
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=True)
+            run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
 
             # Verify load_existing_results was called
             mock_load.assert_called_once()
 
-    def test_run_tests_skips_loading_existing_when_skip_existing_false(self):
+    def test_run_tests_skips_loading_existing_when_skip_existing_false(
+        self,
+        mock_tester,
+        mock_orchestrator_environment
+    ):
         """Test that existing results are not loaded when skip_existing is False."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = []
+        run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_as_completed.return_value = []
+        # load_existing_results should not be called
+        mock_orchestrator_environment['load_existing_results'].assert_not_called()
 
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
-
-            # load_existing_results should not be called
-            mock_load.assert_not_called()
-
-    def test_run_tests_clears_previous_results(self):
+    def test_run_tests_clears_previous_results(self, mock_tester, mock_orchestrator_environment):
         """Test that previous results are cleared at start."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = [{'old': 'result'}]
+        mock_tester.results = [{'old': 'result'}]
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_as_completed.return_value = []
+        run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        # Verify results were cleared
+        assert mock_tester.results == []
 
-            # Verify results were cleared
-            assert tester.results == []
-
-    def test_run_tests_returns_empty_list_when_all_tests_skipped(self):
+    def test_run_tests_returns_empty_list_when_all_tests_skipped(self, mock_tester):
         """Test that empty list is returned when all tests are already run."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = []
-
         # Mock existing results to skip all tests
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
@@ -160,20 +103,12 @@ class TestRunTests:
             mock_load.return_value = (pd.DataFrame(), set())
             mock_check.return_value = True  # All tests exist
 
-            result = run_tests(tester, verbose=False, max_workers=1, skip_existing=True)
+            result = run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
 
             assert result == []
 
-    def test_run_tests_saves_results_when_results_exist(self):
+    def test_run_tests_saves_results_when_results_exist(self, mock_tester):
         """Test that results are saved when tests complete."""
-        tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
-        tester.results = []
-
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
                 patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
@@ -187,7 +122,7 @@ class TestRunTests:
             mock_future.result.return_value = {'test': 'result'}
             mock_as_completed.return_value = [mock_future]
 
-            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+            run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
             # Verify save_results was called
             assert mock_save.called
