@@ -485,6 +485,7 @@ class TestStrategyFactory(unittest.TestCase):
                             trailing=None,
                             slippage_ticks="0.5",
                             symbol=None)  # String instead of number
+
     def test_get_strategy_name(self):
         """Test getting a standardized name for a strategy."""
         # Bollinger Bands strategy

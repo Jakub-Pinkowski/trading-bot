@@ -19,6 +19,12 @@ from app.backtesting.validators.constants import (
     TRAILING_STOP_MAX,
     TRAILING_STOP_MIN,
 )
+from tests.backtesting.validators.validator_test_utils import (
+    assert_validator_base_attributes,
+    assert_validators_independent,
+    assert_warnings_list_fresh,
+    assert_warnings_reset_between_calls,
+)
 
 
 # ==================== Initialization Tests ====================
@@ -29,23 +35,14 @@ class TestCommonValidatorInitialization:
     def test_inherits_from_validator_base(self):
         """CommonValidator should inherit from Validator base class."""
         validator = CommonValidator()
-
-        assert hasattr(validator, 'warnings')
-        assert hasattr(validator, 'reset_warnings')
-        assert hasattr(validator, 'validate')
-        assert validator.warnings == []
+        assert_validator_base_attributes(validator)
 
     def test_multiple_instances_independent(self):
         """Multiple validator instances should have independent state."""
-        validator1 = CommonValidator()
-        validator2 = CommonValidator()
-
-        validator1.validate(rollover=True, trailing=0.5, slippage_ticks=1)
-        validator2.validate(rollover=False, trailing=None, slippage_ticks=0)
-
-        # Validators should have different warning states
-        assert validator1.warnings != validator2.warnings or (
-                len(validator1.warnings) == 0 and len(validator2.warnings) == 0
+        assert_validators_independent(
+            CommonValidator,
+            {'rollover': True, 'trailing': 0.5, 'slippage_ticks': 1},
+            {'rollover': False, 'trailing': None, 'slippage_ticks': 0}
         )
 
 
@@ -410,44 +407,18 @@ class TestWarningReset:
 
     def test_warnings_reset_between_calls(self):
         """Warnings should be cleared on each validate() call."""
-        validator = CommonValidator()
-
-        # First validation with warnings
-        warnings1 = validator.validate(
-            rollover=True,
-            trailing=TRAILING_STOP_MAX + 1.0,
-            slippage_ticks=11
+        assert_warnings_reset_between_calls(
+            CommonValidator(),
+            {'rollover': True, 'trailing': TRAILING_STOP_MAX + 1.0, 'slippage_ticks': 11},
+            {'rollover': True, 'trailing': 2.5, 'slippage_ticks': 2}
         )
-        assert len(warnings1) > 0
-
-        # Second validation without warnings
-        warnings2 = validator.validate(
-            rollover=True,
-            trailing=2.5,
-            slippage_ticks=2
-        )
-        assert len(warnings2) == 0
-
-        # Third validation with different warnings
-        warnings3 = validator.validate(
-            rollover=True,
-            trailing=TRAILING_STOP_MIN - 0.5,
-            slippage_ticks=0
-        )
-        assert len(warnings3) > 0
-        assert warnings3 != warnings1
 
     def test_warnings_list_is_fresh_each_call(self):
         """Each validate() call should return a fresh warnings list."""
-        validator = CommonValidator()
-
-        warnings1 = validator.validate(rollover=True, trailing=10.0, slippage_ticks=0)
-        warnings2 = validator.validate(rollover=True, trailing=10.0, slippage_ticks=0)
-
-        # Should have same content but be independent lists
-        assert warnings1 == warnings2
-        warnings1.append("extra")
-        assert len(warnings1) != len(warnings2)
+        assert_warnings_list_fresh(
+            CommonValidator(),
+            {'rollover': True, 'trailing': 10.0, 'slippage_ticks': 0}
+        )
 
 
 # ==================== Kwargs Handling Tests ====================
