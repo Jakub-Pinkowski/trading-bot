@@ -6,9 +6,10 @@ along with common assertion helpers and test data.
 """
 from datetime import datetime, timedelta
 
-import pytest
-
 from app.backtesting.metrics.per_trade_metrics import calculate_trade_metrics
+# Import backtesting fixtures to make them discoverable by PyCharm
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== Trade Factory ====================

@@ -5,18 +5,12 @@ Provides standard strategy fixtures with default parameters for common testing s
 Imports shared fixtures from fixtures directory for PyCharm test runner compatibility.
 """
 
-import pandas as pd
-import pytest
 import yaml
 
-from app.backtesting.strategies import (
-    BollingerBandsStrategy,
-    EMACrossoverStrategy,
-    MACDStrategy,
-    IchimokuCloudStrategy,
-    RSIStrategy
-)
 from config import SWITCH_DATES_FILE_PATH
+# Import backtesting fixtures to make them discoverable by PyCharm
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== Standard Strategy Fixtures ====================

@@ -6,10 +6,10 @@ test_strategy_analyzer, test_formatters, and test_data_helpers.
 """
 import os
 
-import pandas as pd
-import pytest
-
 from config import BACKTESTING_DIR
+# Import backtesting fixtures to make them discoverable by PyCharm
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== Core Strategy Results Fixtures ====================
