@@ -559,62 +559,20 @@ class TestEdgeCases:
         assert metrics._calculate_sharpe_ratio() == 0
 
     def test_std_dev_zero_hits_defensive_checks(self, trade_factory):
-        """Test scenarios where standard deviation is zero or downside deviation is zero."""
-        # Need at least MIN_RETURNS_FOR_SHARPE (2) trades with same return to get std_dev = 0
-        trade = trade_factory('ZS', 1200.0, 1210.0) # ~0.83% return
-        trades = [trade, trade]
-        metrics = SummaryMetrics(trades)
-
-        # Returns are [0.8333, 0.8333], so std_dev is 0
+        """Test scenarios where standard deviation or downside deviation is zero."""
+        # 1. Test Sharpe ratio with zero standard deviation
+        trade = trade_factory('ZS', 1200.0, 1210.0)
+        metrics = SummaryMetrics([trade, trade])
         assert metrics._calculate_sharpe_ratio() == 0
 
-        # For sortino, we need negative returns with zero downside deviation
-        # If we have only winning trades, _calculate_sortino_ratio returns INFINITY_REPLACEMENT
-        # because negative_returns is empty.
-        # To hit line 234, we need negative_returns to be non-empty but downside_deviation to be 0.
-        # negative_returns = [r - RISK_FREE_RATE for r in self.returns if r < RISK_FREE_RATE]
-        # If RISK_FREE_RATE = 0, we need trades with return < 0.
+        # 2. Test Sortino ratio with zero downside deviation using a mock
         losing_trade = trade_factory('ZS', 1210.0, 1200.0)
-        losing_trades = [losing_trade, losing_trade]
-        losing_metrics = SummaryMetrics(losing_trades)
-        # returns are same negative values, so downside_variance will be (>0) but potentially we need it to be 0?
-        # Actually, downside_variance = safe_average([r ** 2 for r in negative_returns])
-        # If r is same for all, downside_variance = r**2, downside_deviation = |r|.
-        # To get downside_deviation == 0, we need all r in negative_returns to be 0.
-        # But negative_returns only includes r < RISK_FREE_RATE (0).
-        # So r must be 0? But if r=0, it's NOT < 0.
-        # Wait, if RISK_FREE_RATE was e.g. 0.01, and returns were [0.01, 0.01], then negative_returns would be empty.
-        # If returns were [0.005, 0.005] and RISK_FREE_RATE = 0.01,
-        # then negative_returns = [-0.005, -0.005].
-        # downside_variance = ((-0.005)**2 + (-0.005)**2) / 2 = (-0.005)**2.
-        # downside_deviation = 0.005. Still not 0.
-        
-        # How to get std_dev = 0 in _calculate_sharpe_ratio?
-        # returns = [0.1, 0.1], mean=0.1, diffs=[0, 0], std_dev=0.
-        # This hits line 213.
-        
-        # How to get downside_deviation = 0 in _calculate_sortino_ratio?
-        # It's only possible if negative_returns is not empty but all elements are 0.
-        # negative_returns = [r - RISK_FREE_RATE for r in self.returns if r < RISK_FREE_RATE]
-        # This only happens if RISK_FREE_RATE > 0 and we have trades where r = RISK_FREE_RATE.
-        # But the condition is r < RISK_FREE_RATE.
-        # If r < RISK_FREE_RATE, then r - RISK_FREE_RATE < 0.
-        # So (r - RISK_FREE_RATE)**2 > 0.
-        # safe_average will be > 0.
-        # So downside_deviation will be > 0.
-        # The only way to get 0 is if negative_returns is empty, but that's handled by line 227.
-        # Or if np.std/average returns 0 due to precision?
-        # Actually, if negative_returns has very small values...
-        
-        # Let's check the code again for _calculate_sortino_ratio
-        # 230: downside_variance = safe_average([r ** 2 for r in negative_returns])
-        # 231: downside_deviation = downside_variance ** 0.5
-        # 233: if downside_deviation == 0:
-        
-        # If negative_returns = [1e-100], then downside_variance = 1e-200, downside_deviation = 1e-100.
-        # Still not exactly 0 unless it underflows.
-        
-        # Maybe I can just mock np.std to return 0.
+        losing_metrics = SummaryMetrics([losing_trade])
+
+        from unittest.mock import patch
+        with patch('app.backtesting.metrics.summary_metrics.safe_average', return_value=0.0):
+            # When safe_average returns 0, downside_deviation becomes 0, hitting the defensive check
+            assert losing_metrics._calculate_sortino_ratio() == 0
 
     def test_none_trades(self):
         """Test metrics with None trades."""
