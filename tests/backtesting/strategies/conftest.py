@@ -2,18 +2,12 @@
 Conftest for strategy tests.
 
 Provides standard strategy fixtures with default parameters for common testing scenarios.
-Shared fixtures are automatically discovered by pytest from
-tests/backtesting/fixtures/conftest.py (data_fixtures, strategy_fixtures).
+Imports shared fixtures from fixtures directory for PyCharm test runner compatibility.
 """
-import pytest
 
-from app.backtesting.strategies import (
-    BollingerBandsStrategy,
-    EMACrossoverStrategy,
-    IchimokuCloudStrategy,
-    MACDStrategy,
-    RSIStrategy
-)
+# Import fixtures for PyCharm test runner
+from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
+from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
 
 
 # ==================== Standard Strategy Fixtures ====================

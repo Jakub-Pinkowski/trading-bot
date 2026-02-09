@@ -196,57 +196,6 @@ def trades_factory(trade_factory):
     return TradesFactory(trade_factory)
 
 
-# ==================== Common Assertions ====================
-
-@pytest.fixture
-def assert_trade_metrics():
-    """
-    Helper for common trade metric assertions.
-
-    Validates that calculated trade metrics contain all required fields
-    and have correct types.
-
-    Usage:
-        metrics = calculate_trade_metrics(trade, 'ZS')
-        assert_trade_metrics(metrics)
-        assert_trade_metrics(metrics, expected_keys=['custom_field'])
-
-    Args:
-        metrics: Trade metrics dictionary to validate
-        expected_keys: Additional keys to check (optional)
-        has_pnl: Whether to validate PnL exists (default: True)
-
-    Returns:
-        True if all assertions pass
-    """
-
-    def _assert(metrics, expected_keys=None, has_pnl=True):
-        """Assert common properties of calculated trade metrics."""
-        required = [
-            'entry_time', 'exit_time', 'entry_price', 'exit_price', 'side',
-            'duration', 'duration_hours', 'net_pnl', 'commission',
-            'margin_requirement', 'return_percentage_of_margin',
-            'return_percentage_of_contract'
-        ]
-
-        for key in required:
-            assert key in metrics, f"Missing required key: {key}"
-
-        # Type checks
-        assert isinstance(metrics['duration_hours'], float)
-        assert isinstance(metrics['net_pnl'], float)
-        assert metrics['commission'] > 0
-        assert metrics['margin_requirement'] > 0
-
-        if expected_keys:
-            for key in expected_keys:
-                assert key in metrics
-
-        return True
-
-    return _assert
-
-
 # ==================== Symbol Data ====================
 
 @pytest.fixture

@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, TICK_SIZES, CONTRACT_MULTIPLIERS
+from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH
 
 
 # ==================== Configuration Fixtures ====================
@@ -35,34 +35,6 @@ def contract_switch_dates():
             del dates_dict[symbol]
 
     return dates_dict
-
-
-@pytest.fixture(scope="session")
-def contract_info():
-    """
-    Factory fixture to get contract information for any symbol.
-
-    Returns:
-        Function that returns dict with tick_size, tick_value, contract_multiplier
-
-    Example:
-        info = contract_info('ZS')
-        # {'symbol': 'ZS', 'tick_size': 0.25, 'tick_value': 12.50, 'contract_multiplier': 50}
-    """
-
-    def _get_contract_info(symbol):
-        tick_size = TICK_SIZES.get(symbol, 0.01)
-        multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)
-        tick_value = tick_size * multiplier
-
-        return {
-            'symbol': symbol,
-            'tick_size': tick_size,
-            'tick_value': tick_value,
-            'contract_multiplier': multiplier
-        }
-
-    return _get_contract_info
 
 
 # ==================== Data Loading Factory Fixtures ====================
@@ -153,43 +125,6 @@ def sample_ohlcv_data():
         DataFrame with 200 periods of OHLCV data
     """
     return _create_ohlcv_data(periods=200, symbol='CME:ES2!', base_price=4500)
-
-
-@pytest.fixture
-def sample_ohlcv_data_short():
-    """
-    Short test OHLCV data (50 periods).
-
-    Useful for tests that need less data (e.g., testing error handling,
-    edge cases with minimal data).
-
-    Returns:
-        DataFrame with 50 periods of OHLCV data
-    """
-    return _create_ohlcv_data(periods=50, symbol='CME:ES2!', base_price=4500)
-
-
-@pytest.fixture
-def sample_ohlcv_data_small():
-    """
-    Minimal test OHLCV data (3 periods).
-
-    Very small dataset for basic unit tests and quick validation.
-
-    Returns:
-        DataFrame with 3 periods of OHLCV data
-    """
-    dates = pd.date_range('2023-01-01', periods=3, freq='h')
-    df = pd.DataFrame({
-        'symbol': ['CME:ES2!'] * 3,
-        'open': [100.0, 101.0, 102.0],
-        'high': [105.0, 106.0, 107.0],
-        'low': [95.0, 96.0, 97.0],
-        'close': [102.0, 103.0, 104.0],
-        'volume': [1000.0, 1000.0, 1000.0]
-    }, index=pd.DatetimeIndex(dates, name='datetime'))
-    return df
-
 
 
 # ==================== Pre-loaded ZS (Soybeans) Fixtures ====================
