@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.strategies import MACDStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
 )
 from tests.backtesting.strategies.strategy_test_utils import (

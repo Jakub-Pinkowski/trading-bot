@@ -13,7 +13,7 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_ichimoku_cloud
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator
+from tests.backtesting.fixtures.assertions import assert_valid_indicator
 from tests.backtesting.indicators.indicator_test_utils import (assert_indicator_varies,
                                                                setup_cache_test,
                                                                assert_cache_hit_on_second_call,

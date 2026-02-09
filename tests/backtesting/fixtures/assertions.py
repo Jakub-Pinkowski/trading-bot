@@ -64,4 +64,3 @@ def assert_valid_indicator(series, name, min_val=None, max_val=None, allow_nan=T
 
     # Check for infinite values
     assert not np.isinf(valid_values).any(), f"{name} contains infinite values"
-

@@ -11,7 +11,7 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_atr
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator
+from tests.backtesting.fixtures.assertions import assert_valid_indicator
 from tests.backtesting.indicators.indicator_test_utils import (inject_price_spike,
                                                                inject_gap,
                                                                assert_indicator_varies,

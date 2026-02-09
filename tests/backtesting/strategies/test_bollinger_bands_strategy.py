@@ -13,7 +13,7 @@ Uses real market data (ZS, CL) from data/historical_data/.
 import pytest
 
 from app.backtesting.strategies import BollingerBandsStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
 
 )
