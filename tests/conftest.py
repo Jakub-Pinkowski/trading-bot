@@ -9,12 +9,11 @@ from app.routes.webhook import webhook_blueprint
 # Import all backtesting fixtures for availability across all test modules
 pytest_plugins = [
     'tests.backtesting.fixtures.data_fixtures',
-    'tests.backtesting.fixtures.indicator_test_data',
     'tests.backtesting.fixtures.strategy_fixtures',
 ]
 
 
-# OLD below this point
+# TODO: OLD below this point
 
 # ==================== IBKR Service Fixtures ====================
 
