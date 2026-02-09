@@ -1,8 +1,9 @@
 """
-Fixtures for strategy tests.
-Strategy-specific fixtures for commonly used strategy configurations.
-Shared fixtures (data_fixtures, strategy_fixtures, etc.) are automatically
-discovered by pytest from tests/backtesting/fixtures/conftest.py.
+Conftest for strategy tests.
+
+Provides standard strategy fixtures with default parameters for common testing scenarios.
+Shared fixtures are automatically discovered by pytest from
+tests/backtesting/fixtures/conftest.py (data_fixtures, strategy_fixtures).
 """
 import pytest
 
@@ -28,6 +29,8 @@ def standard_rsi_strategy():
         slippage_ticks=1,
         symbol='ZS'
     )
+
+
 @pytest.fixture
 def standard_ema_strategy():
     """Standard EMA crossover strategy with default parameters."""
@@ -39,6 +42,8 @@ def standard_ema_strategy():
         slippage_ticks=1,
         symbol='ZS'
     )
+
+
 @pytest.fixture
 def standard_macd_strategy():
     """Standard MACD strategy with default parameters."""
@@ -51,6 +56,8 @@ def standard_macd_strategy():
         slippage_ticks=1,
         symbol='ZS'
     )
+
+
 @pytest.fixture
 def standard_bollinger_strategy():
     """Standard Bollinger Bands strategy with default parameters."""
@@ -62,6 +69,8 @@ def standard_bollinger_strategy():
         slippage_ticks=1,
         symbol='ZS'
     )
+
+
 @pytest.fixture
 def standard_ichimoku_strategy():
     """Standard Ichimoku Cloud strategy with default parameters."""
