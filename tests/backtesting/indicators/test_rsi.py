@@ -15,8 +15,6 @@ from tests.backtesting.fixtures.assertions import assert_valid_indicator
 from tests.backtesting.indicators.indicator_test_utils import (assert_indicator_varies,
                                                                setup_cache_test,
                                                                assert_cache_hit_on_second_call,
-                                                               assert_indicator_structure,
-                                                               assert_values_in_range,
                                                                assert_different_params_use_different_cache,
                                                                assert_cache_distinguishes_different_data,
                                                                assert_insufficient_data_returns_nan,
@@ -71,13 +69,14 @@ class TestRSIBasicLogic:
         """RSI should return a series with same length as input."""
         rsi = _calculate_rsi(short_price_series, period=14)
 
-        assert_indicator_structure(rsi, len(short_price_series), 'series', indicator_name='RSI')
+        assert isinstance(rsi, pd.Series), "RSI must return pandas Series"
+        assert len(rsi) == len(short_price_series), "RSI length must equal input length"
 
     def test_rsi_stays_within_bounds(self, volatile_price_series):
         """RSI must always be between 0 and 100."""
         rsi = _calculate_rsi(volatile_price_series, period=10)
 
-        assert_values_in_range(rsi, 0, 100, indicator_name='RSI')
+        assert_valid_indicator(rsi, 'RSI', min_val=0, max_val=100)
 
     def test_rsi_responds_to_price_direction(self, rising_price_series, falling_price_series):
         """
