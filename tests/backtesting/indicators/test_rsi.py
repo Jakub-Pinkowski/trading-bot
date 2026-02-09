@@ -11,19 +11,18 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_rsi
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.indicators.indicator_test_utils import (
-    setup_cache_test,
-    assert_cache_hit_on_second_call,
-    assert_indicator_structure,
-    assert_values_in_range,
-    assert_different_params_use_different_cache,
-    assert_cache_distinguishes_different_data,
-    assert_insufficient_data_returns_nan,
-    assert_empty_series_returns_empty,
-    assert_hash_parameter_required,
-    assert_hash_parameter_required_even_with_cache,
-)
+from tests.backtesting.helpers.assertions import assert_valid_indicator
+from tests.backtesting.indicators.indicator_test_utils import (assert_indicator_varies,
+                                                               setup_cache_test,
+                                                               assert_cache_hit_on_second_call,
+                                                               assert_indicator_structure,
+                                                               assert_values_in_range,
+                                                               assert_different_params_use_different_cache,
+                                                               assert_cache_distinguishes_different_data,
+                                                               assert_insufficient_data_returns_nan,
+                                                               assert_empty_series_returns_empty,
+                                                               assert_hash_parameter_required,
+                                                               assert_hash_parameter_required_even_with_cache)
 
 
 # ==================== Helper Function ====================

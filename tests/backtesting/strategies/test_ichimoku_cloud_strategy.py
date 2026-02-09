@@ -15,9 +15,7 @@ import pytest
 from app.backtesting.strategies import IchimokuCloudStrategy
 from tests.backtesting.helpers.assertions import (
     assert_valid_indicator,
-    assert_valid_signals,
-    assert_valid_trades,
-    assert_no_overlapping_trades
+
 )
 from tests.backtesting.strategies.strategy_test_utils import (
     assert_trades_have_both_directions,
@@ -26,6 +24,9 @@ from tests.backtesting.strategies.strategy_test_utils import (
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,

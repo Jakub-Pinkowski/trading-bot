@@ -12,6 +12,31 @@ import pandas as pd
 from app.backtesting.cache.indicators_cache import indicator_cache
 
 
+# ==================== Indicator Validation ====================
+
+def assert_indicator_varies(series, name, min_std=0.1):
+    """
+    Assert indicator shows variation (not constant).
+
+    Validates that an indicator actually responds to price changes rather than
+    remaining constant. Useful for detecting calculation errors.
+
+    Args:
+        series: Pandas Series containing indicator values
+        name: Indicator name for error messages
+        min_std: Minimum standard deviation expected
+
+    Raises:
+        AssertionError: If indicator is too constant
+    """
+    valid_values = series.dropna()
+    assert len(valid_values) > 1, f"{name} has insufficient valid values"
+
+    std = valid_values.std()
+    assert std >= min_std, \
+        f"{name} has insufficient variation (std={std:.4f}, min={min_std})"
+
+
 # ==================== Cache Testing Utilities ====================
 
 def assert_cache_hit_on_second_call(first_result, second_result, result_type='series'):
@@ -500,3 +525,103 @@ def assert_hash_parameter_required_even_with_cache(
         error_msg = str(e)
         assert 'hash' in error_msg.lower() or 'missing' in error_msg.lower(), \
             f"{indicator_name}: TypeError should mention missing hash parameter"
+
+
+# ==================== Data Modification for Testing ====================
+
+def inject_price_spike(df, index, spike_pct, direction='up'):
+    """
+    Inject artificial price spike at specific index.
+
+    Useful for testing indicator behavior during extreme movements.
+    Modifies high/low/close prices at specified bar.
+
+    Args:
+        df: DataFrame with OHLCV data
+        index: Index position or timestamp where spike occurs
+        spike_pct: Percentage size of spike
+        direction: 'up' for spike up, 'down' for spike down
+
+    Returns:
+        Modified DataFrame with price spike
+
+    Example:
+        # Inject 5% spike upward at bar 100
+        modified_df = inject_price_spike(df.copy(), 100, 5.0, 'up')
+
+        # Test ATR response to spike
+        atr = calculate_atr(modified_df, period=14)
+        assert atr.iloc[100] > atr.iloc[99]
+    """
+    df = df.copy()
+
+    if isinstance(index, (pd.Timestamp, str)):
+        index = df.index.get_loc(index)
+
+    base_close = df.iloc[index]['close']
+    spike_amount = base_close * (spike_pct / 100)
+
+    if direction == 'up':
+        df.iloc[index, df.columns.get_loc('high')] = base_close + spike_amount
+        df.iloc[index, df.columns.get_loc('close')] = base_close + (spike_amount * 0.5)
+    else:
+        df.iloc[index, df.columns.get_loc('low')] = base_close - spike_amount
+        df.iloc[index, df.columns.get_loc('close')] = base_close - (spike_amount * 0.5)
+
+    return df
+
+
+def inject_gap(df, index, gap_pct, direction='up'):
+    """
+    Inject price gap between bars.
+
+    Creates gap between previous close and next open. Useful for testing
+    gap-related logic and ATR true range calculation.
+
+    Args:
+        df: DataFrame with OHLCV data
+        index: Index where gap occurs (gap is between index-1 and index)
+        gap_pct: Percentage size of gap
+        direction: 'up' for gap up, 'down' for gap down
+
+    Returns:
+        Modified DataFrame with price gap
+
+    Example:
+        # Create 3% gap up at bar 50
+        modified_df = inject_gap(df.copy(), 50, 3.0, 'up')
+
+        # Test ATR captures the gap
+        atr = calculate_atr(modified_df, period=14)
+        assert atr.iloc[50] > atr.iloc[49]
+    """
+    df = df.copy()
+
+    if isinstance(index, (pd.Timestamp, str)):
+        index = df.index.get_loc(index)
+
+    if index == 0:
+        raise ValueError("Cannot inject gap at first bar")
+
+    prev_close = df.iloc[index - 1]['close']
+    gap_amount = prev_close * (gap_pct / 100)
+
+    if direction == 'up':
+        new_low = prev_close + gap_amount
+        # Set low to gap up from previous close
+        # This ensures true range captures the gap
+        df.iloc[index, df.columns.get_loc('low')] = new_low
+        # Adjust high and close proportionally above the new low
+        df.iloc[index, df.columns.get_loc('high')] = new_low + 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_low + 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_low + 0.5
+    else:
+        new_high = prev_close - gap_amount
+        # Set high to gap down from previous close
+        df.iloc[index, df.columns.get_loc('high')] = new_high
+        # Adjust low and close proportionally below the new high
+        df.iloc[index, df.columns.get_loc('low')] = new_high - 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_high - 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_high - 0.5
+
+    return df
