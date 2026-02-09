@@ -27,43 +27,24 @@ from app.backtesting.testing.utils.dataframe_validators import (
 class TestValidDataFrame:
     """Test validation of valid DataFrames."""
 
-    def test_validate_dataframe_with_valid_data(self):
+    def test_validate_dataframe_with_valid_data(self, valid_ohlcv_dataframe):
         """Test that valid DataFrame passes validation."""
-        df = pd.DataFrame({
-            'open': [100.0, 101.0, 102.0],
-            'high': [102.0, 103.0, 104.0],
-            'low': [99.0, 100.0, 101.0],
-            'close': [101.0, 102.0, 103.0],
-            'volume': [1000, 1100, 1200]
-        }, index=pd.date_range('2024-01-01', periods=3, freq='1h'))
-
-        result = validate_dataframe(df, '/path/to/test.parquet')
+        result = validate_dataframe(valid_ohlcv_dataframe, '/path/to/test.parquet')
 
         assert result is True
 
-    def test_validate_dataframe_with_only_required_columns(self):
+    def test_validate_dataframe_with_only_required_columns(self, valid_ohlcv_dataframe):
         """Test validation with only required columns (no volume)."""
-        df = pd.DataFrame({
-            'open': [100.0, 101.0, 102.0],
-            'high': [102.0, 103.0, 104.0],
-            'low': [99.0, 100.0, 101.0],
-            'close': [101.0, 102.0, 103.0]
-        }, index=pd.date_range('2024-01-01', periods=3, freq='1h'))
+        df = valid_ohlcv_dataframe.drop(columns=['volume'])
 
         result = validate_dataframe(df, '/path/to/test.parquet')
 
         assert result is True
 
-    def test_validate_dataframe_with_extra_columns(self):
+    def test_validate_dataframe_with_extra_columns(self, valid_ohlcv_dataframe):
         """Test that extra columns don't affect validation."""
-        df = pd.DataFrame({
-            'open': [100.0, 101.0, 102.0],
-            'high': [102.0, 103.0, 104.0],
-            'low': [99.0, 100.0, 101.0],
-            'close': [101.0, 102.0, 103.0],
-            'volume': [1000, 1100, 1200],
-            'extra_column': ['a', 'b', 'c']
-        }, index=pd.date_range('2024-01-01', periods=3, freq='1h'))
+        df = valid_ohlcv_dataframe.copy()
+        df['extra_column'] = ['a', 'b', 'c']
 
         result = validate_dataframe(df, '/path/to/test.parquet')
 

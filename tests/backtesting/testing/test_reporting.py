@@ -454,123 +454,56 @@ class TestDataFrameStructure:
 class TestSaveResults:
     """Test save_results function."""
 
-    def test_save_results_calls_results_to_dataframe(self):
+    def test_save_results_calls_results_to_dataframe(self, sample_test_results, mock_reporting_dependencies):
         """Test that save_results calls results_to_dataframe."""
-        results = [
-            {
-                'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
-                            'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
-                            'total_return_percentage_of_contract': 50.0,
-                            'average_trade_return_percentage_of_contract': 5.0,
-                            'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
-                            'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
-                            'sortino_ratio': 2.0, 'calmar_ratio': 1.2, 'value_at_risk': 10.0,
-                            'expected_shortfall': 12.0, 'ulcer_index': 5.0}
-            }
-        ]
+        mocks = mock_reporting_dependencies
 
-        with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df, \
-                patch('app.backtesting.testing.reporting.save_to_parquet') as mock_save:
-            mock_df = pd.DataFrame({'test': [1]})
-            mock_to_df.return_value = mock_df
+        save_results(sample_test_results)
 
-            save_results(results)
+        # Verify results_to_dataframe was called
+        mocks['results_to_dataframe'].assert_called_once_with(sample_test_results)
 
-            # Verify results_to_dataframe was called
-            mock_to_df.assert_called_once_with(results)
-
-    def test_save_results_calls_save_to_parquet(self):
+    def test_save_results_calls_save_to_parquet(self, sample_test_results, mock_reporting_dependencies):
         """Test that save_results calls save_to_parquet."""
-        results = [
-            {
-                'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
-                            'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
-                            'total_return_percentage_of_contract': 50.0,
-                            'average_trade_return_percentage_of_contract': 5.0,
-                            'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
-                            'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
-                            'sortino_ratio': 2.0, 'calmar_ratio': 1.2, 'value_at_risk': 10.0,
-                            'expected_shortfall': 12.0, 'ulcer_index': 5.0}
-            }
-        ]
+        mocks = mock_reporting_dependencies
 
-        with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df, \
-                patch('app.backtesting.testing.reporting.save_to_parquet') as mock_save:
-            mock_df = pd.DataFrame({'test': [1]})
-            mock_to_df.return_value = mock_df
+        save_results(sample_test_results)
 
-            save_results(results)
+        # Verify save_to_parquet was called with DataFrame
+        mocks['save_to_parquet'].assert_called_once()
+        assert isinstance(mocks['save_to_parquet'].call_args[0][0], pd.DataFrame)
 
-            # Verify save_to_parquet was called with DataFrame
-            mock_save.assert_called_once()
-            assert isinstance(mock_save.call_args[0][0], pd.DataFrame)
-
-    def test_save_results_with_empty_dataframe(self, capsys):
+    def test_save_results_with_empty_dataframe(self, capsys, mock_reporting_dependencies):
         """Test that empty DataFrame doesn't trigger save."""
         results = []
+        mocks = mock_reporting_dependencies
+        mocks['results_to_dataframe'].return_value = pd.DataFrame()
 
-        with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df, \
-                patch('app.backtesting.testing.reporting.save_to_parquet') as mock_save:
-            mock_to_df.return_value = pd.DataFrame()
+        save_results(results)
 
-            save_results(results)
+        # save_to_parquet should not be called
+        mocks['save_to_parquet'].assert_not_called()
 
-            # save_to_parquet should not be called
-            mock_save.assert_not_called()
+        captured = capsys.readouterr()
+        assert 'No results to save' in captured.out
 
-            captured = capsys.readouterr()
-            assert 'No results to save' in captured.out
-
-    def test_save_results_error_handling(self):
+    def test_save_results_error_handling(self, sample_test_results):
         """Test that errors during save are caught and logged."""
-        results = [
-            {
-                'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
-                            'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
-                            'total_return_percentage_of_contract': 50.0,
-                            'average_trade_return_percentage_of_contract': 5.0,
-                            'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
-                            'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
-                            'sortino_ratio': 2.0, 'calmar_ratio': 1.2, 'value_at_risk': 10.0,
-                            'expected_shortfall': 12.0, 'ulcer_index': 5.0}
-            }
-        ]
-
         with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df:
             mock_to_df.side_effect = Exception("Test error")
 
             # Should not raise, should handle gracefully
-            save_results(results)
+            save_results(sample_test_results)
 
-    def test_save_results_uses_correct_filepath(self):
+    def test_save_results_uses_correct_filepath(self, sample_test_results, mock_reporting_dependencies):
         """Test that save_results uses correct file path."""
-        results = [
-            {
-                'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
-                            'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
-                            'total_return_percentage_of_contract': 50.0,
-                            'average_trade_return_percentage_of_contract': 5.0,
-                            'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
-                            'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
-                            'sortino_ratio': 2.0, 'calmar_ratio': 1.2, 'value_at_risk': 10.0,
-                            'expected_shortfall': 12.0, 'ulcer_index': 5.0}
-            }
-        ]
+        mocks = mock_reporting_dependencies
 
-        with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df, \
-                patch('app.backtesting.testing.reporting.save_to_parquet') as mock_save:
-            mock_df = pd.DataFrame({'test': [1]})
-            mock_to_df.return_value = mock_df
+        save_results(sample_test_results)
 
-            save_results(results)
-
-            # Verify correct filepath used
-            filepath = mock_save.call_args[0][1]
-            assert 'mass_test_results_all.parquet' in filepath
+        # Verify correct filepath used
+        filepath = mocks['save_to_parquet'].call_args[0][1]
+        assert 'mass_test_results_all.parquet' in filepath
 
 
 # ==================== Integration Tests ====================

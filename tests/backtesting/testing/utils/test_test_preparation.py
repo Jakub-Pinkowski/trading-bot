@@ -24,14 +24,13 @@ from app.backtesting.testing.utils.test_preparation import (
 class TestLoadExistingResults:
     """Test load_existing_results function."""
 
-    def test_load_existing_results_file_exists(self):
+    def test_load_existing_results_file_exists(self, existing_results_factory):
         """Test loading results when file exists."""
-        mock_df = pd.DataFrame({
-            'month': ['1!', '2!'],
-            'symbol': ['ZS', 'CL'],
-            'interval': ['1h', '15m'],
-            'strategy': ['RSI_14_30_70', 'EMA_9_21']
-        })
+        combinations = [
+            ('1!', 'ZS', '1h', 'RSI_14_30_70'),
+            ('2!', 'CL', '15m', 'EMA_9_21')
+        ]
+        mock_df, expected_set = existing_results_factory(combinations)
 
         with patch('os.path.exists', return_value=True), \
                 patch('pandas.read_parquet', return_value=mock_df):
@@ -102,73 +101,49 @@ class TestLoadExistingResults:
 class TestCheckTestExists:
     """Test check_test_exists function."""
 
-    def test_check_test_exists_when_exists(self):
+    def test_check_test_exists_when_exists(self, existing_results_factory):
         """Test checking for test that exists."""
-        mock_df = pd.DataFrame({
-            'month': ['1!', '2!'],
-            'symbol': ['ZS', 'CL'],
-            'interval': ['1h', '15m'],
-            'strategy': ['RSI_14_30_70', 'EMA_9_21']
-        })
-        combinations_set = {
+        combinations = [
             ('1!', 'ZS', '1h', 'RSI_14_30_70'),
             ('2!', 'CL', '15m', 'EMA_9_21')
-        }
-        existing_data = (mock_df, combinations_set)
+        ]
+        existing_data = existing_results_factory(combinations)
 
         result = check_test_exists(existing_data, '1!', 'ZS', '1h', 'RSI_14_30_70')
 
         assert result is True
 
-    def test_check_test_exists_when_not_exists(self):
+    def test_check_test_exists_when_not_exists(self, existing_results_factory):
         """Test checking for test that doesn't exist."""
-        mock_df = pd.DataFrame({
-            'month': ['1!'],
-            'symbol': ['ZS'],
-            'interval': ['1h'],
-            'strategy': ['RSI_14_30_70']
-        })
-        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
-        existing_data = (mock_df, combinations_set)
+        combinations = [('1!', 'ZS', '1h', 'RSI_14_30_70')]
+        existing_data = existing_results_factory(combinations)
 
         result = check_test_exists(existing_data, '2!', 'CL', '15m', 'EMA_9_21')
 
         assert result is False
 
-    def test_check_test_exists_with_empty_data(self):
+    def test_check_test_exists_with_empty_data(self, existing_results_factory):
         """Test checking when no existing data."""
-        existing_data = (pd.DataFrame(), set())
+        existing_data = existing_results_factory([])
 
         result = check_test_exists(existing_data, '1!', 'ZS', '1h', 'RSI_14_30_70')
 
         assert result is False
 
-    def test_check_test_exists_case_sensitive(self):
+    def test_check_test_exists_case_sensitive(self, existing_results_factory):
         """Test that check is case-sensitive."""
-        mock_df = pd.DataFrame({
-            'month': ['1!'],
-            'symbol': ['ZS'],
-            'interval': ['1h'],
-            'strategy': ['RSI_14_30_70']
-        })
-        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
-        existing_data = (mock_df, combinations_set)
+        combinations = [('1!', 'ZS', '1h', 'RSI_14_30_70')]
+        existing_data = existing_results_factory(combinations)
 
         # Different case should not match
         result = check_test_exists(existing_data, '1!', 'zs', '1h', 'RSI_14_30_70')
 
         assert result is False
 
-    def test_check_test_exists_partial_match(self):
+    def test_check_test_exists_partial_match(self, existing_results_factory):
         """Test that partial matches don't count as exists."""
-        mock_df = pd.DataFrame({
-            'month': ['1!'],
-            'symbol': ['ZS'],
-            'interval': ['1h'],
-            'strategy': ['RSI_14_30_70']
-        })
-        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
-        existing_data = (mock_df, combinations_set)
+        combinations = [('1!', 'ZS', '1h', 'RSI_14_30_70')]
+        existing_data = existing_results_factory(combinations)
 
         # Same symbol/interval but different month/strategy
         result = check_test_exists(existing_data, '2!', 'ZS', '1h', 'RSI_14_30_70')
