@@ -550,18 +550,39 @@ class TestRealDataMultiprocessing:
         """
         from app.backtesting import MassTester
 
+        # Create minimal historical data so MassTester can produce results
+        zs_dir = Path(tmpdir) / '1!' / 'ZS'
+        zs_dir.mkdir(parents=True, exist_ok=True)
+        dates = pd.date_range('2023-01-01', periods=20, freq='h')
+        df = pd.DataFrame({
+            'symbol': ['CBOT:ZS1!'] * len(dates),
+            'open': [100 + i for i in range(len(dates))],
+            'high': [101 + i for i in range(len(dates))],
+            'low': [99 + i for i in range(len(dates))],
+            'close': [100 + i for i in range(len(dates))],
+            'volume': [1000.0] * len(dates)
+        }, index=pd.DatetimeIndex(dates, name='datetime'))
+        df.to_parquet(zs_dir / 'ZS_1h.parquet')
+
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
+        # Run against our temporary historical-data layout
         with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
             results = tester.run_tests(max_workers=4, verbose=False, skip_existing=False)
 
-        # Check that all results are non-null and contain expected fields
+        # Check that results were produced and contain expected orchestrator fields
         assert isinstance(results, list)
+        assert len(results) > 0
         for result in results:
             assert result is not None
-            assert 'id' in result
-            assert 'value' in result
+            assert 'month' in result
+            assert 'symbol' in result
+            assert 'interval' in result
+            assert 'strategy' in result
+            assert 'metrics' in result
+            assert 'timestamp' in result
+            assert 'cache_stats' in result
 
     def test_worker_failure_recovery(self, tmpdir):
         """
