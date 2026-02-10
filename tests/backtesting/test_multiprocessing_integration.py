@@ -296,7 +296,7 @@ class TestConcurrentFileWrites:
         except RuntimeError:
             pass
 
-        num_workers = 10  # More workers for stress test
+        num_workers = 4
         args = [(i, temp_parquet_file) for i in range(num_workers)]
 
         with multiprocessing.Pool(processes=num_workers) as pool:

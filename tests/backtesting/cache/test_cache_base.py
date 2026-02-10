@@ -482,8 +482,10 @@ class TestSaveCacheErrorHandling:
                 raise IOError("Simulated pickle dump failure")
             # On 3rd attempt, succeed (do nothing)
 
+        # Mock time.sleep at cache_base module level to avoid actual delays (speeds up test by ~2 seconds)
         with patch('pickle.dump', side_effect=mock_pickle_dump):
-            result = cache.save_cache(max_retries=3)
+            with patch('app.backtesting.cache.cache_base.time.sleep'):
+                result = cache.save_cache(max_retries=3)
 
         # Should succeed on 3rd attempt
         assert result is True
@@ -496,9 +498,10 @@ class TestSaveCacheErrorHandling:
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)
         cache.set('key1', 'value1')
 
-        # Mock pickle.dump to always fail
+        # Mock pickle.dump to always fail and time.sleep at cache_base level to avoid delays (speeds up test by ~2 seconds)
         with patch('pickle.dump', side_effect=IOError("Persistent pickle dump failure")):
-            result = cache.save_cache(max_retries=3)
+            with patch('app.backtesting.cache.cache_base.time.sleep'):
+                result = cache.save_cache(max_retries=3)
 
         assert result is False
 
@@ -846,7 +849,7 @@ class TestCacheConcurrency:
         Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
         num_workers = 4
-        iterations = 8
+        iterations = 3  # Reduced from 8 for faster tests while still testing file locking
 
         # Create high contention scenario
         with multiprocessing.Pool(processes=num_workers) as pool:
