@@ -105,6 +105,9 @@ class StrategyAnalyzer:
         # Sort by the metric in descending order
         sorted_df = df.sort_values(by=metric, ascending=False)
 
+        # Apply limit to the results returned
+        result_df = sorted_df.head(limit) if limit and limit > 0 else sorted_df
+
         # Save results to a CSV file with formatted column names
         self._save_results_to_csv(metric,
                                   limit,
@@ -114,7 +117,7 @@ class StrategyAnalyzer:
                                   interval=interval,
                                   symbol=symbol)
 
-        return sorted_df
+        return result_df
 
     # ==================== Private Methods ====================
 
@@ -198,18 +201,36 @@ class StrategyAnalyzer:
             )
 
             # These metrics can be averaged as they are already normalized
-            metrics_dict['average_win_percentage_of_contract'] = grouped['average_win_percentage_of_contract'].mean()
-            metrics_dict['average_loss_percentage_of_contract'] = grouped['average_loss_percentage_of_contract'].mean()
-            metrics_dict['average_trade_duration_hours'] = grouped['average_trade_duration_hours'].mean()
+            # Guard access in case the input DataFrame does not contain those optional columns
+            def _group_mean_or_nan(col_name):
+                # Return grouped mean if column exists, otherwise return NaN series aligned with strategies
+                if col_name in filtered_df.columns:
+                    return grouped[col_name].mean()
+                return pd.Series(index=total_trades.index, data=float('nan'))
 
-            # Calculate profit factor percentage from aggregated wins and losses
-            total_wins_percentage = grouped['total_wins_percentage_of_contract'].sum()
-            total_losses_percentage = grouped['total_losses_percentage_of_contract'].sum()
+            metrics_dict[
+                'average_win_percentage_of_contract'] = _group_mean_or_nan('average_win_percentage_of_contract')
+            metrics_dict['average_loss_percentage_of_contract'] = _group_mean_or_nan(
+                'average_loss_percentage_of_contract')
+            metrics_dict['average_trade_duration_hours'] = _group_mean_or_nan('average_trade_duration_hours')
 
-            # Recalculate profit factor from aggregated data
-            metrics_dict['profit_factor'] = calculate_profit_ratio(
-                total_wins_percentage, total_losses_percentage
-            )
+            # Calculate profit factor percentage from aggregated wins and losses if available
+            if 'total_wins_percentage_of_contract' in filtered_df.columns and 'total_losses_percentage_of_contract' in filtered_df.columns:
+                total_wins_percentage = grouped['total_wins_percentage_of_contract'].sum()
+                total_losses_percentage = grouped['total_losses_percentage_of_contract'].sum()
+
+                # Recalculate profit factor from aggregated data
+                metrics_dict['profit_factor'] = calculate_profit_ratio(
+                    total_wins_percentage, total_losses_percentage
+                )
+            else:
+                # Fallback: compute trade-weighted profit_factor if profit_factor column exists
+                if 'profit_factor' in filtered_df.columns:
+                    metrics_dict['profit_factor'] = calculate_trade_weighted_average(
+                        filtered_df, 'profit_factor', total_trades
+                    )
+                else:
+                    metrics_dict['profit_factor'] = pd.Series(index=total_trades.index, data=float('nan'))
 
             # Calculate trade-weighted averages for risk metrics
             risk_metrics = [
@@ -223,31 +244,44 @@ class StrategyAnalyzer:
             ]
 
             for metric in risk_metrics:
-                metrics_dict[metric] = calculate_trade_weighted_average(
-                    filtered_df, metric, total_trades
-                )
+                # Only calculate if the metric column exists in the filtered dataframe
+                if metric in filtered_df.columns:
+                    metrics_dict[metric] = calculate_trade_weighted_average(
+                        filtered_df, metric, total_trades
+                    )
+                else:
+                    metrics_dict[metric] = pd.Series(index=total_trades.index, data=float('nan'))
         else:
             # Averages all metrics across strategies
+            # Use grouped means where columns exist, otherwise supply NaN Series aligned to strategies
+            def _safe_group_mean(col_name):
+                if col_name in filtered_df.columns:
+                    return grouped[col_name].mean()
+                return pd.Series(index=total_trades.index, data=float('nan'))
+
             metrics_dict.update({
-                'win_rate': grouped['win_rate'].mean(),
-                'average_trade_duration_hours': grouped['average_trade_duration_hours'].mean(),
+                'win_rate': _safe_group_mean('win_rate'),
+                'average_trade_duration_hours': _safe_group_mean('average_trade_duration_hours'),
 
                 # Return metrics (contract-based)
-                'total_return_percentage_of_contract': grouped['total_return_percentage_of_contract'].sum(),
-                'average_trade_return_percentage_of_contract': grouped[
-                    'average_trade_return_percentage_of_contract'].mean(),
-                'average_win_percentage_of_contract': grouped['average_win_percentage_of_contract'].mean(),
-                'average_loss_percentage_of_contract': grouped['average_loss_percentage_of_contract'].mean(),
+                'total_return_percentage_of_contract': grouped[
+                    'total_return_percentage_of_contract'].sum() if 'total_return_percentage_of_contract' in filtered_df.columns else pd.Series(
+                    index=total_trades.index,
+                    data=float('nan')),
+                'average_trade_return_percentage_of_contract': _safe_group_mean(
+                    'average_trade_return_percentage_of_contract'),
+                'average_win_percentage_of_contract': _safe_group_mean('average_win_percentage_of_contract'),
+                'average_loss_percentage_of_contract': _safe_group_mean('average_loss_percentage_of_contract'),
 
                 # Risk metrics
-                'profit_factor': grouped['profit_factor'].mean(),
-                'maximum_drawdown_percentage': grouped['maximum_drawdown_percentage'].mean(),
-                'sharpe_ratio': grouped['sharpe_ratio'].mean(),
-                'sortino_ratio': grouped['sortino_ratio'].mean(),
-                'calmar_ratio': grouped['calmar_ratio'].mean(),
-                'value_at_risk': grouped['value_at_risk'].mean(),
-                'expected_shortfall': grouped['expected_shortfall'].mean(),
-                'ulcer_index': grouped['ulcer_index'].mean()
+                'profit_factor': _safe_group_mean('profit_factor'),
+                'maximum_drawdown_percentage': _safe_group_mean('maximum_drawdown_percentage'),
+                'sharpe_ratio': _safe_group_mean('sharpe_ratio'),
+                'sortino_ratio': _safe_group_mean('sortino_ratio'),
+                'calmar_ratio': _safe_group_mean('calmar_ratio'),
+                'value_at_risk': _safe_group_mean('value_at_risk'),
+                'expected_shortfall': _safe_group_mean('expected_shortfall'),
+                'ulcer_index': _safe_group_mean('ulcer_index')
             })
 
         aggregated_df = pd.DataFrame(metrics_dict).reset_index()
