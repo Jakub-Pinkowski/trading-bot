@@ -21,9 +21,6 @@ test_dir/
 # Prompts
 .github/prompts/
 
-# Trading View fetching
-tw_fetching.py
-
 # Logs
 logs/
 .coverage
