@@ -388,6 +388,8 @@ class TestPicklingValidation:
         assert results == [0, 2, 4, 6, 8]
 
 
+@pytest.mark.slow
+@pytest.mark.integration
 class TestRealDataMultiprocessing:
     """Tests using actual historical data files to validate multiprocessing behavior."""
 

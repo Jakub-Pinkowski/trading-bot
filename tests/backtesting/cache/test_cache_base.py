@@ -786,6 +786,8 @@ def _check_cache_integrity(cache_name):
         return False, 0
 
 
+@pytest.mark.slow
+@pytest.mark.integration
 class TestCacheConcurrency:
     """Test cache behavior with concurrent access from multiple processes."""
 
