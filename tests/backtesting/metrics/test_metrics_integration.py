@@ -12,6 +12,7 @@ Coverage:
 - Performance tests (with 10,000 trades - runs in ~0.1s)
 """
 import time
+import tracemalloc
 from datetime import datetime
 
 from app.backtesting.metrics.per_trade_metrics import calculate_trade_metrics
@@ -355,7 +356,6 @@ class TestMetricsIntegration:
         trades = trades_factory.mixed(win_count=6000, loss_count=4000, symbol='ZS')
 
         # Measure memory usage
-        import tracemalloc
         tracemalloc.start()
 
         summary = SummaryMetrics(trades)

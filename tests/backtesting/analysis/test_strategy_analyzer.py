@@ -161,7 +161,7 @@ class TestGetTopStrategiesBasic:
         assert result.iloc[0]['profit_factor'] == 7.0
 
     def test_get_top_strategies_applies_limit(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that limit parameter affects CSV export (not returned DataFrame)."""
+        """Test that limit parameter restricts returned DataFrame and CSV export."""
         result = analyzer_with_csv_enabled.get_top_strategies(
             metric='win_rate',
             min_avg_trades_per_combination=0,
@@ -169,10 +169,10 @@ class TestGetTopStrategiesBasic:
             aggregate=False
         )
 
-        # Returned DataFrame contains all results (12 rows)
-        assert len(result) == 12
+        # Returned DataFrame should be limited to 3 rows
+        assert len(result) == 3
 
-        # But CSV file should only have 3 rows (limit applied)
+        # CSV file should also have 3 rows (limit applied)
         csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
         csv_df = pd.read_csv(csv_file)
         assert len(csv_df) == 3
@@ -590,7 +590,6 @@ class TestEdgeCases:
                 symbol=None,
                 weighted=False
             )
-
 
 
 class TestRealDataIntegration:

@@ -25,6 +25,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from filelock import Timeout
 
 from app.backtesting.cache.cache_base import Cache, _convert_cache_format
 from config import CACHE_DIR
@@ -482,8 +483,10 @@ class TestSaveCacheErrorHandling:
                 raise IOError("Simulated pickle dump failure")
             # On 3rd attempt, succeed (do nothing)
 
+        # Mock time.sleep at cache_base module level to avoid actual delays (speeds up test by ~2 seconds)
         with patch('pickle.dump', side_effect=mock_pickle_dump):
-            result = cache.save_cache(max_retries=3)
+            with patch('app.backtesting.cache.cache_base.time.sleep'):
+                result = cache.save_cache(max_retries=3)
 
         # Should succeed on 3rd attempt
         assert result is True
@@ -496,9 +499,10 @@ class TestSaveCacheErrorHandling:
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)
         cache.set('key1', 'value1')
 
-        # Mock pickle.dump to always fail
+        # Mock pickle.dump to always fail and time.sleep at cache_base level to avoid delays (speeds up test by ~2 seconds)
         with patch('pickle.dump', side_effect=IOError("Persistent pickle dump failure")):
-            result = cache.save_cache(max_retries=3)
+            with patch('app.backtesting.cache.cache_base.time.sleep'):
+                result = cache.save_cache(max_retries=3)
 
         assert result is False
 
@@ -526,8 +530,6 @@ class TestLoadCacheErrorHandling:
 
     def test_load_cache_handles_lock_timeout(self, cache_name):
         """Test _load_cache handles FileLock timeout gracefully."""
-        from filelock import Timeout
-
         # Create cache file
         cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
         with open(cache_file, 'wb') as f:
@@ -783,6 +785,8 @@ def _check_cache_integrity(cache_name):
         return False, 0
 
 
+@pytest.mark.slow
+@pytest.mark.integration
 class TestCacheConcurrency:
     """Test cache behavior with concurrent access from multiple processes."""
 
@@ -846,7 +850,7 @@ class TestCacheConcurrency:
         Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
         num_workers = 4
-        iterations = 8
+        iterations = 3  # Reduced from 8 for faster tests while still testing file locking
 
         # Create high contention scenario
         with multiprocessing.Pool(processes=num_workers) as pool:

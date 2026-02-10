@@ -98,9 +98,9 @@ trading-bot/
 │   │   │   └── webhook_utils.py                  # Webhook utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # General API utilities
-│   │   ├── file_utils.py                         # File utilities  
+│   │   ├── file_utils.py                         # File utilities
 │   │   ├── generic_utils.py                      # Generic utilities
-│   │   └── logger.py                             # Logger setup           
+│   │   └── logger.py                             # Logger setup
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
@@ -112,7 +112,7 @@ trading-bot/
 │   │   ├── analysis_ibkr_alerts/                 # Performance analysis based on IBKR alerts
 │   │   ├── analysis_trades/                      # Performance analysis based on trades
 │   │   └── analysis_tw_alerts/                   # Performance analysis based on TradingView alerts
-│   ├── backtesting/                              # Backtesting 
+│   ├── backtesting/                              # Backtesting
 │   │   ├── cache/                                # Cache storage for backtesting
 │   │   ├── csv_results/                          # CSV results from backtesting
 │   │   └── mass_test_results_all.parquet         # Mass backtesting results
@@ -148,18 +148,23 @@ trading-bot/
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script
 ├── structure.yaml                                # App's structure
+├── pytest.ini                                    # Pytest configuration
 └── tw_fetching.py                                # TradingView data fetching
 
 # Backtesting
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# TODO [HIGH]: TW fetching- Completely rewrite this and make this a part of the backtesting module
+# TODO [HIGH]: Add an automatic Github Action to run the fetching on a monthly basis
+# TODO [HIGH]: TW fetching- Add an automatic way to download everything
+# TODO [HIGH]: TW fetching- Make a comment on which symbols are available XC exists, YC doesn't etc.
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add advanced portfolio-level backtesting
-# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.01.10]
+# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.10]
 # TODO [LOW]: Update contract switch dates [last update in 2025.05]
 # TODO [LOW]: Update contracts ids [last update in 2025.05]
 # TODO [LOW]: Add contract switch dates for missing symbols
@@ -168,9 +173,6 @@ trading-bot/
 
 
 # Tests
-# TODO [HIGH]: Consolidate conftest.py files into a single file after all the rewrites
-# TODO [MEDIUM]: Add more real data tests in general
-# TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add e2e tests
 # TODO [LOW]: Fix all the grammar errors
 

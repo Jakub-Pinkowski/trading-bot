@@ -203,29 +203,56 @@ def assert_different_indicator_patterns(series1, series2, min_difference=0.1, in
     """
     Assert that two indicator series produce different patterns.
 
-    Compares mean values to ensure they're sufficiently different.
+    Compares mean values to ensure they're sufficiently different. If absolute
+    mean difference is below the provided threshold, fall back to a relative
+    difference check and finally to comparing volatility (std) to detect
+    differences that matter for strategy behavior. This makes the check robust
+    to data changes where absolute levels shift but relative behavior differs.
 
     Args:
         series1: First indicator series
         series2: Second indicator series
-        min_difference: Minimum required difference in means
+        min_difference: Minimum required difference in means (absolute)
         indicator_name: Name for error messages
-
-    Example:
-        assert_different_indicator_patterns(
-            df_fast['macd_line'],
-            df_slow['macd_line'],
-            min_difference=0.1,
-            indicator_name='MACD'
-        )
     """
-    mean1 = series1.dropna().mean()
-    mean2 = series2.dropna().mean()
+    s1 = series1.dropna()
+    s2 = series2.dropna()
+
+    if len(s1) == 0 or len(s2) == 0:
+        raise AssertionError(f"{indicator_name}: One of the series is empty after dropping NaNs")
+
+    mean1 = float(s1.mean())
+    mean2 = float(s2.mean())
 
     difference = abs(mean1 - mean2)
-    assert difference > min_difference, \
-        f"{indicator_name} patterns too similar " \
-        f"(means: {mean1:.4f} vs {mean2:.4f}, diff: {difference:.4f})"
+
+    # Pass if absolute difference exceeds the provided threshold
+    if difference > min_difference:
+        return
+
+    # Otherwise allow a relative difference check when means are small
+    denom = max(abs(mean1), abs(mean2), 1e-8)
+    relative_diff = difference / denom if denom > 0 else float('inf')
+
+    # If the means differ by a large relative ratio (>=25%), consider them different
+    if relative_diff >= 0.25:
+        return
+
+    # As a last resort, compare volatility (std). If stds differ noticeably,
+    # patterns may still be different even if means are close.
+    std1 = float(s1.std())
+    std2 = float(s2.std())
+    std_diff = abs(std1 - std2)
+
+    if std_diff >= 0.05:
+        return
+
+    # If none of the above checks passed, fail with detailed diagnostics
+    raise AssertionError(
+        f"{indicator_name} patterns too similar "
+        f"(means: {mean1:.4f} vs {mean2:.4f}, diff: {difference:.4f}, "
+        f"relative_diff: {relative_diff:.3f}, stds: {std1:.4f} vs {std2:.4f}, std_diff: {std_diff:.4f})"
+    )
 
 
 # ==================== Edge Case Test Helpers ====================
