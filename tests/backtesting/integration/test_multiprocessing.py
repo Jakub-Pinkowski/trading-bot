@@ -100,13 +100,13 @@ def _simple_double(x):
 def _inprocess_executor(tester_obj, test_combinations, max_workers_local):
     """
     Simple in-process executor used by tests to simulate parallel execution
-    without spawning worker processes. Useful to simulate worker failures
-    deterministically and avoid pickling issues in ProcessPoolExecutor.
+    without spawning worker processes. This always uses a ThreadPoolExecutor to
+    simulate `max_workers_local` workers
 
     Args:
         tester_obj: MassTester instance whose .results will be populated
         test_combinations: list of test parameter tuples as produced by orchestrator
-        max_workers_local: ignored (kept for signature compatibility)
+        max_workers_local: degree of parallelism to simulate (1 == single-threaded)
     """
     from app.backtesting.testing import runner as runner_module
     from app.backtesting.testing import orchestrator as orchestrator_module
@@ -114,20 +114,36 @@ def _inprocess_executor(tester_obj, test_combinations, max_workers_local):
     failed_tests = 0
     tester_obj.results = []
 
-    for test_params in test_combinations:
-        try:
-            symbol = test_params[1]
-            # Simulate a worker failure for a symbol named 'NONEXISTENT'
-            if symbol == 'NONEXISTENT':
-                raise Exception('Simulated worker failure')
+    def _run_single(params):
+        """Helper to run a single test and handle result appending."""
+        symbol = params[1]
+        # Simulate a worker failure for a symbol named 'NONEXISTENT'
+        if symbol == 'NONEXISTENT':
+            raise Exception('Simulated worker failure')
 
-            result = runner_module.run_single_test(test_params)
-            if result:
-                tester_obj.results.append(result)
-        except Exception:
-            failed_tests += 1
-            orchestrator_module.logger.exception(f"Worker exception during test execution for params: {test_params}")
-            continue
+        return runner_module.run_single_test(params)
+
+    # Run tests using a thread pool to simulate parallel workers in-process.
+    import concurrent.futures
+    import threading
+
+    lock = threading.Lock()
+    futures_map = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers_local) as exe:
+        for params in test_combinations:
+            futures_map[exe.submit(_run_single, params)] = params
+
+        for fut in concurrent.futures.as_completed(futures_map):
+            params = futures_map[fut]
+            try:
+                result = fut.result()
+                if result:
+                    with lock:
+                        tester_obj.results.append(result)
+            except Exception:
+                with lock:
+                    failed_tests += 1
+                orchestrator_module.logger.exception(f"Worker exception during test execution for params: {params}")
 
     if failed_tests > 0:
         orchestrator_module.logger.warning(f'Mass testing completed with {failed_tests} failed test(s)')
@@ -183,6 +199,8 @@ class TestConcurrency:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
         with multiprocessing.Pool(processes=num_workers) as pool:
@@ -205,6 +223,8 @@ class TestConcurrency:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
         with multiprocessing.Pool(processes=num_workers) as pool:
@@ -222,10 +242,12 @@ class TestConcurrency:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
         with multiprocessing.Pool(processes=4) as pool:
-            results = pool.map(_delayed_write_worker, args)
+            pool.map(_delayed_write_worker, args)
 
         final_df = pd.read_parquet(temp_parquet_file_path)
         assert len(final_df) == num_workers
@@ -253,7 +275,10 @@ class TestExecutorAndPickling:
         """
         from app.backtesting import MassTester
 
-        with patch('config.HISTORICAL_DATA_DIR', '/nonexistent/path'):
+        # Patch both the config module and the orchestrator module where the
+        # HISTORICAL_DATA_DIR value may have already been read at import time.
+        with patch('config.HISTORICAL_DATA_DIR', '/nonexistent/path'), \
+                patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', '/nonexistent/path'):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -265,11 +290,11 @@ class TestExecutorAndPickling:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
-        import concurrent.futures
-
-        with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+        with ProcessPoolExecutor(max_workers=2) as executor:
             futures = [executor.submit(_simple_double, i) for i in range(5)]
             results = [f.result() for f in futures]
 
@@ -595,11 +620,18 @@ class TestRealDataMultiprocessing:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
         # Create minimal data directory and file structure expected by tester
         data_dir = tmp_path / 'data'
         data_dir.mkdir()
+
+        # The orchestrator expects files under {HISTORICAL_DATA_DIR}/{month}/{symbol}/
+        # Create the 1!/ZS directory layout so MassTester can find the parquet
+        month_dir = data_dir / '1!' / 'ZS'
+        month_dir.mkdir(parents=True, exist_ok=True)
 
         dates = pd.date_range('2023-01-01', periods=20, freq='h')
         df = pd.DataFrame({
@@ -611,7 +643,8 @@ class TestRealDataMultiprocessing:
             'volume': [1000.0] * len(dates)
         }, index=pd.DatetimeIndex(dates, name='datetime'))
 
-        test_file = data_dir / 'ZS_1h.parquet'
+        # Write the parquet into the month/symbol dir with the filename the orchestrator expects
+        test_file = month_dir / 'ZS_1h.parquet'
         df.to_parquet(test_file)
 
         # Run MassTester pointing to our synthetic data dir
@@ -631,6 +664,8 @@ class TestRealDataMultiprocessing:
         try:
             multiprocessing.set_start_method('spawn', force=True)
         except RuntimeError:
+            # Ignore if the start method has already been set in this process
+            # multiprocessing.set_start_method raises RuntimeError when called more than once
             pass
 
         # Build month-based structure under tmp_path

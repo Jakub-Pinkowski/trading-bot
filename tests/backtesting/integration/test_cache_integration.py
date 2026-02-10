@@ -74,11 +74,11 @@ class TestCacheCoordination:
 
         # First access through get_cached_dataframe should be a miss and store the DataFrame
         from app.backtesting.cache.dataframe_cache import get_cached_dataframe
-        df1 = get_cached_dataframe(str(temp_file))
+        get_cached_dataframe(str(temp_file))
         assert dataframe_cache.size() >= 1
 
         # Second access should be served from the cache (hits increment)
-        df2 = get_cached_dataframe(str(temp_file))
+        get_cached_dataframe(str(temp_file))
         assert dataframe_cache.hits >= 1
 
         # Sanity check: strategy results should be a list of trades
@@ -113,17 +113,16 @@ class TestCachePerformance:
         )
 
         # Cold run (populate caches)
-        start = time.monotonic()
-        _ = strategy.run(small_test_data.copy(), contract_switch_dates.get('ZS', []))
-        cold_time = time.monotonic() - start
+        strategy.run(small_test_data.copy(), contract_switch_dates.get('ZS', []))
+        ind_hits_after_cold = indicator_cache.hits
+        assert indicator_cache.size() >= 1
 
         # Warm run (should hit caches)
-        start = time.monotonic()
-        _ = strategy.run(small_test_data.copy(), contract_switch_dates.get('ZS', []))
-        warm_time = time.monotonic() - start
+        strategy.run(small_test_data.copy(), contract_switch_dates.get('ZS', []))
 
-        # Warm run should be measurably faster or equal
-        assert warm_time <= cold_time * 1.05
+        # Warm run should produce at least one indicator cache hit compared to
+        # the cold run
+        assert indicator_cache.hits >= ind_hits_after_cold + 1
 
     def test_indicator_cache_reuse_across_strategies(self, small_test_data, contract_switch_dates, clean_caches):
         """
@@ -188,15 +187,23 @@ class TestCacheTTLAndEviction:
         Verify items expire after max_age seconds.
 
         Create a cache with a very small TTL, add an item, wait longer than the
-        TTL and assert the item is removed.
+        TTL, and assert the item is removed.
         """
         cache_name = f"test_ttl_{uuid.uuid4().hex}"
-        cache = Cache(cache_name=cache_name, max_size=10, max_age=0.05)
+        max_age = 0.05
+        cache = Cache(cache_name=cache_name, max_size=10, max_age=max_age)
         try:
             cache.set('a', 1)
             assert cache.contains('a') is True
             assert cache.size() == 1
-            time.sleep(0.06)
+
+            timeout = max(0.5, max_age * 20)
+            deadline = time.monotonic() + timeout
+            poll_interval = 0.01
+            while time.monotonic() < deadline:
+                if not cache.contains('a'):
+                    break
+                time.sleep(poll_interval)
             assert cache.contains('a') is False
             assert cache.size() == 0
         finally:

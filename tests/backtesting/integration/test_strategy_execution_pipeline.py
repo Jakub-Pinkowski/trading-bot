@@ -256,10 +256,6 @@ class TestPipelineWithDifferentConfigurations:
         summary = SummaryMetrics(trades_with_metrics)
         results = summary.calculate_all_metrics()
 
-        # Verify some trades might have 'switch' flag
-        switches = [t for t in trades if t.get('switch', False)]
-        # May or may not have switches depending on data period
-
         assert results['total_trades'] == len(trades)
 
     def test_pipeline_with_different_slippage(
@@ -397,7 +393,7 @@ class TestPipelineDataConsistency:
         results = summary.calculate_all_metrics()
 
         # Calculate totals from per-trade metrics
-        total_pnl_from_trades = sum(t['net_pnl'] for t in trades_with_metrics)
+        sum(t['net_pnl'] for t in trades_with_metrics)
         total_return_pct_from_trades = sum(t['return_percentage_of_contract'] for t in trades_with_metrics)
 
         # Compare with summary metrics
