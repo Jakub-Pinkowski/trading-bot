@@ -12,6 +12,8 @@ Test Coverage:
 - Trade-weighted average calculation
 - Edge cases and error handling
 """
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -145,7 +147,6 @@ class TestDataFrameFiltering:
                 f"Strategy name should contain slippage_ticks pattern: {strategy_name}"
 
             # Extract the slippage value
-            import re
             match = re.search(r'slippage_ticks=([0-9.]+)', strategy_name)
             assert match is not None, f"Could not extract slippage from: {strategy_name}"
 

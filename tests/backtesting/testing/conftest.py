@@ -9,6 +9,8 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 import pytest
 
+from app.backtesting.testing.mass_tester import MassTester
+
 
 # ==================== MassTester Fixtures ====================
 
@@ -41,7 +43,6 @@ def simple_tester():
     Returns:
         MassTester instance with ['1!'], ['ZS'], ['1h']
     """
-    from app.backtesting.testing.mass_tester import MassTester
     return MassTester(['1!'], ['ZS'], ['1h'])
 
 

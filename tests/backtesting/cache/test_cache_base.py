@@ -25,6 +25,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from filelock import Timeout
 
 from app.backtesting.cache.cache_base import Cache, _convert_cache_format
 from config import CACHE_DIR
@@ -529,8 +530,6 @@ class TestLoadCacheErrorHandling:
 
     def test_load_cache_handles_lock_timeout(self, cache_name):
         """Test _load_cache handles FileLock timeout gracefully."""
-        from filelock import Timeout
-
         # Create cache file
         cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
         with open(cache_file, 'wb') as f:

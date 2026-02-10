@@ -16,7 +16,9 @@ Note: This file uses shared fixtures from conftest.py:
 - trade_factory: For creating individual trades
 - trades_factory: For creating trade sequences
 """
+import random
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import pytest
 
@@ -490,7 +492,6 @@ class TestValueAtRisk:
     def test_var_with_normal_distribution(self, trades_factory):
         """Test VaR with approximately normal return distribution."""
         # Create returns clustered around mean
-        import random
         random.seed(42)  # For reproducibility
 
         trades = []
@@ -569,7 +570,6 @@ class TestEdgeCases:
         losing_trade = trade_factory('ZS', 1210.0, 1200.0)
         losing_metrics = SummaryMetrics([losing_trade])
 
-        from unittest.mock import patch
         with patch('app.backtesting.metrics.summary_metrics.safe_average', return_value=0.0):
             # When safe_average returns 0, downside_deviation becomes 0, hitting the defensive check
             assert losing_metrics._calculate_sortino_ratio() == 0

@@ -22,7 +22,7 @@ import uuid
 import pytest
 
 from app.backtesting.cache.cache_base import Cache
-from app.backtesting.cache.dataframe_cache import dataframe_cache
+from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.strategies import RSIStrategy
 from config import CACHE_DIR
@@ -73,7 +73,6 @@ class TestCacheCoordination:
         integration_test_data.to_parquet(temp_file)
 
         # First access through get_cached_dataframe should be a miss and store the DataFrame
-        from app.backtesting.cache.dataframe_cache import get_cached_dataframe
         get_cached_dataframe(str(temp_file))
         assert dataframe_cache.size() >= 1
 
