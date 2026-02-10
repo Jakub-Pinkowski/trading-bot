@@ -16,16 +16,22 @@ should be run in integration/nightly pipelines where HISTORICAL_DATA_DIR is avai
 """
 import multiprocessing
 import os
+import pickle
+import random
+import threading
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+import psutil
 import pytest
 
+from app.backtesting import MassTester, create_strategy
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
+from app.backtesting.testing import runner as runner_module, orchestrator as orchestrator_module
 from app.utils.file_utils import save_to_parquet
 
 
@@ -75,7 +81,6 @@ def _delayed_write_worker(args):
     Returns:
         int: worker_id
     """
-    import random
     worker_id, path = args
     time.sleep(random.uniform(0.001, 0.01))
     df = pd.DataFrame({'id': [worker_id], 'value': [worker_id * 5]})
@@ -108,9 +113,6 @@ def _inprocess_executor(tester_obj, test_combinations, max_workers_local):
         test_combinations: list of test parameter tuples as produced by orchestrator
         max_workers_local: degree of parallelism to simulate (1 == single-threaded)
     """
-    from app.backtesting.testing import runner as runner_module
-    from app.backtesting.testing import orchestrator as orchestrator_module
-
     failed_tests = 0
     tester_obj.results = []
 
@@ -124,16 +126,13 @@ def _inprocess_executor(tester_obj, test_combinations, max_workers_local):
         return runner_module.run_single_test(params)
 
     # Run tests using a thread pool to simulate parallel workers in-process.
-    import concurrent.futures
-    import threading
-
     lock = threading.Lock()
     futures_map = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers_local) as exe:
+    with ThreadPoolExecutor(max_workers=max_workers_local) as exe:
         for params in test_combinations:
             futures_map[exe.submit(_run_single, params)] = params
 
-        for fut in concurrent.futures.as_completed(futures_map):
+        for fut in as_completed(futures_map):
             params = futures_map[fut]
             try:
                 result = fut.result()
@@ -273,8 +272,6 @@ class TestExecutorAndPickling:
         Run a small orchestration with an invalid historical-data dir and ensure
         the orchestrator returns a list instead of raising.
         """
-        from app.backtesting import MassTester
-
         # Patch both the config module and the orchestrator module where the
         # HISTORICAL_DATA_DIR value may have already been read at import time.
         with patch('config.HISTORICAL_DATA_DIR', '/nonexistent/path'), \
@@ -307,9 +304,6 @@ class TestExecutorAndPickling:
         This mirrors the old comprehensive pickling test to catch any
         non-picklable state in strategy implementations.
         """
-        import pickle
-        from app.backtesting import create_strategy
-
         strategy_configs = [
             (
                 'rsi',
@@ -360,8 +354,6 @@ class TestCacheSave:
         Patch the caches used by the orchestrator and verify save_cache is called
         exactly once from the main process.
         """
-        from app.backtesting import MassTester
-
         data_dir = tmp_path / 'data'
         data_dir.mkdir()
         dates = pd.date_range('2023-01-01', periods=10, freq='h')
@@ -405,9 +397,6 @@ class TestRealDataMultiprocessing:
         This test ensures that the orchestrator can handle multiple strategies
         and symbols concurrently without issues.
         """
-        from app.backtesting import MassTester
-
-        # Use a small set of tests so this is fast when enabled
         tester = MassTester(['1!'], ['ZC'], ['1d'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -423,8 +412,6 @@ class TestRealDataMultiprocessing:
         This test checks that the cache size does not exceed expected limits
         when running tests with real data.
         """
-        from app.backtesting import MassTester
-
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -442,8 +429,6 @@ class TestRealDataMultiprocessing:
         This test ensures that parallel execution provides a significant speedup
         when processing real historical data.
         """
-        from app.backtesting import MassTester
-
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -462,7 +447,6 @@ class TestRealDataMultiprocessing:
         df.to_parquet(month_dir / 'ZS_1h.parquet')
 
         # measure serial and parallel durations using time.time and run in-process
-        from app.backtesting.testing import orchestrator as orchestrator_module
 
         with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(tmpdir)):
             # build combinations to run
@@ -504,8 +488,6 @@ class TestRealDataMultiprocessing:
         This verifies that the system can handle a wide range of parameters
         without performance degradation.
         """
-        from app.backtesting import MassTester
-
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         # Use a wide range of RSI parameters
         tester.add_rsi_tests(list(range(5, 25, 5)), [30], [70], [False], [None], [0])
@@ -522,9 +504,6 @@ class TestRealDataMultiprocessing:
         This test ensures that the system does not exceed expected memory limits
         when running tests with real historical data.
         """
-        from app.backtesting import MassTester
-        import psutil
-
         tester = MassTester(['1!'], ['ZS'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -548,7 +527,8 @@ class TestRealDataMultiprocessing:
         This test verifies that data remains consistent and uncorrupted when
         accessed concurrently by different worker processes.
         """
-        from app.backtesting import MassTester
+        tester = MassTester(['1!'], ['ZS'], ['1h'])
+        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Create minimal historical data so MassTester can produce results
         zs_dir = Path(tmpdir) / '1!' / 'ZS'
@@ -563,9 +543,6 @@ class TestRealDataMultiprocessing:
             'volume': [1000.0] * len(dates)
         }, index=pd.DatetimeIndex(dates, name='datetime'))
         df.to_parquet(zs_dir / 'ZS_1h.parquet')
-
-        tester = MassTester(['1!'], ['ZS'], ['1h'])
-        tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
         # Run against our temporary historical-data layout
         with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', tmpdir):
@@ -591,10 +568,6 @@ class TestRealDataMultiprocessing:
         This test ensures that if a worker process fails, the remaining workers
         can continue processing and the system can recover without manual intervention.
         """
-        from app.backtesting import MassTester
-        from app.backtesting.testing import orchestrator as orchestrator_module
-
-        # Include a non-existent symbol to simulate a failing worker
         tester = MassTester(['1!'], ['ZS', 'NONEXISTENT'], ['1h'])
         tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -669,7 +642,6 @@ class TestRealDataMultiprocessing:
         df.to_parquet(test_file)
 
         # Run MassTester pointing to our synthetic data dir
-        from app.backtesting import MassTester
         with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
@@ -705,7 +677,7 @@ class TestRealDataMultiprocessing:
             }, index=pd.DatetimeIndex(dates, name='datetime'))
             df.to_parquet(month_dir / f'{symbol}_1d.parquet')
 
-        from app.backtesting import MassTester
+        # MassTester is imported at module level
         with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(base)):
             tester = MassTester(['1!'], ['ZC', '6A'], ['1d'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
