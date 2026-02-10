@@ -9,6 +9,7 @@ These tests validate:
 """
 import multiprocessing
 import os
+import os.path as osp
 import random
 import tempfile
 import time
@@ -21,6 +22,7 @@ from app.backtesting import MassTester
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.utils.file_utils import save_to_parquet
+from config import HISTORICAL_DATA_DIR
 
 
 # Module-level worker functions for multiprocessing (must be picklable)
@@ -394,7 +396,7 @@ class TestRealDataMultiprocessing:
     """Tests using actual historical data files to validate multiprocessing behavior."""
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_multiple_strategies_on_real_data(self):
@@ -417,7 +419,7 @@ class TestRealDataMultiprocessing:
             os.makedirs(month_dir, exist_ok=True)
 
             # Copy actual data file to expected location (note: NO month suffix in filename)
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
@@ -442,8 +444,8 @@ class TestRealDataMultiprocessing:
                     assert len(results) >= 0, f"Should return a list of results, got {results}"
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet') or
-        not os.path.exists('data/historical_data/2!/6A/6A_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')) or
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', '6A', '6A_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_multiple_symbols_parallel_processing(self):
@@ -465,7 +467,7 @@ class TestRealDataMultiprocessing:
                 month_dir = os.path.join(tmpdir, '1!', symbol)
                 os.makedirs(month_dir, exist_ok=True)
 
-                actual_file = f'data/historical_data/2!/{symbol}/{symbol}_1d.parquet'
+                actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', symbol, f'{symbol}_1d.parquet')
                 if os.path.exists(actual_file):
                     target_file = os.path.join(month_dir, f'{symbol}_1d.parquet')
                     shutil.copy(actual_file, target_file)
@@ -484,7 +486,7 @@ class TestRealDataMultiprocessing:
                 assert len(results) >= 0, "Should return a list"
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_cache_efficiency_with_real_data(self):
@@ -508,7 +510,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
@@ -540,7 +542,7 @@ class TestRealDataMultiprocessing:
                     assert len(results1) == len(results2), "Both runs should produce same number of results"
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_performance_serial_vs_parallel(self):
@@ -560,7 +562,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
@@ -595,7 +597,7 @@ class TestRealDataMultiprocessing:
                     print(f"Speedup:  {time_serial / time_parallel:.2f}x" if time_parallel > 0 else "N/A")
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_large_parameter_space_parallel(self):
@@ -615,7 +617,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
@@ -641,7 +643,7 @@ class TestRealDataMultiprocessing:
                     assert len(results) >= 0
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_memory_efficient_processing(self):
@@ -666,7 +668,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 target_file = os.path.join(month_dir, 'ZC_1d.parquet')
                 shutil.copy(actual_file, target_file)
@@ -694,7 +696,7 @@ class TestRealDataMultiprocessing:
                     assert isinstance(results, list)
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_data_integrity_across_workers(self):
@@ -714,7 +716,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
@@ -743,7 +745,7 @@ class TestRealDataMultiprocessing:
                                     assert len(set(values)) == 1, f"Inconsistent {key}: {values}"
 
     @pytest.mark.skipif(
-        not os.path.exists('data/historical_data/2!/ZC/ZC_1d.parquet'),
+        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
         reason="Real historical data not available"
     )
     def test_worker_failure_recovery(self):
@@ -764,7 +766,7 @@ class TestRealDataMultiprocessing:
             month_dir = os.path.join(tmpdir, '1!', 'ZC')
             os.makedirs(month_dir, exist_ok=True)
 
-            actual_file = 'data/historical_data/2!/ZC/ZC_1d.parquet'
+            actual_file = osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')
             if os.path.exists(actual_file):
                 shutil.copy(actual_file, os.path.join(month_dir, 'ZC_1d.parquet'))
 
