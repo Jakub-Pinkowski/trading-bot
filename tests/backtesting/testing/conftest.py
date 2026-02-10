@@ -6,9 +6,8 @@ Eliminates ~200 lines of duplicated mock setup code across test files.
 """
 from unittest.mock import patch, MagicMock
 
-# Import backtesting fixtures to make them discoverable by PyCharm
-from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
-from tests.backtesting.fixtures.strategy_fixtures import *  # noqa: F401, F403
+import pandas as pd
+import pytest
 
 
 # ==================== MassTester Fixtures ====================

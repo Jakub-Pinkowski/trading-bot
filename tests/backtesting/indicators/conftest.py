@@ -1,9 +1,8 @@
 """
 Conftest for indicator tests.
 
-Imports shared data fixtures from fixtures directory and local indicator test data.
+Imports local indicator test data fixtures.
+Shared data fixtures available via pytest_plugins in root conftest.
 """
 
-# Import fixtures for PyCharm test runner
-from tests.backtesting.fixtures.data_fixtures import *  # noqa: F401, F403
 from tests.backtesting.indicators.indicator_test_data import *  # noqa: F401, F403

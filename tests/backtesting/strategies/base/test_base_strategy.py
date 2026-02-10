@@ -77,25 +77,6 @@ def base_strategy():
     )
 
 
-@pytest.fixture
-def sample_ohlcv_data():
-    """Sample OHLCV data for testing (150 bars)."""
-    dates = pd.date_range('2025-01-01', periods=150, freq='1h')
-
-    # Create a realistic price movement
-    np.random.seed(42)
-    close_prices = 100 + np.cumsum(np.random.randn(150) * 0.5)
-
-    df = pd.DataFrame({
-        'open': close_prices + np.random.randn(150) * 0.2,
-        'high': close_prices + np.abs(np.random.randn(150) * 0.3),
-        'low': close_prices - np.abs(np.random.randn(150) * 0.3),
-        'close': close_prices,
-        'volume': np.random.randint(1000, 10000, 150)
-    }, index=dates)
-
-    return df
-
 
 # ==================== Test Classes ====================
 
