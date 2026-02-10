@@ -467,10 +467,8 @@ class TestRealDataMultiprocessing:
 
             # clear results and caches
             tester.results = []
-            from app.backtesting.cache.indicators_cache import indicator_cache as ic
-            from app.backtesting.cache.dataframe_cache import dataframe_cache as dfc
-            ic.cache_data.clear()
-            dfc.cache_data.clear()
+            indicator_cache.cache_data.clear()
+            dataframe_cache.cache_data.clear()
 
             t1 = time.time()
             _inprocess_executor(tester, test_combinations, max_workers_local=4)
