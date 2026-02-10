@@ -131,8 +131,6 @@ def assert_different_params_use_different_cache(result1, result2):
         raise ValueError(f"Unsupported result types: {type(result1)} and {type(result2)}")
 
 
-
-
 # ==================== Comparison Utilities ====================
 
 def assert_longer_period_smoother(short_result, long_result, indicator_name='Indicator'):

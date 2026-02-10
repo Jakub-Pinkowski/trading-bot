@@ -592,7 +592,6 @@ class TestEdgeCases:
             )
 
 
-
 class TestRealDataIntegration:
     """Test with real backtest results data (if available)."""
 

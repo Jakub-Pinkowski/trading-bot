@@ -110,4 +110,3 @@ def contract_switch_dates():
             del dates_dict[symbol]
 
     return dates_dict
-

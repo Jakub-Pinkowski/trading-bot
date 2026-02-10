@@ -77,7 +77,6 @@ def base_strategy():
     )
 
 
-
 # ==================== Test Classes ====================
 
 class TestBaseStrategyInitialization:
