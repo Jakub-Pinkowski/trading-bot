@@ -98,9 +98,9 @@ trading-bot/
 │   │   │   └── webhook_utils.py                  # Webhook utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # General API utilities
-│   │   ├── file_utils.py                         # File utilities  
+│   │   ├── file_utils.py                         # File utilities
 │   │   ├── generic_utils.py                      # Generic utilities
-│   │   └── logger.py                             # Logger setup           
+│   │   └── logger.py                             # Logger setup
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
@@ -112,7 +112,7 @@ trading-bot/
 │   │   ├── analysis_ibkr_alerts/                 # Performance analysis based on IBKR alerts
 │   │   ├── analysis_trades/                      # Performance analysis based on trades
 │   │   └── analysis_tw_alerts/                   # Performance analysis based on TradingView alerts
-│   ├── backtesting/                              # Backtesting 
+│   ├── backtesting/                              # Backtesting
 │   │   ├── cache/                                # Cache storage for backtesting
 │   │   ├── csv_results/                          # CSV results from backtesting
 │   │   └── mass_test_results_all.parquet         # Mass backtesting results
@@ -148,6 +148,7 @@ trading-bot/
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script
 ├── structure.yaml                                # App's structure
+├── pytest.ini                                    # Pytest configuration
 └── tw_fetching.py                                # TradingView data fetching
 
 # Backtesting
