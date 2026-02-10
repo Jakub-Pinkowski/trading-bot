@@ -13,20 +13,21 @@ Uses real market data (ZS, CL) from data/historical_data/.
 import pytest
 
 from app.backtesting.strategies import EMACrossoverStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
-    assert_valid_signals,
-    assert_valid_trades,
-    assert_no_overlapping_trades
+    assert_indicator_varies,
 )
 from tests.backtesting.strategies.strategy_test_utils import (
+    assert_more_responsive_indicator,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_slippage_affects_prices,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
-    assert_more_responsive_indicator,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
@@ -124,10 +125,8 @@ class TestEMAStrategyIndicators:
         assert_valid_indicator(df['ema_long'], 'EMA_long', min_val=0, allow_nan=True)
 
         # Verify EMAs respond to price changes (not constant)
-        valid_short_ema = df['ema_short'].dropna()
-        valid_long_ema = df['ema_long'].dropna()
-        assert valid_short_ema.std() > 1.0, "Short EMA should vary with price changes"
-        assert valid_long_ema.std() > 1.0, "Long EMA should vary with price changes"
+        assert_indicator_varies(df['ema_short'], 'EMA_short', min_std=1.0)
+        assert_indicator_varies(df['ema_long'], 'EMA_long', min_std=1.0)
 
         # Verify warmup period (long EMA needs more data to stabilize than short EMA)
         short_warmup_nans = df['ema_short'].iloc[:9].isna().sum()

@@ -548,6 +548,32 @@ class TestEdgeCases:
         # Should return empty dict
         assert result == {}
 
+        # Specifically hit defensive checks in private methods for coverage
+        assert metrics._calculate_max_drawdown() == (0, 0)
+        assert metrics._calculate_profit_factor() == 0
+        assert metrics._calculate_sortino_ratio() == 0
+        assert metrics._calculate_calmar_ratio() == 0
+        assert metrics._calculate_ulcer_index() == 0
+        assert metrics._calculate_value_at_risk() == 0
+        assert metrics._calculate_expected_shortfall() == 0
+        assert metrics._calculate_sharpe_ratio() == 0
+
+    def test_std_dev_zero_hits_defensive_checks(self, trade_factory):
+        """Test scenarios where standard deviation or downside deviation is zero."""
+        # 1. Test Sharpe ratio with zero standard deviation
+        trade = trade_factory('ZS', 1200.0, 1210.0)
+        metrics = SummaryMetrics([trade, trade])
+        assert metrics._calculate_sharpe_ratio() == 0
+
+        # 2. Test Sortino ratio with zero downside deviation using a mock
+        losing_trade = trade_factory('ZS', 1210.0, 1200.0)
+        losing_metrics = SummaryMetrics([losing_trade])
+
+        from unittest.mock import patch
+        with patch('app.backtesting.metrics.summary_metrics.safe_average', return_value=0.0):
+            # When safe_average returns 0, downside_deviation becomes 0, hitting the defensive check
+            assert losing_metrics._calculate_sortino_ratio() == 0
+
     def test_none_trades(self):
         """Test metrics with None trades."""
         metrics = SummaryMetrics(None)

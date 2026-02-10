@@ -133,20 +133,6 @@ def minimal_price_series():
     return pd.Series([100, 101, 102, 103, 104])
 
 
-@pytest.fixture
-def exact_period_price_series():
-    """
-    Exactly 15 bars for period=14 tests.
-
-    Useful for testing minimum data requirements.
-    Pattern: 15 consecutive increases (14 warmup + 1 valid)
-
-    Returns:
-        Series of 15 prices
-    """
-    return pd.Series(range(100, 115))
-
-
 # ==================== Price Level Comparison Fixtures ====================
 
 @pytest.fixture
@@ -183,40 +169,6 @@ def high_price_level_series():
     ])
 
 
-# ==================== Mixed Pattern Fixtures ====================
-
-@pytest.fixture
-def uptrend_then_downtrend_series():
-    """
-    Price series with clear uptrend followed by downtrend.
-
-    Useful for testing indicator transitions between trends.
-    Pattern: Rise from 100 to 124 (25 bars), then fall back to 101 (25 bars)
-
-    Returns:
-        Series of 50 prices with trend reversal (25 up + 25 down)
-    """
-    rising = list(range(100, 125))  # 25 bars rising
-    falling = list(range(125, 100, -1))  # 25 bars falling
-    return pd.Series(rising + falling)
-
-
-@pytest.fixture
-def flat_then_volatile_series():
-    """
-    Flat prices followed by volatile movement.
-
-    Useful for testing indicator response to volatility changes.
-    Pattern: 50 bars flat at 100, then 50 bars oscillating
-
-    Returns:
-        Series of 100 prices (flat then oscillating)
-    """
-    flat = [100.0] * 50
-    oscillating = [100 + (i % 10 - 5) * 0.5 for i in range(50)]
-    return pd.Series(flat + oscillating)
-
-
 # ==================== Empty Data Fixtures ====================
 
 @pytest.fixture
@@ -230,30 +182,6 @@ def empty_price_series():
         Empty pandas Series
     """
     return pd.Series([], dtype=float)
-
-
-# ==================== Common Test Periods ====================
-
-@pytest.fixture
-def standard_periods():
-    """
-    Standard indicator periods for parameterized tests.
-
-    Returns:
-        List of common periods: [7, 14, 21, 28]
-    """
-    return [7, 14, 21, 28]
-
-
-@pytest.fixture
-def extreme_periods():
-    """
-    Extreme indicator periods for edge case tests.
-
-    Returns:
-        Dict with 'short' and 'long' period values
-    """
-    return {'short': 3, 'long': 100}
 
 
 # ==================== Bollinger Bands Specific Fixtures ====================

@@ -13,13 +13,13 @@ Uses real market data (ZS, CL) from data/historical_data/.
 import pytest
 
 from app.backtesting.strategies import RSIStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
-    assert_valid_signals,
-    assert_valid_trades,
-    assert_no_overlapping_trades
 )
 from tests.backtesting.strategies.strategy_test_utils import (
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_slippage_affects_prices,

@@ -131,121 +131,6 @@ def assert_different_params_use_different_cache(result1, result2):
         raise ValueError(f"Unsupported result types: {type(result1)} and {type(result2)}")
 
 
-# ==================== Structure Validation Utilities ====================
-
-def assert_indicator_structure(
-    result, expected_length, expected_type='series',
-    expected_columns=None, indicator_name='Indicator'
-):
-    """
-    Validate basic structure of indicator result.
-
-    Args:
-        result: Indicator calculation result
-        expected_length: Expected length of result
-        expected_type: 'series', 'dataframe', or 'dict'
-        expected_columns: For dataframes, list of expected column names
-        indicator_name: Name for error messages
-
-    Example:
-        bb = calculate_bollinger_bands(data, period=20)
-        assert_indicator_structure(
-            bb, len(data), 'dataframe',
-            ['middle_band', 'upper_band', 'lower_band'],
-            'Bollinger Bands'
-        )
-    """
-    if expected_type == 'series':
-        assert isinstance(result, pd.Series), \
-            f"{indicator_name} must return pandas Series, got {type(result)}"
-        assert len(result) == expected_length, \
-            f"{indicator_name} length must equal input length ({expected_length}), got {len(result)}"
-    elif expected_type == 'dataframe':
-        assert isinstance(result, pd.DataFrame), \
-            f"{indicator_name} must return pandas DataFrame, got {type(result)}"
-        assert len(result) == expected_length, \
-            f"{indicator_name} length must equal input length ({expected_length}), got {len(result)}"
-        if expected_columns:
-            assert list(result.columns) == expected_columns, \
-                f"{indicator_name} columns should be {expected_columns}, got {list(result.columns)}"
-    elif expected_type == 'dict':
-        assert isinstance(result, dict), \
-            f"{indicator_name} must return dict, got {type(result)}"
-        if expected_columns:
-            assert set(result.keys()) == set(expected_columns), \
-                f"{indicator_name} keys should be {expected_columns}, got {list(result.keys())}"
-    else:
-        raise ValueError(f"Unknown expected_type: {expected_type}")
-
-
-# ==================== Value Validation Utilities ====================
-
-def assert_values_in_range(
-    result, min_val=None, max_val=None, column=None,
-    indicator_name='Indicator', check_valid_only=True
-):
-    """
-    Assert indicator values are within expected range.
-
-    Args:
-        result: Indicator result (Series or DataFrame)
-        min_val: Minimum allowed value (None = no minimum)
-        max_val: Maximum allowed value (None = no maximum)
-        column: For DataFrames, which column to check (None = check all)
-        indicator_name: Name for error messages
-        check_valid_only: If True, only check non-NaN values
-
-    Example:
-        rsi = calculate_rsi(data, period=14)
-        assert_values_in_range(rsi, 0, 100, indicator_name='RSI')
-    """
-    if isinstance(result, pd.Series):
-        values = result.dropna() if check_valid_only else result
-        if min_val is not None:
-            assert (values >= min_val).all(), \
-                f"{indicator_name} has values < {min_val}: min={values.min()}"
-        if max_val is not None:
-            assert (values <= max_val).all(), \
-                f"{indicator_name} has values > {max_val}: max={values.max()}"
-    elif isinstance(result, pd.DataFrame):
-        columns_to_check = [column] if column else result.columns
-        for col in columns_to_check:
-            values = result[col].dropna() if check_valid_only else result[col]
-            if min_val is not None:
-                assert (values >= min_val).all(), \
-                    f"{indicator_name}[{col}] has values < {min_val}: min={values.min()}"
-            if max_val is not None:
-                assert (values <= max_val).all(), \
-                    f"{indicator_name}[{col}] has values > {max_val}: max={values.max()}"
-    else:
-        raise ValueError(f"Result must be Series or DataFrame, got {type(result)}")
-
-
-# ==================== Relationship Validation Utilities ====================
-
-def assert_band_relationships(df, upper_col, middle_col, lower_col, indicator_name='Bands'):
-    """
-    Assert proper band relationships (upper >= middle >= lower).
-
-    Common for indicators with bands (Bollinger Bands, Ichimoku, etc.)
-
-    Args:
-        df: DataFrame with band columns
-        upper_col: Name of upper band column
-        middle_col: Name of middle band column
-        lower_col: Name of lower band column
-        indicator_name: Name for error messages
-
-    Example:
-        bb = calculate_bollinger_bands(data)
-        assert_band_relationships(bb, 'upper_band', 'middle_band', 'lower_band', 'BB')
-    """
-    valid_df = df.dropna()
-
-    assert (valid_df[upper_col] >= valid_df[middle_col]).all(), \
-        f"{indicator_name}: {upper_col} must be >= {middle_col}"
-    assert (valid_df[middle_col] >= valid_df[lower_col]).all(), \
-        f"{indicator_name}: {middle_col} must be >= {lower_col}"
 
 
 # ==================== Comparison Utilities ====================
@@ -500,3 +385,103 @@ def assert_hash_parameter_required_even_with_cache(
         error_msg = str(e)
         assert 'hash' in error_msg.lower() or 'missing' in error_msg.lower(), \
             f"{indicator_name}: TypeError should mention missing hash parameter"
+
+
+# ==================== Data Modification for Testing ====================
+
+def inject_price_spike(df, index, spike_pct, direction='up'):
+    """
+    Inject artificial price spike at specific index.
+
+    Useful for testing indicator behavior during extreme movements.
+    Modifies high/low/close prices at specified bar.
+
+    Args:
+        df: DataFrame with OHLCV data
+        index: Index position or timestamp where spike occurs
+        spike_pct: Percentage size of spike
+        direction: 'up' for spike up, 'down' for spike down
+
+    Returns:
+        Modified DataFrame with price spike
+
+    Example:
+        # Inject 5% spike upward at bar 100
+        modified_df = inject_price_spike(df.copy(), 100, 5.0, 'up')
+
+        # Test ATR response to spike
+        atr = calculate_atr(modified_df, period=14)
+        assert atr.iloc[100] > atr.iloc[99]
+    """
+    df = df.copy()
+
+    if isinstance(index, (pd.Timestamp, str)):
+        index = df.index.get_loc(index)
+
+    base_close = df.iloc[index]['close']
+    spike_amount = base_close * (spike_pct / 100)
+
+    if direction == 'up':
+        df.iloc[index, df.columns.get_loc('high')] = base_close + spike_amount
+        df.iloc[index, df.columns.get_loc('close')] = base_close + (spike_amount * 0.5)
+    else:
+        df.iloc[index, df.columns.get_loc('low')] = base_close - spike_amount
+        df.iloc[index, df.columns.get_loc('close')] = base_close - (spike_amount * 0.5)
+
+    return df
+
+
+def inject_gap(df, index, gap_pct, direction='up'):
+    """
+    Inject price gap between bars.
+
+    Creates gap between previous close and next open. Useful for testing
+    gap-related logic and ATR true range calculation.
+
+    Args:
+        df: DataFrame with OHLCV data
+        index: Index where gap occurs (gap is between index-1 and index)
+        gap_pct: Percentage size of gap
+        direction: 'up' for gap up, 'down' for gap down
+
+    Returns:
+        Modified DataFrame with price gap
+
+    Example:
+        # Create 3% gap up at bar 50
+        modified_df = inject_gap(df.copy(), 50, 3.0, 'up')
+
+        # Test ATR captures the gap
+        atr = calculate_atr(modified_df, period=14)
+        assert atr.iloc[50] > atr.iloc[49]
+    """
+    df = df.copy()
+
+    if isinstance(index, (pd.Timestamp, str)):
+        index = df.index.get_loc(index)
+
+    if index == 0:
+        raise ValueError("Cannot inject gap at first bar")
+
+    prev_close = df.iloc[index - 1]['close']
+    gap_amount = prev_close * (gap_pct / 100)
+
+    if direction == 'up':
+        new_low = prev_close + gap_amount
+        # Set low to gap up from previous close
+        # This ensures true range captures the gap
+        df.iloc[index, df.columns.get_loc('low')] = new_low
+        # Adjust high and close proportionally above the new low
+        df.iloc[index, df.columns.get_loc('high')] = new_low + 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_low + 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_low + 0.5
+    else:
+        new_high = prev_close - gap_amount
+        # Set high to gap down from previous close
+        df.iloc[index, df.columns.get_loc('high')] = new_high
+        # Adjust low and close proportionally below the new high
+        df.iloc[index, df.columns.get_loc('low')] = new_high - 2.0
+        df.iloc[index, df.columns.get_loc('close')] = new_high - 1.0
+        df.iloc[index, df.columns.get_loc('open')] = new_high - 0.5
+
+    return df

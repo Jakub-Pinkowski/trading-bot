@@ -11,13 +11,15 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_atr
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
-from tests.backtesting.helpers.data_utils import inject_price_spike, inject_gap
+from tests.backtesting.fixtures.assertions import (
+    assert_valid_indicator,
+    assert_indicator_varies,
+)
 from tests.backtesting.indicators.indicator_test_utils import (
+    inject_price_spike,
+    inject_gap,
     setup_cache_test,
     assert_cache_hit_on_second_call,
-    assert_indicator_structure,
-    assert_values_in_range,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
     assert_empty_series_returns_empty,
@@ -67,14 +69,15 @@ class TestATRBasicLogic:
         df = _price_series_to_ohlc(short_price_series)
         atr = _calculate_atr(df, period=14)
 
-        assert_indicator_structure(atr, len(df), 'series', indicator_name='ATR')
+        assert isinstance(atr, pd.Series), "ATR must return pandas Series"
+        assert len(atr) == len(df), "ATR length must equal input length"
 
     def test_atr_is_always_positive(self, volatile_price_series):
         """ATR measures volatility and must always be positive."""
         df = _price_series_to_ohlc(volatile_price_series, range_pct=5.0)
         atr = _calculate_atr(df, period=10)
 
-        assert_values_in_range(atr, min_val=0, indicator_name='ATR', check_valid_only=True)
+        assert_valid_indicator(atr, 'ATR', min_val=0)
 
     def test_higher_volatility_gives_higher_atr(self, oscillating_price_series, volatile_price_series):
         """ATR should increase when price ranges widen."""

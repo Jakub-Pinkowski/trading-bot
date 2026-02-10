@@ -11,11 +11,12 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_macd
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_indicator_varies
+from tests.backtesting.fixtures.assertions import (
+    assert_indicator_varies,
+)
 from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
     assert_cache_hit_on_second_call,
-    assert_indicator_structure,
     assert_longer_period_smoother,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
@@ -44,13 +45,10 @@ class TestMACDBasicLogic:
         """MACD should return DataFrame with macd_line, signal_line, histogram."""
         macd = _calculate_macd(medium_price_series, fast_period=12, slow_period=26, signal_period=9)
 
-        assert_indicator_structure(
-            macd,
-            len(medium_price_series),
-            'dataframe',
-            ['macd_line', 'signal_line', 'histogram'],
-            'MACD'
-        )
+        assert isinstance(macd, pd.DataFrame), "MACD must return pandas DataFrame"
+        assert len(macd) == len(medium_price_series), "MACD length must equal input length"
+        assert list(macd.columns) == ['macd_line', 'signal_line', 'histogram'], \
+            f"MACD columns should be ['macd_line', 'signal_line', 'histogram'], got {list(macd.columns)}"
 
     def test_histogram_equals_macd_minus_signal(self, medium_price_series):
         """Histogram should equal macd_line - signal_line at all points."""

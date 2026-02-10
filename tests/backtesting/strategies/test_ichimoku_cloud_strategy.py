@@ -13,11 +13,9 @@ Uses real market data (ZS, CL) from data/historical_data/.
 import pytest
 
 from app.backtesting.strategies import IchimokuCloudStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
-    assert_valid_signals,
-    assert_valid_trades,
-    assert_no_overlapping_trades
+    assert_indicator_varies,
 )
 from tests.backtesting.strategies.strategy_test_utils import (
     assert_trades_have_both_directions,
@@ -26,6 +24,9 @@ from tests.backtesting.strategies.strategy_test_utils import (
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
     create_gapped_dataframe,
@@ -141,12 +142,9 @@ class TestIchimokuStrategyIndicators:
         assert_valid_indicator(df['chikou_span'], 'Chikou_Span', min_val=0, allow_nan=True)
 
         # Verify Ichimoku components respond to price changes (not constant)
-        valid_tenkan = df['tenkan_sen'].dropna()
-        valid_kijun = df['kijun_sen'].dropna()
-        valid_span_b = df['senkou_span_b'].dropna()
-        assert valid_tenkan.std() > 1.0, "Tenkan-sen should vary with price changes"
-        assert valid_kijun.std() > 1.0, "Kijun-sen should vary with price changes"
-        assert valid_span_b.std() > 1.0, "Senkou Span B should vary with price changes"
+        assert_indicator_varies(df['tenkan_sen'], 'Tenkan-sen', min_std=1.0)
+        assert_indicator_varies(df['kijun_sen'], 'Kijun-sen', min_std=1.0)
+        assert_indicator_varies(df['senkou_span_b'], 'Senkou Span B', min_std=1.0)
 
         # Verify warmup period (Senkou Span B needs 52 bars, displacement adds 26)
         tenkan_warmup_nans = df['tenkan_sen'].iloc[:9].isna().sum()

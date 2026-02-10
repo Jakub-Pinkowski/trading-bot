@@ -11,11 +11,13 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_ema
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_valid_indicator, assert_indicator_varies
+from tests.backtesting.fixtures.assertions import (
+    assert_valid_indicator,
+    assert_indicator_varies,
+)
 from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
     assert_cache_hit_on_second_call,
-    assert_indicator_structure,
     assert_longer_period_smoother,
     assert_different_params_use_different_cache,
     assert_cache_distinguishes_different_data,
@@ -71,7 +73,8 @@ class TestEMABasicLogic:
         """EMA should return a series with same length as input."""
         ema = _calculate_ema(short_price_series, period=9)
 
-        assert_indicator_structure(ema, len(short_price_series), 'series', indicator_name='EMA')
+        assert isinstance(ema, pd.Series), "EMA must return pandas Series"
+        assert len(ema) == len(short_price_series), "EMA length must equal input length"
 
     def test_ema_lags_rising_prices(self, rising_price_series):
         """EMA should lag behind continuously rising prices."""
@@ -177,7 +180,8 @@ class TestEMACalculationWithRealData:
         ema = _calculate_ema(zs_1h_data['close'], period=period)
 
         # Validate structure and variation
-        assert_indicator_structure(ema, len(zs_1h_data), 'series', indicator_name=f'EMA({period})')
+        assert isinstance(ema, pd.Series), f"EMA({period}) must return pandas Series"
+        assert len(ema) == len(zs_1h_data), f"EMA({period}) length must equal input length"
         assert_valid_indicator(ema, f'EMA({period})', min_val=0)
         assert_indicator_varies(ema, f'EMA({period})')
 

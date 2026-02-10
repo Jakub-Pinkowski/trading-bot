@@ -14,23 +14,24 @@ import pandas as pd
 import pytest
 
 from app.backtesting.strategies import MACDStrategy
-from tests.backtesting.helpers.assertions import (
+from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
-    assert_valid_signals,
-    assert_valid_trades,
-    assert_no_overlapping_trades
+    assert_indicator_varies,
 )
 from tests.backtesting.strategies.strategy_test_utils import (
+    assert_different_indicator_patterns,
     assert_trades_have_both_directions,
     assert_similar_trade_count,
     assert_slippage_affects_prices,
     assert_signals_convert_to_trades,
     assert_both_signal_types_present,
     assert_minimal_warmup_signals,
-    assert_different_indicator_patterns,
+    assert_valid_signals,
+    assert_valid_trades,
+    assert_no_overlapping_trades,
     create_small_ohlcv_dataframe,
     create_constant_price_dataframe,
-    create_gapped_dataframe,
+    create_gapped_dataframe
 )
 
 
@@ -133,12 +134,9 @@ class TestMACDStrategyIndicators:
         assert_valid_indicator(df['histogram'], 'MACD_histogram', allow_nan=True)
 
         # Verify MACD components respond to price changes (not constant)
-        valid_macd = df['macd_line'].dropna()
-        valid_signal = df['signal_line'].dropna()
-        valid_histogram = df['histogram'].dropna()
-        assert valid_macd.std() > 0.1, "MACD line should vary with price changes"
-        assert valid_signal.std() > 0.1, "Signal line should vary with price changes"
-        assert valid_histogram.std() > 0.05, "Histogram should vary with price changes"
+        assert_indicator_varies(df['macd_line'], 'MACD_line', min_std=0.1)
+        assert_indicator_varies(df['signal_line'], 'MACD_signal', min_std=0.1)
+        assert_indicator_varies(df['histogram'], 'MACD_histogram', min_std=0.05)
 
         # Verify warmup period (slow period + signal period = 26 + 9 = 35 bars)
         macd_warmup_nans = df['macd_line'].iloc[:26].isna().sum()

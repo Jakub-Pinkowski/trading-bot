@@ -4,102 +4,17 @@ Real data loading fixtures for backtesting tests.
 Provides fixtures for loading actual historical data from parquet files
 and creating scenario-based datasets for testing.
 """
+
 from pathlib import Path
 
 import pandas as pd
 import pytest
-import yaml
 
-from config import HISTORICAL_DATA_DIR, SWITCH_DATES_FILE_PATH, TICK_SIZES, CONTRACT_MULTIPLIERS
-
-
-# ==================== Path and Configuration Fixtures ====================
-
-@pytest.fixture(scope="session")
-def historical_data_path():
-    """
-    Base path to historical data directory.
-
-    Returns:
-        Path object pointing to data/historical_data/
-    """
-    return Path(HISTORICAL_DATA_DIR)
+from config import HISTORICAL_DATA_DIR
 
 
 @pytest.fixture(scope="session")
-def contract_switch_dates():
-    """
-    Load contract switch dates from YAML file.
-
-    Returns:
-        Dictionary mapping symbols to list of pandas Timestamps
-    """
-    with open(SWITCH_DATES_FILE_PATH, 'r') as f:
-        dates_dict = yaml.safe_load(f)
-
-    # Convert string dates to pandas Timestamps (skip non-list entries like symbol mappings)
-    for symbol in list(dates_dict.keys()):
-        if isinstance(dates_dict[symbol], list):
-            dates_dict[symbol] = [pd.Timestamp(date) for date in dates_dict[symbol]]
-        else:
-            # Remove non-list entries (e.g., "MCL: CL" mappings)
-            del dates_dict[symbol]
-
-    return dates_dict
-
-
-@pytest.fixture(scope="session")
-def available_symbols(historical_data_path):
-    """
-    List of symbols with available data in the 1! (front month contract) directory.
-
-    Returns:
-        List of symbol strings (e.g., ['ZS', 'CL', 'ES', ...])
-    """
-    data_dir = historical_data_path / '1!'
-    if not data_dir.exists():
-        return []
-
-    symbols = []
-    for item in data_dir.iterdir():
-        if item.is_dir() and not item.name.startswith('.'):
-            symbols.append(item.name)
-
-    return sorted(symbols)
-
-
-@pytest.fixture(scope="session")
-def contract_info():
-    """
-    Factory fixture to get contract information for any symbol.
-
-    Returns:
-        Function that returns dict with tick_size, tick_value, contract_multiplier
-
-    Example:
-        info = contract_info('ZS')
-        # {'symbol': 'ZS', 'tick_size': 0.25, 'tick_value': 12.50, 'contract_multiplier': 50}
-    """
-
-    def _get_contract_info(symbol):
-        tick_size = TICK_SIZES.get(symbol, 0.01)
-        multiplier = CONTRACT_MULTIPLIERS.get(symbol, 1)
-        tick_value = tick_size * multiplier
-
-        return {
-            'symbol': symbol,
-            'tick_size': tick_size,
-            'tick_value': tick_value,
-            'contract_multiplier': multiplier
-        }
-
-    return _get_contract_info
-
-
-# ==================== Data Loading Factory Fixtures ====================
-
-@pytest.fixture(scope="session")
-def load_real_data(historical_data_path):
+def load_real_data():
     """
     Factory fixture to load any symbol/interval combination from parquet files.
 
@@ -113,6 +28,7 @@ def load_real_data(historical_data_path):
         FileNotFoundError: If requested data file doesn't exist
         pytest.skip: If data not available (allows test to skip gracefully)
     """
+    historical_data_path = Path(HISTORICAL_DATA_DIR)
 
     def _load_data(month, symbol, interval):
         file_path = historical_data_path / month / symbol / f"{symbol}_{interval}.parquet"
@@ -143,19 +59,6 @@ def zs_1h_data(load_real_data):
 
 
 @pytest.fixture(scope="module")
-def zs_4h_data(load_real_data):
-    """
-    ZS (soybeans) 4-hour data from 1! contract.
-
-    Medium-sized dataset for faster tests that still need substantial data.
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'ZS', '4h')
-
-
-@pytest.fixture(scope="module")
 def zs_1d_data(load_real_data):
     """
     ZS (soybeans) daily data from 1! contract.
@@ -167,6 +70,8 @@ def zs_1d_data(load_real_data):
     """
     return load_real_data('1!', 'ZS', '1d')
 
+
+# ==================== Pre-loaded CL (Crude Oil) Fixtures ====================
 
 @pytest.fixture(scope="module")
 def cl_15m_data(load_real_data):
@@ -180,111 +85,6 @@ def cl_15m_data(load_real_data):
         DataFrame with OHLCV data and datetime index
     """
     return load_real_data('1!', 'CL', '15m')
-
-
-@pytest.fixture(scope="module")
-def zs_15m_data(load_real_data):
-    """
-    ZS (soybeans) 15-minute data from 1! contract.
-
-    High-frequency dataset for testing with more granular data.
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'ZS', '15m')
-
-
-@pytest.fixture(scope="module")
-def zs_5m_data(load_real_data):
-    """
-    ZS (soybeans) 5-minute data from 1! contract.
-
-    Very high-frequency dataset for intraday testing.
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'ZS', '5m')
-
-
-# ==================== Pre-loaded CL (Crude Oil) Fixtures ====================
-
-@pytest.fixture(scope="module")
-def cl_1h_data(load_real_data):
-    """
-    CL (crude oil) 1-hour data from 1! contract.
-
-    Secondary symbol for multi-symbol tests. Energy sector with different
-    characteristics than grains (ZS).
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'CL', '1h')
-
-
-@pytest.fixture(scope="module")
-def cl_4h_data(load_real_data):
-    """
-    CL (crude oil) 4-hour data from 1! contract.
-
-    Secondary symbol for multi-symbol tests on longer timeframe.
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'CL', '4h')
-
-
-@pytest.fixture(scope="module")
-def cl_1d_data(load_real_data):
-    """
-    CL (crude oil) daily data from 1! contract.
-
-    Secondary symbol for daily timeframe multi-symbol tests.
-
-    Returns:
-        DataFrame with OHLCV data and datetime index
-    """
-    return load_real_data('1!', 'CL', '1d')
-
-
-# ==================== Multi-Symbol Fixtures ====================
-
-@pytest.fixture(scope="module")
-def multi_symbol_data(zs_1h_data, cl_1h_data):
-    """
-    Dictionary containing multiple symbols for portfolio/comparison tests.
-
-    Returns:
-        Dict with symbol keys and DataFrame values:
-        {'ZS': zs_1h_df, 'CL': cl_1h_df}
-    """
-    return {
-        'ZS': zs_1h_data,
-        'CL': cl_1h_data
-    }
-
-
-@pytest.fixture(scope="module")
-def multi_interval_zs_data(zs_5m_data, zs_15m_data, zs_1h_data, zs_4h_data, zs_1d_data):
-    """
-    Dictionary containing ZS data across multiple intervals.
-
-    Useful for testing multi-timeframe strategies or interval comparisons.
-
-    Returns:
-        Dict with interval keys and DataFrame values:
-        {'5m': df, '15m': df, '1h': df, '4h': df, '1d': df}
-    """
-    return {
-        '5m': zs_5m_data,
-        '15m': zs_15m_data,
-        '1h': zs_1h_data,
-        '4h': zs_4h_data,
-        '1d': zs_1d_data
-    }
 
 
 # ==================== Scenario-Based Data Fixtures ====================

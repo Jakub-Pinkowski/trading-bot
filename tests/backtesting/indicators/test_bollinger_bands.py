@@ -11,12 +11,13 @@ import pytest
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_bollinger_bands
 from app.utils.backtesting_utils.indicators_utils import hash_series
-from tests.backtesting.helpers.assertions import assert_indicator_varies
+from tests.backtesting.fixtures.assertions import (
+    assert_band_relationships,
+    assert_indicator_varies,
+)
 from tests.backtesting.indicators.indicator_test_utils import (
     setup_cache_test,
     assert_cache_hit_on_second_call,
-    assert_indicator_structure,
-    assert_band_relationships,
     assert_empty_series_returns_empty,
 )
 
@@ -42,13 +43,10 @@ class TestBollingerBandsBasicLogic:
         """Bollinger Bands should return DataFrame with three band columns."""
         bb = _calculate_bollinger_bands(medium_price_series, period=20, num_std=2.0)
 
-        assert_indicator_structure(
-            bb,
-            len(medium_price_series),
-            'dataframe',
-            ['middle_band', 'upper_band', 'lower_band'],
-            'Bollinger Bands'
-        )
+        assert isinstance(bb, pd.DataFrame), "Bollinger Bands must return pandas DataFrame"
+        assert len(bb) == len(medium_price_series), "Bollinger Bands length must equal input length"
+        assert list(bb.columns) == ['middle_band', 'upper_band', 'lower_band'], \
+            f"Bollinger Bands columns should be ['middle_band', 'upper_band', 'lower_band'], got {list(bb.columns)}"
 
     def test_upper_greater_than_middle_greater_than_lower(self, volatile_price_series):
         """Upper band must always be >= middle band >= lower band."""
