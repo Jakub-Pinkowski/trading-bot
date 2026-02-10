@@ -395,10 +395,6 @@ class TestPicklingValidation:
 class TestRealDataMultiprocessing:
     """Tests using actual historical data files to validate multiprocessing behavior."""
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_multiple_strategies_on_real_data(self):
         """
         Test multiple strategies running in parallel on real historical data.
@@ -443,11 +439,6 @@ class TestRealDataMultiprocessing:
                     # Note: Results may be empty if no trades were generated, which is fine
                     assert len(results) >= 0, f"Should return a list of results, got {results}"
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')) or
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', '6A', '6A_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_multiple_symbols_parallel_processing(self):
         """
         Test processing multiple symbols in parallel.
@@ -485,10 +476,6 @@ class TestRealDataMultiprocessing:
                 # Test completed successfully - symbols were processed
                 assert len(results) >= 0, "Should return a list"
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_cache_efficiency_with_real_data(self):
         """
         Test that cache is efficiently used when processing real data.
@@ -541,10 +528,6 @@ class TestRealDataMultiprocessing:
                     # Results should be consistent in length
                     assert len(results1) == len(results2), "Both runs should produce same number of results"
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_performance_serial_vs_parallel(self):
         """
         Compare serial vs parallel execution on real data.
@@ -596,10 +579,6 @@ class TestRealDataMultiprocessing:
                     print(f"Parallel: {time_parallel:.2f}s")
                     print(f"Speedup:  {time_serial / time_parallel:.2f}x" if time_parallel > 0 else "N/A")
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_large_parameter_space_parallel(self):
         """
         Test parallel processing with large parameter space on real data.
@@ -642,10 +621,6 @@ class TestRealDataMultiprocessing:
                     # Test completed successfully (may be 0 if already cached)
                     assert len(results) >= 0
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_memory_efficient_processing(self):
         """
         Test that multiprocessing doesn't cause memory issues with real data.
@@ -695,10 +670,6 @@ class TestRealDataMultiprocessing:
                     # Test completed successfully (results may be empty if no trades)
                     assert isinstance(results, list)
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_data_integrity_across_workers(self):
         """
         Test that data integrity is maintained across worker processes.
@@ -744,10 +715,6 @@ class TestRealDataMultiprocessing:
                                 if values:
                                     assert len(set(values)) == 1, f"Inconsistent {key}: {values}"
 
-    @pytest.mark.skipif(
-        not os.path.exists(osp.join(HISTORICAL_DATA_DIR, '1!', 'ZC', 'ZC_1d.parquet')),
-        reason="Real historical data not available"
-    )
     def test_worker_failure_recovery(self):
         """
         Test that system recovers gracefully when workers fail on real data.

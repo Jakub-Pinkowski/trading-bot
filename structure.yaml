@@ -168,9 +168,6 @@ trading-bot/
 
 
 # Tests
-# TODO [HIGH]: Consolidate conftest.py files into a single file after all the rewrites
-# TODO [MEDIUM]: Add more real data tests in general
-# TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add e2e tests
 # TODO [LOW]: Fix all the grammar errors
 
