@@ -33,6 +33,49 @@ INTERVAL_MAPPING = {
 }
 
 
+# ==================== Helper Functions ====================
+
+def _detect_and_log_gaps(data, interval_label, symbol):
+    """
+    Detect and log significant gaps in datetime index.
+
+    Only logs gaps larger than the configured threshold to avoid
+    noise from expected gaps (weekends, holidays, etc.).
+
+    Args:
+        data: DataFrame with datetime index
+        interval_label: Interval identifier for logging
+        symbol: Symbol name for logging
+    """
+    if len(data) < 2:
+        return
+
+    gaps = []
+    sorted_index = data.index.sort_values()
+
+    for i in range(1, len(sorted_index)):
+        current_time = sorted_index[i]
+        previous_time = sorted_index[i - 1]
+        actual_gap = current_time - previous_time
+
+        # Only log gaps larger than threshold
+        if actual_gap > GAP_DETECTION_THRESHOLD:
+            gaps.append((previous_time, current_time, actual_gap))
+            logger.warning(f'Data gap detected in {symbol} {interval_label}: '
+                           f'from {previous_time} to {current_time} '
+                           f'(duration: {actual_gap})')
+
+
+def _save_new_data(data, file_path, base_symbol, interval_label, full_symbol):
+    """Save new data to a file."""
+    # Detect gaps
+    _detect_and_log_gaps(data, interval_label, full_symbol)
+
+    # Save data
+    data.to_parquet(file_path)
+    logger.info(f'  ✅ Created {len(data)} rows')
+
+
 # ==================== Data Fetcher Class ====================
 
 class DataFetcher:
@@ -144,7 +187,7 @@ class DataFetcher:
         if os.path.exists(file_path):
             self._update_existing_data(new_data, file_path, base_symbol, interval_label, full_symbol)
         else:
-            self._save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
+            _save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
 
     def _update_existing_data(self, new_data, file_path, base_symbol, interval_label, full_symbol):
         """Update existing data file with new data."""
@@ -171,7 +214,7 @@ class DataFetcher:
             combined_data = self._filter_data_by_year(combined_data)
 
             # Detect gaps
-            self._detect_and_log_gaps(combined_data, interval_label, full_symbol)
+            _detect_and_log_gaps(combined_data, interval_label, full_symbol)
 
             # Save combined data
             combined_data.to_parquet(file_path)
@@ -186,25 +229,11 @@ class DataFetcher:
             else:
                 logger.info(f'  No new data ({final_count} rows)')
 
-            # Log date range
-            self._log_date_range(combined_data, full_symbol, interval_label)
 
         except Exception as e:
             logger.error(f'Error updating existing file {file_path}: {e}')
             logger.info('Overwriting with new data')
-            self._save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
-
-    def _save_new_data(self, data, file_path, base_symbol, interval_label, full_symbol):
-        """Save new data to a file."""
-        # Detect gaps
-        self._detect_and_log_gaps(data, interval_label, full_symbol)
-
-        # Save data
-        data.to_parquet(file_path)
-        logger.info(f'  ✅ Created {len(data)} rows')
-
-        # Log date range
-        self._log_date_range(data, full_symbol, interval_label)
+            _save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
 
     def _filter_data_by_year(self, data):
         """
@@ -229,46 +258,6 @@ class DataFetcher:
             logger.debug(f'Filtered out {removed_count} rows from before {DATA_START_YEAR}')
 
         return filtered_data
-
-    # --- Data Validation ---
-
-    def _detect_and_log_gaps(self, data, interval_label, symbol):
-        """
-        Detect and log significant gaps in datetime index.
-
-        Only logs gaps larger than the configured threshold to avoid
-        noise from expected gaps (weekends, holidays, etc.).
-
-        Args:
-            data: DataFrame with datetime index
-            interval_label: Interval identifier for logging
-            symbol: Symbol name for logging
-        """
-        if len(data) < 2:
-            return
-
-        gaps = []
-        sorted_index = data.index.sort_values()
-
-        for i in range(1, len(sorted_index)):
-            current_time = sorted_index[i]
-            previous_time = sorted_index[i - 1]
-            actual_gap = current_time - previous_time
-
-            # Only log gaps larger than threshold
-            if actual_gap > GAP_DETECTION_THRESHOLD:
-                gaps.append((previous_time, current_time, actual_gap))
-                logger.warning(f'Data gap detected in {symbol} {interval_label}: '
-                               f'from {previous_time} to {current_time} '
-                               f'(duration: {actual_gap})')
-
-    def _log_date_range(self, data, symbol, interval_label):
-        """Log the first and last date in the dataset."""
-        if data is None or len(data) == 0:
-            return
-
-        first_date = data.index.min()
-        last_date = data.index.max()
 
     # --- Path Helpers ---
 
