@@ -50,7 +50,6 @@ def _detect_and_log_gaps(data, interval_label, symbol):
     if len(data) < 2:
         return
 
-    gaps = []
     sorted_index = data.index.sort_values()
 
     for i in range(1, len(sorted_index)):
@@ -60,7 +59,6 @@ def _detect_and_log_gaps(data, interval_label, symbol):
 
         # Only log gaps larger than a threshold
         if actual_gap > GAP_DETECTION_THRESHOLD:
-            gaps.append((previous_time, current_time, actual_gap))
             logger.warning(f'Data gap detected in {symbol} {interval_label}: '
                            f'from {previous_time} to {current_time} '
                            f'(duration: {actual_gap})')
@@ -158,7 +156,7 @@ class DataFetcher:
                 exchange=self.exchange,
                 interval=interval,
                 n_bars=MAX_BARS,
-                fut_contract=None
+                fut_contract=None  # Not used for continuous contracts (1!, 2!, etc.)
             )
 
             if data is None or len(data) == 0:
@@ -221,8 +219,6 @@ class DataFetcher:
 
         except Exception as e:
             logger.error(f'Error updating existing file {file_path}: {e}')
-            logger.info('Overwriting with new data')
-            _save_new_data(new_data, file_path, interval_label, full_symbol)
 
     def _filter_data_by_year(self, data):
         """
@@ -234,9 +230,6 @@ class DataFetcher:
         Returns:
             Filtered DataFrame containing only data from the threshold year onwards
         """
-        if data is None or len(data) == 0:
-            return data
-
         filtered_data = data[data.index >= self.year_threshold]
 
         original_count = len(data)
