@@ -191,9 +191,6 @@ class DataFetcher:
             existing_data = pd.read_parquet(file_path)
             existing_count = len(existing_data)
 
-            # Filter existing data to remove anything before the threshold year
-            existing_data = self._filter_data_by_year(existing_data)
-
             # Combine and deduplicate
             combined_data = pd.concat([existing_data, new_data])
             before_dedup_count = len(combined_data)
@@ -205,9 +202,6 @@ class DataFetcher:
             duplicates_removed = before_dedup_count - after_dedup_count
             if duplicates_removed > 0:
                 logger.debug(f'Removed {duplicates_removed} duplicates')
-
-            # Final filter to ensure no pre-threshold data remains
-            combined_data = self._filter_data_by_year(combined_data)
 
             # Detect gaps
             _detect_and_log_gaps(combined_data, interval_label, full_symbol)
