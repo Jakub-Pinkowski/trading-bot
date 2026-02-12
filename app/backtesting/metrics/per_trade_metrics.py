@@ -62,18 +62,10 @@ def calculate_trade_metrics(trade, symbol):
     trade = trade.copy()
 
     # Get the contract multiplier for the symbol using helper function
-    try:
-        contract_multiplier = get_contract_multiplier(symbol)
-        if contract_multiplier is None:
-            logger.error(f'Symbol {symbol} has no contract multiplier defined')
-            raise ValueError(f'Symbol {symbol} has no contract multiplier defined')
-    except ValueError as e:
-        # Re-raise if it's about unknown symbol
-        if 'Unknown symbol' in str(e):
-            logger.error(f'Invalid symbol: {symbol}')
-            raise
-        # Otherwise it's about None multiplier
-        raise
+    contract_multiplier = get_contract_multiplier(symbol)
+    if contract_multiplier is None:
+        logger.error(f'Symbol {symbol} has no contract multiplier defined')
+        raise ValueError(f'Symbol {symbol} has no contract multiplier defined')
 
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
     margin_requirement = _estimate_margin(symbol, trade['entry_price'], contract_multiplier)

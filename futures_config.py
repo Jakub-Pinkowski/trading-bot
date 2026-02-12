@@ -210,14 +210,24 @@ def get_tick_size(symbol):
     """
     Get the tick size for a given symbol.
 
+    Returns the configured tick size for known symbols. If the symbol is
+    unknown or its tick_size is not configured (None), this function
+    falls back to DEFAULT_TICK_SIZE as a defensive default so callers
+    that rely on a numeric tick size can continue to operate. Callers that
+    need to distinguish unknown symbols should validate with
+    get_exchange_for_symbol() or check SYMBOL_SPECS directly before
+    calling this helper.
+
     Args:
         symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
 
     Returns:
-        Tick size (float) or DEFAULT_TICK_SIZE if not available
+        Tick size as float. Returns DEFAULT_TICK_SIZE when the symbol is
+        unknown or when no tick_size is configured in SYMBOL_SPECS.
     """
     if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
         return SYMBOL_SPECS[symbol]['tick_size']
+    # Fallback to DEFAULT_TICK_SIZE for unknown symbols or unset tick sizes
     return DEFAULT_TICK_SIZE
 
 

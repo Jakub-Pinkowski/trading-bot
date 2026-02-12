@@ -878,8 +878,6 @@ class TestSlippageProfitImpact:
         assert profits[0] > profits[1] > profits[2] > profits[5] > profits[10]
 
         # Verify linear relationship
-        tick_size = get_tick_size('ZS')
-
         # Profit difference between 0 and 5 ticks should be 2x difference between 0 and 2.5 ticks
         diff_5_ticks = profits[0] - profits[5]
         diff_1_tick = profits[0] - profits[1]

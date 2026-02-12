@@ -677,7 +677,7 @@ class TestLoggerCalls:
     """Test that logger is called appropriately for errors."""
 
     def test_logger_called_for_invalid_symbol(self):
-        """Test logger.error is called for invalid symbol."""
+        """Test that ValueError is raised for invalid symbol."""
         trade = {
             'entry_time': datetime(2024, 1, 15, 10, 0),
             'exit_time': datetime(2024, 1, 15, 14, 0),
@@ -686,13 +686,9 @@ class TestLoggerCalls:
             'side': 'long'
         }
 
-        with patch('app.backtesting.metrics.per_trade_metrics.logger') as mock_logger:
-            with pytest.raises(ValueError):
-                calculate_trade_metrics(trade, 'INVALID')
-
-            # Verify logger was called
-            mock_logger.error.assert_called_once()
-            assert 'Invalid symbol' in mock_logger.error.call_args[0][0]
+        # Verify ValueError is raised for unknown symbol
+        with pytest.raises(ValueError, match="Unknown symbol"):
+            calculate_trade_metrics(trade, 'INVALID')
 
     def test_logger_called_for_invalid_margin(self):
         """Test logger.error is called for invalid margin."""
