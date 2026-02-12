@@ -137,7 +137,7 @@ class DataFetcher:
     def _fetch_symbol_data(self, symbol, intervals):
         """Fetch data for a single symbol across multiple intervals."""
         full_symbol = symbol + self.contract_suffix
-        output_dir = self._get_output_dir(symbol)
+        output_dir = os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
         os.makedirs(output_dir, exist_ok=True)
 
         for idx, interval_label in enumerate(intervals, 1):
@@ -258,9 +258,3 @@ class DataFetcher:
             logger.debug(f'Filtered out {removed_count} rows from before {DATA_START_YEAR}')
 
         return filtered_data
-
-    # --- Path Helpers ---
-
-    def _get_output_dir(self, symbol):
-        """Get output directory path for a symbol."""
-        return os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
