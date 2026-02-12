@@ -1,7 +1,7 @@
 import pandas as pd
 
 from app.utils.logger import get_logger
-from config import SYMBOL_SPECS
+from config import get_contract_multiplier
 
 logger = get_logger('analysis/trades_matching')
 
@@ -77,12 +77,15 @@ def match_trades(trades, is_ibkr_alerts=False, is_tw_alerts=False):
         size = 1 if (is_ibkr_alerts or is_tw_alerts) else row['size']
         commission = 0 if (is_ibkr_alerts or is_tw_alerts) else row['commission']
         
-        # Get multiplier from SYMBOL_SPECS
-        if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['multiplier'] is not None:
-            multiplier = SYMBOL_SPECS[symbol]['multiplier']
-        else:
+        # Get multiplier using helper function
+        try:
+            multiplier = get_contract_multiplier(symbol)
+            if multiplier is None:
+                multiplier = 1
+                logger.warning(f'Symbol \'{symbol}\' has no multiplier defined. Using multiplier=1.')
+        except ValueError:
             multiplier = 1
-            logger.warning(f'Symbol \'{symbol}\' not in SYMBOL_SPECS or has no multiplier. Using multiplier=1.')
+            logger.warning(f'Unknown symbol \'{symbol}\'. Using multiplier=1.')
 
         process_trade(symbol, side, size, price, commission, trade_time, multiplier, open_trades, processed_trades)
 

@@ -1,6 +1,6 @@
 from app.utils.logger import get_logger
 from app.utils.math_utils import calculate_percentage
-from config import SYMBOL_SPECS
+from config import get_contract_multiplier
 
 logger = get_logger('backtesting/per_trade_metrics')
 
@@ -54,19 +54,22 @@ def calculate_trade_metrics(trade, symbol):
         - commission: Commission cost in dollars
 
     Raises:
-        ValueError: If symbol not found in SYMBOL_SPECS, margin requirement is invalid,
+        ValueError: If symbol not found or has no contract multiplier, margin requirement is invalid,
                    or trade side is not 'long' or 'short'
     """
 
     # Create a copy of the trade to avoid modifying the original
     trade = trade.copy()
 
-    # Get the contract multiplier for the symbol
-    if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['multiplier'] is not None:
-        contract_multiplier = SYMBOL_SPECS[symbol]['multiplier']
-    else:
-        logger.error(f'No contract multiplier found for symbol: {symbol}')
-        raise ValueError(f'No contract multiplier found for symbol: {symbol}')
+    # Get the contract multiplier for the symbol using helper function
+    try:
+        contract_multiplier = get_contract_multiplier(symbol)
+        if contract_multiplier is None:
+            logger.error(f'No contract multiplier found for symbol: {symbol}')
+            raise ValueError(f'No contract multiplier found for symbol: {symbol}')
+    except ValueError as e:
+        logger.error(f'Invalid symbol: {symbol}')
+        raise
 
     # Estimate the margin requirement for the symbol based on the contract at the time of entry
     margin_requirement = _estimate_margin(symbol, trade['entry_price'], contract_multiplier)

@@ -15,7 +15,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.strategies.base.position_manager import PositionManager
-from config import SYMBOL_SPECS
+from config import get_tick_size
 
 
 # ==================== Fixtures ====================
@@ -177,7 +177,7 @@ class TestSlippageCalculations:
         adjusted = position_manager.apply_slippage_to_entry_price(1, base_price)
 
         # Long pays more on entry (slippage added)
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price + (1 * tick_size)
         assert adjusted == pytest.approx(expected, abs=0.01)
         assert adjusted > base_price
@@ -188,7 +188,7 @@ class TestSlippageCalculations:
         adjusted = position_manager.apply_slippage_to_entry_price(-1, base_price)
 
         # Short receives less on entry (slippage subtracted)
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price - (1 * tick_size)
         assert adjusted == pytest.approx(expected, abs=0.01)
         assert adjusted < base_price
@@ -211,7 +211,7 @@ class TestSlippageCalculations:
         base_price = 100.0
 
         adjusted_long = pm.apply_slippage_to_entry_price(1, base_price)
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price + (3 * tick_size)
         assert adjusted_long == pytest.approx(expected, abs=0.01)
 
@@ -239,7 +239,7 @@ class TestSlippageCalculations:
         adjusted = position_manager.apply_slippage_to_exit_price(1, base_price)
 
         # Long receives less on exit (slippage subtracted)
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price - (1 * tick_size)
         assert adjusted == pytest.approx(expected, abs=0.01)
         assert adjusted < base_price
@@ -250,7 +250,7 @@ class TestSlippageCalculations:
         adjusted = position_manager.apply_slippage_to_exit_price(-1, base_price)
 
         # Short pays more on exit (slippage added)
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price + (1 * tick_size)
         assert adjusted == pytest.approx(expected, abs=0.01)
         assert adjusted > base_price
@@ -361,7 +361,7 @@ class TestOpeningPositions:
         base_price = 100.0
         position_manager.open_position(1, sample_timestamp, base_price)
 
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_entry = base_price + (1 * tick_size)
         assert position_manager.entry_price == pytest.approx(expected_entry, abs=0.01)
 
@@ -446,7 +446,7 @@ class TestClosingPositions:
         position_manager.close_position(exit_time, base_exit_price, switch=False)
 
         # Exit price should have slippage applied
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_exit = base_exit_price - (1 * tick_size)
         trade = position_manager.trades[0]
         assert trade['exit_price'] == pytest.approx(expected_exit, abs=0.01)
@@ -517,7 +517,7 @@ class TestContractSwitchHandling:
 
         # Exit price should be based on row's open price
         trade = position_manager.trades[0]
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_exit = sample_row['open'] - (1 * tick_size)  # Long exit with slippage
         assert trade['exit_price'] == pytest.approx(expected_exit, abs=0.01)
 
@@ -604,7 +604,7 @@ class TestEdgeCases:
         pm.open_position(1, sample_timestamp, base_price)
 
         # Entry should reflect high slippage
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected = base_price + (10 * tick_size)
         assert pm.entry_price == pytest.approx(expected, abs=0.01)
 
@@ -767,7 +767,7 @@ class TestSlippageProfitImpact:
         assert profit_with_slip < profit_no_slip
 
         # Verify actual amounts
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_reduction = 2 * tick_size * 2  # Entry + Exit slippage
         assert profit_no_slip - profit_with_slip == pytest.approx(expected_reduction, abs=0.01)
 
@@ -799,7 +799,7 @@ class TestSlippageProfitImpact:
         assert loss_with_slip > loss_no_slip
 
         # Verify actual amounts
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_increase = 2 * tick_size * 2  # Entry + Exit slippage
         assert loss_with_slip - loss_no_slip == pytest.approx(expected_increase, abs=0.01)
 
@@ -878,7 +878,7 @@ class TestSlippageProfitImpact:
         assert profits[0] > profits[1] > profits[2] > profits[5] > profits[10]
 
         # Verify linear relationship
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
 
         # Profit difference between 0 and 5 ticks should be 2x difference between 0 and 2.5 ticks
         diff_5_ticks = profits[0] - profits[5]
@@ -957,7 +957,7 @@ class TestSlippageProfitImpact:
         # Total slippage impact should scale with number of trades
         assert total_pnl_with_slip < total_pnl_no_slip
 
-        tick_size = SYMBOL_SPECS.get('ZS', {}).get('tick_size', 0.01)
+        tick_size = get_tick_size('ZS')
         expected_total_impact = num_trades * 2 * tick_size * 2  # num_trades * (entry+exit) * ticks
         actual_impact = total_pnl_no_slip - total_pnl_with_slip
 

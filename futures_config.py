@@ -206,6 +206,75 @@ def get_category_for_symbol(symbol):
     return SYMBOL_SPECS[symbol]['category']
 
 
+def get_tick_size(symbol):
+    """
+    Get the tick size for a given symbol.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Tick size (float) or DEFAULT_TICK_SIZE if not available
+    """
+    if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
+        return SYMBOL_SPECS[symbol]['tick_size']
+    return DEFAULT_TICK_SIZE
+
+
+def get_contract_multiplier(symbol):
+    """
+    Get the contract multiplier for a given symbol.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Contract multiplier (int/float) or None if not available
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['multiplier']
+
+
+def get_margin_requirement(symbol):
+    """
+    Get the margin requirement for a given symbol.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Margin requirement (float) or None if not available
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['margin']
+
+
+def is_tradingview_compatible(symbol):
+    """
+    Check if a symbol is TradingView-compatible.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Boolean indicating TradingView compatibility
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['tv_compatible']
+
+
 def validate_symbols(symbols):
     """
     Validate that all symbols are TradingView-compatible.
