@@ -8,7 +8,7 @@ from app.backtesting import DataFetcher
 
 # ==================== Configuration ====================
 
-BASE_SYMBOLS = ['ZS', 'ZC', 'ZW']
+BASE_SYMBOLS = ['ZS']
 CONTRACT_SUFFIX = '1!'
 EXCHANGE = 'CBOT'
 INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h', '1d']

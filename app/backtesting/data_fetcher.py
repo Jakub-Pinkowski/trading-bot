@@ -81,17 +81,18 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
         existing_data = pd.read_parquet(file_path)
         existing_count = len(existing_data)
 
-        # Combine and deduplicate
+        # Combine old and new data (new_data comes last)
         combined_data = pd.concat([existing_data, new_data])
         before_dedup_count = len(combined_data)
 
-        # Remove duplicates keeping the last occurrence (newer data)
+        # Remove duplicates, keeping LAST occurrence (new data takes precedence)
+        # This ensures newer data from TradingView overwrites any existing entries
         combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
         after_dedup_count = len(combined_data)
 
         duplicates_removed = before_dedup_count - after_dedup_count
         if duplicates_removed > 0:
-            logger.debug(f'Removed {duplicates_removed} duplicates')
+            logger.warning(f'Removed {duplicates_removed} duplicates (kept newer data)')
 
         # Detect gaps
         _detect_and_log_gaps(combined_data, interval_label, full_symbol)
