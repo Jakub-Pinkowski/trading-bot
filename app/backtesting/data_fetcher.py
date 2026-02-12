@@ -17,14 +17,9 @@ logger = get_logger('backtesting/data_fetcher')
 
 # ==================== Constants ====================
 
-# Data filtering threshold
-DATA_START_YEAR = 2020
-
-# Maximum bars to fetch per request
-MAX_BARS = 100000
-
-# Gap detection threshold (only log gaps larger than this)
-GAP_DETECTION_THRESHOLD = timedelta(days=4)
+DATA_START_YEAR = 2020  # Data filtering threshold
+MAX_BARS = 100000  # Maximum bars to fetch per request
+GAP_DETECTION_THRESHOLD = timedelta(days=4)  # Gap detection threshold (only log gaps larger than this)
 
 # Interval mapping for easy reference
 INTERVAL_MAPPING = {
