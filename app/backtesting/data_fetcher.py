@@ -158,23 +158,10 @@ class DataFetcher:
         Args:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
         """
-
         for symbol in self.symbols:
             self._fetch_symbol_data(symbol, intervals)
 
     # ==================== Private Methods ====================
-
-    # --- Symbol Processing ---
-
-    def _fetch_symbol_data(self, symbol, intervals):
-        """Fetch data for a single symbol across multiple intervals."""
-        full_symbol = symbol + self.contract_suffix
-        output_dir = os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
-        os.makedirs(output_dir, exist_ok=True)
-
-        for idx, interval_label in enumerate(intervals, 1):
-            logger.info(f'{symbol} [{idx}/{len(intervals)}] {interval_label}')
-            self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)
 
     def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir):
         """Fetch data for a single symbol-interval combination."""
@@ -199,7 +186,7 @@ class DataFetcher:
                 return
 
             # Filter data from 2020 onwards
-            data = self._filter_data_by_year(data)
+            data = data[data.index >= self.year_threshold]
 
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
@@ -212,16 +199,12 @@ class DataFetcher:
         except Exception as e:
             logger.error(f'Error fetching data for {full_symbol} {interval_label}: {e}')
 
-    # --- Data Processing ---
+    def _fetch_symbol_data(self, symbol, intervals):
+        """Fetch data for a single symbol across multiple intervals."""
+        full_symbol = symbol + self.contract_suffix
+        output_dir = os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
+        os.makedirs(output_dir, exist_ok=True)
 
-    def _filter_data_by_year(self, data):
-        """
-        Filter out data points before the threshold year.
-
-        Args:
-            data: DataFrame with datetime index
-
-        Returns:
-            Filtered DataFrame containing only data from the threshold year onwards
-        """
-        return data[data.index >= self.year_threshold]
+        for idx, interval_label in enumerate(intervals, 1):
+            logger.info(f'{symbol} [{idx}/{len(intervals)}] {interval_label}')
+            self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)
