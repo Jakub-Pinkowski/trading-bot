@@ -74,7 +74,47 @@ def _save_new_data(data, file_path, interval_label, full_symbol):
     logger.info(f'  ✅ Created {len(data)} rows')
 
 
+def _update_existing_data(new_data, file_path, interval_label, full_symbol):
+    """Update the existing data file with new data."""
+    try:
+        # Load existing data
+        existing_data = pd.read_parquet(file_path)
+        existing_count = len(existing_data)
+
+        # Combine and deduplicate
+        combined_data = pd.concat([existing_data, new_data])
+        before_dedup_count = len(combined_data)
+
+        # Remove duplicates keeping the last occurrence (newer data)
+        combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
+        after_dedup_count = len(combined_data)
+
+        duplicates_removed = before_dedup_count - after_dedup_count
+        if duplicates_removed > 0:
+            logger.debug(f'Removed {duplicates_removed} duplicates')
+
+        # Detect gaps
+        _detect_and_log_gaps(combined_data, interval_label, full_symbol)
+
+        # Save combined data
+        combined_data.to_parquet(file_path)
+
+        new_entries = len(combined_data) - existing_count
+        final_count = len(combined_data)
+
+        if new_entries > 0:
+            logger.info(f'  ✅ +{new_entries} rows ({existing_count} → {final_count})')
+        elif new_entries < 0:
+            logger.warning(f'  ⚠️  {new_entries} rows ({existing_count} → {final_count})')
+        else:
+            logger.info(f'  No new data ({final_count} rows)')
+
+    except Exception as e:
+        logger.error(f'Error updating existing file {file_path}: {e}')
+
+
 # ==================== Data Fetcher Class ====================
+
 
 class DataFetcher:
     """
@@ -178,47 +218,9 @@ class DataFetcher:
     def _save_or_update_data(self, new_data, file_path, interval_label, full_symbol):
         """Save new data or update an existing data file."""
         if os.path.exists(file_path):
-            self._update_existing_data(new_data, file_path, interval_label, full_symbol)
+            _update_existing_data(new_data, file_path, interval_label, full_symbol)
         else:
             _save_new_data(new_data, file_path, interval_label, full_symbol)
-
-    def _update_existing_data(self, new_data, file_path, interval_label, full_symbol):
-        """Update the existing data file with new data."""
-        try:
-            # Load existing data
-            existing_data = pd.read_parquet(file_path)
-            existing_count = len(existing_data)
-
-            # Combine and deduplicate
-            combined_data = pd.concat([existing_data, new_data])
-            before_dedup_count = len(combined_data)
-
-            # Remove duplicates keeping the last occurrence (newer data)
-            combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
-            after_dedup_count = len(combined_data)
-
-            duplicates_removed = before_dedup_count - after_dedup_count
-            if duplicates_removed > 0:
-                logger.debug(f'Removed {duplicates_removed} duplicates')
-
-            # Detect gaps
-            _detect_and_log_gaps(combined_data, interval_label, full_symbol)
-
-            # Save combined data
-            combined_data.to_parquet(file_path)
-
-            new_entries = len(combined_data) - existing_count
-            final_count = len(combined_data)
-
-            if new_entries > 0:
-                logger.info(f'  ✅ +{new_entries} rows ({existing_count} → {final_count})')
-            elif new_entries < 0:
-                logger.warning(f'  ⚠️  {new_entries} rows ({existing_count} → {final_count})')
-            else:
-                logger.info(f'  No new data ({final_count} rows)')
-
-        except Exception as e:
-            logger.error(f'Error updating existing file {file_path}: {e}')
 
     def _filter_data_by_year(self, data):
         """
