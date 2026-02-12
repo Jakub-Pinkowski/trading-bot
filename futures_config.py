@@ -165,15 +165,7 @@ for symbol, specs in SYMBOL_SPECS.items():
     if specs['category'] not in CATEGORY_EXCHANGE_MAP:
         CATEGORY_EXCHANGE_MAP[specs['category']] = specs['exchange']
 
-# ==================== Backward Compatibility ====================
-# Auto-generate individual dictionaries from SYMBOL_SPECS for backward compatibility
 
-CONTRACT_MULTIPLIERS = {k: v['multiplier'] for k, v in SYMBOL_SPECS.items() if v['multiplier'] is not None}
-TICK_SIZES = {k: v['tick_size'] for k, v in SYMBOL_SPECS.items() if v['tick_size'] is not None}
-MARGIN_REQUIREMENTS = {k: v['margin'] for k, v in SYMBOL_SPECS.items() if v['margin'] is not None}
-
-# Auto-generate ALL_TRADINGVIEW_SYMBOLS from SYMBOL_SPECS
-ALL_TRADINGVIEW_SYMBOLS = sorted([k for k, v in SYMBOL_SPECS.items() if v['tv_compatible']])
 
 
 # ==================== Helper Functions ====================

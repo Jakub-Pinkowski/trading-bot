@@ -30,7 +30,7 @@ from app.backtesting.metrics.per_trade_metrics import (
     MARGIN_RATIOS,
     COMMISSION_PER_TRADE
 )
-from config import CONTRACT_MULTIPLIERS
+from config import SYMBOL_SPECS
 
 
 # ==================== Test Classes ====================
@@ -143,7 +143,7 @@ class TestReturnPercentageCalculations:
         metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Contract value = entry_price * contract_multiplier
-        contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
+        contract_value = 1200.0 * SYMBOL_SPECS['ZS']['multiplier']
         expected_return = (metrics['net_pnl'] / contract_value) * 100
 
         assert round(metrics['return_percentage_of_contract'], 2) == round(expected_return, 2)
@@ -181,7 +181,7 @@ class TestCommissionHandling:
 
         # Calculate gross PnL
         pnl_points = 1210.0 - 1200.0  # 10 cents
-        gross_pnl = pnl_points * CONTRACT_MULTIPLIERS['ZS']  # $500
+        gross_pnl = pnl_points * SYMBOL_SPECS['ZS']['multiplier']  # $500
 
         # Net PnL should be gross - commission
         expected_net = gross_pnl - COMMISSION_PER_TRADE
@@ -193,7 +193,7 @@ class TestCommissionHandling:
 
         # Calculate gross loss
         pnl_points = 4985.0 - 5000.0  # -15 points
-        gross_pnl = pnl_points * CONTRACT_MULTIPLIERS['ES']  # -$750
+        gross_pnl = pnl_points * SYMBOL_SPECS['ES']['multiplier']  # -$750
 
         # Net loss should be more negative due to commission
         expected_net = gross_pnl - COMMISSION_PER_TRADE  # -$754
@@ -241,7 +241,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # ZS is grains (8% margin ratio)
-        contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
+        contract_value = 1200.0 * SYMBOL_SPECS['ZS']['multiplier']
         expected_margin = contract_value * MARGIN_RATIOS['grains']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -251,7 +251,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('CL', 75.50, 74.80, side='short')
 
         # CL is energies (25% margin ratio)
-        contract_value = 75.50 * CONTRACT_MULTIPLIERS['CL']
+        contract_value = 75.50 * SYMBOL_SPECS['CL']['multiplier']
         expected_margin = contract_value * MARGIN_RATIOS['energies']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -261,7 +261,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('ES', 5000.0, 4985.0)
 
         # ES is indices (8% margin ratio)
-        contract_value = 5000.0 * CONTRACT_MULTIPLIERS['ES']
+        contract_value = 5000.0 * SYMBOL_SPECS['ES']['multiplier']
         expected_margin = contract_value * MARGIN_RATIOS['indices']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -271,7 +271,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('GC', 2050.0, 2050.0)
 
         # GC is metals (12% margin ratio)
-        contract_value = 2050.0 * CONTRACT_MULTIPLIERS['GC']
+        contract_value = 2050.0 * SYMBOL_SPECS['GC']['multiplier']
         expected_margin = contract_value * MARGIN_RATIOS['metals']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -335,7 +335,7 @@ class TestEstimateMargin:
         """Test margin estimation for grain futures."""
         symbol = 'ZS'
         entry_price = 1200.0
-        multiplier = CONTRACT_MULTIPLIERS['ZS']
+        multiplier = SYMBOL_SPECS['ZS']['multiplier']
 
         margin = _estimate_margin(symbol, entry_price, multiplier)
 
@@ -348,7 +348,7 @@ class TestEstimateMargin:
         """Test margin estimation for energy futures."""
         symbol = 'CL'
         entry_price = 75.0
-        multiplier = CONTRACT_MULTIPLIERS['CL']
+        multiplier = SYMBOL_SPECS['CL']['multiplier']
 
         margin = _estimate_margin(symbol, entry_price, multiplier)
 
@@ -360,7 +360,7 @@ class TestEstimateMargin:
     def test_estimate_margin_scales_with_price(self):
         """Test margin estimate increases with higher prices."""
         symbol = 'GC'
-        multiplier = CONTRACT_MULTIPLIERS['GC']
+        multiplier = SYMBOL_SPECS['GC']['multiplier']
 
         margin_low = _estimate_margin(symbol, 1800.0, multiplier)
         margin_high = _estimate_margin(symbol, 2200.0, multiplier)
@@ -501,7 +501,7 @@ class TestMultipleSymbols:
         assert _get_symbol_category(symbol) == category
 
         # Verify margin ratio is applied correctly
-        contract_value = entry_price * CONTRACT_MULTIPLIERS[symbol]
+        contract_value = entry_price * SYMBOL_SPECS[symbol]['multiplier']
         expected_margin = contract_value * margin_ratio
         assert metrics['margin_requirement'] == expected_margin
 
@@ -628,8 +628,10 @@ class TestErrorHandling:
             'side': 'long'
         }
 
-        # Mock CONTRACT_MULTIPLIERS to return 0
-        with patch.dict('app.backtesting.metrics.per_trade_metrics.CONTRACT_MULTIPLIERS', {'TEST': 0}):
+        # Mock SYMBOL_SPECS to return symbol with None multiplier
+        with patch.dict('app.backtesting.metrics.per_trade_metrics.SYMBOL_SPECS', 
+                        {'TEST': {'multiplier': None, 'tick_size': 0.01, 'margin': 1000, 
+                                  'category': 'Test', 'exchange': 'TEST', 'tv_compatible': True}}):
             with pytest.raises(ValueError, match="No contract multiplier found"):
                 calculate_trade_metrics(trade, 'TEST')
 
