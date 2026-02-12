@@ -70,19 +70,21 @@ TIMEFRAME_TO_ANALYZE = 7
 
 # ==================== Futures Configuration ====================
 # Import futures-specific data from futures_config.py
-# This includes: CONTRACT_MULTIPLIERS, TICK_SIZES, MARGIN_REQUIREMENTS
 
 from futures_config import (
-    CONTRACT_MULTIPLIERS,
-    TICK_SIZES,
+    SYMBOL_SPECS,
     DEFAULT_TICK_SIZE,
-    MARGIN_REQUIREMENTS,
+    get_tick_size,
+    get_contract_multiplier,
+    get_margin_requirement,
+    is_tradingview_compatible,
 )
 
-# Maintain backward compatibility - these are now imported from futures_config
 __all__ = [
-    'CONTRACT_MULTIPLIERS',
-    'TICK_SIZES',
+    'SYMBOL_SPECS',
     'DEFAULT_TICK_SIZE',
-    'MARGIN_REQUIREMENTS',
+    'get_tick_size',
+    'get_contract_multiplier',
+    'get_margin_requirement',
+    'is_tradingview_compatible',
 ]

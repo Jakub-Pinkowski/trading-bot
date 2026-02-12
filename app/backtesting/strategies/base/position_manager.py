@@ -7,7 +7,7 @@ This module manages position state and lifecycle during backtesting, including:
 - Tick-based slippage calculations for entry and exit prices
 """
 
-from config import TICK_SIZES, DEFAULT_TICK_SIZE
+from config import get_tick_size
 
 
 class PositionManager:
@@ -84,7 +84,7 @@ class PositionManager:
         Returns:
             Adjusted entry price with slippage applied
         """
-        tick_size = TICK_SIZES.get(self.symbol, DEFAULT_TICK_SIZE)
+        tick_size = get_tick_size(self.symbol)
         slippage_amount = self.slippage_ticks * tick_size
 
         if direction == 1:  # Long position
@@ -109,7 +109,7 @@ class PositionManager:
         Returns:
             Adjusted exit price with slippage applied
         """
-        tick_size = TICK_SIZES.get(self.symbol, DEFAULT_TICK_SIZE)
+        tick_size = get_tick_size(self.symbol)
         slippage_amount = self.slippage_ticks * tick_size
 
         if direction == 1:  # Long position

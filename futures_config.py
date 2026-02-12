@@ -165,15 +165,7 @@ for symbol, specs in SYMBOL_SPECS.items():
     if specs['category'] not in CATEGORY_EXCHANGE_MAP:
         CATEGORY_EXCHANGE_MAP[specs['category']] = specs['exchange']
 
-# ==================== Backward Compatibility ====================
-# Auto-generate individual dictionaries from SYMBOL_SPECS for backward compatibility
 
-CONTRACT_MULTIPLIERS = {k: v['multiplier'] for k, v in SYMBOL_SPECS.items() if v['multiplier'] is not None}
-TICK_SIZES = {k: v['tick_size'] for k, v in SYMBOL_SPECS.items() if v['tick_size'] is not None}
-MARGIN_REQUIREMENTS = {k: v['margin'] for k, v in SYMBOL_SPECS.items() if v['margin'] is not None}
-
-# Auto-generate ALL_TRADINGVIEW_SYMBOLS from SYMBOL_SPECS
-ALL_TRADINGVIEW_SYMBOLS = sorted([k for k, v in SYMBOL_SPECS.items() if v['tv_compatible']])
 
 
 # ==================== Helper Functions ====================
@@ -212,6 +204,85 @@ def get_category_for_symbol(symbol):
     if symbol not in SYMBOL_SPECS:
         raise ValueError(f'Unknown symbol: {symbol}')
     return SYMBOL_SPECS[symbol]['category']
+
+
+def get_tick_size(symbol):
+    """
+    Get the tick size for a given symbol.
+
+    Returns the configured tick size for known symbols. If the symbol is
+    unknown or its tick_size is not configured (None), this function
+    falls back to DEFAULT_TICK_SIZE as a defensive default so callers
+    that rely on a numeric tick size can continue to operate. Callers that
+    need to distinguish unknown symbols should validate with
+    get_exchange_for_symbol() or check SYMBOL_SPECS directly before
+    calling this helper.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Tick size as float. Returns DEFAULT_TICK_SIZE when the symbol is
+        unknown or when no tick_size is configured in SYMBOL_SPECS.
+    """
+    if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
+        return SYMBOL_SPECS[symbol]['tick_size']
+    # Fallback to DEFAULT_TICK_SIZE for unknown symbols or unset tick sizes
+    return DEFAULT_TICK_SIZE
+
+
+def get_contract_multiplier(symbol):
+    """
+    Get the contract multiplier for a given symbol.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Contract multiplier (int/float) or None if not available
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['multiplier']
+
+
+def get_margin_requirement(symbol):
+    """
+    Get the margin requirement for a given symbol.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Margin requirement (float) or None if not available
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['margin']
+
+
+def is_tradingview_compatible(symbol):
+    """
+    Check if a symbol is TradingView-compatible.
+
+    Args:
+        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
+
+    Returns:
+        Boolean indicating TradingView compatibility
+
+    Raises:
+        ValueError: If symbol is not recognized
+    """
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['tv_compatible']
 
 
 def validate_symbols(symbols):
