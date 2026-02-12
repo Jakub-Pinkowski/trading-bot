@@ -12,6 +12,7 @@ from tvDatafeed import TvDatafeed, Interval
 
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR
+from futures_config import validate_symbols
 
 logger = get_logger('backtesting/data_fetcher')
 
@@ -168,7 +169,7 @@ class DataFetcher:
             exchange: Exchange name for data fetching (e.g., 'CBOT')
 
         Raises:
-            ValueError: If symbols list is empty or parameters are invalid
+            ValueError: If a symbols list is empty or parameters are invalid
         """
         if not symbols:
             raise ValueError('symbols list cannot be empty')
@@ -177,7 +178,16 @@ class DataFetcher:
         if not exchange:
             raise ValueError('exchange cannot be empty')
 
-        self.symbols = symbols
+        # Validate symbols against the allowed list
+        valid_symbols, invalid_symbols = validate_symbols(symbols)
+
+        if invalid_symbols:
+            logger.warning(f'Invalid symbols will be skipped: {invalid_symbols}')
+
+        if not valid_symbols:
+            raise ValueError(f'No valid symbols provided. All symbols were invalid: {invalid_symbols}')
+
+        self.symbols = valid_symbols
         self.contract_suffix = contract_suffix
         self.exchange = exchange
         self.tv_client = TvDatafeed()
