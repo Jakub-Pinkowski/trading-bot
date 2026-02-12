@@ -66,7 +66,7 @@ def _detect_and_log_gaps(data, interval_label, symbol):
                            f'(duration: {actual_gap})')
 
 
-def _save_new_data(data, file_path, base_symbol, interval_label, full_symbol):
+def _save_new_data(data, file_path, interval_label, full_symbol):
     """Save new data to a file."""
     # Detect gaps
     _detect_and_log_gaps(data, interval_label, full_symbol)
@@ -175,21 +175,21 @@ class DataFetcher:
 
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
-            self._save_or_update_data(data, file_path, base_symbol, interval_label, full_symbol)
+            self._save_or_update_data(data, file_path, interval_label, full_symbol)
 
         except Exception as e:
             logger.error(f'Error fetching data for {full_symbol} {interval_label}: {e}')
 
     # --- Data Processing ---
 
-    def _save_or_update_data(self, new_data, file_path, base_symbol, interval_label, full_symbol):
+    def _save_or_update_data(self, new_data, file_path, interval_label, full_symbol):
         """Save new data or update existing data file."""
         if os.path.exists(file_path):
-            self._update_existing_data(new_data, file_path, base_symbol, interval_label, full_symbol)
+            self._update_existing_data(new_data, file_path, interval_label, full_symbol)
         else:
-            _save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
+            _save_new_data(new_data, file_path, interval_label, full_symbol)
 
-    def _update_existing_data(self, new_data, file_path, base_symbol, interval_label, full_symbol):
+    def _update_existing_data(self, new_data, file_path, interval_label, full_symbol):
         """Update existing data file with new data."""
         try:
             # Load existing data
@@ -202,8 +202,9 @@ class DataFetcher:
             # Combine and deduplicate
             combined_data = pd.concat([existing_data, new_data])
             before_dedup_count = len(combined_data)
-            combined_data = combined_data[~combined_data.index.duplicated(keep='last')]
-            combined_data = combined_data.sort_index()
+
+            # Remove duplicates keeping the last occurrence (newer data)
+            combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
             after_dedup_count = len(combined_data)
 
             duplicates_removed = before_dedup_count - after_dedup_count
@@ -229,11 +230,10 @@ class DataFetcher:
             else:
                 logger.info(f'  No new data ({final_count} rows)')
 
-
         except Exception as e:
             logger.error(f'Error updating existing file {file_path}: {e}')
             logger.info('Overwriting with new data')
-            _save_new_data(new_data, file_path, base_symbol, interval_label, full_symbol)
+            _save_new_data(new_data, file_path, interval_label, full_symbol)
 
     def _filter_data_by_year(self, data):
         """
