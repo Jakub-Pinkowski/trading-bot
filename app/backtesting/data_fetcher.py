@@ -234,13 +234,4 @@ class DataFetcher:
         Returns:
             Filtered DataFrame containing only data from the threshold year onwards
         """
-        filtered_data = data[data.index >= self.year_threshold]
-
-        original_count = len(data)
-        filtered_count = len(filtered_data)
-
-        if original_count > filtered_count:
-            removed_count = original_count - filtered_count
-            logger.debug(f'Filtered out {removed_count} rows from before {DATA_START_YEAR}')
-
-        return filtered_data
+        return data[data.index >= self.year_threshold]
