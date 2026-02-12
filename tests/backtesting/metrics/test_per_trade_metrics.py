@@ -630,8 +630,7 @@ class TestErrorHandling:
 
         # Mock SYMBOL_SPECS to return symbol with None multiplier
         with patch.dict('app.backtesting.metrics.per_trade_metrics.SYMBOL_SPECS', 
-                        {'TEST': {'multiplier': None, 'tick_size': 0.01, 'margin': 1000, 
-                                  'category': 'Test', 'exchange': 'TEST', 'tv_compatible': True}}):
+                        {'TEST': {'multiplier': None}}):
             with pytest.raises(ValueError, match="No contract multiplier found"):
                 calculate_trade_metrics(trade, 'TEST')
 

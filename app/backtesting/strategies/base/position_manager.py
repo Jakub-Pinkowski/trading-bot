@@ -69,6 +69,12 @@ class PositionManager:
 
     # ==================== Slippage Calculations ====================
 
+    def _get_tick_size(self):
+        """Get tick size for the symbol (internal use only)"""
+        if self.symbol in SYMBOL_SPECS and SYMBOL_SPECS[self.symbol]['tick_size'] is not None:
+            return SYMBOL_SPECS[self.symbol]['tick_size']
+        return DEFAULT_TICK_SIZE
+
     def apply_slippage_to_entry_price(self, direction, price):
         """
         Apply tick-based slippage to entry price.
@@ -84,12 +90,7 @@ class PositionManager:
         Returns:
             Adjusted entry price with slippage applied
         """
-        # Get tick size from SYMBOL_SPECS
-        if self.symbol in SYMBOL_SPECS and SYMBOL_SPECS[self.symbol]['tick_size'] is not None:
-            tick_size = SYMBOL_SPECS[self.symbol]['tick_size']
-        else:
-            tick_size = DEFAULT_TICK_SIZE
-        
+        tick_size = self._get_tick_size()
         slippage_amount = self.slippage_ticks * tick_size
 
         if direction == 1:  # Long position
@@ -114,12 +115,7 @@ class PositionManager:
         Returns:
             Adjusted exit price with slippage applied
         """
-        # Get tick size from SYMBOL_SPECS
-        if self.symbol in SYMBOL_SPECS and SYMBOL_SPECS[self.symbol]['tick_size'] is not None:
-            tick_size = SYMBOL_SPECS[self.symbol]['tick_size']
-        else:
-            tick_size = DEFAULT_TICK_SIZE
-        
+        tick_size = self._get_tick_size()
         slippage_amount = self.slippage_ticks * tick_size
 
         if direction == 1:  # Long position
