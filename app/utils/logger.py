@@ -50,6 +50,4 @@ def get_logger(name='app'):
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
 
-
-
     return logger
