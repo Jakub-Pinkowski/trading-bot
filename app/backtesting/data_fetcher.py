@@ -35,6 +35,35 @@ INTERVAL_MAPPING = {
 
 # ==================== Helper Functions ====================
 
+def _validate_ohlcv_data(data, symbol, interval_label):
+    """
+    Validate that DataFrame contains required OHLCV columns.
+
+    Args:
+        data: DataFrame to validate
+        symbol: Symbol name for error messages
+        interval_label: Interval label for error messages
+
+    Raises:
+        ValueError: If required columns are missing or data is invalid
+    """
+    if data is None or len(data) == 0:
+        raise ValueError(f'No data for {symbol} {interval_label}')
+
+    required_columns = {'open', 'high', 'low', 'close', 'volume'}
+    actual_columns = set(data.columns.str.lower())
+    missing_columns = required_columns - actual_columns
+
+    if missing_columns:
+        raise ValueError(f'Missing required columns for {symbol} {interval_label}: {missing_columns}')
+
+    # Validate data types (should be numeric)
+    for col in required_columns:
+        col_name = next(c for c in data.columns if c.lower() == col)
+        if not pd.api.types.is_numeric_dtype(data[col_name]):
+            raise ValueError(f'Column {col_name} must be numeric for {symbol} {interval_label}')
+
+
 def _detect_and_log_gaps(data, interval_label, symbol):
     """
     Detect and log significant gaps in the datetime index.
@@ -137,14 +166,22 @@ class DataFetcher:
             symbols: List of base symbol names (e.g., ['MZL', 'MET', 'RTY'])
             contract_suffix: Contract identifier suffix (e.g., '1!' for front month)
             exchange: Exchange name for data fetching (e.g., 'CBOT')
+
+        Raises:
+            ValueError: If symbols list is empty or parameters are invalid
         """
+        if not symbols:
+            raise ValueError('symbols list cannot be empty')
+        if not contract_suffix:
+            raise ValueError('contract_suffix cannot be empty')
+        if not exchange:
+            raise ValueError('exchange cannot be empty')
+
         self.symbols = symbols
         self.contract_suffix = contract_suffix
         self.exchange = exchange
         self.tv_client = TvDatafeed()
         self.year_threshold = datetime(DATA_START_YEAR, 1, 1)
-
-        logger.info(f'DataFetcher initialized for {len(symbols)} symbols with suffix {contract_suffix}')
 
     # ==================== Public Methods ====================
 
@@ -157,7 +194,19 @@ class DataFetcher:
 
         Args:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
+
+        Raises:
+            ValueError: If intervals list is empty or contains invalid intervals
         """
+        if not intervals:
+            raise ValueError('intervals list cannot be empty')
+
+        # Validate all intervals are supported
+        invalid_intervals = [i for i in intervals if i not in INTERVAL_MAPPING]
+        if invalid_intervals:
+            raise ValueError(f'Invalid intervals: {invalid_intervals}. '
+                             f'Supported: {list(INTERVAL_MAPPING.keys())}')
+
         for symbol in self.symbols:
             self._fetch_symbol_data(symbol, intervals)
 
@@ -185,8 +234,15 @@ class DataFetcher:
                 logger.warning(f'No data received for {full_symbol} {interval_label}')
                 return
 
+            # Validate OHLCV data structure
+            _validate_ohlcv_data(data, full_symbol, interval_label)
+
             # Filter data from 2020 onwards
             data = data[data.index >= self.year_threshold]
+
+            if len(data) == 0:
+                logger.warning(f'No data after year filtering for {full_symbol} {interval_label}')
+                return
 
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
@@ -196,6 +252,8 @@ class DataFetcher:
             else:
                 _save_new_data(data, file_path, interval_label, full_symbol)
 
+        except ValueError as e:
+            logger.error(f'Data validation failed for {full_symbol} {interval_label}: {e}')
         except Exception as e:
             logger.error(f'Error fetching data for {full_symbol} {interval_label}: {e}')
 
