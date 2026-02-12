@@ -630,7 +630,7 @@ class TestErrorHandling:
 
         # Mock get_contract_multiplier to return None
         with patch('app.backtesting.metrics.per_trade_metrics.get_contract_multiplier', return_value=None):
-            with pytest.raises(ValueError, match="No contract multiplier found"):
+            with pytest.raises(ValueError, match="has no contract multiplier defined"):
                 calculate_trade_metrics(trade, 'TEST')
 
     def test_none_contract_multiplier_raises_error(self):
