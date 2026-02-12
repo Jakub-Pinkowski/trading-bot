@@ -166,8 +166,6 @@ for symbol, specs in SYMBOL_SPECS.items():
         CATEGORY_EXCHANGE_MAP[specs['category']] = specs['exchange']
 
 
-
-
 # ==================== Helper Functions ====================
 
 def get_exchange_for_symbol(symbol):

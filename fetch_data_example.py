@@ -6,8 +6,7 @@ futures symbols organized by category.
 """
 from app.backtesting import DataFetcher
 from futures_config import (
-    GRAINS, SOFTS, ENERGY, METALS, CRYPTO, INDEX, FOREX,
-    get_exchange_for_symbol
+    GRAINS, get_exchange_for_symbol
 )
 
 # ==================== Configuration ====================
@@ -17,13 +16,7 @@ INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h', '1d']
 
 # Select which categories to fetch
 SYMBOLS_TO_FETCH = (
-        GRAINS +
-        SOFTS +
-        ENERGY +
-        METALS +
-        CRYPTO +
-        INDEX +
-        FOREX
+    GRAINS
 )
 
 

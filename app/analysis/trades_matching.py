@@ -76,7 +76,7 @@ def match_trades(trades, is_ibkr_alerts=False, is_tw_alerts=False):
         # Defaults for ibkr_alerts or tw_alerts
         size = 1 if (is_ibkr_alerts or is_tw_alerts) else row['size']
         commission = 0 if (is_ibkr_alerts or is_tw_alerts) else row['commission']
-        
+
         # Get multiplier using helper function
         try:
             multiplier = get_contract_multiplier(symbol)
