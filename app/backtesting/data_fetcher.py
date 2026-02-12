@@ -37,7 +37,7 @@ INTERVAL_MAPPING = {
 
 def _detect_and_log_gaps(data, interval_label, symbol):
     """
-    Detect and log significant gaps in datetime index.
+    Detect and log significant gaps in the datetime index.
 
     Only logs gaps larger than the configured threshold to avoid
     noise from expected gaps (weekends, holidays, etc.).
@@ -58,7 +58,7 @@ def _detect_and_log_gaps(data, interval_label, symbol):
         previous_time = sorted_index[i - 1]
         actual_gap = current_time - previous_time
 
-        # Only log gaps larger than threshold
+        # Only log gaps larger than a threshold
         if actual_gap > GAP_DETECTION_THRESHOLD:
             gaps.append((previous_time, current_time, actual_gap))
             logger.warning(f'Data gap detected in {symbol} {interval_label}: '
@@ -90,8 +90,7 @@ class DataFetcher:
         fetcher = DataFetcher(
             symbols=['MZL', 'MET', 'RTY'],
             contract_suffix='1!',
-            exchange='CBOT'
-        )
+            exchange='CBOT')
         fetcher.fetch_all_data(intervals=['1h', '4h', '1d'])
     """
 
@@ -169,10 +168,6 @@ class DataFetcher:
             # Filter data from 2020 onwards
             data = self._filter_data_by_year(data)
 
-            if len(data) == 0:
-                logger.warning(f'No data remaining after year filter for {full_symbol} {interval_label}')
-                return
-
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
             self._save_or_update_data(data, file_path, interval_label, full_symbol)
@@ -183,20 +178,20 @@ class DataFetcher:
     # --- Data Processing ---
 
     def _save_or_update_data(self, new_data, file_path, interval_label, full_symbol):
-        """Save new data or update existing data file."""
+        """Save new data or update an existing data file."""
         if os.path.exists(file_path):
             self._update_existing_data(new_data, file_path, interval_label, full_symbol)
         else:
             _save_new_data(new_data, file_path, interval_label, full_symbol)
 
     def _update_existing_data(self, new_data, file_path, interval_label, full_symbol):
-        """Update existing data file with new data."""
+        """Update the existing data file with new data."""
         try:
             # Load existing data
             existing_data = pd.read_parquet(file_path)
             existing_count = len(existing_data)
 
-            # Filter existing data to remove anything before threshold year
+            # Filter existing data to remove anything before the threshold year
             existing_data = self._filter_data_by_year(existing_data)
 
             # Combine and deduplicate
@@ -243,7 +238,7 @@ class DataFetcher:
             data: DataFrame with datetime index
 
         Returns:
-            Filtered DataFrame containing only data from threshold year onwards
+            Filtered DataFrame containing only data from the threshold year onwards
         """
         if data is None or len(data) == 0:
             return data
