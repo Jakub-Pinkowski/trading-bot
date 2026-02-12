@@ -111,6 +111,15 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
 
     except Exception as e:
         logger.error(f'Error updating existing file {file_path}: {e}')
+        raise  # Re-raise to fail loudly and preserve existing data
+
+
+def _save_or_update_data(new_data, file_path, interval_label, full_symbol):
+    """Save new data or update an existing data file."""
+    if os.path.exists(file_path):
+        _update_existing_data(new_data, file_path, interval_label, full_symbol)
+    else:
+        _save_new_data(new_data, file_path, interval_label, full_symbol)
 
 
 # ==================== Data Fetcher Class ====================
@@ -208,19 +217,12 @@ class DataFetcher:
 
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
-            self._save_or_update_data(data, file_path, interval_label, full_symbol)
+            _save_or_update_data(data, file_path, interval_label, full_symbol)
 
         except Exception as e:
             logger.error(f'Error fetching data for {full_symbol} {interval_label}: {e}')
 
     # --- Data Processing ---
-
-    def _save_or_update_data(self, new_data, file_path, interval_label, full_symbol):
-        """Save new data or update an existing data file."""
-        if os.path.exists(file_path):
-            _update_existing_data(new_data, file_path, interval_label, full_symbol)
-        else:
-            _save_new_data(new_data, file_path, interval_label, full_symbol)
 
     def _filter_data_by_year(self, data):
         """
