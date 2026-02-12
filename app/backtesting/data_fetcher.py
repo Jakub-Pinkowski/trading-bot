@@ -84,14 +84,8 @@ class DataFetcher:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
         """
 
-        total_combinations = len(self.symbols) * len(intervals)
-        logger.info(f'Starting data fetch for {len(self.symbols)} symbols across {len(intervals)} intervals '
-                    f'({total_combinations} total combinations)')
-
         for symbol in self.symbols:
             self._fetch_symbol_data(symbol, intervals)
-
-        logger.info(f'✅ Data fetch completed for all {len(self.symbols)} symbols and {len(intervals)} intervals')
 
     # ==================== Private Methods ====================
 
@@ -103,10 +97,8 @@ class DataFetcher:
         output_dir = self._get_output_dir(symbol)
         os.makedirs(output_dir, exist_ok=True)
 
-        logger.info(f'Processing {symbol} ({len(intervals)} intervals)')
-
         for idx, interval_label in enumerate(intervals, 1):
-            logger.info(f'[{idx}/{len(intervals)}] Fetching {interval_label} data for {symbol}')
+            logger.info(f'{symbol} [{idx}/{len(intervals)}] {interval_label}')
             self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)
 
     def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir):
@@ -130,8 +122,6 @@ class DataFetcher:
             if data is None or len(data) == 0:
                 logger.warning(f'No data received for {full_symbol} {interval_label}')
                 return
-
-            logger.info(f'Received {len(data)} bars from TradingView for {full_symbol} {interval_label}')
 
             # Filter data from 2020 onwards
             data = self._filter_data_by_year(data)
@@ -162,7 +152,6 @@ class DataFetcher:
             # Load existing data
             existing_data = pd.read_parquet(file_path)
             existing_count = len(existing_data)
-            logger.info(f'Found existing data with {existing_count} rows for {base_symbol} {interval_label}')
 
             # Filter existing data to remove anything before threshold year
             existing_data = self._filter_data_by_year(existing_data)
@@ -176,7 +165,7 @@ class DataFetcher:
 
             duplicates_removed = before_dedup_count - after_dedup_count
             if duplicates_removed > 0:
-                logger.info(f'Removed {duplicates_removed} duplicate entries for {base_symbol} {interval_label}')
+                logger.debug(f'Removed {duplicates_removed} duplicates')
 
             # Final filter to ensure no pre-threshold data remains
             combined_data = self._filter_data_by_year(combined_data)
@@ -191,13 +180,11 @@ class DataFetcher:
             final_count = len(combined_data)
 
             if new_entries > 0:
-                logger.info(f'✅ Added {new_entries} new entries for {base_symbol} {interval_label} '
-                            f'({existing_count} → {final_count} total rows)')
+                logger.info(f'  ✅ +{new_entries} rows ({existing_count} → {final_count})')
             elif new_entries < 0:
-                logger.warning(f'Data count decreased by {abs(new_entries)} rows for {base_symbol} {interval_label} '
-                               f'({existing_count} → {final_count} total rows) - likely due to year filtering')
+                logger.warning(f'  ⚠️  {new_entries} rows ({existing_count} → {final_count})')
             else:
-                logger.info(f'No new entries added for {base_symbol} {interval_label} (total: {final_count} rows)')
+                logger.info(f'  No new data ({final_count} rows)')
 
             # Log date range
             self._log_date_range(combined_data, full_symbol, interval_label)
@@ -214,8 +201,7 @@ class DataFetcher:
 
         # Save data
         data.to_parquet(file_path)
-        logger.info(f'✅ Created new file with {len(data)} rows for {base_symbol} {interval_label}')
-        logger.debug(f'File saved to: {file_path}')
+        logger.info(f'  ✅ Created {len(data)} rows')
 
         # Log date range
         self._log_date_range(data, full_symbol, interval_label)
@@ -240,8 +226,7 @@ class DataFetcher:
 
         if original_count > filtered_count:
             removed_count = original_count - filtered_count
-            logger.info(f'Filtered out {removed_count} rows from before {DATA_START_YEAR} '
-                        f'(kept {filtered_count}/{original_count} rows)')
+            logger.debug(f'Filtered out {removed_count} rows from before {DATA_START_YEAR}')
 
         return filtered_data
 
@@ -280,12 +265,10 @@ class DataFetcher:
     def _log_date_range(self, data, symbol, interval_label):
         """Log the first and last date in the dataset."""
         if data is None or len(data) == 0:
-            logger.info(f'No data available for {symbol} {interval_label}')
             return
 
         first_date = data.index.min()
         last_date = data.index.max()
-        logger.info(f'Data range for {symbol} {interval_label}: {first_date} to {last_date}')
 
     # --- Path Helpers ---
 
