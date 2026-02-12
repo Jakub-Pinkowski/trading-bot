@@ -83,16 +83,9 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
 
         # Combine old and new data (new_data comes last)
         combined_data = pd.concat([existing_data, new_data])
-        before_dedup_count = len(combined_data)
 
         # Remove duplicates, keeping LAST occurrence (new data takes precedence)
-        # This ensures newer data from TradingView overwrites any existing entries
         combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
-        after_dedup_count = len(combined_data)
-
-        duplicates_removed = before_dedup_count - after_dedup_count
-        if duplicates_removed > 0:
-            logger.warning(f'Removed {duplicates_removed} duplicates (kept newer data)')
 
         # Detect gaps
         _detect_and_log_gaps(combined_data, interval_label, full_symbol)
@@ -101,14 +94,13 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
         combined_data.to_parquet(file_path)
 
         new_entries = len(combined_data) - existing_count
-        final_count = len(combined_data)
 
         if new_entries > 0:
-            logger.info(f'  ✅ +{new_entries} rows ({existing_count} → {final_count})')
+            logger.info(f'  ✅ +{new_entries} rows')
         elif new_entries < 0:
-            logger.warning(f'  ⚠️  {new_entries} rows ({existing_count} → {final_count})')
+            logger.warning(f'  ⚠️  {new_entries} rows')
         else:
-            logger.info(f'  No new data ({final_count} rows)')
+            logger.info(f'  No new data')
 
     except Exception as e:
         logger.error(f'Error updating existing file {file_path}: {e}')
