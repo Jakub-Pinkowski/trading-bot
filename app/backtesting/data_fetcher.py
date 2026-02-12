@@ -26,9 +26,6 @@ MAX_BARS = 100000
 # Gap detection threshold (only log gaps larger than this)
 GAP_DETECTION_THRESHOLD = timedelta(days=4)
 
-# Default exchange for futures
-DEFAULT_EXCHANGE = 'CBOT'
-
 # Interval mapping for easy reference
 INTERVAL_MAPPING = {
     '5m': Interval.in_5_minute,
@@ -57,12 +54,12 @@ class DataFetcher:
             contract_suffix='1!',
             exchange='CBOT'
         )
-        fetcher.fetch_all_data()
+        fetcher.fetch_all_data(intervals=['1h', '4h', '1d'])
     """
 
     # ==================== Initialization ====================
 
-    def __init__(self, symbols, contract_suffix='1!', exchange=DEFAULT_EXCHANGE):
+    def __init__(self, symbols, contract_suffix, exchange):
         """
         Initialize the data fetcher.
 
@@ -81,7 +78,7 @@ class DataFetcher:
 
     # ==================== Public Methods ====================
 
-    def fetch_all_data(self, intervals=None):
+    def fetch_all_data(self, intervals):
         """
         Fetch data for all configured symbols and intervals.
 
@@ -89,60 +86,17 @@ class DataFetcher:
         handles updates to existing data, and validates data quality.
 
         Args:
-            intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d']).
-                      If None, fetches all available intervals.
+            intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
         """
-        if intervals is None:
-            intervals = list(INTERVAL_MAPPING.keys())
 
-        logger.info(f'Starting data fetch for {len(self.symbols)} symbols across {len(intervals)} intervals')
+        total_combinations = len(self.symbols) * len(intervals)
+        logger.info(f'Starting data fetch for {len(self.symbols)} symbols across {len(intervals)} intervals '
+                    f'({total_combinations} total combinations)')
 
         for symbol in self.symbols:
             self._fetch_symbol_data(symbol, intervals)
 
-        logger.info('Data fetch completed for all symbols')
-
-    def fetch_symbol_data(self, symbol, intervals=None):
-        """
-        Fetch data for a specific symbol across multiple intervals.
-
-        Args:
-            symbol: Base symbol name (e.g., 'MZL')
-            intervals: List of interval labels to fetch. If None, fetches all intervals.
-        """
-        if intervals is None:
-            intervals = list(INTERVAL_MAPPING.keys())
-
-        self._fetch_symbol_data(symbol, intervals)
-
-    def get_data_info(self, symbol, interval):
-        """
-        Get information about stored data for a symbol and interval.
-
-        Args:
-            symbol: Base symbol name
-            interval: Interval label (e.g., '1h')
-
-        Returns:
-            Dictionary containing data info (row_count, date_range, file_path)
-            or None if data doesn't exist
-        """
-        file_path = self._get_file_path(symbol, interval)
-
-        if not os.path.exists(file_path):
-            return None
-
-        try:
-            df = pd.read_parquet(file_path)
-            return {
-                'row_count': len(df),
-                'first_date': df.index.min(),
-                'last_date': df.index.max(),
-                'file_path': file_path
-            }
-        except Exception as e:
-            logger.error(f'Error reading data info for {symbol} {interval}: {e}')
-            return None
+        logger.info(f'✅ Data fetch completed for all {len(self.symbols)} symbols and {len(intervals)} intervals')
 
     # ==================== Private Methods ====================
 
@@ -154,9 +108,10 @@ class DataFetcher:
         output_dir = self._get_output_dir(symbol)
         os.makedirs(output_dir, exist_ok=True)
 
-        logger.info(f'Fetching data for {symbol} ({len(intervals)} intervals)')
+        logger.info(f'Processing {symbol} ({len(intervals)} intervals)')
 
-        for interval_label in intervals:
+        for idx, interval_label in enumerate(intervals, 1):
+            logger.info(f'[{idx}/{len(intervals)}] Fetching {interval_label} data for {symbol}')
             self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)
 
     def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir):
@@ -166,7 +121,6 @@ class DataFetcher:
             return
 
         interval = INTERVAL_MAPPING[interval_label]
-        logger.info(f'Downloading {interval_label} data for {full_symbol}')
 
         try:
             # Fetch data from TradingView
@@ -181,6 +135,8 @@ class DataFetcher:
             if data is None or len(data) == 0:
                 logger.warning(f'No data received for {full_symbol} {interval_label}')
                 return
+
+            logger.info(f'Received {len(data)} bars from TradingView for {full_symbol} {interval_label}')
 
             # Filter data from 2020 onwards
             data = self._filter_data_by_year(data)
@@ -210,15 +166,22 @@ class DataFetcher:
         try:
             # Load existing data
             existing_data = pd.read_parquet(file_path)
-            logger.info(f'Found existing data with {len(existing_data)} rows for {base_symbol} {interval_label}')
+            existing_count = len(existing_data)
+            logger.info(f'Found existing data with {existing_count} rows for {base_symbol} {interval_label}')
 
             # Filter existing data to remove anything before threshold year
             existing_data = self._filter_data_by_year(existing_data)
 
             # Combine and deduplicate
             combined_data = pd.concat([existing_data, new_data])
+            before_dedup_count = len(combined_data)
             combined_data = combined_data[~combined_data.index.duplicated(keep='last')]
             combined_data = combined_data.sort_index()
+            after_dedup_count = len(combined_data)
+
+            duplicates_removed = before_dedup_count - after_dedup_count
+            if duplicates_removed > 0:
+                logger.info(f'Removed {duplicates_removed} duplicate entries for {base_symbol} {interval_label}')
 
             # Final filter to ensure no pre-threshold data remains
             combined_data = self._filter_data_by_year(combined_data)
@@ -229,8 +192,17 @@ class DataFetcher:
             # Save combined data
             combined_data.to_parquet(file_path)
 
-            new_entries = len(combined_data) - len(existing_data)
-            logger.info(f'Added {new_entries} new entries for {base_symbol} {interval_label} (total: {len(combined_data)} rows)')
+            new_entries = len(combined_data) - existing_count
+            final_count = len(combined_data)
+
+            if new_entries > 0:
+                logger.info(f'✅ Added {new_entries} new entries for {base_symbol} {interval_label} '
+                            f'({existing_count} → {final_count} total rows)')
+            elif new_entries < 0:
+                logger.warning(f'Data count decreased by {abs(new_entries)} rows for {base_symbol} {interval_label} '
+                               f'({existing_count} → {final_count} total rows) - likely due to year filtering')
+            else:
+                logger.info(f'No new entries added for {base_symbol} {interval_label} (total: {final_count} rows)')
 
             # Log date range
             self._log_date_range(combined_data, full_symbol, interval_label)
@@ -247,7 +219,8 @@ class DataFetcher:
 
         # Save data
         data.to_parquet(file_path)
-        logger.info(f'Created new file with {len(data)} rows for {base_symbol} {interval_label}')
+        logger.info(f'✅ Created new file with {len(data)} rows for {base_symbol} {interval_label}')
+        logger.debug(f'File saved to: {file_path}')
 
         # Log date range
         self._log_date_range(data, full_symbol, interval_label)
@@ -272,8 +245,8 @@ class DataFetcher:
 
         if original_count > filtered_count:
             removed_count = original_count - filtered_count
-            logger.debug(f'Filtered out {removed_count} data points from before {DATA_START_YEAR} '
-                         f'(kept {filtered_count} out of {original_count} total)')
+            logger.info(f'Filtered out {removed_count} rows from before {DATA_START_YEAR} '
+                        f'(kept {filtered_count}/{original_count} rows)')
 
         return filtered_data
 
@@ -324,25 +297,3 @@ class DataFetcher:
     def _get_output_dir(self, symbol):
         """Get output directory path for a symbol."""
         return os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
-
-    def _get_file_path(self, symbol, interval):
-        """Get file path for a symbol-interval combination."""
-        output_dir = self._get_output_dir(symbol)
-        return os.path.join(output_dir, f'{symbol}_{interval}.parquet')
-
-
-# ==================== Convenience Functions ====================
-
-def create_data_fetcher(symbols, contract_suffix='1!', exchange=DEFAULT_EXCHANGE):
-    """
-    Factory function to create a DataFetcher instance.
-
-    Args:
-        symbols: List of base symbol names
-        contract_suffix: Contract identifier suffix
-        exchange: Exchange name
-
-    Returns:
-        DataFetcher instance
-    """
-    return DataFetcher(symbols=symbols, contract_suffix=contract_suffix, exchange=exchange)
