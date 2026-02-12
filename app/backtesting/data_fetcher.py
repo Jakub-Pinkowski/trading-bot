@@ -15,7 +15,6 @@ from config import HISTORICAL_DATA_DIR
 
 logger = get_logger('backtesting/data_fetcher')
 
-
 # ==================== Constants ====================
 
 # Data filtering threshold
@@ -274,7 +273,7 @@ class DataFetcher:
         if original_count > filtered_count:
             removed_count = original_count - filtered_count
             logger.debug(f'Filtered out {removed_count} data points from before {DATA_START_YEAR} '
-                        f'(kept {filtered_count} out of {original_count} total)')
+                         f'(kept {filtered_count} out of {original_count} total)')
 
         return filtered_data
 
@@ -307,8 +306,8 @@ class DataFetcher:
             if actual_gap > GAP_DETECTION_THRESHOLD:
                 gaps.append((previous_time, current_time, actual_gap))
                 logger.warning(f'Data gap detected in {symbol} {interval_label}: '
-                             f'from {previous_time} to {current_time} '
-                             f'(duration: {actual_gap})')
+                               f'from {previous_time} to {current_time} '
+                               f'(duration: {actual_gap})')
 
     def _log_date_range(self, data, symbol, interval_label):
         """Log the first and last date in the dataset."""
@@ -347,4 +346,3 @@ def create_data_fetcher(symbols, contract_suffix='1!', exchange=DEFAULT_EXCHANGE
         DataFetcher instance
     """
     return DataFetcher(symbols=symbols, contract_suffix=contract_suffix, exchange=exchange)
-
