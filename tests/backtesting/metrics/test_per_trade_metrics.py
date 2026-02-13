@@ -30,7 +30,7 @@ from app.backtesting.metrics.per_trade_metrics import (
     MARGIN_RATIOS,
     COMMISSION_PER_TRADE
 )
-from config import CONTRACT_MULTIPLIERS
+from futures_config import get_contract_multiplier
 
 
 # ==================== Test Classes ====================
@@ -143,7 +143,7 @@ class TestReturnPercentageCalculations:
         metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # Contract value = entry_price * contract_multiplier
-        contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
+        contract_value = 1200.0 * get_contract_multiplier('ZS')
         expected_return = (metrics['net_pnl'] / contract_value) * 100
 
         assert round(metrics['return_percentage_of_contract'], 2) == round(expected_return, 2)
@@ -181,7 +181,7 @@ class TestCommissionHandling:
 
         # Calculate gross PnL
         pnl_points = 1210.0 - 1200.0  # 10 cents
-        gross_pnl = pnl_points * CONTRACT_MULTIPLIERS['ZS']  # $500
+        gross_pnl = pnl_points * get_contract_multiplier('ZS')  # $500
 
         # Net PnL should be gross - commission
         expected_net = gross_pnl - COMMISSION_PER_TRADE
@@ -193,7 +193,7 @@ class TestCommissionHandling:
 
         # Calculate gross loss
         pnl_points = 4985.0 - 5000.0  # -15 points
-        gross_pnl = pnl_points * CONTRACT_MULTIPLIERS['ES']  # -$750
+        gross_pnl = pnl_points * get_contract_multiplier('ES')  # -$750
 
         # Net loss should be more negative due to commission
         expected_net = gross_pnl - COMMISSION_PER_TRADE  # -$754
@@ -241,7 +241,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('ZS', 1200.0, 1210.0)
 
         # ZS is grains (8% margin ratio)
-        contract_value = 1200.0 * CONTRACT_MULTIPLIERS['ZS']
+        contract_value = 1200.0 * get_contract_multiplier('ZS')
         expected_margin = contract_value * MARGIN_RATIOS['grains']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -251,7 +251,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('CL', 75.50, 74.80, side='short')
 
         # CL is energies (25% margin ratio)
-        contract_value = 75.50 * CONTRACT_MULTIPLIERS['CL']
+        contract_value = 75.50 * get_contract_multiplier('CL')
         expected_margin = contract_value * MARGIN_RATIOS['energies']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -261,7 +261,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('ES', 5000.0, 4985.0)
 
         # ES is indices (8% margin ratio)
-        contract_value = 5000.0 * CONTRACT_MULTIPLIERS['ES']
+        contract_value = 5000.0 * get_contract_multiplier('ES')
         expected_margin = contract_value * MARGIN_RATIOS['indices']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -271,7 +271,7 @@ class TestMarginRequirementCalculations:
         metrics = trade_factory('GC', 2050.0, 2050.0)
 
         # GC is metals (12% margin ratio)
-        contract_value = 2050.0 * CONTRACT_MULTIPLIERS['GC']
+        contract_value = 2050.0 * get_contract_multiplier('GC')
         expected_margin = contract_value * MARGIN_RATIOS['metals']
 
         assert metrics['margin_requirement'] == expected_margin
@@ -335,7 +335,7 @@ class TestEstimateMargin:
         """Test margin estimation for grain futures."""
         symbol = 'ZS'
         entry_price = 1200.0
-        multiplier = CONTRACT_MULTIPLIERS['ZS']
+        multiplier = get_contract_multiplier('ZS')
 
         margin = _estimate_margin(symbol, entry_price, multiplier)
 
@@ -348,7 +348,7 @@ class TestEstimateMargin:
         """Test margin estimation for energy futures."""
         symbol = 'CL'
         entry_price = 75.0
-        multiplier = CONTRACT_MULTIPLIERS['CL']
+        multiplier = get_contract_multiplier('CL')
 
         margin = _estimate_margin(symbol, entry_price, multiplier)
 
@@ -360,7 +360,7 @@ class TestEstimateMargin:
     def test_estimate_margin_scales_with_price(self):
         """Test margin estimate increases with higher prices."""
         symbol = 'GC'
-        multiplier = CONTRACT_MULTIPLIERS['GC']
+        multiplier = get_contract_multiplier('GC')
 
         margin_low = _estimate_margin(symbol, 1800.0, multiplier)
         margin_high = _estimate_margin(symbol, 2200.0, multiplier)
@@ -404,7 +404,7 @@ class TestEdgeCases:
             'exit_price': 1210.0,
             'side': 'long'
         }
-        with pytest.raises(ValueError, match="No contract multiplier found"):
+        with pytest.raises(ValueError, match="Unknown symbol"):
             calculate_trade_metrics(trade, 'INVALID')
 
     def test_invalid_side_raises_error(self):
@@ -501,7 +501,7 @@ class TestMultipleSymbols:
         assert _get_symbol_category(symbol) == category
 
         # Verify margin ratio is applied correctly
-        contract_value = entry_price * CONTRACT_MULTIPLIERS[symbol]
+        contract_value = entry_price * get_contract_multiplier(symbol)
         expected_margin = contract_value * margin_ratio
         assert metrics['margin_requirement'] == expected_margin
 
@@ -618,21 +618,6 @@ class TestPrintTradeMetrics:
 class TestErrorHandling:
     """Test error handling and logging."""
 
-    def test_zero_contract_multiplier_raises_error(self):
-        """Test that zero contract multiplier raises ValueError."""
-        trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 11, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1210.0,
-            'side': 'long'
-        }
-
-        # Mock CONTRACT_MULTIPLIERS to return 0
-        with patch.dict('app.backtesting.metrics.per_trade_metrics.CONTRACT_MULTIPLIERS', {'TEST': 0}):
-            with pytest.raises(ValueError, match="No contract multiplier found"):
-                calculate_trade_metrics(trade, 'TEST')
-
     def test_none_contract_multiplier_raises_error(self):
         """Test that None contract multiplier raises ValueError."""
         trade = {
@@ -643,7 +628,22 @@ class TestErrorHandling:
             'side': 'long'
         }
 
-        with pytest.raises(ValueError, match="No contract multiplier found"):
+        # Mock get_contract_multiplier to return None
+        with patch('app.backtesting.metrics.per_trade_metrics.get_contract_multiplier', return_value=None):
+            with pytest.raises(ValueError, match="has no contract multiplier defined"):
+                calculate_trade_metrics(trade, 'TEST')
+
+    def test_unknown_symbol_raises_error(self):
+        """Test that unknown symbol raises ValueError."""
+        trade = {
+            'entry_time': datetime(2024, 1, 15, 10, 0),
+            'exit_time': datetime(2024, 1, 15, 11, 0),
+            'entry_price': 1200.0,
+            'exit_price': 1210.0,
+            'side': 'long'
+        }
+
+        with pytest.raises(ValueError, match="Unknown symbol"):
             calculate_trade_metrics(trade, 'NONEXISTENT')
 
     def test_negative_margin_raises_error(self):
@@ -673,26 +673,8 @@ class TestErrorHandling:
             calculate_trade_metrics(trade, 'ZS')
 
 
-class TestLoggerCalls:
-    """Test that logger is called appropriately for errors."""
-
-    def test_logger_called_for_invalid_symbol(self):
-        """Test logger.error is called for invalid symbol."""
-        trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 14, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1210.0,
-            'side': 'long'
-        }
-
-        with patch('app.backtesting.metrics.per_trade_metrics.logger') as mock_logger:
-            with pytest.raises(ValueError):
-                calculate_trade_metrics(trade, 'INVALID')
-
-            # Verify logger was called
-            mock_logger.error.assert_called_once()
-            assert 'No contract multiplier found' in mock_logger.error.call_args[0][0]
+class TestInvalidInputValidation:
+    """Test logger validation for invalid input values."""
 
     def test_logger_called_for_invalid_margin(self):
         """Test logger.error is called for invalid margin."""

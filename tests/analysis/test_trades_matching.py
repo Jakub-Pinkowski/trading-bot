@@ -6,7 +6,7 @@ from app.analysis.trades_matching import (
     format_processed_trades,
     match_trades,
 )
-from config import CONTRACT_MULTIPLIERS
+from futures_config import get_contract_multiplier
 
 
 @pytest.fixture
@@ -289,7 +289,7 @@ def test_match_trades_alerts(sample_alerts_data):
     assert result.iloc[0]["exit_side"] == "S"
 
     # Verify multiplier was applied
-    multiplier = CONTRACT_MULTIPLIERS.get("MCL", 1)
+    multiplier = get_contract_multiplier("MCL")
     assert result.iloc[0]["entry_net_amount"] == 56.98 * multiplier
     assert result.iloc[0]["exit_net_amount"] == 57.25 * multiplier
 
