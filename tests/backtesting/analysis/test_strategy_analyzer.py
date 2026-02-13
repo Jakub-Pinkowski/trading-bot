@@ -16,6 +16,7 @@ Test Coverage:
 
 import pandas as pd
 import pytest
+from unittest.mock import MagicMock
 
 from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer
 
@@ -405,8 +406,6 @@ class TestCSVExport:
 
     def test_saves_csv_file(self, analyzer_with_data, monkeypatch):
         """Test that _save_results_to_csv is called when getting top strategies."""
-        from unittest.mock import MagicMock
-        
         # Create a mock for _save_results_to_csv to verify it's called
         save_csv_mock = MagicMock()
         monkeypatch.setattr(
@@ -427,8 +426,6 @@ class TestCSVExport:
 
     def test_csv_filename_includes_metric(self, analyzer_with_data, monkeypatch):
         """Test that _save_results_to_csv is called with correct metric."""
-        from unittest.mock import MagicMock
-        
         save_csv_mock = MagicMock()
         monkeypatch.setattr(
             analyzer_with_data,
@@ -451,8 +448,6 @@ class TestCSVExport:
 
     def test_csv_content_matches_dataframe(self, analyzer_with_data, monkeypatch):
         """Test that _save_results_to_csv is called with correct parameters."""
-        from unittest.mock import MagicMock
-        
         save_csv_mock = MagicMock()
         monkeypatch.setattr(
             analyzer_with_data,
@@ -460,7 +455,7 @@ class TestCSVExport:
             save_csv_mock
         )
         
-        result = analyzer_with_data.get_top_strategies(
+        analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=3,
@@ -476,8 +471,6 @@ class TestCSVExport:
 
     def test_csv_respects_limit(self, analyzer_with_data, monkeypatch):
         """Test that _save_results_to_csv is called with correct limit."""
-        from unittest.mock import MagicMock
-        
         save_csv_mock = MagicMock()
         monkeypatch.setattr(
             analyzer_with_data,
