@@ -15,7 +15,7 @@ DECIMAL_PLACES = 2
 # Required columns that must be present in strategy results DataFrames
 REQUIRED_COLUMNS = ['strategy', 'total_trades', 'symbol', 'interval']
 
-# Column aggregation mappings for groupby operations
+# Column aggregation mappings for group by operations
 AGG_FUNCTIONS = {
     'total_trades': 'sum',
     'symbol': 'nunique',

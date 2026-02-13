@@ -29,7 +29,7 @@ def format_dataframe_for_export(df):
     - Converts column names to readable Title Case format
 
     Args:
-        df: DataFrame with strategy results. Must have 'strategy' column containing
+        df: DataFrame with strategy results. Must have a 'strategy' column containing
            full strategy names with parameters
 
     Returns:
@@ -87,7 +87,7 @@ def _parse_strategy_name(strategy_name):
     Parse strategy name to extract common parameters and clean the strategy name (internal use only).
 
     Strategy names are created by strategy_factory.get_strategy_name()
-    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X,trailing=Y,slippage_ticks=Z)"
+    Format: "StrategyType(param1=val1,param2=val2,...,rollover=X, trailing=Y, slippage_ticks=Z)"
 
     Args:
         strategy_name: Full strategy name with parameters
@@ -95,7 +95,7 @@ def _parse_strategy_name(strategy_name):
         Tuple of (clean_name, rollover, trailing, slippage_ticks)
     """
     params = {'rollover': False, 'trailing': None, 'slippage_ticks': 0.0}
-    # Extract all param=value pairs with single regex iteration
+    # Extract all param=value pairs with a single regex iteration
     for match in re.finditer(r'(\w+)=([^,)]+)', strategy_name):
         key, value = match.groups()
         if key in params:
@@ -105,7 +105,7 @@ def _parse_strategy_name(strategy_name):
                 params[key] = None if value == 'None' else float(value)
             elif key == 'slippage_ticks':
                 params[key] = float(value)
-    # Remove common parameters from name with single regex
+    # Remove common parameters from the name with a single regex
     clean_name = re.sub(r',?(rollover|trailing|slippage_ticks)=[^,)]+,?', '', strategy_name)
     clean_name = re.sub(r',+', ',', clean_name).strip(',')
     clean_name = re.sub(r',\)', ')', clean_name)
@@ -115,18 +115,18 @@ def _parse_strategy_name(strategy_name):
 
 def _reorder_columns(df):
     """
-    Reorder DataFrame columns to place common strategy parameters after strategy name (internal use only).
+    Reorder DataFrame columns to place common strategy parameters after the strategy name (internal use only).
 
     Moves rollover, trailing, and slippage columns to appear immediately after the
     strategy column for better readability. Maintains relative order of other columns.
 
     Args:
-        df: DataFrame with strategy results. Expected to have 'strategy' column and
+        df: DataFrame with strategy results. Expected to have a 'strategy' column and
            optionally 'rollover', 'trailing', 'slippage' columns
 
     Returns:
-        DataFrame with reordered columns. If 'strategy' column not found or reordering
-        fails, returns original DataFrame unchanged
+        DataFrame with reordered columns. If the 'strategy' column is not found or reordering
+        fails, it returns the original DataFrame unchanged
     """
     cols = list(df.columns)
     if 'strategy' not in cols:
@@ -135,10 +135,10 @@ def _reorder_columns(df):
         # Remove param columns from their current positions (if they exist)
         cols = [col for col in cols if col not in ['rollover', 'trailing', 'slippage']]
 
-        # Recompute strategy_idx after filtering to get correct position
+        # Recompute strategy_idx after filtering to get the correct position
         strategy_idx = cols.index('strategy')
 
-        # Insert param columns after strategy (only if they existed in original df)
+        # Insert param columns after the strategy (only if they existed in the original df)
         insert_pos = strategy_idx + 1
         if 'rollover' in df.columns:
             cols.insert(insert_pos, 'rollover')

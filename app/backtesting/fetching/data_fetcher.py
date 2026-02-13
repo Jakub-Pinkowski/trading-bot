@@ -148,7 +148,7 @@ class DataFetcher:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
 
         Raises:
-            ValueError: If intervals list is empty or contains invalid intervals
+            ValueError: If the intervals list is empty or contains invalid intervals
         """
         if not intervals:
             raise ValueError('intervals list cannot be empty')
