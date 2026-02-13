@@ -125,6 +125,12 @@ trading-bot/
 │   │   ├── 1!/                                   # Front month
 │   │   ├── 2!/                                   # Next month
 │   │   └── contract_switch_dates.yaml            # Configuration for contract switch dates
+├── futures_config/                               # Futures symbols configuration and utilities
+│   ├── __init__.py
+│   ├── categories.py                             # Category definitions for futures symbols
+│   ├── helpers.py                                # Helper functions for futures specs
+│   ├── symbol_mapping.py                         # TradingView to IBKR symbol mapping
+│   └── symbol_specs.py                           # Symbol specifications (exchange, tick size, etc.)
 ├── logs/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
@@ -138,6 +144,7 @@ trading-bot/
 │   ├── analysis/                                 # Analysis tests
 │   ├── backtesting/                              # Backtesting tests
 │   ├── e2e/                                      # End-to-end tests
+│   ├── futures_config/                           # Futures config tests
 │   ├── routes/                                   # Routes tests
 │   ├── services/                                 # Services tests
 │   └── utils/                                    # Utils tests
@@ -151,7 +158,6 @@ trading-bot/
 ├── analyze_strategies.py                         # Analyze strategies
 ├── config.py                                     # App configuration
 ├── fetch_data.py                                 # Fetch TradingView historical data
-├── futures_config.py                             # Futures symbols configuration and utilities
 ├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview
 ├── requirements.txt                              # Dependencies
@@ -163,18 +169,18 @@ trading-bot/
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [HIGH]: Add an automatic Github Action to run the fetching on a monthly basis
-# TODO [HIGH]: TW fetching- Make a comment on which symbols are available XC exists, YC doesn't etc.
-# TODO [MEDIUM]: Fill in all the missing data for all the symbols
+# TODO [HIGH]: Modernize analyze_strategies.py
+# TODO [HIGH]: Modernize mass_backtest.py
+# TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
+# TODO [MEDIUM]: Add missing contract switch dates for all the symbols
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
-# TODO [MEDIUM]: Update comments to reflect what the code does instead of what was changed
 # TODO [LOW]: Add advanced portfolio-level backtesting
-# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.10]
+# TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
+# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.13]
 # TODO [LOW]: Update contract switch dates [last update in 2025.05]
 # TODO [LOW]: Update contracts ids [last update in 2025.05]
-# TODO [LOW]: Add contract switch dates for missing symbols
 # TODO [LOW]: Add new strategies
 # TODO [LOW]: Add strategy performance heatmaps
 
