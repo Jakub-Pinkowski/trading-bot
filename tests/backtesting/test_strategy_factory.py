@@ -701,7 +701,7 @@ class TestWarningSystem:
 
     def test_warnings_disabled_skips_logging(self):
         """Test _log_warnings_enabled=False causes early return (line 172)."""
-        import app.backtesting.strategy_factory as factory_module
+        import app.backtesting.strategies.strategy_factory as factory_module
 
         # Save original value
         original_enabled = factory_module._log_warnings_enabled
@@ -724,7 +724,7 @@ class TestWarningSystem:
 
     def test_warnings_enabled_logs_messages(self):
         """Test warnings are logged when enabled."""
-        import app.backtesting.strategy_factory as factory_module
+        import app.backtesting.strategies.strategy_factory as factory_module
 
         # Save original value
         original_enabled = factory_module._log_warnings_enabled
