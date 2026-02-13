@@ -155,10 +155,10 @@ trading-bot/
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [HIGH]: TW fetching- Completely rewrite this and make this a part of the backtesting module
 # TODO [HIGH]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [HIGH]: TW fetching- Add an automatic way to download everything
 # TODO [HIGH]: TW fetching- Make a comment on which symbols are available XC exists, YC doesn't etc.
+# TODO [MEDIUM]: Fill in all the missing data for all the symbols
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
