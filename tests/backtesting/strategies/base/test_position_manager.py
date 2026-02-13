@@ -15,7 +15,7 @@ import pandas as pd
 import pytest
 
 from app.backtesting.strategies.base.position_manager import PositionManager
-from config import get_tick_size
+from futures_config import get_tick_size
 
 
 # ==================== Fixtures ====================
@@ -646,7 +646,7 @@ class TestEdgeCases:
         pm.open_position(1, sample_timestamp, base_price)
 
         # Should use default tick size
-        from config import DEFAULT_TICK_SIZE
+        from futures_config import DEFAULT_TICK_SIZE
         expected = base_price + (1 * DEFAULT_TICK_SIZE)
         assert pm.entry_price == pytest.approx(expected, abs=0.01)
 

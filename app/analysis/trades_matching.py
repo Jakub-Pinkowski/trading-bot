@@ -1,7 +1,7 @@
 import pandas as pd
 
 from app.utils.logger import get_logger
-from config import get_contract_multiplier
+from futures_config import get_contract_multiplier
 
 logger = get_logger('analysis/trades_matching')
 

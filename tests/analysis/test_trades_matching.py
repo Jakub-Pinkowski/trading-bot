@@ -6,7 +6,7 @@ from app.analysis.trades_matching import (
     format_processed_trades,
     match_trades,
 )
-from config import get_contract_multiplier
+from futures_config import get_contract_multiplier
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ This module manages position state and lifecycle during backtesting, including:
 - Tick-based slippage calculations for entry and exit prices
 """
 
-from config import get_tick_size
+from futures_config import get_tick_size
 
 
 class PositionManager:

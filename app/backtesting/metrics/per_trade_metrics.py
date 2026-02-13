@@ -1,6 +1,6 @@
 from app.utils.logger import get_logger
 from app.utils.math_utils import calculate_percentage
-from config import get_contract_multiplier
+from futures_config import get_contract_multiplier
 
 logger = get_logger('backtesting/per_trade_metrics')
 

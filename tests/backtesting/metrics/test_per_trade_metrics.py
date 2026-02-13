@@ -30,7 +30,7 @@ from app.backtesting.metrics.per_trade_metrics import (
     MARGIN_RATIOS,
     COMMISSION_PER_TRADE
 )
-from config import get_contract_multiplier
+from futures_config import get_contract_multiplier
 
 
 # ==================== Test Classes ====================

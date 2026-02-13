@@ -67,24 +67,3 @@ AGGRESSIVE_TRADING = True
 
 # Analysis
 TIMEFRAME_TO_ANALYZE = 7
-
-# ==================== Futures Configuration ====================
-# Import futures-specific data from futures_config.py
-
-from futures_config import (
-    SYMBOL_SPECS,
-    DEFAULT_TICK_SIZE,
-    get_tick_size,
-    get_contract_multiplier,
-    get_margin_requirement,
-    is_tradingview_compatible,
-)
-
-__all__ = [
-    'SYMBOL_SPECS',
-    'DEFAULT_TICK_SIZE',
-    'get_tick_size',
-    'get_contract_multiplier',
-    'get_margin_requirement',
-    'is_tradingview_compatible',
-]
