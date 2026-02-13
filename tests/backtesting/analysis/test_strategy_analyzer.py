@@ -595,10 +595,16 @@ class TestEdgeCases:
 class TestRealDataIntegration:
     """Test with real backtest results data (if available)."""
 
-    def test_with_real_data_file(self, real_results_file):
+    def test_with_real_data_file(self, real_results_file, monkeypatch):
         """Test analyzer works with real backtest results."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 
@@ -614,10 +620,16 @@ class TestRealDataIntegration:
         assert 'strategy' in result.columns
         assert result['profit_factor'].is_monotonic_decreasing
 
-    def test_real_data_aggregation(self, real_results_file):
+    def test_real_data_aggregation(self, real_results_file, monkeypatch):
         """Test aggregation with real data."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 
@@ -633,10 +645,16 @@ class TestRealDataIntegration:
         assert 'symbol_count' in result.columns
         assert 'total_trades' in result.columns
 
-    def test_real_data_various_filters(self, real_results_file):
+    def test_real_data_various_filters(self, real_results_file, monkeypatch):
         """Test various filtering combinations with real data."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 
