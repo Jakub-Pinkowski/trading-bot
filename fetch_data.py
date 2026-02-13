@@ -5,19 +5,21 @@ Bulk download and update historical market data for all configured
 futures symbols organized by category.
 """
 from app.backtesting import DataFetcher
-from futures_config import (
-    GRAINS, get_exchange_for_symbol
-)
+from futures_config import CATEGORIES, get_exchange_for_symbol
 
 # ==================== Configuration ====================
 
 CONTRACT_SUFFIX = '1!'
-INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h', '1d']
+INTERVALS = ['5m']
 
-# Select which categories to fetch
-SYMBOLS_TO_FETCH = (
-    GRAINS
-)
+# Select which categories to fetch (see CATEGORIES.keys() for all available)
+# Available categories: Grains, Softs, Energy, Metals, Crypto, Index, Forex
+CATEGORIES_TO_FETCH = ['Grains', 'Softs']
+
+# Build symbol list from selected categories
+SYMBOLS_TO_FETCH = []
+for category in CATEGORIES_TO_FETCH:
+    SYMBOLS_TO_FETCH.extend(CATEGORIES[category])
 
 
 # ==================== Main ====================
@@ -25,7 +27,7 @@ SYMBOLS_TO_FETCH = (
 def main():
     """Fetch historical data for all configured symbols."""
     print(f"Fetching data for {len(SYMBOLS_TO_FETCH)} symbols...")
-    print(f"Categories: Grains, Softs, Energy, Metals, Crypto, Index, Forex")
+    print(f"Categories: {', '.join(CATEGORIES_TO_FETCH)}")
     print(f"Intervals: {', '.join(INTERVALS)}")
     print("-" * 60)
 

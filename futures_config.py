@@ -152,6 +152,17 @@ CRYPTO = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Crypto'
 INDEX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Index' and v['tv_compatible']])
 FOREX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Forex' and v['tv_compatible']])
 
+# Dictionary mapping category names to their symbol lists for dynamic access
+CATEGORIES = {
+    'Grains': GRAINS,
+    'Softs': SOFTS,
+    'Energy': ENERGY,
+    'Metals': METALS,
+    'Crypto': CRYPTO,
+    'Index': INDEX,
+    'Forex': FOREX,
+}
+
 
 # ==================== Helper Functions ====================
 
