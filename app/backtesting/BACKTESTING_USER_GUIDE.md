@@ -543,9 +543,15 @@ Action: Improve worst-case risk management
 
 ### Code References
 
-- **Mass Testing**: `app/backtesting/mass_testing.py`
+- **Mass Testing**: `app/backtesting/testing/mass_tester.py`
+- **Strategy Factory**: `app/backtesting/strategy_factory.py`
 - **Strategies**: `app/backtesting/strategies/`
+- **Strategy Base Classes**: `app/backtesting/strategies/base/`
 - **Indicators**: `app/backtesting/indicators/`
+- **Metrics**: `app/backtesting/metrics/`
+- **Validators**: `app/backtesting/validators/`
+- **Analysis**: `app/backtesting/analysis/`
+- **Caching**: `app/backtesting/cache/`
 
 ### Data Files
 

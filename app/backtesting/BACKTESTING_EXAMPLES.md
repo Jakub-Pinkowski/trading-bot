@@ -709,7 +709,7 @@ Impact on Rollover:
 
 - **Architecture**: `BACKTESTING_ARCHITECTURE.md` - System design and components
 - **Analysis**: `.github/prompts/BACKTESTING_ANALYSIS.md` - Code quality review
-- **Code**: `base_strategy.py` - Implementation details
+- **Code**: `app/backtesting/strategies/base/base_strategy.py` - Implementation details
 
 ---
 
