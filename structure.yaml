@@ -30,6 +30,7 @@ trading-bot/
 │   │   │   ├── bollinger_bands.py                # Bollinger Bands indicator
 │   │   │   ├── ema.py                            # Exponential Moving Average indicator
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud indicator
+│   │   │   ├── indicators_utils.py               # General indicators utilities
 │   │   │   ├── macd.py                           # Moving Average Convergence Divergence indicator
 │   │   │   └── rsi.py                            # Relative Strength Index indicator
 │   │   ├── metrics/                              # Metrics calculation modules
@@ -91,9 +92,6 @@ trading-bot/
 │   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
-│   │   ├── backtesting_utils/
-│   │   │   ├── __init__.py
-│   │   │   └── indicators_utils.py               # Indicators utilities
 │   │   ├── ibkr_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── contracts_utils.py                # Contracts utilities

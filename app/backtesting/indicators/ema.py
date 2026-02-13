@@ -1,5 +1,5 @@
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.utils.backtesting_utils.indicators_utils import logger
+from app.backtesting.indicators.indicators_utils import logger
 
 
 def calculate_ema(prices, period, prices_hash):

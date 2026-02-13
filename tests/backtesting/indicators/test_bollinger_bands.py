@@ -10,7 +10,7 @@ import pytest
 
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_bollinger_bands
-from app.utils.backtesting_utils.indicators_utils import hash_series
+from app.backtesting.indicators.indicators_utils import hash_series
 from tests.backtesting.fixtures.assertions import (
     assert_band_relationships,
     assert_indicator_varies,

@@ -10,7 +10,7 @@ import pytest
 
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.indicators import calculate_rsi
-from app.utils.backtesting_utils.indicators_utils import hash_series
+from app.backtesting.indicators.indicators_utils import hash_series
 from tests.backtesting.fixtures.assertions import (
     assert_valid_indicator,
     assert_indicator_varies,

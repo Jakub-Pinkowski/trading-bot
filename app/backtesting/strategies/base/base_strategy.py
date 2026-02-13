@@ -1,9 +1,9 @@
 import pandas as pd
 
+from app.backtesting.indicators.indicators_utils import hash_series
 from app.backtesting.strategies.base.contract_switch_handler import ContractSwitchHandler
 from app.backtesting.strategies.base.position_manager import PositionManager
 from app.backtesting.strategies.base.trailing_stop_manager import TrailingStopManager
-from app.utils.backtesting_utils.indicators_utils import hash_series
 
 # ==================== Strategy Execution Constants ====================
 
