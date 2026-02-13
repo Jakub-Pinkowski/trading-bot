@@ -2,6 +2,9 @@
 .idea/
 __pycache__/
 
+# Prompts
+.github/prompts/
+
 # macOS
 .DS_Store
 
@@ -14,12 +17,6 @@ clientportal/
 
 # Data
 /data
-
-# Test artifacts
-test_dir/
-
-# Prompts
-.github/prompts/
 
 # Logs
 logs/
