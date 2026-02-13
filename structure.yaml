@@ -164,7 +164,6 @@ trading-bot/
 # NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [HIGH]: Add an automatic Github Action to run the fetching on a monthly basis
-# TODO [HIGH]: TW fetching- Add an automatic way to download everything
 # TODO [HIGH]: TW fetching- Make a comment on which symbols are available XC exists, YC doesn't etc.
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols
 # TODO [MEDIUM]: Implement out-of-sample data testing
