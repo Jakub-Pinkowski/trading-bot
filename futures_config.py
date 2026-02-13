@@ -57,11 +57,6 @@ SYMBOL_SPECS = {
            'tv_compatible': True},  # Crude Oil
     'NG': {'category': 'Energy', 'exchange': 'NYMEX', 'multiplier': 10000, 'tick_size': 0.001, 'margin': 10735.02,
            'tv_compatible': True},  # Natural Gas
-    'PL': {'category': 'Energy', 'exchange': 'NYMEX', 'multiplier': 50, 'tick_size': 0.10, 'margin': 21928.24,
-           'tv_compatible': True},  # Platinum
-    # Energy - Mini
-    'PLM': {'category': 'Energy', 'exchange': 'NYMEX', 'multiplier': 10, 'tick_size': 0.10, 'margin': None,
-            'tv_compatible': False},  # Mini Platinum
     # Energy - Micro
     'MCL': {'category': 'Energy', 'exchange': 'NYMEX', 'multiplier': 100, 'tick_size': 0.01, 'margin': 1625,
             'tv_compatible': True},  # Micro Crude Oil
@@ -75,6 +70,11 @@ SYMBOL_SPECS = {
            'tv_compatible': True},  # Silver
     'HG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 25000, 'tick_size': 0.0005, 'margin': 18786.14,
            'tv_compatible': True},  # Copper
+    'PL': {'category': 'Metals', 'exchange': 'NYMEX', 'multiplier': 50, 'tick_size': 0.10, 'margin': 21928.24,
+           'tv_compatible': True},  # Platinum
+    # Metals - Mini
+    'PLM': {'category': 'Metals', 'exchange': 'NYMEX', 'multiplier': 10, 'tick_size': 0.10, 'margin': None,
+            'tv_compatible': False},  # Mini Platinum
     # Metals - Micro
     'MGC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 10, 'tick_size': 0.10, 'margin': 3760.60,
             'tv_compatible': False},  # Micro Gold
