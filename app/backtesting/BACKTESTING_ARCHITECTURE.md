@@ -1228,7 +1228,7 @@ MAX_AGE = 604800  # 7 days
 
 ## Error Handling
 
-1. **Parameter Validation**: In strategies/strategy_factory
+1. **Parameter Validation**: In app/backtesting/strategies/strategy_factory.py
 2. **DataFrame Validation**: Before strategy execution
 3. **Metrics Validation**: After calculation
 4. **Type Validation**: Before saving to parquet
