@@ -398,7 +398,8 @@ class TestColumnReordering:
         # col2 should remain after all params
         assert cols.index('col2') > cols.index('slippage')
 
-    def test_reorder_columns_exception_handling_with_mock(self):
+    @pytest.mark.parametrize("exception_type", [ValueError, IndexError, KeyError])
+    def test_reorder_columns_exception_handling_with_mock(self, exception_type):
         """Test exception handling for ValueError, IndexError, KeyError (lines 152-154)."""
         from unittest.mock import MagicMock
         
@@ -410,7 +411,7 @@ class TestColumnReordering:
         # Create a DataFrame mock that raises exceptions
         mock_df = MagicMock(spec=pd.DataFrame)
         mock_df.columns = ['strategy', 'col1']
-        mock_df.__getitem__.side_effect = KeyError("Test error")
+        mock_df.__getitem__.side_effect = exception_type("Test error")
         
         # Call with mock should handle exception gracefully
         result = _reorder_columns(mock_df)
