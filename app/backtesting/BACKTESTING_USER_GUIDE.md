@@ -539,13 +539,18 @@ Action: Improve worst-case risk management
 
 - **Architecture**: `BACKTESTING_ARCHITECTURE.md` - System design overview
 - **Examples**: `BACKTESTING_EXAMPLES.md` - Real-world examples with data
-- **Analysis**: `.github/prompts/BACKTESTING_ANALYSIS.md` - Code quality review
 
 ### Code References
 
-- **Mass Testing**: `app/backtesting/mass_testing.py`
+- **Mass Testing**: `app/backtesting/testing/mass_tester.py`
+- **Strategy Factory**: `app/backtesting/strategies/strategy_factory.py`
 - **Strategies**: `app/backtesting/strategies/`
+- **Strategy Base Classes**: `app/backtesting/strategies/base/`
 - **Indicators**: `app/backtesting/indicators/`
+- **Metrics**: `app/backtesting/metrics/`
+- **Validators**: `app/backtesting/validators/`
+- **Analysis**: `app/backtesting/analysis/`
+- **Caching**: `app/backtesting/cache/`
 
 ### Data Files
 

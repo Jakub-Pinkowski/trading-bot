@@ -10,7 +10,7 @@ performance, and accurate trade simulation.
 
 ### 1. Mass Tester Initialization
 
-**Entry Point**: `MassTester.__init__()` in `app/backtesting/mass_testing.py`
+**Entry Point**: `MassTester.__init__()` in `app/backtesting/testing/mass_tester.py`
 
 ```
 Initialize MassTester
@@ -492,7 +492,7 @@ Worker Process                    Main Process
 ### Process Pool Configuration
 
 ```python
-# In mass_testing.py
+# In testing/mass_tester.py
 
 def run_tests(self, max_workers=None):
     """
@@ -594,7 +594,7 @@ Both use the same base architecture but serve different purposes.
 **Purpose**: Store parsed DataFrames to avoid re-reading parquet files.
 
 ```python
-# In dataframe_cache.py
+# In cache/dataframe_cache.py
 
 from app.backtesting.cache.cache_base import Cache
 
@@ -656,7 +656,7 @@ Timing:
 **Purpose**: Store calculated indicators to avoid redundant computations.
 
 ```python
-# In indicators_cache.py
+# In cache/indicators_cache.py
 
 from app.backtesting.cache.cache_base import Cache
 
@@ -740,7 +740,7 @@ Worker 1 processes ZS data:
 Both caches inherit from the same base class:
 
 ```python
-# In cache_base.py
+# In cache/cache_base.py
 
 class Cache:
     """
@@ -1139,19 +1139,63 @@ Note: RSI values are illustrative. Actual RSI calculation requires previous bars
 
 ```
 app/backtesting/
-├── mass_testing.py                # Main orchestration
-├── per_trade_metrics.py           # Individual trade calculations
-├── summary_metrics.py             # Aggregate statistics
+├── __init__.py                    # Main module exports
+├── testing/
+│   ├── __init__.py
+│   ├── mass_tester.py            # Main orchestration
+│   ├── orchestrator.py           # Test coordination
+│   ├── runner.py                 # Single test runner
+│   ├── reporting.py              # Result reporting
+│   └── utils/
+│       ├── __init__.py
+│       ├── dataframe_validators.py  # DataFrame validation
+│       └── test_preparation.py      # Test setup utilities
 ├── strategies/
+│   ├── __init__.py
 │   ├── strategy_factory.py       # Strategy creation and validation
-│   ├── base_strategy.py          # Base class with trade extraction
+│   ├── base/
+│   │   ├── __init__.py
+│   │   ├── base_strategy.py      # Base class with trade extraction
+│   │   ├── position_manager.py   # Position and slippage management
+│   │   ├── trailing_stop_manager.py  # Trailing stop logic
+│   │   └── contract_switch_handler.py  # Contract rollover logic
 │   ├── rsi.py                    # RSI strategy implementation
 │   ├── ema.py                    # EMA crossover strategy
 │   ├── macd.py                   # MACD strategy
 │   ├── bollinger_bands.py        # Bollinger Bands strategy
 │   └── ichimoku_cloud.py         # Ichimoku strategy
 ├── indicators/
-│   └── indicators.py             # All indicator calculations
+│   ├── __init__.py
+│   ├── rsi.py                    # RSI calculation
+│   ├── ema.py                    # EMA calculation
+│   ├── macd.py                   # MACD calculation
+│   ├── bollinger_bands.py        # Bollinger Bands calculation
+│   ├── ichimoku_cloud.py         # Ichimoku Cloud calculation
+│   └── atr.py                    # ATR calculation
+├── metrics/
+│   ├── __init__.py
+│   ├── per_trade_metrics.py      # Individual trade calculations
+│   └── summary_metrics.py        # Aggregate statistics
+├── validators/
+│   ├── __init__.py
+│   ├── base.py                   # Base validator class
+│   ├── common_validator.py       # Common parameter validation
+│   ├── constants.py              # Validation constants
+│   ├── rsi_validator.py          # RSI parameter validation
+│   ├── ema_validator.py          # EMA parameter validation
+│   ├── macd_validator.py         # MACD parameter validation
+│   ├── bollinger_validator.py    # Bollinger parameter validation
+│   └── ichimoku_validator.py     # Ichimoku parameter validation
+├── analysis/
+│   ├── __init__.py
+│   ├── strategy_analyzer.py      # Result analysis and ranking
+│   ├── constants.py              # Analysis constants
+│   ├── data_helpers.py           # Data processing helpers
+│   └── formatters.py             # Output formatting
+├── fetching/
+│   ├── __init__.py
+│   ├── data_fetcher.py           # TradingView data fetching
+│   └── validators.py             # Data validation
 └── cache/
     ├── cache_base.py             # Base cache class with LRU
     ├── dataframe_cache.py        # DataFrame caching
@@ -1161,30 +1205,30 @@ app/backtesting/
 ## Configuration Constants
 
 ```python
-# In mass_testing.py
+# In testing/utils/dataframe_validators.py
 MIN_ROWS_FOR_BACKTEST = 150  # Minimum DataFrame rows
 
-# In base_strategy.py
+# In strategies/base/base_strategy.py
 INDICATOR_WARMUP_PERIOD = 100  # Candles to skip
 
-# In cache_base.py
+# In cache/cache_base.py
 DEFAULT_CACHE_MAX_SIZE = 1000  # Max cache items
 DEFAULT_CACHE_MAX_AGE = 86400  # Cache expiration (seconds)
 DEFAULT_CACHE_LOCK_TIMEOUT = 60  # File lock timeout
 DEFAULT_CACHE_RETRY_ATTEMPTS = 3  # Save retry attempts
 
-# In indicators_cache.py
+# In cache/indicators_cache.py
 MAX_SIZE = 500  # Indicator cache size
 MAX_AGE = 2592000  # 30 days
 
-# In dataframe_cache.py
+# In cache/dataframe_cache.py
 MAX_SIZE = 50  # DataFrame cache size
 MAX_AGE = 604800  # 7 days
 ```
 
 ## Error Handling
 
-1. **Parameter Validation**: In strategy_factory
+1. **Parameter Validation**: In app/backtesting/strategies/strategy_factory.py
 2. **DataFrame Validation**: Before strategy execution
 3. **Metrics Validation**: After calculation
 4. **Type Validation**: Before saving to parquet
