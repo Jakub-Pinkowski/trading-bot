@@ -12,7 +12,7 @@ from tvDatafeed import TvDatafeed, Interval
 
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR
-from futures_config import validate_symbols, get_exchange_for_symbol
+from futures_config import get_exchange_for_symbol, SYMBOL_SPECS
 
 logger = get_logger('backtesting/data_fetcher')
 
@@ -35,6 +35,39 @@ INTERVAL_MAPPING = {
 
 
 # ==================== Helper Functions ====================
+
+def _validate_symbols(symbols):
+    """
+    Validate that all symbols are TradingView-compatible.
+
+    Logs warnings for invalid symbols and raises an error if no valid symbols remain.
+
+    Args:
+        symbols: List of symbol strings to validate
+
+    Returns:
+        List of valid symbols that are TradingView-compatible
+
+    Raises:
+        ValueError: If no valid symbols are provided
+    """
+    valid_symbols = []
+    invalid_symbols = []
+
+    for symbol in symbols:
+        if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tv_compatible']:
+            valid_symbols.append(symbol)
+        else:
+            invalid_symbols.append(symbol)
+
+    if invalid_symbols:
+        logger.warning(f'Invalid symbols will be skipped: {invalid_symbols}')
+
+    if not valid_symbols:
+        raise ValueError(f'No valid symbols provided. All symbols were invalid: {invalid_symbols}')
+
+    return valid_symbols
+
 
 def _validate_exchange_compatibility(symbols, exchange):
     """
@@ -214,13 +247,7 @@ class DataFetcher:
             raise ValueError('exchange cannot be empty')
 
         # Validate symbols against the allowed list
-        valid_symbols, invalid_symbols = validate_symbols(symbols)
-
-        if invalid_symbols:
-            logger.warning(f'Invalid symbols will be skipped: {invalid_symbols}')
-
-        if not valid_symbols:
-            raise ValueError(f'No valid symbols provided. All symbols were invalid: {invalid_symbols}')
+        valid_symbols = _validate_symbols(symbols)
 
         # Validate exchange compatibility for each symbol
         self.symbols = _validate_exchange_compatibility(valid_symbols, exchange)

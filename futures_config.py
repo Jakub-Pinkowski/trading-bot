@@ -281,25 +281,3 @@ def is_tradingview_compatible(symbol):
     if symbol not in SYMBOL_SPECS:
         raise ValueError(f'Unknown symbol: {symbol}')
     return SYMBOL_SPECS[symbol]['tv_compatible']
-
-
-def validate_symbols(symbols):
-    """
-    Validate that all symbols are TradingView-compatible.
-
-    Args:
-        symbols: List of symbol strings to validate
-
-    Returns:
-        Tuple of (valid_symbols, invalid_symbols)
-    """
-    valid_symbols = []
-    invalid_symbols = []
-
-    for symbol in symbols:
-        if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tv_compatible']:
-            valid_symbols.append(symbol)
-        else:
-            invalid_symbols.append(symbol)
-
-    return valid_symbols, invalid_symbols
