@@ -36,7 +36,7 @@ class IchimokuCloudStrategy(BaseStrategy):
     # ==================== Public Methods ====================
 
     def add_indicators(self, df):
-        # Pre-compute all hashes once
+        # Pre-compute all hashes at once
         hashes = precompute_hashes(df)
 
         # Calculate Ichimoku using pre-computed hashes

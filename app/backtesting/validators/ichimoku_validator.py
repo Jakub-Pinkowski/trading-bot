@@ -53,7 +53,7 @@ class IchimokuValidator(Validator):
 
         Args:
             tenkan_period: Tenkan-sen (conversion line) period
-            kijun_period: Kijun-sen (base line) period
+            kijun_period: Kijun-sen (baseline) period
             senkou_span_b_period: Senkou Span B (leading span B) period
             displacement: Cloud displacement/offset
             **kwargs: Additional parameters (ignored)
@@ -76,7 +76,7 @@ class IchimokuValidator(Validator):
 
         # --- Tenkan Period Range Validation ---
 
-        # Warn if Tenkan period is too short
+        # Warn if a Tenkan period is too short
         if tenkan_period < ICHIMOKU_TENKAN_MIN:
             self.warnings.append(
                 f"Ichimoku Tenkan period {tenkan_period} is too short and may generate excessive signals. "
@@ -91,13 +91,13 @@ class IchimokuValidator(Validator):
 
         # --- Kijun Period Range Validation ---
 
-        # Warn if Kijun period is too short
+        # Warn if a Kijun period is too short
         if kijun_period < ICHIMOKU_KIJUN_MIN:
             self.warnings.append(
                 f"Ichimoku Kijun period {kijun_period} is too short and may not establish baseline. "
                 f"Consider using {ICHIMOKU_KIJUN_MIN}-{ICHIMOKU_KIJUN_MAX} range ({ICHIMOKU_KIJUN_STANDARD} is traditional)."
             )
-        # Warn if Kijun period is too long
+        # Warn if a Kijun period is too long
         elif kijun_period > ICHIMOKU_KIJUN_MAX:
             self.warnings.append(
                 f"Ichimoku Kijun period {kijun_period} is too long and may miss trend changes. "
@@ -106,13 +106,13 @@ class IchimokuValidator(Validator):
 
         # --- Senkou Span B Period Range Validation ---
 
-        # Warn if Senkou Span B period is too short
+        # Warn if a Senkou Span B period is too short
         if senkou_span_b_period < ICHIMOKU_SENKOU_B_MIN:
             self.warnings.append(
                 f"Ichimoku Senkou Span B period {senkou_span_b_period} is too short for cloud formation. "
                 f"Consider using {ICHIMOKU_SENKOU_B_MIN}-{ICHIMOKU_SENKOU_B_MAX} range ({ICHIMOKU_SENKOU_B_STANDARD} is traditional)."
             )
-        # Warn if Senkou Span B period is too long
+        # Warn if a Senkou Span B period is too long
         elif senkou_span_b_period > ICHIMOKU_SENKOU_B_MAX:
             self.warnings.append(
                 f"Ichimoku Senkou Span B period {senkou_span_b_period} is too long and may lag trends. "

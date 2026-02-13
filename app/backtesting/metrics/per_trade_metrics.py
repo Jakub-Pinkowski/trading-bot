@@ -54,14 +54,14 @@ def calculate_trade_metrics(trade, symbol):
         - commission: Commission cost in dollars
 
     Raises:
-        ValueError: If symbol not found or has no contract multiplier, margin requirement is invalid,
-                   or trade side is not 'long' or 'short'
+        ValueError: If the symbol is not found or has no contract multiplier, the margin requirement is invalid,
+        or the trade side is not 'long' or 'short'
     """
 
     # Create a copy of the trade to avoid modifying the original
     trade = trade.copy()
 
-    # Get the contract multiplier for the symbol using helper function
+    # Get the contract multiplier for the symbol using the helper function
     contract_multiplier = get_contract_multiplier(symbol)
     if contract_multiplier is None:
         logger.error(f'Symbol {symbol} has no contract multiplier defined')
@@ -133,7 +133,7 @@ def print_trade_metrics(trade):
 
     Displays human-readable trade information including entry/exit details, duration,
     prices, side, and return percentages. Uses ANSI color codes to highlight profitable
-    (green) vs losing (red) trades.
+    (green) vs. losing (red) trades.
 
     Args:
         trade: Dictionary with trade metrics from calculate_trade_metrics().
@@ -198,7 +198,7 @@ def _get_symbol_category(symbol):
 
     Returns:
         String category name: 'energies', 'metals', 'indices', 'forex', 'crypto',
-        'grains', 'softs', or 'default' if symbol not found in mapping
+        'grains', 'softs', or 'default' if the symbol is not found in mapping
     """
     categories = {
         'energies': ['CL', 'NG', 'MCL', 'MNG', 'HO', 'RB'],
@@ -219,7 +219,7 @@ def _estimate_margin(symbol, entry_price, contract_multiplier):
     """
     Estimate margin requirement for a futures contract based on historical market ratios (internal use only).
 
-    Calculates approximate margin needed to trade one contract by applying asset-class-specific
+    Calculates the approximate margin needed to trade one contract by applying asset-class-specific
     ratios to the contract value. Uses historical ratios from Jan 2026 market data to estimate
     margin requirements for backtesting periods where actual margin data is unavailable.
 

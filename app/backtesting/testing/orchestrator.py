@@ -37,9 +37,9 @@ def run_tests(
         verbose: If True, print detailed progress for each test combination.
                 If False, only show summary statistics and progress every 100 tests
         max_workers: Maximum number of parallel worker processes for test execution.
-                    None = use all available CPU cores.
+                    None = uses all available CPU cores.
                     Lower values reduce memory usage but increase execution time
-        skip_existing: If True, check database for existing results and skip already-run tests.
+        skip_existing: If True, check a database for existing results and skip already-run tests.
                       If False, re-run all tests regardless of existing results.
                       Useful when parameters or logic have changed
 
@@ -155,7 +155,7 @@ def _get_switch_dates_for_symbols(symbols, switch_dates_dict):
         switch_dates_dict: Dict with switch dates and optional _symbol_mappings
 
     Returns:
-        Dict mapping each symbol to list of datetime objects
+        Dict mapping each symbol to a list of datetime objects
     """
     switch_dates_by_symbol = {}
     for symbol in symbols:

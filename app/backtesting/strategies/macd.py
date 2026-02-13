@@ -49,10 +49,10 @@ class MACDStrategy(BaseStrategy):
         """
         df['signal'] = 0
 
-        # Buy signal: MACD line crosses above signal line
+        # Buy signal: MACD line crosses the above signal line
         df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'above'), 'signal'] = 1
 
-        # Sell signal: MACD line crosses below signal line
+        # Sell signal: MACD line crosses the below signal line
         df.loc[detect_crossover(df['macd_line'], df['signal_line'], 'below'), 'signal'] = -1
 
         return df

@@ -27,8 +27,8 @@ class RSIValidator(Validator):
     """
     Validator for RSI (Relative Strength Index) strategy parameters.
 
-    Validates RSI period, overbought/oversold thresholds, and common parameters.
-    Ensures period is within reasonable range, thresholds are properly ordered
+    Validates an RSI period, overbought/oversold thresholds, and common parameters.
+    Ensures period is within a reasonable range, thresholds are properly ordered
     with adequate separation, and common parameters (rollover, trailing, slippage)
     meet requirements.
     """
@@ -68,20 +68,20 @@ class RSIValidator(Validator):
 
         # --- Threshold Relationship Validation ---
 
-        # Ensure lower threshold is below upper threshold
+        # Ensure a lower threshold is below an upper threshold
         if lower_threshold >= upper_threshold:
             raise ValueError(f"Lower threshold ({lower_threshold}) must be less than upper threshold ({upper_threshold})")
 
         # --- RSI Period Range Validation ---
 
-        # Warn if RSI period is too short
+        # Warn if an RSI period is too short
         if rsi_period < RSI_PERIOD_MIN_RECOMMENDED:
             self.warnings.append(
                 f"RSI period {rsi_period} is too short and may generate excessive noise. "
                 f"Consider using {RSI_PERIOD_MIN_RECOMMENDED}-{RSI_PERIOD_MAX_RECOMMENDED} range "
                 f"({RSI_PERIOD_STANDARD} is most common)."
             )
-        # Warn if RSI period is too long
+        # Warn if an RSI period is too long
         elif rsi_period > RSI_PERIOD_MAX_RECOMMENDED:
             self.warnings.append(
                 f"RSI period {rsi_period} is too long and may miss trends. "
@@ -91,7 +91,7 @@ class RSIValidator(Validator):
 
         # --- Lower Threshold Range Validation ---
 
-        # Warn if lower threshold is too aggressive
+        # Warn if a lower threshold is too aggressive
         if lower_threshold < RSI_LOWER_MIN_AGGRESSIVE:
             self.warnings.append(
                 f"RSI lower threshold {lower_threshold} is too aggressive and may generate false signals. "
@@ -134,7 +134,7 @@ class RSIValidator(Validator):
                 f"RSI threshold gap ({gap}) is too narrow and may generate excessive signals. "
                 f"Consider using a gap of at least {RSI_GAP_MIN} points (e.g., {RSI_LOWER_STANDARD}/{RSI_UPPER_STANDARD})."
             )
-        # Warn if tgap is too wide
+        # Warn if the gap is too wide
         elif gap > RSI_GAP_MAX:
             self.warnings.append(
                 f"RSI threshold gap ({gap}) is too wide and may miss opportunities. "

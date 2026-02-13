@@ -72,7 +72,7 @@ class MassTester:
             slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
-            None. Strategies are added to self.strategies list for later execution
+            None. Strategies are added to the self.strategies list for later execution
         """
         self._add_strategy_tests(
             strategy_type='bollinger',
@@ -108,7 +108,7 @@ class MassTester:
             slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
-            None. Strategies are added to self.strategies list for later execution
+            None. Strategies are added to the self.strategies list for later execution
         """
         self._add_strategy_tests(
             strategy_type='ema',
@@ -140,7 +140,7 @@ class MassTester:
 
         Args:
             tenkan_periods: List of Tenkan-sen (conversion line) periods (e.g., [7, 9, 11])
-            kijun_periods: List of Kijun-sen (base line) periods (e.g., [22, 26, 30])
+            kijun_periods: List of Kijun-sen (baseline) periods (e.g., [22, 26, 30])
             senkou_span_b_periods: List of Senkou Span B (leading span B) periods (e.g., [44, 52, 60])
             displacements: List of cloud displacement periods (e.g., [22, 26, 30])
             rollovers: List of rollover flags (e.g., [True, False]). True = close positions at contract switches
@@ -148,7 +148,7 @@ class MassTester:
             slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
-            None. Strategies are added to self.strategies list for later execution
+            None. Strategies are added to the self.strategies list for later execution
         """
         self._add_strategy_tests(
             strategy_type='ichimoku',
@@ -188,7 +188,7 @@ class MassTester:
             slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
-            None. Strategies are added to self.strategies list for later execution
+            None. Strategies are added to the self.strategies list for later execution
         """
         self._add_strategy_tests(
             strategy_type='macd',
@@ -227,7 +227,7 @@ class MassTester:
             slippage_ticks_list: List of tick slippage values (e.g., [1, 2, 3])
 
         Returns:
-            None. Strategies are added to self.strategies list for later execution
+            None. Strategies are added to the self.strategies list for later execution
         """
         self._add_strategy_tests(
             strategy_type='rsi',

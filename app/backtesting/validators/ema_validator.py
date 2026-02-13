@@ -69,14 +69,14 @@ class EMAValidator(Validator):
 
         # --- Short EMA Range Validation ---
 
-        # Warn if short EMA period is too small
+        # Warn if a short EMA period is too small
         if short_ema_period < EMA_SHORT_MIN:
             self.warnings.append(
                 f"Short EMA period {short_ema_period} is too short and may generate excessive noise. "
                 f"Consider using {EMA_SHORT_MIN}-{EMA_SHORT_MAX} range "
                 f"({EMA_SHORT_COMMON_MIN}-{EMA_SHORT_COMMON_MAX} are most common)."
             )
-        # Warn if short EMA period is too large
+        # Warn if a short EMA period is too large
         elif short_ema_period > EMA_SHORT_MAX:
             self.warnings.append(
                 f"Short EMA period {short_ema_period} is too long and may miss crossover signals. "
@@ -86,14 +86,14 @@ class EMAValidator(Validator):
 
         # --- Long EMA Range Validation ---
 
-        # Warn if long EMA period is too small
+        # Warn if a long EMA period is too small
         if long_ema_period < EMA_LONG_MIN:
             self.warnings.append(
                 f"Long EMA period {long_ema_period} is too short and may not confirm trends. "
                 f"Consider using {EMA_LONG_MIN}-{EMA_LONG_MAX} range "
                 f"({EMA_LONG_COMMON_MIN}-{EMA_LONG_COMMON_MAX} are most common)."
             )
-        # Warn if long EMA period is too large
+        # Warn if a long EMA period is too large
         elif long_ema_period > EMA_LONG_MAX:
             self.warnings.append(
                 f"Long EMA period {long_ema_period} is too long and may miss trend changes. "
@@ -103,7 +103,7 @@ class EMAValidator(Validator):
 
         # --- Ratio Validation ---
 
-        # Calculate ratio between long and short periods
+        # Calculate a ratio between long and short periods
         ratio = long_ema_period / short_ema_period
 
         # Warn if periods are too close together

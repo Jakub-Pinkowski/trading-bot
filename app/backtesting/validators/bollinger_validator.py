@@ -23,8 +23,8 @@ class BollingerValidator(Validator):
     Validator for Bollinger Bands strategy parameters.
 
     Validates period and standard deviation multiplier for Bollinger Bands calculation.
-    Ensures period is sufficient for meaningful volatility measurement and standard
-    deviation multiplier is within reasonable bounds for band width.
+    Ensures period is enough for meaningful volatility measurement and standard
+    deviation multiplier is within reasonable bounds for bandwidth.
     """
 
     # ==================== Validation Method ====================
@@ -60,13 +60,13 @@ class BollingerValidator(Validator):
 
         # --- Period Range Validation ---
 
-        # Warn if period is below a recommended minimum
+        # Warn if the period is below a recommended minimum
         if period < BB_PERIOD_MIN:
             self.warnings.append(
                 f"Bollinger Bands period {period} is too short and may generate excessive signals. "
                 f"Consider using {BB_PERIOD_MIN}-{BB_PERIOD_MAX} range ({BB_PERIOD_STANDARD} is standard)."
             )
-        # Warn if period is above recommended maximum
+        # Warn if the period is above the recommended maximum
         elif period > BB_PERIOD_MAX:
             self.warnings.append(
                 f"Bollinger Bands period {period} is too long and may miss trend changes. "

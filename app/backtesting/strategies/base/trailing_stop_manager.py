@@ -7,7 +7,7 @@ CRITICAL: Order of Operations
 ============================
 The trailing stop logic must follow a specific sequence to prevent look-ahead bias:
 
-Step 1: Check if stop was triggered using worst-case intra-bar price
+Step 1: Check if stop was triggered using the worst-case intra-bar price
 Step 2: If triggered, close position and return early (no stop update)
 Step 3: If NOT triggered, update stop level using best-case intra-bar price
 
@@ -36,7 +36,7 @@ Example Scenarios:
 
 Scenario 1: Stop triggered at bar low, bar high would calculate better stop
 - Entry: $100, Current stop: $95, Trailing: 5%
-- Bar: Low=$95 (at stop), High=$110 (would calculate new stop of $104.50)
+- Bar: Low=$95 (at stop), High=$110 (would calculate a new stop of $104.50)
 - Result: Close at $95, NO stop update (prevents look-ahead bias)
 
 Scenario 2: Stop NOT triggered, normal update
@@ -55,7 +55,7 @@ Scenario 3: Gap down through stop
 
 def _should_trigger_stop(position, trailing_stop, price_high, price_low):
     """
-    Check if trailing stop should be triggered (internal use only).
+    Check if the trailing stop should be triggered (internal use only).
 
     Args:
         position: 1 for long, -1 for short
@@ -98,7 +98,7 @@ class TrailingStopManager:
     """
     Manages trailing stop functionality with proper look-ahead bias prevention.
     
-    See comprehensive documentation in module docstring about order of operations.
+    See comprehensive documentation in the module docstring about the order of operations.
     """
 
     # ==================== Initialization ====================
@@ -130,7 +130,7 @@ class TrailingStopManager:
             price_low: Lowest price during the bar
 
         Returns:
-            bool: True if position was closed due to stop trigger, False otherwise
+            bool: True if the position was closed due to stop trigger, False otherwise
         """
         # STEP 1: Check if trailing stop was triggered (conservative assumption)
         # For longs: Use low price (if we hit stop, assume it happened before the high)
@@ -155,7 +155,7 @@ class TrailingStopManager:
             position = position_manager.position
             trailing_stop = position_manager.trailing_stop
 
-            # Calculate new stop level based on position direction
+            # Calculate a new stop level based on a position direction
             new_stop = self.calculate_new_trailing_stop(position, price_high, price_low)
 
             if new_stop is not None:
@@ -167,7 +167,7 @@ class TrailingStopManager:
 
     def calculate_new_trailing_stop(self, position, price_high, price_low):
         """
-        Calculate new trailing stop level based on position direction and favorable price movement.
+        Calculate a new trailing stop level based on position direction and favorable price movement.
 
         This is extracted as a helper method for clarity and testability.
 
@@ -177,7 +177,7 @@ class TrailingStopManager:
             price_low: Lowest price during the bar (used for short positions)
 
         Returns:
-            New stop level (float) or None if position type is invalid
+            New stop level (float) or None if a position type is invalid
 
         Logic:
         - LONG positions: Calculate stop below the HIGH (benefit from upward movement)
@@ -189,9 +189,9 @@ class TrailingStopManager:
           Example: $90 low with 5% trailing = $90 * 1.05 = $94.50 stop
         """
         if position == 1:  # Long position
-            # Use bar high to calculate stop (most favorable price for long)
+            # Use bar high to calculate stop (the most favorable price for long)
             return round(price_high * (1 - self.trailing_percentage / 100), 2)
         elif position == -1:  # Short position
-            # Use bar low to calculate stop (most favorable price for short)
+            # Use bar low to calculate stop (the most favorable price for short)
             return round(price_low * (1 + self.trailing_percentage / 100), 2)
         return None

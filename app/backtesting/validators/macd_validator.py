@@ -25,8 +25,8 @@ class MACDValidator(Validator):
     """
     Validator for MACD (Moving Average Convergence Divergence) strategy parameters.
 
-    Validates fast EMA, slow EMA, and signal line periods. Ensures fast period is
-    shorter than slow period with adequate separation, and signal period is reasonable
+    Validates fast EMA, slow EMA, and signal line periods. Ensures a fast period is
+    shorter than a slow period with adequate separation, and a signal period is reasonable
     for smoothing the MACD line. Also validates common parameters.
     """
 
@@ -65,19 +65,19 @@ class MACDValidator(Validator):
 
         # --- Period Relationship Validation ---
 
-        # Ensure fast period is actually faster than slow period
+        # Ensure fast period is actually faster than a slow period
         if fast_period >= slow_period:
             raise ValueError(f"Fast period ({fast_period}) must be less than slow period ({slow_period})")
 
         # --- Fast Period Range Validation ---
 
-        # Warn if fast period is too small
+        # Warn if the fast period is too small
         if fast_period < MACD_FAST_MIN:
             self.warnings.append(
                 f"MACD fast period {fast_period} is too short and may generate excessive noise. "
                 f"Consider using {MACD_FAST_MIN}-{MACD_FAST_MAX} range ({MACD_FAST_STANDARD} is standard)."
             )
-        # Warn if fast period is too large
+        # Warn if the fast period is too large
         elif fast_period > MACD_FAST_MAX:
             self.warnings.append(
                 f"MACD fast period {fast_period} is too long and may miss signals. "
@@ -86,13 +86,13 @@ class MACDValidator(Validator):
 
         # --- Slow Period Range Validation ---
 
-        # Warn if slow period is too small
+        # Warn if the slow period is too small
         if slow_period < MACD_SLOW_MIN:
             self.warnings.append(
                 f"MACD slow period {slow_period} is too short and may not confirm trends. "
                 f"Consider using {MACD_SLOW_MIN}-{MACD_SLOW_MAX} range ({MACD_SLOW_STANDARD} is standard)."
             )
-        # Warn if slow period is too large
+        # Warn if the slow period is too large
         elif slow_period > MACD_SLOW_MAX:
             self.warnings.append(
                 f"MACD slow period {slow_period} is too long and may miss trend changes. "
@@ -101,13 +101,13 @@ class MACDValidator(Validator):
 
         # --- Signal Period Range Validation ---
 
-        # Warn if signal period is too small
+        # Warn if a signal period is too small
         if signal_period < MACD_SIGNAL_MIN:
             self.warnings.append(
                 f"MACD signal period {signal_period} is too short and may generate false signals. "
                 f"Consider using {MACD_SIGNAL_MIN}-{MACD_SIGNAL_MAX} range ({MACD_SIGNAL_STANDARD} is standard)."
             )
-        # Warn if signal period is too large
+        # Warn if a signal period is too large
         elif signal_period > MACD_SIGNAL_MAX:
             self.warnings.append(
                 f"MACD signal period {signal_period} is too long and may delay signals. "

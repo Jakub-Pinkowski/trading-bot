@@ -1,7 +1,7 @@
 """
 Position Manager for Backtesting Strategies
 
-This module manages position state and lifecycle during backtesting, including:
+This module manages position state and lifecycle during backtesting, including
 - Opening and closing positions
 - Position state tracking
 - Tick-based slippage calculations for entry and exit prices
@@ -17,7 +17,7 @@ class PositionManager:
     Tracks open positions, handles slippage application, manages trade records,
     and integrates with trailing stop functionality. Maintains position direction
     (long/short), entry details, and completed trade history. Applies realistic
-    slippage to entry and exit prices based on position direction.
+    slippage to entry and exit prices based on a position direction.
     """
 
     # ==================== Initialization ====================
@@ -64,14 +64,14 @@ class PositionManager:
         return self.position is not None
 
     def get_trades(self):
-        """Get list of completed trades"""
+        """Get a list of completed trades"""
         return self.trades
 
     # ==================== Slippage Calculations ====================
 
     def apply_slippage_to_entry_price(self, direction, price):
         """
-        Apply tick-based slippage to entry price.
+        Apply tick-based slippage to the entry price.
 
         Long positions pay more on entry (higher price), short positions receive
         less on entry (lower price). Simulates realistic market impact using
@@ -103,7 +103,7 @@ class PositionManager:
         actual tick sizes.
 
         Args:
-            direction: Position direction being closed (1 = long, -1 = short)
+            direction: A position direction being closed (1 = long, -1 = short)
             price: Base exit price before slippage
 
         Returns:
@@ -179,7 +179,7 @@ class PositionManager:
         Returns:
             Previous position direction (for potential reopening)
         """
-        # Exit at OPEN of last bar before switch (conservative assumption)
+        # Exit at OPEN of the last bar before switch (conservative assumption)
         # This assumes we exit early rather than waiting until close
         exit_price = prev_row['open']
         prev_position = self.position

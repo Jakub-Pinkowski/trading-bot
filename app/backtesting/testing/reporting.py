@@ -12,7 +12,7 @@ logger = get_logger('backtesting/testing/reporting')
 
 def results_to_dataframe(results):
     """
-    Convert list of test result dictionaries to a structured pandas DataFrame.
+    Convert the list of test result dictionaries to a structured pandas DataFrame.
 
     Transforms raw backtest results into a tabular format with standardized columns
     for analysis. Performs validation on all numeric metrics and handles missing/invalid
@@ -27,7 +27,7 @@ def results_to_dataframe(results):
                 - metrics: Dict of performance metrics
 
     Returns:
-        DataFrame with standardized columns including:
+        DataFrame with standardized columns including
         - Basic identifiers: month, symbol, interval, strategy
         - Trade statistics: total_trades, win_rate, average_trade_duration_hours
         - Return metrics: profit_factor, average/total returns (percentage of contract)
@@ -107,7 +107,7 @@ def results_to_dataframe(results):
                 # Log warning for missing critical metrics
                 if col in ['total_trades', 'win_rate', 'total_return_percentage_of_contract']:
                     missing_metrics_count += 1
-                    # Only log first 5 to avoid spam
+                    # Only log the first 5 to avoid spam
                     if missing_metrics_count <= 5:
                         logger.warning(
                             f"Critical metric '{col}' missing for {result.get('strategy', 'unknown')} "
@@ -148,7 +148,7 @@ def results_to_dataframe(results):
 
 def save_results(results):
     """
-    Save test results to parquet file for persistent storage and analysis.
+    Save test results to a parquet file for persistent storage and analysis.
 
     Converts result dictionaries to DataFrame and saves to a single aggregated
     parquet file. Uses file locking to prevent conflicts during concurrent writes.
@@ -159,11 +159,11 @@ def save_results(results):
                 contain month, symbol, interval, strategy, and metrics fields
 
     Returns:
-        None. Prints success/failure messages to console.
+        None. Prints success/failure messages to the console.
         Saves to: {BACKTESTING_DIR}/mass_test_results_all.parquet
 
     Side Effects:
-        - Creates or appends to parquet file on disk
+        - Creates or appends to a parquet file on disk
         - Logs errors if save operation fails
         - Prints status messages to stdout
     """
