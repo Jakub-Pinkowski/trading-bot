@@ -48,7 +48,8 @@ trading-bot/
 │   │   │   ├── ema.py                            # EMA Crossover strategy
 │   │   │   ├── ichimoku_cloud.py                 # Ichimoku Cloud strategy
 │   │   │   ├── macd.py                           # MACD strategy
-│   │   │   └── rsi.py                            # RSI strategy
+│   │   │   ├── rsi.py                            # RSI strategy
+│   │   │   └── strategy_factory.py               # Strategy creation factory
 │   │   ├── testing/                              # Mass testing framework
 │   │   │   ├── utils/                            # Test utilities
 │   │   │   │   ├── __init__.py
@@ -72,8 +73,7 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
-│   │   ├── BACKTESTING_USER_GUIDE.md             # User guide
-│   │   └── strategy_factory.py                   # Strategy creation factory
+│   │   └── BACKTESTING_USER_GUIDE.md             # User guide
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView

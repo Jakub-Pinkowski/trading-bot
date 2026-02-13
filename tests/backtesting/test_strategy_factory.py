@@ -18,7 +18,7 @@ from app.backtesting.strategies.ema import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.strategy_factory import (
+from app.backtesting.strategies.strategy_factory import (
     create_strategy,
     get_strategy_name,
     get_available_strategies,
