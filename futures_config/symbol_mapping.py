@@ -43,9 +43,9 @@ def map_tv_to_ibkr(symbol):
         IBKR symbol (e.g., 'YC', 'YK', 'YW', 'QI') or original symbol if no mapping exists
 
     Example:
-        >>> map_tv_to_ibkr('XC')
+         map_tv_to_ibkr('XC')
         'YC'
-        >>> map_tv_to_ibkr('ZS')  # No mapping needed
+         map_tv_to_ibkr('ZS')  # No mapping needed
         'ZS'
     """
     return TV_TO_IBKR_MAPPING.get(symbol, symbol)

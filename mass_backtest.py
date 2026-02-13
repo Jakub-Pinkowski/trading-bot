@@ -1,59 +1,25 @@
 from app.backtesting import MassTester
+from futures_config import CATEGORIES
 
-# Classification of futures
-grains = [
-    'ZC',  # Corn
-    'ZW',  # Wheat
-    'ZS',  # Soybean
-    'ZL',  # Soybean Oil
-]
+# ==================== Configuration ====================
 
-softs = [
-    'SB',  # Sugar
-    'KC',  # Coffee
-    'CC',  # Cocoa
-]
+# Select which categories to test (see CATEGORIES.keys() for all available)
+# Available categories: Grains, Softs, Energy, Metals, Crypto, Index, Forex
+CATEGORIES_TO_TEST = ['Grains']
 
-energy = [
-    'CL',  # Crude Oil
-    'NG',  # Natural Gas
-]
+# Build symbol list from selected categories
+SYMBOLS_TO_TEST = []
+for category in CATEGORIES_TO_TEST:
+    SYMBOLS_TO_TEST.extend(CATEGORIES[category])
 
-metal = [
-    'GC',  # Gold
-    'SI',  # Silver
-    'HG',  # Copper
-    'PL',  # Platinum
-]
 
-crypto = [
-    'BTC',  # Bitcoin
-    'ETH',  # Ethereum
-]
-
-index = [
-    # 'ES',  # S&P-500 NOTE: Currently not available
-    # 'NQ',  # NASDAQ-100 NOTE: Currently not available
-    'YM',  # DOW
-    # 'RTY',  # RUSSELL 2000 NOTE: Currently not available
-    'ZB',  # Treasury Bond
-]
-
-forex = [
-    '6E',  # EURO FX
-    '6J',  # Japanese Yen
-    '6B',  # British Pound
-    '6A',  # Australian Dollar
-    '6C',  # Canadian Dollar
-    '6S',  # Swiss Franc
-]
-
+# ==================== Main ====================
 
 def main():
     # Initialize the mass tester with multiple symbols and timeframes
     tester = MassTester(
         tested_months=['1!'],
-        symbols=grains + softs + energy + metal,
+        symbols=SYMBOLS_TO_TEST,
         intervals=['4h'],
     )
 
