@@ -33,6 +33,14 @@ from app.backtesting.analysis.data_helpers import (
 class TestAnalysisPipelineWithSampleData:
     """Test analysis pipeline with sample backtest results."""
 
+    @pytest.fixture(autouse=True)
+    def disable_csv_writing(self, monkeypatch):
+        """Disable CSV writing for all tests in this class to prevent side effects."""
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
     def test_strategy_analyzer_initialization(self, sample_backtest_results, tmp_path):
         """
         Test that StrategyAnalyzer can be initialized with custom results.
@@ -330,14 +338,8 @@ class TestCompleteAnalysisWorkflow:
         # Verify minimum trades filter was applied
         assert all(filtered['total_trades'] >= 80)
 
-    def test_multiple_metric_rankings(self, sample_backtest_results, tmp_path, monkeypatch):
+    def test_multiple_metric_rankings(self, sample_backtest_results, tmp_path):
         """Test ranking by different metrics produces different orders."""
-        # Disable CSV writing to prevent side effects
-        monkeypatch.setattr(
-            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
-            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
-        )
-
         # Load data
         test_file = tmp_path / "test_results.parquet"
         sample_backtest_results.to_parquet(test_file)
