@@ -216,5 +216,4 @@ class DataFetcher:
         os.makedirs(output_dir, exist_ok=True)
 
         for idx, interval_label in enumerate(intervals, 1):
-            logger.info(f'{symbol} [{idx}/{len(intervals)}] {interval_label}')
             self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)

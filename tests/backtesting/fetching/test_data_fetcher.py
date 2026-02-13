@@ -411,21 +411,16 @@ class TestFetchSymbolData:
                     assert call_args[1] == 'ZS1!'
 
     def test_progress_logging(self, mock_tv_client, temp_data_dir):
-        """Test progress is logged for each interval."""
+        """Test progress info logging was removed and intervals are still fetched."""
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
 
-            with patch.object(fetcher, '_fetch_interval_data'):
-                with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                    fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'])
+            with patch.object(fetcher, '_fetch_interval_data') as mock_fetch:
+                # No logger.info progress messages expected anymore
+                fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'])
 
-                    # Should log progress 3 times
-                    assert mock_logger.info.call_count == 3
-
-                    # Check progress format
-                    first_call = mock_logger.info.call_args_list[0][0][0]
-                    assert 'ZS' in first_call
-                    assert '[1/3]' in first_call
+                # _fetch_interval_data should be called once per interval
+                assert mock_fetch.call_count == 3
 
 
 class TestSaveNewData:
