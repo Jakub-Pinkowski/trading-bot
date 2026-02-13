@@ -618,8 +618,8 @@ class TestPrintTradeMetrics:
 class TestErrorHandling:
     """Test error handling and logging."""
 
-    def test_zero_contract_multiplier_raises_error(self):
-        """Test that zero contract multiplier raises ValueError."""
+    def test_none_contract_multiplier_raises_error(self):
+        """Test that None contract multiplier raises ValueError."""
         trade = {
             'entry_time': datetime(2024, 1, 15, 10, 0),
             'exit_time': datetime(2024, 1, 15, 11, 0),
@@ -633,8 +633,8 @@ class TestErrorHandling:
             with pytest.raises(ValueError, match="has no contract multiplier defined"):
                 calculate_trade_metrics(trade, 'TEST')
 
-    def test_none_contract_multiplier_raises_error(self):
-        """Test that None contract multiplier raises ValueError."""
+    def test_unknown_symbol_raises_error(self):
+        """Test that unknown symbol raises ValueError."""
         trade = {
             'entry_time': datetime(2024, 1, 15, 10, 0),
             'exit_time': datetime(2024, 1, 15, 11, 0),
@@ -673,10 +673,10 @@ class TestErrorHandling:
             calculate_trade_metrics(trade, 'ZS')
 
 
-class TestLoggerCalls:
-    """Test that logger is called appropriately for errors."""
+class TestInvalidInputValidation:
+    """Test validation and error handling for invalid input values."""
 
-    def test_logger_called_for_invalid_symbol(self):
+    def test_invalid_symbol_raises_error(self):
         """Test that ValueError is raised for invalid symbol."""
         trade = {
             'entry_time': datetime(2024, 1, 15, 10, 0),

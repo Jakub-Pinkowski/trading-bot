@@ -12,7 +12,7 @@ from tvDatafeed import TvDatafeed, Interval
 
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR
-from futures_config import validate_symbols
+from futures_config import validate_symbols, get_exchange_for_symbol
 
 logger = get_logger('backtesting/data_fetcher')
 
@@ -35,6 +35,41 @@ INTERVAL_MAPPING = {
 
 
 # ==================== Helper Functions ====================
+
+def _validate_exchange_compatibility(symbols, exchange):
+    """
+    Validate that symbols are compatible with the specified exchange.
+
+    Args:
+        symbols: List of symbol strings to validate
+        exchange: Exchange name to validate against (e.g., 'CBOT', 'NYMEX')
+
+    Returns:
+        List of symbols that are compatible with the exchange
+
+    Raises:
+        ValueError: If no symbols are compatible with the exchange
+    """
+    exchange_compatible_symbols = []
+    exchange_incompatible_symbols = []
+
+    for symbol in symbols:
+        symbol_exchange = get_exchange_for_symbol(symbol)
+        if symbol_exchange == exchange:
+            exchange_compatible_symbols.append(symbol)
+        else:
+            exchange_incompatible_symbols.append((symbol, symbol_exchange))
+
+    if exchange_incompatible_symbols:
+        incompatible_details = ', '.join([f'{sym} (requires {exch})' for sym, exch in exchange_incompatible_symbols])
+        logger.warning(f'Symbols with incompatible exchange will be skipped: {incompatible_details}')
+
+    if not exchange_compatible_symbols:
+        raise ValueError(f'No symbols compatible with exchange "{exchange}". '
+                         f'Incompatible symbols: {exchange_incompatible_symbols}')
+
+    return exchange_compatible_symbols
+
 
 def _validate_ohlcv_data(data, symbol, interval_label):
     """
@@ -187,7 +222,8 @@ class DataFetcher:
         if not valid_symbols:
             raise ValueError(f'No valid symbols provided. All symbols were invalid: {invalid_symbols}')
 
-        self.symbols = valid_symbols
+        # Validate exchange compatibility for each symbol
+        self.symbols = _validate_exchange_compatibility(valid_symbols, exchange)
         self.contract_suffix = contract_suffix
         self.exchange = exchange
         self.tv_client = TvDatafeed()
