@@ -19,12 +19,12 @@ def get_exchange_for_symbol(symbol):
         Exchange name (e.g., 'CBOT', 'NYMEX', 'COMEX')
 
     Raises:
-        ValueError: If symbol is not recognized
+        ValueError: If the symbol is not recognized
 
     Example:
-        >>> get_exchange_for_symbol('ZS')
+        get_exchange_for_symbol('ZS')
         'CBOT'
-        >>> get_exchange_for_symbol('CL')
+        get_exchange_for_symbol('CL')
         'NYMEX'
     """
     if symbol not in SYMBOL_SPECS:
@@ -43,12 +43,12 @@ def get_category_for_symbol(symbol):
         Category name (e.g., 'Grains', 'Energy', 'Metals')
 
     Raises:
-        ValueError: If symbol is not recognized
+        ValueError: If the symbol is not recognized
 
     Example:
-        >>> get_category_for_symbol('ZS')
+        get_category_for_symbol('ZS')
         'Grains'
-        >>> get_category_for_symbol('GC')
+         get_category_for_symbol('GC')
         'Metals'
     """
     if symbol not in SYMBOL_SPECS:
@@ -62,7 +62,7 @@ def get_tick_size(symbol):
 
     Returns the configured tick size for known symbols. If the symbol is
     unknown or its tick_size is not configured (None), this function
-    falls back to DEFAULT_TICK_SIZE as a defensive default so callers
+    falls back to DEFAULT_TICK_SIZE as a defensive default, so callers
     that rely on a numeric tick size can continue to operate. Callers that
     need to distinguish unknown symbols should validate with
     get_exchange_for_symbol() or check SYMBOL_SPECS directly before
@@ -76,9 +76,9 @@ def get_tick_size(symbol):
         unknown or when no tick_size is configured in SYMBOL_SPECS
 
     Example:
-        >>> get_tick_size('ZS')
+        get_tick_size('ZS')
         0.25
-        >>> get_tick_size('UNKNOWN')  # Falls back to default
+        get_tick_size('UNKNOWN') # Falls back to default
         0.01
     """
     if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
@@ -98,12 +98,12 @@ def get_contract_multiplier(symbol):
         Contract multiplier (int/float) or None if not available
 
     Raises:
-        ValueError: If symbol is not recognized
+        ValueError: If the symbol is not recognized
 
     Example:
-        >>> get_contract_multiplier('ZS')
+        get_contract_multiplier('ZS')
         50
-        >>> get_contract_multiplier('CL')
+        get_contract_multiplier('CL')
         1000
     """
     if symbol not in SYMBOL_SPECS:
@@ -125,9 +125,9 @@ def get_margin_requirement(symbol):
         ValueError: If symbol is not recognized
 
     Example:
-        >>> get_margin_requirement('ZS')
+        get_margin_requirement('ZS')
         3377.88
-        >>> get_margin_requirement('CL')
+        get_margin_requirement('CL')
         16250.0
     """
     if symbol not in SYMBOL_SPECS:
@@ -146,12 +146,12 @@ def is_tradingview_compatible(symbol):
         Boolean indicating TradingView compatibility
 
     Raises:
-        ValueError: If symbol is not recognized
+        ValueError: If the symbol is not recognized
 
     Example:
-        >>> is_tradingview_compatible('ZS')
+        is_tradingview_compatible('ZS')
         True
-        >>> is_tradingview_compatible('ES')
+        is_tradingview_compatible('ES')
         False
     """
     if symbol not in SYMBOL_SPECS:
