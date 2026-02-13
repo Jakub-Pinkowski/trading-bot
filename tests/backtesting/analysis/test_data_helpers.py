@@ -254,7 +254,7 @@ class TestDataFrameFiltering:
         assert list(result.columns) == list(filtering_strategy_data.columns)
 
     def test_filter_with_min_symbol_count_zero(self, filtering_strategy_data):
-        """Test filtering when min_symbol_count is 0 (edge case for filter_conditions empty branch)."""
+        """Test filtering when min_symbol_count is 0 (edge case where zero should not exclude any strategies)."""
         result = filter_dataframe(
             df=filtering_strategy_data,
             min_avg_trades_per_combination=0,
