@@ -6,7 +6,7 @@ Tests hash_series function for different data types and edge cases.
 import numpy as np
 import pandas as pd
 
-from app.utils.backtesting_utils.indicators_utils import hash_series
+from app.backtesting.indicators.indicators_utils import hash_series
 
 
 def test_hash_series_numeric():
