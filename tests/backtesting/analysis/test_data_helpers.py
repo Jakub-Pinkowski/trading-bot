@@ -253,6 +253,39 @@ class TestDataFrameFiltering:
         assert len(result) == len(filtering_strategy_data)
         assert list(result.columns) == list(filtering_strategy_data.columns)
 
+    def test_filter_with_min_symbol_count_zero(self, filtering_strategy_data):
+        """Test filtering when min_symbol_count is 0 (edge case where zero should not exclude any strategies)."""
+        result = filter_dataframe(
+            df=filtering_strategy_data,
+            min_avg_trades_per_combination=0,
+            interval=None,
+            symbol=None,
+            min_slippage_ticks=None,
+            min_symbol_count=0
+        )
+
+        # Should include all strategies since min_symbol_count=0 means no filtering
+        assert len(result) > 0
+        assert isinstance(result, pd.DataFrame)
+
+    def test_filter_with_empty_filter_conditions(self, filtering_strategy_data):
+        """Test filtering when no filter conditions are applied (line 82 - else branch)."""
+        # This tests when both min_avg_trades_per_combination=0 and min_symbol_count=None
+        # which results in empty filter_conditions list
+        result = filter_dataframe(
+            df=filtering_strategy_data,
+            min_avg_trades_per_combination=0,
+            interval=None,
+            symbol=None,
+            min_slippage_ticks=None,
+            min_symbol_count=None
+        )
+
+        # Should return all strategies from strategy_stats
+        # All strategies in the fixture should be included
+        assert len(result) == len(filtering_strategy_data)
+        assert set(result['strategy'].unique()) == set(filtering_strategy_data['strategy'].unique())
+
     def test_filter_with_missing_required_columns(self):
         """Test that filtering raises error when required columns are missing."""
         df = pd.DataFrame([
