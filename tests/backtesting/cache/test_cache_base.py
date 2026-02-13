@@ -410,21 +410,21 @@ class TestTTLExpiration:
         """Test _remove_expired_items early return when max_age is None (line 264)."""
         # Create cache with max_age=None
         cache = Cache(cache_name=cache_name, max_size=100, max_age=None)
-        
+
         # Add some items
         cache.set('key1', 'value1')
         cache.set('key2', 'value2')
-        
+
         # Save to disk
         cache.save_cache()
-        
+
         # Create a new cache instance with max_age=None and load
         new_cache = Cache(cache_name=cache_name, max_size=100, max_age=None)
-        
+
         # Items should still be there since max_age=None means no expiration
         assert new_cache.get('key1') == 'value1'
         assert new_cache.get('key2') == 'value2'
-        
+
         _cleanup_cache_files(cache)
 
 
@@ -559,7 +559,7 @@ class TestSaveCacheErrorHandling:
         with patch('app.backtesting.cache.cache_base.FileLock') as mock_filelock:
             mock_lock_instance = mock_filelock.return_value
             mock_lock_instance.__enter__.side_effect = Timeout("Lock timeout")
-            
+
             # Mock time.sleep to speed up test
             with patch('app.backtesting.cache.cache_base.time.sleep'):
                 result = cache.save_cache(max_retries=2)

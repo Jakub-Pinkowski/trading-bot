@@ -329,7 +329,7 @@ def test_match_trades_no_matches():
 def test_match_trades_with_unknown_symbol():
     """Test matching trades with an unknown symbol that raises ValueError."""
     from unittest.mock import patch
-    
+
     # Create data with a symbol that will raise ValueError
     trades_data = pd.DataFrame([
         {
@@ -342,10 +342,10 @@ def test_match_trades_with_unknown_symbol():
             "net_amount": 961.3
         }
     ])
-    
+
     with patch('app.analysis.trades_matching.get_contract_multiplier', side_effect=ValueError('Unknown symbol')):
         result = match_trades(trades_data)
-        
+
         # Verify the result is a DataFrame with multiplier=1 used (should work without crashing)
         assert isinstance(result, pd.DataFrame)
 
@@ -353,7 +353,7 @@ def test_match_trades_with_unknown_symbol():
 def test_match_trades_with_none_multiplier():
     """Test matching trades when get_contract_multiplier returns None."""
     from unittest.mock import patch
-    
+
     # Create data with a symbol that returns None multiplier
     trades_data = pd.DataFrame([
         {
@@ -366,9 +366,9 @@ def test_match_trades_with_none_multiplier():
             "net_amount": 961.3
         }
     ])
-    
+
     with patch('app.analysis.trades_matching.get_contract_multiplier', return_value=None):
         result = match_trades(trades_data)
-        
+
         # Verify the result is a DataFrame with multiplier=1 used (should work without crashing)
         assert isinstance(result, pd.DataFrame)

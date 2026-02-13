@@ -402,17 +402,17 @@ class TestColumnReordering:
     def test_reorder_columns_exception_handling_with_mock(self, exception_type):
         """Test exception handling for ValueError, IndexError, KeyError (lines 152-154)."""
         from unittest.mock import MagicMock
-        
+
         df = pd.DataFrame({
             'strategy': ['A', 'B'],
             'col1': [1, 2]
         })
-        
+
         # Create a DataFrame mock that raises exceptions
         mock_df = MagicMock(spec=pd.DataFrame)
         mock_df.columns = ['strategy', 'col1']
         mock_df.__getitem__.side_effect = exception_type("Test error")
-        
+
         # Call with mock should handle exception gracefully
         result = _reorder_columns(mock_df)
         # Should return the original mock df on error

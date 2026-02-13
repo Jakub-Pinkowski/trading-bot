@@ -833,16 +833,16 @@ class TestEdgeCases:
             slippage_ticks=0,
             symbol='ZS'
         )
-        
+
         # Create data with multiple bars
         df = create_small_ohlcv_dataframe(50)
-        
+
         # Set a contract switch date right in the middle
         switch_dates = [df.index[6]]  # Switch after first signal
-        
+
         # Run strategy - when switch happens, skip_signal should be True
         trades = strategy.run(df, switch_dates)
-        
+
         # The strategy should handle the skip gracefully
         # Trades should still be generated (though behavior may differ due to rollover)
         assert isinstance(trades, list)
