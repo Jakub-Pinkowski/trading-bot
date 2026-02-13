@@ -539,7 +539,6 @@ Action: Improve worst-case risk management
 
 - **Architecture**: `BACKTESTING_ARCHITECTURE.md` - System design overview
 - **Examples**: `BACKTESTING_EXAMPLES.md` - Real-world examples with data
-- **Analysis**: `.github/prompts/BACKTESTING_ANALYSIS.md` - Code quality review
 
 ### Code References
 
