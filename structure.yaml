@@ -143,8 +143,6 @@ trading-bot/
 │   └── utils/                                    # Utils tests
 ├── .env                                          # Configuration secrets
 ├── .github/                                      # GitHub configuration
-│   ├── workflows/
-│   │   └── fetch-tradingview-data.yml            # Automated data fetching workflow
 │   ├── copilot-instructions.md                   # GitHub Copilot instructions
 │   ├── dependabot.yml                            # Dependency updates configuration
 │   └── prompts/                                  # Documentation and summaries
@@ -153,7 +151,6 @@ trading-bot/
 ├── analyze_strategies.py                         # Analyze strategies
 ├── config.py                                     # App configuration
 ├── fetch_data.py                                 # Fetch TradingView historical data
-├── fetch_data_automated.py                       # Automated fetch script for CI/CD (all symbols, all intervals)
 ├── futures_config.py                             # Futures symbols configuration and utilities
 ├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview
