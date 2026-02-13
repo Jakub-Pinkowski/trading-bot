@@ -46,8 +46,9 @@ def test_hash_series_arrow_backed():
         def __init__(self):
             self.values = MockArrowValues()
         
-        def __array__(self, dtype=None, copy=None):
-            return np.array([1, 2, 3], dtype=dtype if dtype else object)
+        def __array__(self, *args, **kwargs):
+            # Return a deterministic NumPy array for hashing, ignoring NumPy-specific arguments
+            return np.array([1, 2, 3], dtype=object)
     
     mock_series = MockSeries()
     result = hash_series(mock_series)
