@@ -12,7 +12,7 @@ logger = get_logger('backtesting/testing/utils/test_preparation')
 
 def load_existing_results():
     """
-    Load existing test results from parquet file for duplicate detection.
+    Load existing test results from a parquet file for duplicate detection.
 
     Reads the aggregated results file and creates an optimized lookup structure
     for O(1) checking of whether a specific test combination has already been run.
@@ -25,7 +25,7 @@ def load_existing_results():
         Tuple of (DataFrame, set):
         - DataFrame: Complete existing results with all columns
         - set: Set of (month, symbol, interval, strategy) tuples for fast lookup
-        Returns (empty DataFrame, empty set) if file doesn't exist or load fails
+        Returns (empty DataFrame, empty set) if a file doesn't exist or a load fails
     """
     parquet_filename = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
     if os.path.exists(parquet_filename):

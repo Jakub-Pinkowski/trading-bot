@@ -30,8 +30,8 @@ SYMBOL_SPECS = {
            'tv_compatible': True},  # Soybeans
     'ZL': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 600, 'tick_size': 0.01, 'margin': 3252.26,
            'tv_compatible': True},  # Soybean Oil
-    'ZM': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': None, 'tick_size': 0.01, 'margin': None,
-           'tv_compatible': True},  # Soybean Meal
+    # 'ZM': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': None, 'tick_size': 0.01, 'margin': None,
+    #        'tv_compatible': True}, # Soybean Meal
     # Grains - Mini
     'XC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 1000, 'tick_size': 0.125, 'margin': 323.594,
            'tv_compatible': True},  # Mini Corn (TradingView symbol, maps to YC in IBKR)
@@ -144,5 +144,5 @@ SYMBOL_SPECS = {
             'tv_compatible': False},  # Micro British Pound
 }
 
-# Default tick size used as fallback when symbol is unknown or tick_size is None
+# Default tick size used as fallback when the symbol is unknown or tick_size is None
 DEFAULT_TICK_SIZE = 0.01

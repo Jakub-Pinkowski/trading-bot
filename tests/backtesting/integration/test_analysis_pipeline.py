@@ -33,6 +33,14 @@ from app.backtesting.analysis.data_helpers import (
 class TestAnalysisPipelineWithSampleData:
     """Test analysis pipeline with sample backtest results."""
 
+    @pytest.fixture(autouse=True)
+    def disable_csv_writing(self, monkeypatch):
+        """Disable CSV writing for all tests in this class to prevent side effects."""
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
     def test_strategy_analyzer_initialization(self, sample_backtest_results, tmp_path):
         """
         Test that StrategyAnalyzer can be initialized with custom results.
@@ -277,6 +285,14 @@ class TestDataHelpersWithSampleData:
 @pytest.mark.integration
 class TestCompleteAnalysisWorkflow:
     """Test complete analysis workflow from data to export."""
+
+    @pytest.fixture(autouse=True)
+    def disable_csv_writing(self, monkeypatch):
+        """Disable CSV writing for all tests in this class to prevent side effects."""
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
     def test_full_analysis_pipeline(self, sample_backtest_results, tmp_path):
         """

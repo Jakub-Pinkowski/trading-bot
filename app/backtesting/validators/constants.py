@@ -2,7 +2,7 @@
 Validation Constants for Strategy Parameters
 
 This module contains all validation thresholds and constants used for parameter validation
-in the backtesting system. Constants are organized by strategy type with clear rationale
+in the backtesting system. Constants are organized by strategy type with a clear rationale
 for each threshold based on common trading practices and extensive backtesting.
 
 When adding new strategies or indicators, add their validation constants to this file
@@ -55,7 +55,7 @@ ICHIMOKU_TENKAN_MIN = 7  # Below this: too sensitive
 ICHIMOKU_TENKAN_MAX = 12  # Above this: too slow for conversion line
 ICHIMOKU_TENKAN_STANDARD = 9  # Traditional Tenkan-sen period
 
-ICHIMOKU_KIJUN_MIN = 22  # Below this: too short for baseline
+ICHIMOKU_KIJUN_MIN = 22  # Below this: too short for a baseline
 ICHIMOKU_KIJUN_MAX = 30  # Above this: too slow for trend confirmation
 ICHIMOKU_KIJUN_STANDARD = 26  # Traditional Kijun-sen period
 
@@ -97,11 +97,11 @@ RSI_PERIOD_STANDARD = 14  # Most widely used RSI period
 
 RSI_LOWER_MIN_AGGRESSIVE = 20  # Below this: very aggressive oversold level
 RSI_LOWER_MAX_CONSERVATIVE = 40  # Above this: may miss oversold opportunities
-RSI_LOWER_STANDARD = 30  # Most common oversold threshold
+RSI_LOWER_STANDARD = 30  # Most commonly oversold threshold
 
 RSI_UPPER_MIN_AGGRESSIVE = 60  # Below this: very aggressive overbought level
 RSI_UPPER_MAX_CONSERVATIVE = 80  # Above this: may miss overbought opportunities
-RSI_UPPER_STANDARD = 70  # Most common overbought threshold
+RSI_UPPER_STANDARD = 70  # Most commonly overbought threshold
 
 RSI_GAP_MIN = 20  # Minimum recommended gap between thresholds
 RSI_GAP_MAX = 50  # Maximum recommended gap between thresholds
@@ -109,9 +109,9 @@ RSI_GAP_MAX = 50  # Maximum recommended gap between thresholds
 # ==================== Future Strategy Constants ====================
 # Add new strategy validation constants below this section following the same pattern:
 #
-# STRATEGY_NAME_PARAMETER_MIN = value  # Description
-# STRATEGY_NAME_PARAMETER_MAX = value  # Description
-# STRATEGY_NAME_PARAMETER_STANDARD = value  # Description
+# STRATEGY_NAME_PARAMETER_MIN = value # Description
+# STRATEGY_NAME_PARAMETER_MAX = value # Description
+# STRATEGY_NAME_PARAMETER_STANDARD = value # Description
 #
 # Example for a future Stochastic strategy:
 # STOCHASTIC_K_PERIOD_MIN = 5

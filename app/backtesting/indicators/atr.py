@@ -49,7 +49,16 @@ def calculate_atr(df, period, high_hash, low_hash, close_hash):
     tr2 = (high - prev_close).abs()
     tr3 = (low - prev_close).abs()
 
-    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    # Concatenate the three true range candidates into a DataFrame
+    # build a DataFrame from a dict so linters/type-checkers know this is a DataFrame
+    df_tr_candidates = pd.DataFrame({
+        'tr1': tr1,
+        'tr2': tr2,
+        'tr3': tr3,
+    })
+
+    # Use the row-wise max as the true range
+    true_range = df_tr_candidates.max(axis=1)
 
     # Use min_periods to naturally produce NaN for first period-1 values
     atr = true_range.ewm(span=period, min_periods=period, adjust=False).mean()

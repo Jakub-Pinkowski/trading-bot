@@ -9,6 +9,8 @@ Tests cover:
 - Error handling for invalid inputs
 - Warning system behavior
 """
+from unittest.mock import patch
+
 import pytest
 
 from app.backtesting.strategies.bollinger_bands import BollingerBandsStrategy
@@ -692,3 +694,57 @@ class TestStrategyMapConfiguration:
         assert 'trailing' in COMMON_PARAMS
         assert 'slippage_ticks' in COMMON_PARAMS
         assert 'symbol' in COMMON_PARAMS
+
+
+class TestWarningSystem:
+    """Test warning logging system."""
+
+    def test_warnings_disabled_skips_logging(self):
+        """Test _log_warnings_enabled=False causes early return (line 172)."""
+        import app.backtesting.strategy_factory as factory_module
+
+        # Save original value
+        original_enabled = factory_module._log_warnings_enabled
+
+        try:
+            # Disable warnings
+            factory_module._log_warnings_enabled = False
+
+            # Mock logger to verify it's not called
+            with patch.object(factory_module.logger, 'warning') as mock_warning:
+                # Call _log_warnings_once with some warnings
+                factory_module._log_warnings_once(['Test warning'], 'RSI')
+
+                # Logger.warning should NOT be called when warnings are disabled
+                mock_warning.assert_not_called()
+
+        finally:
+            # Restore original value
+            factory_module._log_warnings_enabled = original_enabled
+
+    def test_warnings_enabled_logs_messages(self):
+        """Test warnings are logged when enabled."""
+        import app.backtesting.strategy_factory as factory_module
+
+        # Save original value
+        original_enabled = factory_module._log_warnings_enabled
+        original_logged = factory_module._logged_warnings.copy()
+
+        try:
+            # Enable warnings
+            factory_module._log_warnings_enabled = True
+            factory_module._logged_warnings.clear()
+
+            # Mock logger
+            with patch.object(factory_module.logger, 'warning') as mock_warning:
+                # Call _log_warnings_once with warnings
+                factory_module._log_warnings_once(['Test warning message'], 'RSI')
+
+                # Logger.warning SHOULD be called when enabled
+                mock_warning.assert_called_once()
+                assert 'Test warning message' in str(mock_warning.call_args)
+
+        finally:
+            # Restore original values
+            factory_module._log_warnings_enabled = original_enabled
+            factory_module._logged_warnings = original_logged

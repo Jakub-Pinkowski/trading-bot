@@ -596,6 +596,34 @@ class TestUpdateExistingData:
                 info_msg = mock_logger.info.call_args[0][0]
                 assert 'No new data' in info_msg
 
+    def test_negative_new_entries_warning_when_duplicates_cleaned(self, temp_data_dir):
+        """Test negative new_entries warning when cleaning up duplicates (line 79)."""
+        file_path = temp_data_dir / 'test.parquet'
+
+        # Create existing data WITH DUPLICATES (this is the key!)
+        dates = pd.date_range('2024-01-01', periods=50, freq='h')
+        # Create duplicated data by concatenating same dates twice
+        existing_with_dupes = pd.DataFrame({'close': [100.0] * 50}, index=dates)
+        existing_with_dupes = pd.concat([
+            existing_with_dupes,
+            existing_with_dupes
+        ])  # 100 rows, but only 50 unique dates
+        existing_with_dupes.to_parquet(file_path)
+
+        # Try to "update" with no new data - just same dates
+        # The deduplication will reduce total rows
+        new_data = pd.DataFrame({'close': [110.0] * 50}, index=dates)  # Same dates
+
+        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+
+                # Check that warning was called (new_entries should be negative)
+                # existing_count = 100 (with dupes), combined after dedup = 50, so new_entries = -50
+                warning_calls = [call[0][0] for call in mock_logger.warning.call_args_list]
+                assert any('⚠️' in str(call) or '-' in str(call) for call in warning_calls), \
+                    "Expected warning for negative new_entries"
+
     def test_gap_detection_called_on_combined(self, old_data_2020, new_data_2024, temp_data_dir):
         """Test gap detection is called on combined data."""
         file_path = temp_data_dir / 'test.parquet'

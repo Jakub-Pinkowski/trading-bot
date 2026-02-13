@@ -63,14 +63,14 @@ class CommonValidator(Validator):
 
         # Only validate trailing stop if it's provided
         if trailing is not None:
-            # Warn if trailing stop is too tight
+            # Warn if the trailing stop is too tight
             if trailing < TRAILING_STOP_MIN:
                 self.warnings.append(
                     f"Trailing stop {trailing}% is too tight and may be stopped out frequently. "
                     f"Consider using {TRAILING_STOP_MIN}-{TRAILING_STOP_MAX}% range "
                     f"({TRAILING_STOP_COMMON_MIN}-{TRAILING_STOP_COMMON_MAX}% is common for futures)."
                 )
-            # Warn if trailing stop is too wide
+            # Warn if the trailing stop is too wide
             elif trailing > TRAILING_STOP_MAX:
                 self.warnings.append(
                     f"Trailing stop {trailing}% is too wide and may give back large profits. "

@@ -78,7 +78,7 @@ class Cache:
     # ==================== Public Methods ====================
 
     def save_cache(self, max_retries=DEFAULT_CACHE_RETRY_ATTEMPTS):
-        """Save the cache to disk with file locking and retry mechanism.
+        """Save the cache to disk with a file locking and retry mechanism.
 
         Args:
             max_retries (int): Maximum number of retry attempts (default: 3)
@@ -130,10 +130,10 @@ class Cache:
 
         Args:
             key: Cache key to retrieve
-            default: Value to return if key not found or expired
+            default: Value to return if the key is not found or expired
 
         Returns:
-            Cached value if key exists and not expired, otherwise the default value
+            Cached value if the key exists and is not expired, otherwise the default value
         """
         if not self.contains(key):
             return default
@@ -146,7 +146,7 @@ class Cache:
 
     def set(self, key, value):
         """
-        Set a value in the cache with current timestamp.
+        Set a value in the cache with the current timestamp.
 
         Stores the value with a timestamp for TTL checking. Automatically enforces
         the maximum cache size by evicting the least recently used items when the
@@ -157,7 +157,7 @@ class Cache:
             value: Value to cache (must be picklable for disk persistence)
 
         Side Effects:
-            - May evict old items if cache is at max_size
+            - May evict old items if the cache is at max_size
             - Updates cache statistics
             - Marks item as most recently used
         """
@@ -180,12 +180,12 @@ class Cache:
             key: Cache key to check
 
         Returns:
-            Boolean. True if key exists and is not expired, False otherwise
+            Boolean. True if the key exists and is not expired, False otherwise
 
         Side Effects:
-            - Increments hits counter if key exists and is valid
-            - Increments misses counter if key not found or expired
-            - Removes expired items from cache
+            - Increments hits counter if the key exists and is valid
+            - Increments misses counter if the key is not found or expired
+            - Removes expired items from the cache
         """
         if key not in self.cache_data:
             self.misses += 1
@@ -209,7 +209,7 @@ class Cache:
 
         Returns the count of cached items currently stored in memory. This count
         excludes expired items that have already been removed but includes items
-        that have expired but not yet been accessed (and thus not yet removed).
+        that have expired but have not yet been accessed (and thus not yet removed).
 
         Returns:
             Integer count of items currently in the cache
@@ -220,7 +220,7 @@ class Cache:
         """
         Reset cache performance statistics to zero.
 
-        Clears the hit and miss counters. Typically called at the start of
+        Clears the hit-and-miss counters. Typically called at the start of
         backtest runs to measure cache performance for that specific test session.
         Does not affect the cached data itself.
 

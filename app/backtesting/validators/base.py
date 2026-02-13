@@ -29,7 +29,7 @@ def validate_boolean(value, param_name):
 
 def _is_bool_or_not_type(value, *types):
     """
-    Check if value is boolean or not one of the given types.
+    Check if the value is boolean or not one of the given types.
 
     This helper prevents booleans from passing type checks since
     bool inherits from int in Python (True == 1, False == 0).
@@ -121,7 +121,7 @@ def validate_type_and_range(value, param_name, minimum_value, maximum_value):
         maximum_value: Maximum value (inclusive)
 
     Raises:
-        ValueError: If value is not a number or is outside the range
+        ValueError: If the value is not a number or is outside the range
     """
     if _is_bool_or_not_type(value, int, float):
         raise ValueError(f"{param_name} must be between {minimum_value} and {maximum_value}")
@@ -147,7 +147,7 @@ def validate_optional_positive_number(value, param_name):
     Raises:
         ValueError: If value is not None and not a positive number
     """
-    # Only validate if value is provided
+    # Only validate if a value is provided
     if value is not None:
         if _is_bool_or_not_type(value, int, float):
             raise ValueError(f"{param_name} must be None or a positive number")
@@ -173,7 +173,7 @@ def validate_optional_non_negative_number(value, param_name):
     Raises:
         ValueError: If value is not None and not a non-negative number
     """
-    # Only validate if value is provided
+    # Only validate if a value is provided
     if value is not None:
         if _is_bool_or_not_type(value, int, float):
             raise ValueError(f"{param_name} must be None or a non-negative number")
@@ -220,7 +220,7 @@ class Validator:
         Validate parameters. Must be implemented by subclasses.
 
         Subclasses override this method with their own specific signature.
-        For example:
+        For example,
         - CommonValidator.validate(rollover, trailing, slippage_ticks, **kwargs)
         - RSIValidator.validate(rsi_period, lower_threshold, upper_threshold, **kwargs)
 

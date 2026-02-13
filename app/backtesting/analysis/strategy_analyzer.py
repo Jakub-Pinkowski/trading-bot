@@ -203,7 +203,7 @@ class StrategyAnalyzer:
             # These metrics can be averaged as they are already normalized
             # Guard access in case the input DataFrame does not contain those optional columns
             def _group_mean_or_nan(col_name):
-                # Return grouped mean if column exists, otherwise return NaN series aligned with strategies
+                # Return grouped mean if a column exists, otherwise return NaN series aligned with strategies
                 if col_name in filtered_df.columns:
                     return grouped[col_name].mean()
                 return pd.Series(index=total_trades.index, data=float('nan'))
@@ -306,7 +306,7 @@ class StrategyAnalyzer:
             weighted: Whether aggregation is weighted
 
         Raises:
-            ValueError: If no data available to save
+            ValueError: If no data is available to save
         """
         # Validate input
         if df_to_save is None or df_to_save.empty:
@@ -325,7 +325,7 @@ class StrategyAnalyzer:
             # Generate filename
             filename = build_filename(metric, aggregate, interval, symbol, weighted)
 
-            # Create output directory and save
+            # Create an output directory and save
             csv_dir = os.path.join(BACKTESTING_DIR, 'csv_results')
             os.makedirs(csv_dir, exist_ok=True)
 

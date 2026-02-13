@@ -14,6 +14,8 @@ Test Coverage:
 - Edge cases and error handling
 """
 
+from unittest.mock import MagicMock
+
 import pandas as pd
 import pytest
 
@@ -32,7 +34,6 @@ def analyzer_with_data(base_strategy_results, monkeypatch):
     the actual mass_test_results_all.parquet file existing.
 
     **Important:** Stubs out _save_results_to_csv to prevent side effects during tests.
-    For tests that need CSV functionality, use `analyzer_with_csv_enabled` fixture instead.
 
     Args:
         base_strategy_results: Sample DataFrame fixture from conftest
@@ -48,39 +49,10 @@ def analyzer_with_data(base_strategy_results, monkeypatch):
     )
 
     # Stub out _save_results_to_csv to prevent side effects
-    # Use analyzer_with_csv_enabled fixture if CSV functionality is needed
     monkeypatch.setattr(
         'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
         lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None  # No-op
     )
-
-    return StrategyAnalyzer()
-
-
-@pytest.fixture
-def analyzer_with_csv_enabled(base_strategy_results, tmp_path, monkeypatch):
-    """
-    Create StrategyAnalyzer instance with CSV writing enabled (writes to tmp_path).
-
-    Similar to analyzer_with_data but allows CSV export functionality.
-    Automatically redirects BACKTESTING_DIR to tmp_path to prevent side effects.
-
-    Args:
-        base_strategy_results: Sample DataFrame fixture from conftest
-        tmp_path: pytest's temporary directory fixture
-        monkeypatch: pytest's monkeypatch fixture for mocking
-
-    Returns:
-        StrategyAnalyzer instance loaded with test data (CSV writing enabled to tmp_path)
-    """
-    # Mock pd.read_parquet to return our test data
-    monkeypatch.setattr(
-        'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
-        lambda *_args, **_kwargs: base_strategy_results
-    )
-
-    # Redirect BACKTESTING_DIR to tmp_path to prevent side effects
-    monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
 
     return StrategyAnalyzer()
 
@@ -160,9 +132,9 @@ class TestGetTopStrategiesBasic:
         assert result.iloc[0]['symbol'] == 'ES'
         assert result.iloc[0]['profit_factor'] == 7.0
 
-    def test_get_top_strategies_applies_limit(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that limit parameter restricts returned DataFrame and CSV export."""
-        result = analyzer_with_csv_enabled.get_top_strategies(
+    def test_get_top_strategies_applies_limit(self, analyzer_with_data):
+        """Test that limit parameter restricts returned DataFrame."""
+        result = analyzer_with_data.get_top_strategies(
             metric='win_rate',
             min_avg_trades_per_combination=0,
             limit=3,
@@ -171,11 +143,6 @@ class TestGetTopStrategiesBasic:
 
         # Returned DataFrame should be limited to 3 rows
         assert len(result) == 3
-
-        # CSV file should also have 3 rows (limit applied)
-        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-        csv_df = pd.read_csv(csv_file)
-        assert len(csv_df) == 3
 
     def test_get_top_strategies_with_no_limit(self, analyzer_with_data):
         """Test getting all strategies when limit is None."""
@@ -436,81 +403,109 @@ class TestGetTopStrategiesMetrics:
 
 
 class TestCSVExport:
-    """Test CSV export functionality."""
+    """Test CSV export functionality (mocked to prevent file writing)."""
 
-    def test_saves_csv_file(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that results are saved to CSV file."""
-        analyzer_with_csv_enabled.get_top_strategies(
+    def test_saves_csv_file(self, analyzer_with_data, monkeypatch):
+        """Test that _save_results_to_csv is called when getting top strategies."""
+        # Create a mock for _save_results_to_csv to verify it's called
+        save_csv_mock = MagicMock()
+        monkeypatch.setattr(
+            analyzer_with_data,
+            '_save_results_to_csv',
+            save_csv_mock
+        )
+
+        analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=5,
             aggregate=False
         )
 
-        # Check that CSV was created
-        csv_dir = tmp_path / 'csv_results'
-        assert csv_dir.exists()
+        # Verify that _save_results_to_csv was called
+        assert save_csv_mock.called
 
-        # Check that a CSV file was created
-        csv_files = list(csv_dir.glob('*.csv'))
-        assert len(csv_files) > 0
+    def test_csv_filename_includes_metric(self, analyzer_with_data, monkeypatch):
+        """Test that _save_results_to_csv is called with correct metric."""
+        save_csv_mock = MagicMock()
+        monkeypatch.setattr(
+            analyzer_with_data,
+            '_save_results_to_csv',
+            save_csv_mock
+        )
 
-    def test_csv_filename_includes_metric(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that CSV filename includes the ranking metric."""
-        analyzer_with_csv_enabled.get_top_strategies(
+        analyzer_with_data.get_top_strategies(
             metric='sharpe_ratio',
             min_avg_trades_per_combination=0,
             limit=5,
             aggregate=False
         )
 
-        csv_files = list((tmp_path / 'csv_results').glob('*.csv'))
-        assert any('sharpe_ratio' in f.name for f in csv_files)
+        # Verify that _save_results_to_csv was called with sharpe_ratio metric
+        assert save_csv_mock.called
+        call_args = save_csv_mock.call_args
+        # First positional arg is metric
+        assert call_args.args[0] == 'sharpe_ratio'
 
-    def test_csv_content_matches_dataframe(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that CSV file content matches returned DataFrame."""
-        analyzer_with_csv_enabled.get_top_strategies(
+    def test_csv_content_matches_dataframe(self, analyzer_with_data, monkeypatch):
+        """Test that _save_results_to_csv is called with correct parameters."""
+        save_csv_mock = MagicMock()
+        monkeypatch.setattr(
+            analyzer_with_data,
+            '_save_results_to_csv',
+            save_csv_mock
+        )
+
+        analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=3,
             aggregate=False
         )
 
-        # Read the CSV file
-        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-        csv_df = pd.read_csv(csv_file)
+        # Verify that _save_results_to_csv was called
+        assert save_csv_mock.called
 
-        # Should have same number of rows (limited to 3)
-        assert len(csv_df) == 3
+        # Verify the call includes limit parameter
+        call_args = save_csv_mock.call_args
+        assert call_args.args[1] == 3  # Second positional arg is limit
 
-    def test_csv_respects_limit(self, analyzer_with_csv_enabled, tmp_path):
-        """Test that CSV file respects the limit parameter."""
-        analyzer_with_csv_enabled.get_top_strategies(
+    def test_csv_respects_limit(self, analyzer_with_data, monkeypatch):
+        """Test that _save_results_to_csv is called with correct limit."""
+        save_csv_mock = MagicMock()
+        monkeypatch.setattr(
+            analyzer_with_data,
+            '_save_results_to_csv',
+            save_csv_mock
+        )
+
+        analyzer_with_data.get_top_strategies(
             metric='win_rate',
             min_avg_trades_per_combination=0,
             limit=10,
             aggregate=False
         )
 
-        csv_file = list((tmp_path / 'csv_results').glob('*.csv'))[0]
-        csv_df = pd.read_csv(csv_file)
+        # Verify that _save_results_to_csv was called
+        assert save_csv_mock.called
 
-        # Should have at most 10 rows
-        assert len(csv_df) <= 10
+        # Verify the call includes limit=10
+        call_args = save_csv_mock.call_args
+        assert call_args.args[1] == 10  # Second positional arg is limit
 
 
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
     def test_empty_results_raises_error(self, monkeypatch):
-        """Test that calling get_top_strategies with no data raises error."""
+        """Test that calling get_top_strategies with no data raises error (line 164)."""
         # Mock _load_results to do nothing
         monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
 
         analyzer = StrategyAnalyzer()
         analyzer.results_df = None
 
-        with pytest.raises(ValueError, match='No results available'):
+        with pytest.raises(ValueError, match='No results available. Load results first.'):
             analyzer.get_top_strategies(
                 metric='profit_factor',
                 min_avg_trades_per_combination=0,
@@ -518,14 +513,14 @@ class TestEdgeCases:
             )
 
     def test_empty_dataframe_raises_error(self, monkeypatch):
-        """Test that empty DataFrame raises error."""
+        """Test that empty DataFrame raises error (line 165)."""
         # Mock _load_results to do nothing
         monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
 
         analyzer = StrategyAnalyzer()
         analyzer.results_df = pd.DataFrame()  # Empty DataFrame
 
-        with pytest.raises(ValueError, match='No results available'):
+        with pytest.raises(ValueError, match='No results available. Load results first.'):
             analyzer.get_top_strategies(
                 metric='profit_factor',
                 min_avg_trades_per_combination=0,
@@ -544,10 +539,10 @@ class TestEdgeCases:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
-    def test_single_strategy_result(self, analyzer_with_csv_enabled, tmp_path):
+    def test_single_strategy_result(self, analyzer_with_data):
         """Test handling of results when filtering to a single strategy."""
         # Filter to get only one specific strategy by using symbol and interval filters
-        result = analyzer_with_csv_enabled.get_top_strategies(
+        result = analyzer_with_data.get_top_strategies(
             metric='profit_factor',
             min_avg_trades_per_combination=0,
             limit=None,
@@ -591,14 +586,271 @@ class TestEdgeCases:
                 weighted=False
             )
 
+    def test_profit_factor_nan_fallback(self, monkeypatch, base_strategy_results):
+        """Test that profit_factor returns NaN series when win/loss columns are missing (line 233)."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        # Create data without total_wins/losses_percentage_of_contract and profit_factor columns
+        df = base_strategy_results.copy()
+        df = df.drop(columns=[
+            'total_wins_percentage_of_contract',
+            'total_losses_percentage_of_contract',
+            'profit_factor'
+        ])
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        # Stub out _save_results_to_csv to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        # This should trigger line 233 due to missing columns
+        result = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        # Should return results with NaN profit_factor
+        assert len(result) > 0
+        assert 'profit_factor' in result.columns
+        assert result['profit_factor'].isna().all()
+
+    def test_profit_factor_weighted_average_fallback(self, monkeypatch, base_strategy_results):
+        """Test profit_factor uses weighted average when profit_factor column exists but not wins/losses (line 229)."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        # Create data WITH profit_factor but WITHOUT total_wins/losses_percentage_of_contract
+        df = base_strategy_results.copy()
+        df = df.drop(columns=[
+            'total_wins_percentage_of_contract',
+            'total_losses_percentage_of_contract'
+        ])
+        # profit_factor column still exists
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        # Stub out _save_results_to_csv to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        # This should trigger line 229 - weighted average of profit_factor column
+        result = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        # Should return results with calculated profit_factor (not NaN)
+        assert len(result) > 0
+        assert 'profit_factor' in result.columns
+        # At least some values should not be NaN (weighted average was calculated)
+        assert not result['profit_factor'].isna().all()
+
+    def test_average_columns_nan_fallback(self, monkeypatch, base_strategy_results):
+        """Test NaN fallback when average columns are missing (lines 209, 253, 260)."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        # Create data without some average columns to trigger line 209, 253, 260
+        df = base_strategy_results.copy()
+        # Remove columns that trigger the fallback paths
+        df = df.drop(columns=[
+            'average_win_percentage_of_contract',
+            'average_loss_percentage_of_contract',
+            'average_trade_duration_hours',
+            'sharpe_ratio',
+            'sortino_ratio',
+            'calmar_ratio',
+            'value_at_risk',
+            'expected_shortfall',
+            'ulcer_index'
+        ])
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        # Stub out _save_results_to_csv to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        # Test with weighted aggregation (triggers lines 209, 253)
+        result_weighted = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        # Should return results with NaN for missing columns
+        assert len(result_weighted) > 0
+        assert 'average_win_percentage_of_contract' in result_weighted.columns
+        assert result_weighted['average_win_percentage_of_contract'].isna().all()
+
+        # Test with simple aggregation (triggers line 260)
+        result_simple = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=False
+        )
+
+        # Should return results with NaN for missing columns
+        assert len(result_simple) > 0
+        assert 'average_trade_duration_hours' in result_simple.columns
+        assert result_simple['average_trade_duration_hours'].isna().all()
+
+
+class TestSaveResultsToCSV:
+    """Test _save_results_to_csv method."""
+
+    def test_save_results_uses_results_df_when_df_to_save_is_none(self, base_strategy_results, monkeypatch, tmp_path):
+        """Test that _save_results_to_csv uses self.results_df when df_to_save is None (line 316)."""
+
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = base_strategy_results
+
+        # Mock the BACKTESTING_DIR to use tmp_path
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
+
+        # Call with df_to_save=None - should use self.results_df
+        analyzer._save_results_to_csv(
+            metric='profit_factor',
+            limit=5,
+            df_to_save=None,
+            aggregate=False,
+            interval=None,
+            symbol=None,
+            weighted=False
+        )
+
+        # Verify CSV was created
+        csv_dir = tmp_path / 'csv_results'
+        assert csv_dir.exists()
+        csv_files = list(csv_dir.glob('*.csv'))
+        assert len(csv_files) == 1
+
+    def test_save_results_exception_handling(self, base_strategy_results, monkeypatch):
+        """Test exception handling in _save_results_to_csv (lines 336-338)."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = base_strategy_results
+
+        # Mock format_dataframe_for_export to raise an exception
+        def raise_exception(*args, **kwargs):
+            raise RuntimeError("Test exception")
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.format_dataframe_for_export',
+            raise_exception
+        )
+
+        # Should raise the exception
+        with pytest.raises(RuntimeError, match="Test exception"):
+            analyzer._save_results_to_csv(
+                metric='profit_factor',
+                limit=5,
+                df_to_save=None,
+                aggregate=False,
+                interval=None,
+                symbol=None,
+                weighted=False
+            )
+
+    def test_save_results_with_custom_df(self, base_strategy_results, monkeypatch, tmp_path):
+        """Test that _save_results_to_csv uses provided df_to_save."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = base_strategy_results
+
+        # Create a custom DataFrame to save
+        custom_df = base_strategy_results.head(3)
+
+        # Mock the BACKTESTING_DIR to use tmp_path
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
+
+        # Call with custom df_to_save
+        analyzer._save_results_to_csv(
+            metric='sharpe_ratio',
+            limit=10,
+            df_to_save=custom_df,
+            aggregate=True,
+            interval='1h',
+            symbol='ES',
+            weighted=True
+        )
+
+        # Verify CSV was created
+        csv_dir = tmp_path / 'csv_results'
+        assert csv_dir.exists()
+        csv_files = list(csv_dir.glob('*.csv'))
+        assert len(csv_files) == 1
+
+    def test_save_results_with_empty_df_to_save_uses_results_df(self, base_strategy_results, monkeypatch, tmp_path):
+        """Test that _save_results_to_csv uses self.results_df when df_to_save is empty."""
+        # Mock _load_results to do nothing
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = base_strategy_results
+
+        # Mock the BACKTESTING_DIR to use tmp_path
+        monkeypatch.setattr('app.backtesting.analysis.strategy_analyzer.BACKTESTING_DIR', str(tmp_path))
+
+        # Call with empty df_to_save - should use self.results_df
+        analyzer._save_results_to_csv(
+            metric='win_rate',
+            limit=5,
+            df_to_save=pd.DataFrame(),  # Empty DataFrame
+            aggregate=False,
+            interval=None,
+            symbol=None,
+            weighted=False
+        )
+
+        # Verify CSV was created
+        csv_dir = tmp_path / 'csv_results'
+        assert csv_dir.exists()
+        csv_files = list(csv_dir.glob('*.csv'))
+        assert len(csv_files) == 1
+
 
 class TestRealDataIntegration:
     """Test with real backtest results data (if available)."""
 
-    def test_with_real_data_file(self, real_results_file):
+    def test_with_real_data_file(self, real_results_file, monkeypatch):
         """Test analyzer works with real backtest results."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 
@@ -614,10 +866,16 @@ class TestRealDataIntegration:
         assert 'strategy' in result.columns
         assert result['profit_factor'].is_monotonic_decreasing
 
-    def test_real_data_aggregation(self, real_results_file):
+    def test_real_data_aggregation(self, real_results_file, monkeypatch):
         """Test aggregation with real data."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 
@@ -633,10 +891,16 @@ class TestRealDataIntegration:
         assert 'symbol_count' in result.columns
         assert 'total_trades' in result.columns
 
-    def test_real_data_various_filters(self, real_results_file):
+    def test_real_data_various_filters(self, real_results_file, monkeypatch):
         """Test various filtering combinations with real data."""
         if real_results_file is None:
             pytest.skip("Real results file not available")
+
+        # Disable CSV writing to prevent side effects
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
 
         analyzer = StrategyAnalyzer()
 

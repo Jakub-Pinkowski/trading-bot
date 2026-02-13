@@ -78,7 +78,8 @@ def validate_exchange_compatibility(symbols, exchange):
             exchange_incompatible_symbols.append((symbol, symbol_exchange))
 
     if exchange_incompatible_symbols:
-        incompatible_details = ', '.join([f'{sym} (requires {exch})' for sym, exch in exchange_incompatible_symbols])
+        incompatible_details = ', '.join([f'{symbol_name} (requires {exchange})' for
+                                          symbol_name, exchange in exchange_incompatible_symbols])
         logger.warning(f'Symbols with incompatible exchange will be skipped: {incompatible_details}')
 
     if not exchange_compatible_symbols:

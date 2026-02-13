@@ -68,18 +68,18 @@ def create_strategy(strategy_type, **params):
 
     Args:
         strategy_type: Type of strategy to create (e.g., 'bollinger', 'ema')
-        **params: Strategy parameters (strategy-specific + common params)
+        **params: Strategy parameters (strategy-specific and common params)
 
     Returns:
         Instantiated strategy object
 
     Raises:
-        ValueError: If strategy_type is unknown
+        ValueError: If strategy_type is unknown,
         KeyError: If required parameters are missing
     """
     strategy_key = strategy_type.lower()
 
-    # Check if strategy exists
+    # Check if a strategy exists
     if strategy_key not in STRATEGY_MAP:
         available = ', '.join(STRATEGY_MAP.keys())
         logger.error(f"Unknown strategy type: {strategy_type}. Available: {available}")
@@ -113,7 +113,7 @@ def create_strategy(strategy_type, **params):
 
 def get_strategy_name(strategy_type, **params):
     """
-    Get standardized name for a strategy.
+    Get a standardized name for a strategy.
 
     Args:
         strategy_type: Type of strategy
@@ -134,7 +134,7 @@ def get_strategy_name(strategy_type, **params):
 
 
 def get_available_strategies():
-    """Get list of all available strategy types."""
+    """Get a list of all available strategy types."""
     return sorted(STRATEGY_MAP.keys())
 
 

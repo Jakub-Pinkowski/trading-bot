@@ -6,8 +6,11 @@ Tests cover:
 - Switch dates mapping (mini/micro symbols)
 - Test combination generation
 - Test preparation and filtering
+- Verbose output for combo changes and skip messages
 - Parallel execution coordination
+- Intermediate result saving every 1000 tests
 - Cache statistics reporting
+- Cache save exception handling
 - Error handling and recovery
 - Result aggregation and saving
 - Integration scenarios
@@ -326,6 +329,51 @@ class TestPrepareTestCombinations:
         assert len(test_combos) == 1
         assert skipped == 0
 
+    def test_prepare_test_combinations_verbose_prints_combo_change(self, capsys):
+        """Test that verbose mode prints when month/symbol/interval combo changes."""
+        all_combinations = [
+            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
+            ('1!', 'ZS', '1h', 'EMA_9_21', MagicMock()),
+            ('1!', 'CL', '1h', 'RSI_14_30_70', MagicMock()),
+        ]
+        existing_data = (pd.DataFrame(), set())
+        switch_dates_by_symbol = {'ZS': [], 'CL': []}
+
+        _prepare_test_combinations(
+            all_combinations,
+            existing_data,
+            skip_existing=False,
+            verbose=True,
+            switch_dates_by_symbol=switch_dates_by_symbol
+        )
+
+        captured = capsys.readouterr()
+        # Should print for first combo and when symbol changes to CL
+        assert 'Preparing: Month=1!, Symbol=ZS, Interval=1h' in captured.out
+        assert 'Preparing: Month=1!, Symbol=CL, Interval=1h' in captured.out
+
+    def test_prepare_test_combinations_verbose_prints_skip_message(self, capsys):
+        """Test that verbose mode prints skip message when test is skipped."""
+        all_combinations = [
+            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
+        ]
+        existing_data = (pd.DataFrame(), set())
+        switch_dates_by_symbol = {'ZS': []}
+
+        with patch('app.backtesting.testing.orchestrator.check_test_exists') as mock_check:
+            mock_check.return_value = True
+
+            _prepare_test_combinations(
+                all_combinations,
+                existing_data,
+                skip_existing=True,
+                verbose=True,
+                switch_dates_by_symbol=switch_dates_by_symbol
+            )
+
+            captured = capsys.readouterr()
+            assert 'Skipping already run test: Month=1!, Symbol=ZS, Interval=1h, Strategy=RSI_14_30_70' in captured.out
+
     def test_prepare_test_combinations_with_filtering(self):
         """Test preparing combinations with filtering (skip_existing=True)."""
         all_combinations = [
@@ -616,6 +664,76 @@ class TestOrchestratorIntegration:
                 mock_as_completed.return_value = [mock_future]
 
                 # Should not raise, should handle gracefully
+                result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+
+                assert isinstance(result, list)
+
+    def test_orchestration_saves_intermediate_results_every_1000_tests(self):
+        """Test that intermediate results are saved every 1000 completed tests."""
+        tester = MagicMock()
+        tester.strategies = [('RSI_14_30_70', MagicMock())]
+        tester.tested_months = ['1!']
+        tester.symbols = ['ZS']
+        tester.intervals = ['1h']
+        tester.switch_dates_dict = {'ZS': []}
+        tester.results = []
+
+        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
+                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
+                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
+                patch('app.backtesting.testing.orchestrator.save_results') as mock_save, \
+                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
+            mock_load.return_value = (pd.DataFrame(), set())
+
+            # Create 1000 futures that return results
+            futures = []
+            for i in range(1000):
+                mock_future = MagicMock()
+                mock_future.result.return_value = {'test': f'result_{i}'}
+                futures.append(mock_future)
+
+            mock_executor_instance = MagicMock()
+            mock_executor_instance.submit.side_effect = futures
+            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
+                mock_as_completed.return_value = futures
+
+                run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+
+                # Should call save_results for intermediate save at 1000 tests
+                assert mock_save.call_count >= 1
+
+    def test_orchestration_cache_save_exception_handling(self):
+        """Test that cache save exceptions are handled gracefully."""
+        tester = MagicMock()
+        tester.strategies = [('RSI_14_30_70', MagicMock())]
+        tester.tested_months = ['1!']
+        tester.symbols = ['ZS']
+        tester.intervals = ['1h']
+        tester.switch_dates_dict = {'ZS': []}
+        tester.results = []
+
+        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
+                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
+                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
+                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
+            mock_load.return_value = (pd.DataFrame(), set())
+
+            # Make cache save raise exception
+            mock_ind.save_cache.side_effect = Exception("Cache save failed")
+
+            mock_future = MagicMock()
+            mock_future.result.return_value = {'test': 'result'}
+
+            mock_executor_instance = MagicMock()
+            mock_executor_instance.submit.return_value = mock_future
+            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
+                mock_as_completed.return_value = [mock_future]
+
+                # Should not raise, should handle exception gracefully
                 result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
                 assert isinstance(result, list)

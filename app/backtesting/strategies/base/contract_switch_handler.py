@@ -26,7 +26,7 @@ class ContractSwitchHandler:
         Args:
             switch_dates: List of contract rollover dates (datetime objects)
             rollover: If True, reopen positions on new contracts after closing.
-                     If False, simply close positions at contract expiration
+                     If False, close positions at contract expiration
         """
         self.switch_dates = switch_dates
         self.rollover = rollover
@@ -76,7 +76,7 @@ class ContractSwitchHandler:
                     self.must_reopen = prev_position
                     self.skip_signal_this_bar = True
 
-            # Move to next switch date
+            # Move to the next switch date
             self.next_switch_idx += 1
             self.next_switch = self.switch_dates[self.next_switch_idx] if self.next_switch_idx < len(
                 self.switch_dates
