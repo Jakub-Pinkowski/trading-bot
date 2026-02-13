@@ -154,7 +154,7 @@ trading-bot/
 │   ├── dependabot.yml                            # Dependency updates configuration
 │   └── prompts/                                  # Documentation and summaries
 ├── .gitignore                                    # Files to ignore
-├── analyze.py                                    # Run analysis
+├── DEPRECATED_analyze.py                                    # Run analysis
 ├── analyze_strategies.py                         # Analyze strategies
 ├── config.py                                     # App configuration
 ├── fetch_data.py                                 # Fetch TradingView historical data

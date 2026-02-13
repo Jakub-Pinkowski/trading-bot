@@ -62,7 +62,7 @@ This will start a Flask server on the specified port, which will:
 To run analysis on the collected data:
 
 ```bash
-python analyze.py
+python DEPRECATED_analyze.py
 ```
 
 This will:
