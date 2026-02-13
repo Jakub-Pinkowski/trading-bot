@@ -73,12 +73,9 @@ class TestPackageImports:
 
     def test_direct_import_works(self):
         """Test that direct imports from package work."""
-        from futures_config import SYMBOL_SPECS as specs
-        from futures_config import map_tv_to_ibkr as mapper
-
-        assert specs is not None
-        assert mapper is not None
-        assert callable(mapper)
+        assert SYMBOL_SPECS is not None
+        assert map_tv_to_ibkr is not None
+        assert callable(map_tv_to_ibkr)
 
 
 class TestCrossModuleIntegration:
