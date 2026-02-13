@@ -25,15 +25,11 @@ SYMBOL_SPECS = {
            'tv_compatible': True},  # Soybean Meal
     # Grains - Mini
     'XC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 1000, 'tick_size': 0.125, 'margin': 323.594,
-           'tv_compatible': True},  # Mini Corn
+           'tv_compatible': True},  # Mini Corn (TradingView symbol, maps to YC in IBKR)
     'XW': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 1000, 'tick_size': 0.125, 'margin': 490.712,
-           'tv_compatible': True},  # Mini Wheat
+           'tv_compatible': True},  # Mini Wheat (TradingView symbol, maps to YW in IBKR)
     'XK': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 1000, 'tick_size': 0.125, 'margin': 675.576,
-           'tv_compatible': True},  # Mini Soybeans
-    'YC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': None, 'tick_size': 0.125, 'margin': None,
-           'tv_compatible': False},  # Mini Corn (e-Corn)
-    'QC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': None, 'tick_size': 0.125, 'margin': None,
-           'tv_compatible': False},  # Mini-sized Corn
+           'tv_compatible': True},  # Mini Soybeans (TradingView symbol, maps to YK in IBKR)
     # Grains - Micro
     'MZC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 500, 'tick_size': 0.50, 'margin': 163.047,
             'tv_compatible': True},  # Micro Corn
@@ -77,9 +73,9 @@ SYMBOL_SPECS = {
             'tv_compatible': False},  # Mini Platinum
     # Metals - Micro
     'MGC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 10, 'tick_size': 0.10, 'margin': 3760.60,
-            'tv_compatible': False},  # Micro Gold
+            'tv_compatible': True},  # Micro Gold
     'SIL': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 1000, 'tick_size': 0.005, 'margin': 14892.19,
-            'tv_compatible': False},  # Micro Silver
+            'tv_compatible': True},  # Micro Silver (TradingView symbol, maps to QI in IBKR)
     'MHG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 2500, 'tick_size': 0.0005, 'margin': 1878.61,
             'tv_compatible': False},  # Micro Copper
 
@@ -140,6 +136,59 @@ SYMBOL_SPECS = {
 }
 
 DEFAULT_TICK_SIZE = 0.01
+
+# ==================== Symbol Mapping ====================
+
+# TradingView to IBKR symbol mapping
+# TradingView symbols are the source of truth - only map to IBKR when placing orders
+TV_TO_IBKR_MAPPING = {
+    'XC': 'YC',  # Mini Corn
+    'XK': 'YK',  # Mini Soybeans
+    'XW': 'YW',  # Mini Wheat
+    'SIL': 'QI',  # Micro Silver
+}
+
+# IBKR to TradingView symbol mapping (reverse)
+# Used when receiving position data from IBKR
+IBKR_TO_TV_MAPPING = {
+    'YC': 'XC',  # Mini Corn
+    'YK': 'XK',  # Mini Soybeans
+    'YW': 'XW',  # Mini Wheat
+    'QI': 'SIL',  # Micro Silver
+}
+
+
+def map_tv_to_ibkr(symbol):
+    """
+    Map TradingView symbol to IBKR symbol for order placement.
+
+    TradingView symbols are the source of truth. This function should only
+    be called when communicating with IBKR API for order placement.
+
+    Args:
+        symbol: TradingView symbol (e.g., 'XC', 'XK', 'XW', 'SIL')
+
+    Returns:
+        IBKR symbol (e.g., 'YC', 'YK', 'YW', 'QI') or original symbol if no mapping exists
+    """
+    return TV_TO_IBKR_MAPPING.get(symbol, symbol)
+
+
+def map_ibkr_to_tv(symbol):
+    """
+    Map IBKR symbol to TradingView symbol for position tracking.
+
+    Used when receiving position or trade data from IBKR that needs to be
+    matched with TradingView alerts or data.
+
+    Args:
+        symbol: IBKR symbol (e.g., 'YC', 'YK', 'YW', 'QI')
+
+    Returns:
+        TradingView symbol (e.g., 'XC', 'XK', 'XW', 'SIL') or original symbol if no mapping exists
+    """
+    return IBKR_TO_TV_MAPPING.get(symbol, symbol)
+
 
 # ==================== Auto-generated Category Lists ====================
 # All category lists are auto-generated from SYMBOL_SPECS - only TradingView-compatible symbols
