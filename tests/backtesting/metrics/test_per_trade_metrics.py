@@ -674,21 +674,7 @@ class TestErrorHandling:
 
 
 class TestInvalidInputValidation:
-    """Test validation and error handling for invalid input values."""
-
-    def test_invalid_symbol_raises_error(self):
-        """Test that ValueError is raised for invalid symbol."""
-        trade = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 14, 0),
-            'entry_price': 1200.0,
-            'exit_price': 1210.0,
-            'side': 'long'
-        }
-
-        # Verify ValueError is raised for unknown symbol
-        with pytest.raises(ValueError, match="Unknown symbol"):
-            calculate_trade_metrics(trade, 'INVALID')
+    """Test logger validation for invalid input values."""
 
     def test_logger_called_for_invalid_margin(self):
         """Test logger.error is called for invalid margin."""

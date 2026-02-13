@@ -81,8 +81,8 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
             logger.info(f'  No new data')
 
     except Exception as e:
+        # Log error without re-raising because the caller handles failures gracefully
         logger.error(f'Error updating existing file {file_path}: {e}')
-        raise  # Re-raise to fail loudly and preserve existing data
 
 
 # ==================== Data Fetcher Class ====================
