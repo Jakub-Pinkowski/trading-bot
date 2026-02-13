@@ -723,3 +723,404 @@ class TestIntegrationScenarios:
                         # Verify data was updated
                         combined = pd.read_parquet(file_path)
                         assert len(combined) == 100  # 50 old + 50 new
+
+
+class TestParametrizedScenarios:
+    """Test various scenarios using parametrize for comprehensive coverage."""
+
+    @pytest.mark.parametrize("symbols,suffix,exchange", [
+        (['ZS'], '1!', 'CBOT'),
+        (['ZS', 'ZC'], '1!', 'CBOT'),
+        (['CL', 'NG'], '1!', 'NYMEX'),
+        (['GC'], '1!', 'COMEX'),
+        (['YM'], '2!', 'CBOT'),
+    ])
+    def test_initialization_with_various_combinations(self, symbols, suffix, exchange, mock_tv_client):
+        """Test initialization with various symbol/exchange combinations."""
+        fetcher = DataFetcher(symbols=symbols, contract_suffix=suffix, exchange=exchange)
+
+        assert fetcher.contract_suffix == suffix
+        assert fetcher.exchange == exchange
+        assert len(fetcher.symbols) > 0
+
+    @pytest.mark.parametrize("interval", ['5m', '15m', '30m', '1h', '2h', '4h', '1d'])
+    def test_all_intervals_accepted(self, interval, mock_tv_client):
+        """Test that all supported intervals are accepted."""
+        fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+
+        with patch.object(fetcher, '_fetch_symbol_data'):
+            # Should not raise error
+            fetcher.fetch_all_data([interval])
+
+    @pytest.mark.parametrize("data_periods", [10, 50, 100, 500, 1000])
+    def test_save_different_data_sizes(self, data_periods, temp_data_dir):
+        """Test saving data of different sizes."""
+        dates = pd.date_range('2024-01-01', periods=data_periods, freq='h')
+        data = pd.DataFrame({
+            'open': range(data_periods),
+            'high': range(data_periods),
+            'low': range(data_periods),
+            'close': range(data_periods),
+            'volume': range(data_periods)
+        }, index=dates)
+
+        file_path = temp_data_dir / 'test.parquet'
+
+        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.logger'):
+                _save_new_data(data, str(file_path), '1h', 'ZS1!')
+
+                loaded = pd.read_parquet(file_path)
+                assert len(loaded) == data_periods
+
+    @pytest.mark.parametrize("contract_suffix", ['1!', '2!', '3!'])
+    def test_different_contract_suffixes(self, contract_suffix, mock_tv_client):
+        """Test fetcher works with different contract suffixes."""
+        fetcher = DataFetcher(
+            symbols=['ZS'],
+            contract_suffix=contract_suffix,
+            exchange='CBOT'
+        )
+
+        assert fetcher.contract_suffix == contract_suffix
+
+
+class TestPerformanceAndStress:
+    """Test performance with large datasets and stress scenarios."""
+
+    def test_large_dataset_processing(self, mock_tv_client, temp_data_dir):
+        """Test processing large dataset (10,000 rows)."""
+        # Create large dataset
+        dates = pd.date_range('2020-01-01', periods=10000, freq='h')
+        large_data = pd.DataFrame({
+            'open': [100.0 + i * 0.01 for i in range(10000)],
+            'high': [105.0 + i * 0.01 for i in range(10000)],
+            'low': [99.0 + i * 0.01 for i in range(10000)],
+            'close': [103.0 + i * 0.01 for i in range(10000)],
+            'volume': [1000 + i for i in range(10000)]
+        }, index=dates)
+
+        fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+        mock_tv_client.get_hist.return_value = large_data
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['1h'])
+
+                        # Verify file created successfully
+                        file_path = temp_data_dir / '1!' / 'ZS' / 'ZS_1h.parquet'
+                        assert file_path.exists()
+
+                        loaded = pd.read_parquet(file_path)
+                        assert len(loaded) == 10000
+
+    def test_multiple_updates_performance(self, old_data_2020, temp_data_dir):
+        """Test performance with multiple sequential updates."""
+        file_path = temp_data_dir / 'test.parquet'
+        old_data_2020.to_parquet(file_path)
+
+        # Perform 10 updates
+        for i in range(10):
+            dates = pd.date_range(f'2024-{i + 1:02d}-01', periods=10, freq='h')
+            new_data = pd.DataFrame({
+                'open': [110.0] * 10,
+                'high': [115.0] * 10,
+                'low': [109.0] * 10,
+                'close': [113.0] * 10,
+                'volume': [1500] * 10
+            }, index=dates)
+
+            with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.logger'):
+                    _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+
+        # Verify all updates succeeded
+        final_data = pd.read_parquet(file_path)
+        assert len(final_data) >= 50  # Original 50 + new data
+
+    def test_many_symbols_initialization(self, mock_tv_client):
+        """Test initialization with many symbols."""
+        # Create list of 50 valid symbols
+        symbols = ['ZS', 'ZC', 'ZW', 'CL', 'NG'] * 10
+
+        fetcher = DataFetcher(symbols=symbols, contract_suffix='1!', exchange='CBOT')
+
+        # Should filter to only CBOT symbols
+        assert len(fetcher.symbols) > 0
+
+    def test_massive_duplicate_removal(self, temp_data_dir):
+        """Test duplicate removal with heavily overlapping data."""
+        # Create base data
+        dates = pd.date_range('2024-01-01', periods=1000, freq='h')
+        old_data = pd.DataFrame({
+            'close': [100.0] * 1000
+        }, index=dates)
+
+        # Create 90% overlapping new data (900 overlap + 100 new = 1000 total new rows)
+        overlap_dates = dates[100:]  # Overlap last 900 rows
+        new_dates = pd.date_range('2024-02-12', periods=100, freq='h')
+        all_new_dates = overlap_dates.append(new_dates)
+
+        new_data = pd.DataFrame({
+            'close': [200.0] * len(all_new_dates)
+        }, index=all_new_dates)
+
+        file_path = temp_data_dir / 'test.parquet'
+        old_data.to_parquet(file_path)
+
+        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.logger'):
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+
+                result = pd.read_parquet(file_path)
+
+                # Should have 100 unique old + 900 replaced + 100 new = 1100 total
+                assert len(result) == 1100
+
+                # Verify duplicates were removed (new data takes precedence)
+                overlapping_values = result.loc[overlap_dates, 'close']
+                assert all(overlapping_values == 200.0)
+
+    def test_stress_year_filtering(self, mock_tv_client, temp_data_dir):
+        """Test year filtering with large dataset spanning many years."""
+        # Create data from 2015-2025 (10 years)
+        dates = pd.date_range('2015-01-01', periods=87600, freq='h')  # 10 years
+        large_data = pd.DataFrame({
+            'open': [100.0] * len(dates),
+            'high': [105.0] * len(dates),
+            'low': [99.0] * len(dates),
+            'close': [103.0] * len(dates),
+            'volume': [1000] * len(dates)
+        }, index=dates)
+
+        fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+        mock_tv_client.get_hist.return_value = large_data
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['1h'])
+
+                        file_path = temp_data_dir / '1!' / 'ZS' / 'ZS_1h.parquet'
+                        loaded = pd.read_parquet(file_path)
+
+                        # Should only have data from 2020 onwards
+                        assert loaded.index.min().year >= DATA_START_YEAR
+
+
+class TestRealDataIntegration:
+    """Test with realistic data scenarios and edge cases."""
+
+    def test_realistic_tradingview_response_format(self, mock_tv_client, temp_data_dir):
+        """Test with data format matching actual TradingView responses."""
+        # Simulate real TradingView data with symbol column
+        dates = pd.date_range('2024-01-01', periods=200, freq='h')
+        tv_data = pd.DataFrame({
+            'symbol': ['CBOT:ZS1!'] * 200,
+            'open': [1200.0 + i * 0.5 for i in range(200)],
+            'high': [1205.0 + i * 0.5 for i in range(200)],
+            'low': [1195.0 + i * 0.5 for i in range(200)],
+            'close': [1202.0 + i * 0.5 for i in range(200)],
+            'volume': [10000 + i * 100 for i in range(200)]
+        }, index=dates)
+
+        fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+        mock_tv_client.get_hist.return_value = tv_data
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['1h'])
+
+                        file_path = temp_data_dir / '1!' / 'ZS' / 'ZS_1h.parquet'
+                        assert file_path.exists()
+
+    def test_market_hours_data_with_gaps(self, mock_tv_client, temp_data_dir):
+        """Test handling data with typical market hours gaps."""
+        # Create data mimicking market hours (9AM-5PM)
+        dates = []
+        for day in range(20):  # 20 trading days
+            start = pd.Timestamp('2024-01-01') + pd.Timedelta(days=day)
+            if start.weekday() < 5:  # Monday-Friday only
+                daily_hours = pd.date_range(start + pd.Timedelta(hours=9), periods=8, freq='h')
+                dates.extend(daily_hours.to_list())
+
+        market_data = pd.DataFrame({
+            'open': [100.0] * len(dates),
+            'high': [105.0] * len(dates),
+            'low': [99.0] * len(dates),
+            'close': [103.0] * len(dates),
+            'volume': [1000] * len(dates)
+        }, index=pd.DatetimeIndex(dates))
+
+        fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+        mock_tv_client.get_hist.return_value = market_data
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['1h'])
+
+                        file_path = temp_data_dir / '1!' / 'ZS' / 'ZS_1h.parquet'
+                        loaded = pd.read_parquet(file_path)
+                        assert len(loaded) > 0
+
+    def test_different_contract_months(self, mock_tv_client, temp_data_dir):
+        """Test fetching different contract months (1!, 2!, 3!)."""
+        sample_data = pd.DataFrame({
+            'open': [100.0] * 50,
+            'high': [105.0] * 50,
+            'low': [99.0] * 50,
+            'close': [103.0] * 50,
+            'volume': [1000] * 50
+        }, index=pd.date_range('2024-01-01', periods=50, freq='h'))
+
+        mock_tv_client.get_hist.return_value = sample_data
+
+        for suffix in ['1!', '2!', '3!']:
+            with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+                fetcher = DataFetcher(
+                    symbols=['ZS'],
+                    contract_suffix=suffix,
+                    exchange='CBOT'
+                )
+
+                with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                    with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            fetcher.fetch_all_data(['1h'])
+
+                            file_path = temp_data_dir / suffix / 'ZS' / 'ZS_1h.parquet'
+                            assert file_path.exists()
+
+    def test_micro_contracts_fetching(self, mock_tv_client, temp_data_dir):
+        """Test fetching micro contract data."""
+        sample_data = pd.DataFrame({
+            'open': [100.0] * 50,
+            'high': [105.0] * 50,
+            'low': [99.0] * 50,
+            'close': [103.0] * 50,
+            'volume': [500] * 50  # Lower volume for micro contracts
+        }, index=pd.date_range('2024-01-01', periods=50, freq='h'))
+
+        mock_tv_client.get_hist.return_value = sample_data
+
+        # Test micro grain contracts
+        micro_symbols = ['MZC', 'MZW', 'MZS']
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=micro_symbols,
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['1h'])
+
+                        # Verify files created for each micro contract
+                        for symbol in micro_symbols:
+                            if symbol in fetcher.symbols:
+                                file_path = temp_data_dir / '1!' / symbol / f'{symbol}_1h.parquet'
+                                assert file_path.exists()
+
+    def test_mixed_timeframe_fetch(self, mock_tv_client, temp_data_dir):
+        """Test fetching multiple timeframes simultaneously."""
+        # Different sized datasets for different timeframes
+        data_5m = pd.DataFrame({
+            'open': [100.0] * 288,  # 1 day of 5-min bars
+            'high': [105.0] * 288,
+            'low': [99.0] * 288,
+            'close': [103.0] * 288,
+            'volume': [1000] * 288
+        }, index=pd.date_range('2024-01-01', periods=288, freq='5min'))
+
+        data_1h = pd.DataFrame({
+            'open': [100.0] * 24,  # 1 day of hourly bars
+            'high': [105.0] * 24,
+            'low': [99.0] * 24,
+            'close': [103.0] * 24,
+            'volume': [1000] * 24
+        }, index=pd.date_range('2024-01-01', periods=24, freq='h'))
+
+        data_1d = pd.DataFrame({
+            'open': [100.0] * 30,  # 1 month of daily bars
+            'high': [105.0] * 30,
+            'low': [99.0] * 30,
+            'close': [103.0] * 30,
+            'volume': [1000] * 30
+        }, index=pd.date_range('2024-01-01', periods=30, freq='D'))
+
+        # Mock to return different data based on interval
+        def mock_get_hist(*args, **kwargs):
+            interval = kwargs.get('interval')
+            if interval == Interval.in_5_minute:
+                return data_5m
+            elif interval == Interval.in_1_hour:
+                return data_1h
+            elif interval == Interval.in_daily:
+                return data_1d
+            return None
+
+        mock_tv_client.get_hist.side_effect = mock_get_hist
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        fetcher.fetch_all_data(['5m', '1h', '1d'])
+
+                        # Verify all files created
+                        file_5m = temp_data_dir / '1!' / 'ZS' / 'ZS_5m.parquet'
+                        file_1h = temp_data_dir / '1!' / 'ZS' / 'ZS_1h.parquet'
+                        file_1d = temp_data_dir / '1!' / 'ZS' / 'ZS_1d.parquet'
+
+                        assert file_5m.exists()
+                        assert file_1h.exists()
+                        assert file_1d.exists()
+
+    def test_error_recovery_continues_fetching(self, mock_tv_client, temp_data_dir):
+        """Test that errors in one symbol don't stop others."""
+        good_data = pd.DataFrame({
+            'open': [100.0] * 50,
+            'high': [105.0] * 50,
+            'low': [99.0] * 50,
+            'close': [103.0] * 50,
+            'volume': [1000] * 50
+        }, index=pd.date_range('2024-01-01', periods=50, freq='h'))
+
+        call_count = [0]
+
+        def mock_get_hist_with_error(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise Exception("API Error for first symbol")
+            return good_data
+
+        mock_tv_client.get_hist.side_effect = mock_get_hist_with_error
+
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS', 'ZC'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.logger'):
+                        # Should not raise, continues to next symbol
+                        fetcher.fetch_all_data(['1h'])
+
+                        # Second symbol should have succeeded
+                        zc_file = temp_data_dir / '1!' / 'ZC' / 'ZC_1h.parquet'
+                        assert zc_file.exists()
