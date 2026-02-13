@@ -1140,7 +1140,6 @@ Note: RSI values are illustrative. Actual RSI calculation requires previous bars
 ```
 app/backtesting/
 ├── __init__.py                    # Main module exports
-├── strategy_factory.py            # Strategy creation and validation
 ├── testing/
 │   ├── __init__.py
 │   ├── mass_tester.py            # Main orchestration
@@ -1153,6 +1152,7 @@ app/backtesting/
 │       └── test_preparation.py      # Test setup utilities
 ├── strategies/
 │   ├── __init__.py
+│   ├── strategy_factory.py       # Strategy creation and validation
 │   ├── base/
 │   │   ├── __init__.py
 │   │   ├── base_strategy.py      # Base class with trade extraction
@@ -1228,7 +1228,7 @@ MAX_AGE = 604800  # 7 days
 
 ## Error Handling
 
-1. **Parameter Validation**: In strategy_factory
+1. **Parameter Validation**: In strategies/strategy_factory
 2. **DataFrame Validation**: Before strategy execution
 3. **Metrics Validation**: After calculation
 4. **Type Validation**: Before saving to parquet
