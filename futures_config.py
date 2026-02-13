@@ -152,19 +152,6 @@ CRYPTO = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Crypto'
 INDEX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Index' and v['tv_compatible']])
 FOREX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Forex' and v['tv_compatible']])
 
-# ==================== Auto-generated Mappings ====================
-# All mappings are auto-generated from SYMBOL_SPECS - single source of truth
-
-# Category and exchange mappings
-SYMBOL_CATEGORY_MAP = {symbol: specs['category'] for symbol, specs in SYMBOL_SPECS.items()}
-SYMBOL_EXCHANGE_MAP = {symbol: specs['exchange'] for symbol, specs in SYMBOL_SPECS.items()}
-
-# Build CATEGORY_EXCHANGE_MAP from SYMBOL_SPECS (for reference)
-CATEGORY_EXCHANGE_MAP = {}
-for symbol, specs in SYMBOL_SPECS.items():
-    if specs['category'] not in CATEGORY_EXCHANGE_MAP:
-        CATEGORY_EXCHANGE_MAP[specs['category']] = specs['exchange']
-
 
 # ==================== Helper Functions ====================
 
