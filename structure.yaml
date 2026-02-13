@@ -20,6 +20,10 @@ trading-bot/
 │   │   │   ├── cache_base.py                     # Base cache class
 │   │   │   ├── dataframe_cache.py                # Dataframe caching
 │   │   │   └── indicators_cache.py               # Indicator caching
+│   │   ├── fetching/                             # Historical data fetching from TradingView
+│   │   │   ├── __init__.py
+│   │   │   ├── data_fetcher.py                   # DataFetcher class for fetching historical data
+│   │   │   └── validators.py                     # Validation functions for data quality
 │   │   ├── indicators/                           # Technical indicators for backtesting
 │   │   │   ├── __init__.py
 │   │   │   ├── atr.py                            # Average True Range indicator
@@ -143,13 +147,14 @@ trading-bot/
 ├── analyze.py                                    # Run analysis
 ├── analyze_strategies.py                         # Analyze strategies
 ├── config.py                                     # App configuration
+├── fetch_data.py                                 # Fetch TradingView historical data
+├── futures_config.py                             # Futures symbols configuration and utilities
 ├── mass_backtest.py                              # Run mass backtesting
 ├── README.md                                     # Project overview
 ├── requirements.txt                              # Dependencies
 ├── run.py                                        # App startup script
 ├── structure.yaml                                # App's structure
-├── pytest.ini                                    # Pytest configuration
-└── tw_fetching.py                                # TradingView data fetching
+└── pytest.ini                                    # Pytest configuration
 
 # Backtesting
 # NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
