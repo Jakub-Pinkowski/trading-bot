@@ -1,16 +1,25 @@
 """
-Futures Symbols Configuration.
+Futures Symbol Specifications.
 
-This module contains configuration for all tradable futures symbols,
-organized by category with their respective exchanges.
+Single source of truth for all futures contract specifications.
+TradingView symbols are used as the primary identifiers.
+
+Format: symbol: {
+    'category': str,
+    'exchange': str,
+    'multiplier': int/float | None,
+    'tick_size': float | None,
+    'margin': float | None,
+    'tv_compatible': bool
+}
+
+Note: None indicates that a contract specification value is intentionally unspecified or not yet configured.
+
+Organization:
+- Order: Grains, Softs, Energy, Metals, Crypto, Index, Forex
+- Within each category: Normal, Mini, Micro
 """
 
-# ==================== Futures Specifications ====================
-
-# Single source of truth for all futures contract specifications
-# Format: symbol: {'category': str, 'exchange': str, 'multiplier': int/float, 'tick_size': float, 'margin': float, 'tv_compatible': bool}
-# Order: Grains, Softs, Energy, Metals, Crypto, Index, Forex
-# Within each category: Normal, Mini, Micro
 SYMBOL_SPECS = {
     # Grains - Normal
     'ZC': {'category': 'Grains', 'exchange': 'CBOT', 'multiplier': 50, 'tick_size': 0.25, 'margin': 1617.97,
@@ -135,196 +144,5 @@ SYMBOL_SPECS = {
             'tv_compatible': False},  # Micro British Pound
 }
 
+# Default tick size used as fallback when symbol is unknown or tick_size is None
 DEFAULT_TICK_SIZE = 0.01
-
-# ==================== Symbol Mapping ====================
-
-# TradingView to IBKR symbol mapping
-# TradingView symbols are the source of truth - only map to IBKR when placing orders
-TV_TO_IBKR_MAPPING = {
-    'XC': 'YC',  # Mini Corn
-    'XK': 'YK',  # Mini Soybeans
-    'XW': 'YW',  # Mini Wheat
-    'SIL': 'QI',  # Micro Silver
-}
-
-# IBKR to TradingView symbol mapping (reverse)
-# Used when receiving position data from IBKR
-IBKR_TO_TV_MAPPING = {
-    'YC': 'XC',  # Mini Corn
-    'YK': 'XK',  # Mini Soybeans
-    'YW': 'XW',  # Mini Wheat
-    'QI': 'SIL',  # Micro Silver
-}
-
-
-def map_tv_to_ibkr(symbol):
-    """
-    Map TradingView symbol to IBKR symbol for order placement.
-
-    TradingView symbols are the source of truth. This function should only
-    be called when communicating with IBKR API for order placement.
-
-    Args:
-        symbol: TradingView symbol (e.g., 'XC', 'XK', 'XW', 'SIL')
-
-    Returns:
-        IBKR symbol (e.g., 'YC', 'YK', 'YW', 'QI') or original symbol if no mapping exists
-    """
-    return TV_TO_IBKR_MAPPING.get(symbol, symbol)
-
-
-def map_ibkr_to_tv(symbol):
-    """
-    Map IBKR symbol to TradingView symbol for position tracking.
-
-    Used when receiving position or trade data from IBKR that needs to be
-    matched with TradingView alerts or data.
-
-    Args:
-        symbol: IBKR symbol (e.g., 'YC', 'YK', 'YW', 'QI')
-
-    Returns:
-        TradingView symbol (e.g., 'XC', 'XK', 'XW', 'SIL') or original symbol if no mapping exists
-    """
-    return IBKR_TO_TV_MAPPING.get(symbol, symbol)
-
-
-# ==================== Auto-generated Category Lists ====================
-# All category lists are auto-generated from SYMBOL_SPECS - only TradingView-compatible symbols
-
-GRAINS = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Grains' and v['tv_compatible']])
-SOFTS = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Softs' and v['tv_compatible']])
-ENERGY = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Energy' and v['tv_compatible']])
-METALS = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Metals' and v['tv_compatible']])
-CRYPTO = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Crypto' and v['tv_compatible']])
-INDEX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Index' and v['tv_compatible']])
-FOREX = sorted([k for k, v in SYMBOL_SPECS.items() if v['category'] == 'Forex' and v['tv_compatible']])
-
-# Dictionary mapping category names to their symbol lists for dynamic access
-CATEGORIES = {
-    'Grains': GRAINS,
-    'Softs': SOFTS,
-    'Energy': ENERGY,
-    'Metals': METALS,
-    'Crypto': CRYPTO,
-    'Index': INDEX,
-    'Forex': FOREX,
-}
-
-
-# ==================== Helper Functions ====================
-
-def get_exchange_for_symbol(symbol):
-    """
-    Get the exchange for a given symbol.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Exchange name (e.g., 'CBOT', 'NYMEX', 'COMEX')
-
-    Raises:
-        ValueError: If symbol is not recognized
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['exchange']
-
-
-def get_category_for_symbol(symbol):
-    """
-    Get the category for a given symbol.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Category name (e.g., 'Grains', 'Energy', 'Metals')
-
-    Raises:
-        ValueError: If symbol is not recognized
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['category']
-
-
-def get_tick_size(symbol):
-    """
-    Get the tick size for a given symbol.
-
-    Returns the configured tick size for known symbols. If the symbol is
-    unknown or its tick_size is not configured (None), this function
-    falls back to DEFAULT_TICK_SIZE as a defensive default so callers
-    that rely on a numeric tick size can continue to operate. Callers that
-    need to distinguish unknown symbols should validate with
-    get_exchange_for_symbol() or check SYMBOL_SPECS directly before
-    calling this helper.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Tick size as float. Returns DEFAULT_TICK_SIZE when the symbol is
-        unknown or when no tick_size is configured in SYMBOL_SPECS.
-    """
-    if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
-        return SYMBOL_SPECS[symbol]['tick_size']
-    # Fallback to DEFAULT_TICK_SIZE for unknown symbols or unset tick sizes
-    return DEFAULT_TICK_SIZE
-
-
-def get_contract_multiplier(symbol):
-    """
-    Get the contract multiplier for a given symbol.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Contract multiplier (int/float) or None if not available
-
-    Raises:
-        ValueError: If symbol is not recognized
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['multiplier']
-
-
-def get_margin_requirement(symbol):
-    """
-    Get the margin requirement for a given symbol.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Margin requirement (float) or None if not available
-
-    Raises:
-        ValueError: If symbol is not recognized
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['margin']
-
-
-def is_tradingview_compatible(symbol):
-    """
-    Check if a symbol is TradingView-compatible.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Boolean indicating TradingView compatibility
-
-    Raises:
-        ValueError: If symbol is not recognized
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['tv_compatible']
