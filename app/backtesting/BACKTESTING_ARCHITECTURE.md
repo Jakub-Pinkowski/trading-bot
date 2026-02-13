@@ -1140,10 +1140,10 @@ Note: RSI values are illustrative. Actual RSI calculation requires previous bars
 ```
 app/backtesting/
 ├── mass_testing.py                # Main orchestration
-├── strategy_factory.py            # Strategy creation and validation
 ├── per_trade_metrics.py           # Individual trade calculations
 ├── summary_metrics.py             # Aggregate statistics
 ├── strategies/
+│   ├── strategy_factory.py       # Strategy creation and validation
 │   ├── base_strategy.py          # Base class with trade extraction
 │   ├── rsi.py                    # RSI strategy implementation
 │   ├── ema.py                    # EMA crossover strategy

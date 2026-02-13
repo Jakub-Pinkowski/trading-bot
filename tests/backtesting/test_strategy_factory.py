@@ -18,7 +18,7 @@ from app.backtesting.strategies.ema import EMACrossoverStrategy
 from app.backtesting.strategies.ichimoku_cloud import IchimokuCloudStrategy
 from app.backtesting.strategies.macd import MACDStrategy
 from app.backtesting.strategies.rsi import RSIStrategy
-from app.backtesting.strategy_factory import (
+from app.backtesting.strategies.strategy_factory import (
     create_strategy,
     get_strategy_name,
     get_available_strategies,
@@ -701,7 +701,7 @@ class TestWarningSystem:
 
     def test_warnings_disabled_skips_logging(self):
         """Test _log_warnings_enabled=False causes early return (line 172)."""
-        import app.backtesting.strategy_factory as factory_module
+        import app.backtesting.strategies.strategy_factory as factory_module
 
         # Save original value
         original_enabled = factory_module._log_warnings_enabled
@@ -724,7 +724,7 @@ class TestWarningSystem:
 
     def test_warnings_enabled_logs_messages(self):
         """Test warnings are logged when enabled."""
-        import app.backtesting.strategy_factory as factory_module
+        import app.backtesting.strategies.strategy_factory as factory_module
 
         # Save original value
         original_enabled = factory_module._log_warnings_enabled

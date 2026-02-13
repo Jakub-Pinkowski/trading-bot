@@ -2,7 +2,7 @@ import itertools
 
 import yaml
 
-from app.backtesting.strategy_factory import create_strategy, get_strategy_name
+from app.backtesting.strategies.strategy_factory import create_strategy, get_strategy_name
 from app.backtesting.testing.orchestrator import run_tests as orchestrator_run_tests
 from app.utils.logger import get_logger
 from config import SWITCH_DATES_FILE_PATH
