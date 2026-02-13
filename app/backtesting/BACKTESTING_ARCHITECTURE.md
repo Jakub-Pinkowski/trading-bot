@@ -1205,7 +1205,7 @@ app/backtesting/
 ## Configuration Constants
 
 ```python
-# In testing/utils/test_preparation.py
+# In testing/utils/dataframe_validators.py
 MIN_ROWS_FOR_BACKTEST = 150  # Minimum DataFrame rows
 
 # In strategies/base/base_strategy.py
