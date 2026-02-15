@@ -365,7 +365,7 @@ class TestDetectGaps:
         # Create data with a 7-day gap (larger than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-08', periods=10, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 20
@@ -396,7 +396,7 @@ class TestDetectGaps:
         # Create data with a 2-day gap (smaller than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-03', periods=10, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 20
@@ -417,7 +417,7 @@ class TestDetectGaps:
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-10', periods=5, freq='h')
         dates3 = pd.date_range('2024-01-20', periods=5, freq='h')
-        dates = dates1.append(dates2).append(dates3)
+        dates = dates1.union(dates2).union(dates3)
 
         data = pd.DataFrame({
             'close': [100.0] * 15
@@ -507,7 +507,7 @@ class TestDetectGaps:
         # Create gap exactly equal to threshold (5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-06', periods=5, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
@@ -527,7 +527,7 @@ class TestDetectGaps:
         # Create gap just above threshold (>5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-07', periods=5, freq='h')  # ~6 days gap
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
@@ -551,7 +551,7 @@ class TestDetectGaps:
         # Create data with gap
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-10', periods=5, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
@@ -680,7 +680,7 @@ class TestPerformanceAndStress:
         dates1 = pd.date_range('2020-01-01', periods=2000, freq='h')
         dates2 = pd.date_range('2020-05-01', periods=2000, freq='h')  # Large gap
         dates3 = pd.date_range('2020-09-01', periods=2000, freq='h')  # Another large gap
-        dates = dates1.append(dates2).append(dates3)
+        dates = dates1.union(dates2).union(dates3)
 
         data = pd.DataFrame({
             'close': [100.0] * 6000
@@ -809,7 +809,7 @@ class TestRealDataIntegration:
         # Simulate week-long holiday break
         dates1 = pd.date_range('2024-01-01', periods=50, freq='h')
         dates2 = pd.date_range('2024-01-15', periods=50, freq='h')  # ~12-day gap
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 100
@@ -1586,7 +1586,7 @@ class TestTimestampNormalization:
         # Create data with a 10-day gap
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
 
@@ -1610,7 +1610,7 @@ class TestTimestampNormalization:
         # Add microseconds to the timestamps
         dates1_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=123456) for d in dates1])
         dates2_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=789012) for d in dates2])
-        dates = dates1_with_micros.append(dates2_with_micros)
+        dates = dates1_with_micros.union(dates2_with_micros)
 
         data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
 
@@ -1631,7 +1631,7 @@ class TestTimestampNormalization:
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
         dates3 = pd.date_range('2024-02-01', periods=10, freq='h')
-        dates = dates1.append(dates2).append(dates3)
+        dates = dates1.union(dates2).union(dates3)
 
         data = pd.DataFrame({'close': [100.0] * 30}, index=dates)
 
@@ -1656,7 +1656,7 @@ class TestTimestampNormalization:
         # Create timezone-aware timestamps
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h', tz='UTC')
         dates2 = pd.date_range('2024-01-15', periods=10, freq='h', tz='UTC')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
 
@@ -1724,7 +1724,7 @@ class TestTimestampNormalization:
         # Create data with gap
         dates1 = pd.date_range('2024-01-01 10:00:00', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-15 10:00:00', periods=5, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({'close': [100.0] * 10}, index=dates)
 
