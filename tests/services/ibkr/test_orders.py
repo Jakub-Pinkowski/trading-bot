@@ -1,5 +1,4 @@
-from app.services.ibkr.orders import place_order
-from config import QUANTITY_TO_TRADE
+from app.services.ibkr.orders import place_order, QUANTITY_TO_TRADE
 
 
 def test_place_order_new_buy_position(mock_get_contract_position, mock_api_post_orders):

@@ -8,9 +8,13 @@ from app.utils.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_data_from_json_files
 from app.utils.logger import get_logger
-from config import DATA_DIR, TIMEFRAME_TO_ANALYZE
+from config import DATA_DIR
 
 logger = get_logger('analysis/data_fetching')
+
+# ==================== Module Configuration ====================
+
+TIMEFRAME_TO_ANALYZE = 7
 
 # ==================== Module Paths ====================
 

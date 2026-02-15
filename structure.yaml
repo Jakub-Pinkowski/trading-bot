@@ -172,7 +172,6 @@ trading-bot/
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
-# TODO [LOW]: Remove obsolete directory handling in the config.py
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.13]

@@ -3,9 +3,12 @@ from datetime import datetime, timedelta
 from app.utils.api_utils import api_get
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
-from config import MIN_DAYS_UNTIL_EXPIRY
 
-logger = get_logger()
+logger = get_logger('ibkr_utils/contracts_utils')
+
+# ==================== Module Configuration ====================
+
+MIN_DAYS_UNTIL_EXPIRY = 60
 
 
 def fetch_contract(symbol):

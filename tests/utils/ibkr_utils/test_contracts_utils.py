@@ -3,8 +3,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.utils.ibkr_utils.contracts_utils import fetch_contract, get_closest_contract
-from config import MIN_DAYS_UNTIL_EXPIRY
+from app.utils.ibkr_utils.contracts_utils import (get_closest_contract,
+                                                  fetch_contract,
+                                                  MIN_DAYS_UNTIL_EXPIRY)
 
 
 @patch('app.utils.ibkr_utils.contracts_utils.parse_symbol')

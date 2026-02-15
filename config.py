@@ -30,13 +30,3 @@ ALLOWED_IPS = {
     '95.91.215.169',
     '95.91.215.232'
 }
-
-# ==================== Strategy Configuration ====================
-
-MIN_DAYS_UNTIL_EXPIRY = 60
-QUANTITY_TO_TRADE = 1
-AGGRESSIVE_TRADING = True
-
-# ==================== Analysis Configuration ====================
-
-TIMEFRAME_TO_ANALYZE = 7
