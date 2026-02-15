@@ -21,7 +21,7 @@ from app.backtesting.fetching.validators import (
     validate_symbols,
     validate_exchange_compatibility,
     validate_ohlcv_data,
-    detect_and_log_gaps
+    detect_gaps
 )
 
 
@@ -338,7 +338,7 @@ class TestValidateOHLCVData:
         assert '4h' in error_msg
 
 
-class TestDetectAndLogGaps:
+class TestDetectGaps:
     """Test gap detection in time series data."""
 
     def test_no_gaps_detected(self):
@@ -350,7 +350,7 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings should be logged
             mock_logger.warning.assert_not_called()
@@ -367,12 +367,12 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
-            # Warning should be logged
+            # Gap should be logged
             mock_logger.warning.assert_called_once()
             warning_msg = mock_logger.warning.call_args[0][0]
-            assert 'Data gap detected' in warning_msg
+            assert 'NEW data gap detected' in warning_msg
             assert 'ZS1!' in warning_msg
             assert '1h' in warning_msg
 
@@ -388,7 +388,7 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warning should be logged for small gaps
             mock_logger.warning.assert_not_called()
@@ -406,7 +406,7 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Two gaps should be logged
             assert mock_logger.warning.call_count == 2
@@ -418,7 +418,7 @@ class TestDetectAndLogGaps:
         }, index=[datetime(2024, 1, 1)])
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for single row
             mock_logger.warning.assert_not_called()
@@ -428,7 +428,7 @@ class TestDetectAndLogGaps:
         data = pd.DataFrame()
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for empty data
             mock_logger.warning.assert_not_called()
@@ -448,16 +448,16 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should still be detected after sorting
             mock_logger.warning.assert_called()
 
     def test_gap_at_threshold_boundary(self):
         """Test gap exactly at threshold is not logged."""
-        # Create gap exactly equal to threshold (4 days)
+        # Create gap exactly equal to threshold (5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
-        dates2 = pd.date_range('2024-01-05', periods=5, freq='h')
+        dates2 = pd.date_range('2024-01-06', periods=5, freq='h')
         dates = dates1.append(dates2)
 
         data = pd.DataFrame({
@@ -465,16 +465,16 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap at threshold should not be logged (only > threshold)
             mock_logger.warning.assert_not_called()
 
     def test_gap_slightly_above_threshold(self):
         """Test gap just above threshold is logged."""
-        # Create gap just above threshold (>4 days)
+        # Create gap just above threshold (>5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
-        dates2 = pd.date_range('2024-01-06', periods=5, freq='h')  # 5 days gap
+        dates2 = pd.date_range('2024-01-07', periods=5, freq='h')  # ~6 days gap
         dates = dates1.append(dates2)
 
         data = pd.DataFrame({
@@ -482,7 +482,7 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should be logged
             mock_logger.warning.assert_called_once()
@@ -499,7 +499,7 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'CL1!')
+            detect_gaps(data, '1h', 'CL1!', set())
 
             warning_msg = mock_logger.warning.call_args[0][0]
             assert 'CL1!' in warning_msg
@@ -623,7 +623,7 @@ class TestPerformanceAndStress:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect both gaps
             assert mock_logger.warning.call_count == 2
@@ -645,7 +645,7 @@ class TestPerformanceAndStress:
         }, index=all_dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should still detect gap despite unsorted data
             mock_logger.warning.assert_called()
@@ -681,7 +681,7 @@ class TestPerformanceAndStress:
         }, index=pd.DatetimeIndex(all_dates))
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should not log small gaps (< 4 days)
             mock_logger.warning.assert_not_called()
@@ -721,7 +721,7 @@ class TestRealDataIntegration:
         }, index=pd.DatetimeIndex(dates))
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Weekend gaps (~2.5 days) should not trigger warnings
             mock_logger.warning.assert_not_called()
@@ -738,7 +738,7 @@ class TestRealDataIntegration:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect extended gap
             mock_logger.warning.assert_called_once()
