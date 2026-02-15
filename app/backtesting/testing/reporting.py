@@ -3,9 +3,13 @@ import pandas as pd
 
 from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
-from config import BACKTESTING_DIR
+from config import DATA_DIR
 
 logger = get_logger('backtesting/testing/reporting')
+
+# ==================== Module Paths ====================
+
+BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Results Conversion & Saving ====================

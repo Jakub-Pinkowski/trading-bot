@@ -9,7 +9,11 @@ import os
 import pandas as pd
 import pytest
 
-from config import BACKTESTING_DIR
+from config import DATA_DIR
+
+# ==================== Module Paths ====================
+
+BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Core Strategy Results Fixtures ====================

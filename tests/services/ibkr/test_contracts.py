@@ -1,7 +1,6 @@
 import pytest
 
-from app.services.ibkr.contracts import get_contract_id
-from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
+from app.services.ibkr.contracts import get_contract_id, CONTRACTS_FILE_PATH, MIN_DAYS_UNTIL_EXPIRY
 
 
 def test_get_contract_id_from_cache(

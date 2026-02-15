@@ -1,5 +1,4 @@
 import logging
-import os
 from unittest.mock import patch, MagicMock, call
 
 import pytest
@@ -8,15 +7,16 @@ from app.utils.logger import get_logger
 
 
 @pytest.fixture
-def mock_logging_setup():
+def mock_logging_setup(tmp_path):
     """Fixture to mock all logging components"""
     # Create a mock sys.modules that doesn't include 'pytest'
     mock_sys_modules = {}
 
+    # Use a real Path object for proper / operator support
+    mock_logs_dir = tmp_path / "logs"
+
     with patch("app.utils.logger.logging") as mock_logging, \
-            patch("app.utils.logger.os.path.exists", return_value=True), \
-            patch("app.utils.logger.os.makedirs") as mock_makedirs, \
-            patch("app.utils.logger.LOGS_DIR", "/mock/logs"), \
+            patch("app.utils.logger.LOGS_DIR", mock_logs_dir), \
             patch("app.utils.logger.sys.modules", mock_sys_modules):  # Mock sys.modules to not include 'pytest'
         # Create mock logger and handlers
         mock_logger = MagicMock(spec=logging.Logger)
@@ -41,7 +41,7 @@ def mock_logging_setup():
 
         yield {
             'logging': mock_logging,
-            'makedirs': mock_makedirs,
+            'logs_dir': mock_logs_dir,
             'logger': mock_logger,
             'debug_handler': mock_debug_handler,
             'info_handler': mock_info_handler,
@@ -51,14 +51,16 @@ def mock_logging_setup():
         }
 
 
-def test_get_logger_creates_logs_dir():
+def test_get_logger_creates_logs_dir(tmp_path):
     """Test that get_logger creates the logs directory if it doesn't exist"""
 
-    with patch("app.utils.logger.os.path.exists", return_value=False), \
-            patch("app.utils.logger.os.makedirs") as mock_makedirs, \
+    mock_logs_dir = tmp_path / "logs"
+
+    with patch("app.utils.logger.LOGS_DIR", mock_logs_dir), \
             patch("app.utils.logger.logging"):
         get_logger()
-        mock_makedirs.assert_called_once()
+        # Verify the directory was created
+        assert mock_logs_dir.exists()
 
 
 def test_get_logger_default_name(mock_logging_setup):
@@ -101,7 +103,8 @@ def test_get_logger_creates_debug_handler(mock_logging_setup):
     logger = get_logger()
 
     # Check that the debug handler was created with the correct file path
-    mock_logging_setup['logging'].FileHandler.assert_any_call(os.path.join("/mock/logs", "debug.log"))
+    logs_dir = mock_logging_setup['logs_dir']
+    mock_logging_setup['logging'].FileHandler.assert_any_call(str(logs_dir / "debug.log"))
 
     # Check that the debug handler was configured correctly
     debug_handler = mock_logging_setup['debug_handler']
@@ -116,7 +119,8 @@ def test_get_logger_creates_info_handler(mock_logging_setup):
     logger = get_logger()
 
     # Check that the info handler was created with the correct file path
-    mock_logging_setup['logging'].FileHandler.assert_any_call(os.path.join("/mock/logs", "info.log"))
+    logs_dir = mock_logging_setup['logs_dir']
+    mock_logging_setup['logging'].FileHandler.assert_any_call(str(logs_dir / "info.log"))
 
     # Check that the info handler was configured correctly
     info_handler = mock_logging_setup['info_handler']
@@ -131,7 +135,8 @@ def test_get_logger_creates_error_handler(mock_logging_setup):
     logger = get_logger()
 
     # Check that the error handler was created with the correct file path
-    mock_logging_setup['logging'].FileHandler.assert_any_call(os.path.join("/mock/logs", "error.log"))
+    logs_dir = mock_logging_setup['logs_dir']
+    mock_logging_setup['logging'].FileHandler.assert_any_call(str(logs_dir / "error.log"))
 
     # Check that the error handler was configured correctly
     error_handler = mock_logging_setup['error_handler']

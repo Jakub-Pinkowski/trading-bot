@@ -3,9 +3,13 @@ import os
 import pandas as pd
 
 from app.utils.logger import get_logger
-from config import BACKTESTING_DIR
+from config import DATA_DIR
 
 logger = get_logger('backtesting/testing/utils/test_preparation')
+
+# ==================== Module Paths ====================
+
+BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Existing Results Management ====================

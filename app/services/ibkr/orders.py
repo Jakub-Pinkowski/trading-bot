@@ -1,9 +1,14 @@
 from app.utils.api_utils import api_post
 from app.utils.ibkr_utils.orders_utils import suppress_messages, get_contract_position
 from app.utils.logger import get_logger
-from config import ACCOUNT_ID, AGGRESSIVE_TRADING, QUANTITY_TO_TRADE
+from config import ACCOUNT_ID
 
 logger = get_logger('services/ibkr/orders')
+
+# ==================== Module Configuration ====================
+
+QUANTITY_TO_TRADE = 1
+AGGRESSIVE_TRADING = True
 
 
 # TODO [MEDIUM]: Remove Aggressive trading variable as this is now integrates into the strategies instead

@@ -21,10 +21,14 @@ from app.backtesting.analysis.formatters import (
     build_filename
 )
 from app.utils.logger import get_logger
-from config import BACKTESTING_DIR
+from config import DATA_DIR
 from futures_config.symbol_groups import filter_to_one_per_group
 
 logger = get_logger('backtesting/analysis')
+
+# ==================== Module Paths ====================
+
+BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Helper functions ====================

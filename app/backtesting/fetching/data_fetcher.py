@@ -19,7 +19,10 @@ from app.backtesting.fetching.validators import (
     load_existing_gaps
 )
 from app.utils.logger import get_logger
-from config import HISTORICAL_DATA_DIR
+from config import DATA_DIR
+
+# Module path
+HISTORICAL_DATA_DIR = DATA_DIR / "historical_data"
 
 logger = get_logger('backtesting/data_fetcher')
 
