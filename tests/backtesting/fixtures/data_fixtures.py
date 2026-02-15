@@ -10,7 +10,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from config import HISTORICAL_DATA_DIR
+from config import DATA_DIR
+
+# ==================== Module Paths ====================
+
+HISTORICAL_DATA_DIR = DATA_DIR / "historical_data"
 
 
 @pytest.fixture(scope="session")

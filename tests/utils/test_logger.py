@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from unittest.mock import patch, MagicMock, call
 
 import pytest
@@ -13,10 +14,13 @@ def mock_logging_setup():
     # Create a mock sys.modules that doesn't include 'pytest'
     mock_sys_modules = {}
 
+    # Create a mock Path object
+    mock_logs_dir = MagicMock(spec=Path)
+    mock_logs_dir.__truediv__ = lambda self, other: MagicMock(spec=Path, __str__=lambda x: f"/mock/logs/{other}")
+    mock_logs_dir.mkdir = MagicMock()
+
     with patch("app.utils.logger.logging") as mock_logging, \
-            patch("app.utils.logger.os.path.exists", return_value=True), \
-            patch("app.utils.logger.os.makedirs") as mock_makedirs, \
-            patch("app.utils.logger.LOGS_DIR", "/mock/logs"), \
+            patch("app.utils.logger.LOGS_DIR", mock_logs_dir), \
             patch("app.utils.logger.sys.modules", mock_sys_modules):  # Mock sys.modules to not include 'pytest'
         # Create mock logger and handlers
         mock_logger = MagicMock(spec=logging.Logger)
@@ -41,7 +45,7 @@ def mock_logging_setup():
 
         yield {
             'logging': mock_logging,
-            'makedirs': mock_makedirs,
+            'logs_dir': mock_logs_dir,
             'logger': mock_logger,
             'debug_handler': mock_debug_handler,
             'info_handler': mock_info_handler,
@@ -54,11 +58,13 @@ def mock_logging_setup():
 def test_get_logger_creates_logs_dir():
     """Test that get_logger creates the logs directory if it doesn't exist"""
 
-    with patch("app.utils.logger.os.path.exists", return_value=False), \
-            patch("app.utils.logger.os.makedirs") as mock_makedirs, \
+    mock_logs_dir = MagicMock(spec=Path)
+    mock_logs_dir.mkdir = MagicMock()
+
+    with patch("app.utils.logger.LOGS_DIR", mock_logs_dir), \
             patch("app.utils.logger.logging"):
         get_logger()
-        mock_makedirs.assert_called_once()
+        mock_logs_dir.mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
 
 def test_get_logger_default_name(mock_logging_setup):

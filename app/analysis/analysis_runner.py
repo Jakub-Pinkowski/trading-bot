@@ -6,14 +6,23 @@ from app.analysis.trades_matching import match_trades
 from app.utils.analysis_utils.analysis_utils import is_nonempty
 from app.utils.file_utils import save_to_csv
 from app.utils.logger import get_logger
-from config import (TW_ALERTS_PER_TRADE_METRICS_FILE_PATH,
-                    TW_ALERTS_DATASET_METRICS_FILE_PATH,
-                    IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH,
-                    IBKR_ALERTS_DATASET_METRICS_FILE_PATH,
-                    TRADES_PER_TRADE_METRICS_FILE_PATH,
-                    TRADES_DATASET_METRICS_FILE_PATH)
+from config import DATA_DIR
 
 logger = get_logger('analysis/runner')
+
+# ==================== Module Paths ====================
+
+ANALYSIS_DIR = DATA_DIR / "analysis"
+ANALYSIS_IBKR_ALERTS_DIR = ANALYSIS_DIR / "ibkr_alerts"
+ANALYSIS_TRADES_DIR = ANALYSIS_DIR / "trades"
+ANALYSIS_TW_ALERTS_DIR = ANALYSIS_DIR / "tw_alerts"
+
+IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_IBKR_ALERTS_DIR / "ibkr_alerts_per_trade_metrics.csv"
+IBKR_ALERTS_DATASET_METRICS_FILE_PATH = ANALYSIS_IBKR_ALERTS_DIR / "ibkr_alerts_dataset_metrics.csv"
+TRADES_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_TRADES_DIR / "trades_per_trade_metrics.csv"
+TRADES_DATASET_METRICS_FILE_PATH = ANALYSIS_TRADES_DIR / "trades_dataset_metrics.csv"
+TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_TW_ALERTS_DIR / "tw_alerts_per_trade_metrics.csv"
+TW_ALERTS_DATASET_METRICS_FILE_PATH = ANALYSIS_TW_ALERTS_DIR / "tw_alerts_dataset_metrics.csv"
 
 
 def run_analysis():

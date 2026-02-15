@@ -10,7 +10,10 @@ from app.backtesting.testing.reporting import save_results
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.utils.logger import get_logger
-from config import HISTORICAL_DATA_DIR
+from config import DATA_DIR
+
+# Module path
+HISTORICAL_DATA_DIR = DATA_DIR / "historical_data"
 
 logger = get_logger('backtesting/testing/orchestrator')
 

@@ -27,8 +27,7 @@ from unittest.mock import patch
 import pytest
 from filelock import Timeout
 
-from app.backtesting.cache.cache_base import Cache, _convert_cache_format
-from config import CACHE_DIR
+from app.backtesting.cache.cache_base import Cache, CACHE_DIR, _convert_cache_format
 
 
 # ==================== Fixtures ====================

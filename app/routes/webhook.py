@@ -4,9 +4,13 @@ from app.utils.routes_utils.webhook_utils import (validate_ip,
                                                   parse_request_data,
                                                   save_alert_data_to_file,
                                                   safe_process_trading_data)
-from config import IBKR_ALERTS_DIR
+from config import DATA_DIR
 
 webhook_blueprint = Blueprint('webhook', __name__)
+
+# ==================== Module Paths ====================
+
+IBKR_ALERTS_DIR = DATA_DIR / "alerts" / "ibkr_alerts"
 
 
 @webhook_blueprint.route('/webhook', methods=['POST'])

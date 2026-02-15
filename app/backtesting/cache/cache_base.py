@@ -6,12 +6,14 @@ from collections import OrderedDict
 from filelock import FileLock, Timeout
 
 from app.utils.logger import get_logger
-from config import CACHE_DIR
-
-# Ensure the cache directory exists
-os.makedirs(CACHE_DIR, exist_ok=True)
+from config import DATA_DIR
 
 logger = get_logger('backtesting/cache/base')
+
+# ==================== Module Paths ====================
+
+BACKTESTING_DIR = DATA_DIR / "backtesting"
+CACHE_DIR = BACKTESTING_DIR / "cache"
 
 # ==================== Constants ====================
 
@@ -64,9 +66,12 @@ class Cache:
             - Loads existing cache data from disk if available
             - Initializes hit/miss counters to zero
         """
+        # Ensure cache directory exists
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
         self.cache_name = cache_name
-        self.cache_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.pkl")
-        self.lock_file = os.path.join(CACHE_DIR, f"{cache_name}_cache.lock")
+        self.cache_file = str(CACHE_DIR / f"{cache_name}_cache.pkl")
+        self.lock_file = str(CACHE_DIR / f"{cache_name}_cache.lock")
         self.max_size = max_size
         self.max_age = max_age
         self.cache_data = OrderedDict()  # Use OrderedDict for LRU functionality

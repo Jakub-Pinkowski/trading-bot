@@ -272,10 +272,8 @@ class TestExecutorAndPickling:
         Run a small orchestration with an invalid historical-data dir and ensure
         the orchestrator returns a list instead of raising.
         """
-        # Patch both the config module and the orchestrator module where the
-        # HISTORICAL_DATA_DIR value may have already been read at import time.
-        with patch('config.HISTORICAL_DATA_DIR', '/nonexistent/path'), \
-                patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', '/nonexistent/path'):
+        # Patch the orchestrator module's HISTORICAL_DATA_DIR
+        with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', '/nonexistent/path'):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
 
@@ -368,7 +366,7 @@ class TestCacheSave:
         file_path = str(data_dir / 'ZS_1h.parquet')
         df.to_parquet(file_path)
 
-        with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
+        with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(data_dir)):
             with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind_cache:
                 with patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df_cache:
                     mock_ind_cache.size.return_value = 1
@@ -640,7 +638,7 @@ class TestRealDataMultiprocessing:
         df.to_parquet(test_file)
 
         # Run MassTester pointing to our synthetic data dir
-        with patch('config.HISTORICAL_DATA_DIR', str(data_dir)):
+        with patch('app.backtesting.testing.orchestrator.HISTORICAL_DATA_DIR', str(data_dir)):
             tester = MassTester(['1!'], ['ZS'], ['1h'])
             tester.add_rsi_tests([14], [30], [70], [False], [None], [0])
             results = tester.run_tests(max_workers=2, verbose=False, skip_existing=False)

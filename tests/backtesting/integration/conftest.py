@@ -21,7 +21,7 @@ from app.backtesting.strategies import (
     BollingerBandsStrategy,
     IchimokuCloudStrategy
 )
-from config import SWITCH_DATES_FILE_PATH
+from app.backtesting.testing.mass_tester import SWITCH_DATES_FILE_PATH
 
 
 # ==================== Cache Management ====================

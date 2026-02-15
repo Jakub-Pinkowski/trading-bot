@@ -1,9 +1,13 @@
 from app.utils.file_utils import load_file, save_file
 from app.utils.ibkr_utils.contracts_utils import parse_symbol, fetch_contract, get_closest_contract
 from app.utils.logger import get_logger
-from config import MIN_DAYS_UNTIL_EXPIRY, CONTRACTS_FILE_PATH
+from config import DATA_DIR, MIN_DAYS_UNTIL_EXPIRY
 
 logger = get_logger('services/ibkr/contracts')
+
+# ==================== Module Paths ====================
+
+CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):

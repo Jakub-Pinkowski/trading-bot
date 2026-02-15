@@ -21,11 +21,10 @@ import uuid
 
 import pytest
 
-from app.backtesting.cache.cache_base import Cache
+from app.backtesting.cache.cache_base import Cache, CACHE_DIR
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.strategies import RSIStrategy
-from config import CACHE_DIR
 
 
 # ==================== Cache Coordination Tests ====================

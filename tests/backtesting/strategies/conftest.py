@@ -15,7 +15,7 @@ from app.backtesting.strategies import (
     MACDStrategy,
     RSIStrategy
 )
-from config import SWITCH_DATES_FILE_PATH
+from app.backtesting.testing.mass_tester import SWITCH_DATES_FILE_PATH
 
 
 # ==================== Standard Strategy Fixtures ====================
