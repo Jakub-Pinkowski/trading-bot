@@ -222,17 +222,28 @@ class TestFilterToOnePerGroup:
         assert nasdaq_count == 1
 
     def test_filter_keeps_first_from_each_group(self):
-        """Test that first symbol from each group is kept."""
+        """Test that representative (standard) symbol from each group is kept."""
         symbols = ['ZC', 'XC', 'MZC', 'ES', 'MES', 'CL', 'MCL']
         filtered = filter_to_one_per_group(symbols)
 
-        # Should keep first of each group
-        assert 'ZC' in filtered  # First corn
-        assert 'ES' in filtered  # First S&P
-        assert 'CL' in filtered  # First crude oil
+        # Should keep representative of each group (always standard, not mini/micro)
+        assert 'ZC' in filtered  # Standard corn (not XC, MZC)
+        assert 'ES' in filtered  # Standard S&P (not MES)
+        assert 'CL' in filtered  # Standard crude oil (not MCL)
 
-        # Should not keep duplicates
+        # Should not keep mini/micro variants
         assert 'XC' not in filtered
+        assert 'MZC' not in filtered
+        assert 'MES' not in filtered
+        assert 'MCL' not in filtered
+
+        # Test with mini/micro listed first - should still get standard
+        symbols_reversed = ['MCL', 'CL', 'MES', 'ES', 'MZC', 'XC', 'ZC']
+        filtered_reversed = filter_to_one_per_group(symbols_reversed)
+        assert set(filtered) == set(filtered_reversed)
+        assert 'ZC' in filtered_reversed
+        assert 'ES' in filtered_reversed
+        assert 'CL' in filtered_reversed
         assert 'MZC' not in filtered
         assert 'MES' not in filtered
         assert 'MCL' not in filtered
@@ -252,14 +263,22 @@ class TestFilterToOnePerGroup:
         assert set(filtered) == set(symbols)
 
     def test_filter_preserves_order(self):
-        """Test that filtering preserves original order."""
+        """Test that filtering returns representative symbols deterministically."""
         symbols = ['CL', 'ZC', 'ES', 'MZC', 'NQ', 'MES']
         filtered = filter_to_one_per_group(symbols)
 
-        # CL should be before ZC, ZC before ES, etc.
-        assert filtered.index('CL') < filtered.index('ZC')
-        assert filtered.index('ZC') < filtered.index('ES')
-        assert filtered.index('ES') < filtered.index('NQ')
+        # Should always return standard contracts: ZC (not MZC), ES (not MES)
+        assert 'ZC' in filtered
+        assert 'MZC' not in filtered
+        assert 'ES' in filtered
+        assert 'MES' not in filtered
+        assert 'CL' in filtered
+        assert 'NQ' in filtered
+
+        # Result should be deterministic regardless of input order
+        symbols_reversed = ['MES', 'NQ', 'MZC', 'ES', 'ZC', 'CL']
+        filtered_reversed = filter_to_one_per_group(symbols_reversed)
+        assert set(filtered) == set(filtered_reversed)
 
     def test_filter_real_world_scenario(self):
         """Test realistic scenario with multiple symbols."""

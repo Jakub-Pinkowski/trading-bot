@@ -139,32 +139,41 @@ def filter_to_one_per_group(symbols):
     """
     Filter symbol list to include only one symbol per correlated group.
 
-    For each group, keeps the first symbol encountered. Symbols not in any
-    group are kept as-is.
+    For each group, always keeps the representative (standard size) symbol and excludes
+    mini/micro variants. Symbols not in any group are kept as-is.
 
     Args:
         symbols: List of symbol strings
 
     Returns:
-        Filtered list with only one symbol per group
+        Filtered list with only one representative symbol per group
 
     Example:
         filter_to_one_per_group(['ZC', 'CL', 'MZC', 'ES', 'MES', 'GC'])
-        ['ZC', 'CL', 'ES', 'GC']  # Removed MZC (duplicate corn), MES (duplicate SP500)
-    """
-    seen_groups = set()
-    filtered_symbols = []
+        ['ZC', 'CL', 'ES', 'GC'] # Keeps ZC (not MZC), ES (not MES)
 
+        filter_to_one_per_group(['MZC', 'XC', 'ZC', 'CL'])
+        ['ZC', 'CL'] # Always keeps ZC (standard) even if MZC/XC appear first
+    """
+    filtered_symbols = []
+    ungrouped_symbols = []
+
+    # First pass: collect ungrouped symbols and identify groups present
+    groups_to_add = set()
     for symbol in symbols:
         group = get_group_for_symbol(symbol)
-
         if group is None:
-            # Symbol not in any group, keep it
-            filtered_symbols.append(symbol)
-        elif group not in seen_groups:
-            # First symbol from this group, keep it
-            filtered_symbols.append(symbol)
-            seen_groups.add(group)
-        # else: skip this symbol (duplicate from same group)
+            ungrouped_symbols.append(symbol)
+        else:
+            groups_to_add.add(group)
+
+    # Second pass: add a representative symbol for each group
+    for group in sorted(groups_to_add):
+        representative = get_representative_symbol(group)
+        if representative:
+            filtered_symbols.append(representative)
+
+    # Add ungrouped symbols
+    filtered_symbols.extend(ungrouped_symbols)
 
     return filtered_symbols
