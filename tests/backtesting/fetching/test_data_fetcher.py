@@ -294,7 +294,7 @@ class TestFetchIntervalData:
         mock_tv_client.get_hist.return_value = mixed_data
 
         with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-            with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
                     output_dir = str(temp_data_dir)
                     fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
@@ -441,7 +441,7 @@ class TestSaveNewData:
         """Test parquet file is created."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -451,7 +451,7 @@ class TestSaveNewData:
         """Test saved data matches input data."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -478,7 +478,7 @@ class TestSaveNewData:
         """Test success message is logged."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -496,7 +496,7 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data_2020.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
@@ -523,7 +523,7 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -546,7 +546,7 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -560,7 +560,7 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data_2020.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
@@ -575,7 +575,7 @@ class TestUpdateExistingData:
         old_data_2020.to_parquet(file_path)
 
         # Try to add same data again
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 _update_existing_data(old_data_2020, str(file_path), '1h', 'ZS1!', set())
 
@@ -595,7 +595,7 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -622,7 +622,7 @@ class TestUpdateExistingData:
         # The deduplication will reduce total rows
         new_data = pd.DataFrame({'close': [110.0] * 50}, index=dates)  # Same dates
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -693,7 +693,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = sample_ohlcv_data
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         # Fetch data
                         fetcher.fetch_all_data(['1h'])
@@ -718,7 +718,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = sample_ohlcv_data
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h', '4h'])
 
@@ -752,7 +752,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = new_data_2024
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -802,7 +802,7 @@ class TestParametrizedScenarios:
 
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _save_new_data(data, str(file_path), '1h', 'ZS1!', set())
 
@@ -841,7 +841,7 @@ class TestPerformanceAndStress:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -868,7 +868,7 @@ class TestPerformanceAndStress:
                 'volume': [1500] * 10
             }, index=dates)
 
-            with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
                     _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -906,7 +906,7 @@ class TestPerformanceAndStress:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
                 _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
@@ -936,7 +936,7 @@ class TestPerformanceAndStress:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -968,7 +968,7 @@ class TestRealDataIntegration:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -998,7 +998,7 @@ class TestRealDataIntegration:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -1027,7 +1027,7 @@ class TestRealDataIntegration:
                 )
 
                 with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                    with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                         with patch('app.backtesting.fetching.data_fetcher.logger'):
                             fetcher.fetch_all_data(['1h'])
 
@@ -1057,7 +1057,7 @@ class TestRealDataIntegration:
             )
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -1111,7 +1111,7 @@ class TestRealDataIntegration:
             fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['5m', '1h', '1d'])
 
@@ -1152,7 +1152,7 @@ class TestRealDataIntegration:
             )
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         # Should not raise, continues to next symbol
                         fetcher.fetch_all_data(['1h'])
