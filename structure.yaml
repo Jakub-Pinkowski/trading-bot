@@ -127,6 +127,7 @@ trading-bot/
 │   ├── __init__.py
 │   ├── categories.py                             # Category definitions for futures symbols
 │   ├── helpers.py                                # Helper functions for futures specs
+│   ├── symbol_groups.py                          # Symbol correlation groups (mini/micro contracts)
 │   ├── symbol_mapping.py                         # TradingView to IBKR symbol mapping
 │   └── symbol_specs.py                           # Symbol specifications (exchange, tick size, etc.)
 ├── logs/
@@ -164,7 +165,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [MEDIUM]: When we run analyze strategies we can't analyze both grains normal, small and micro as it skews the results, they are essentially the same
 # TODO [MEDIUM]: Create a separate file to keep track of data gaps, validators.py should handle that
 # TODO [MEDIUM]: Implement segment testing for 5m and 15m intervals to bypass the date gaps
 # TODO [MEDIUM]: Add functionality to the whole backtesting module to handle 2m, 10m, 45m, and 3h intervals
