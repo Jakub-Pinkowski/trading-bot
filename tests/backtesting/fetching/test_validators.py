@@ -829,3 +829,175 @@ class TestRealDataIntegration:
             'volume': [0, 0, 1000, 0, 2000]  # Some zero volume bars
         })
         validate_ohlcv_data(data_zero_volume, 'ZS', '1h')
+
+
+class TestTimestampNormalization:
+    """Test timestamp normalization for gap detection to prevent false NEW gap warnings."""
+
+    def test_detect_gaps_with_known_gaps_no_warning(self):
+        """Test that known gaps don't trigger NEW gap warnings."""
+        # Create data with a 10-day gap
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+        dates = dates1.append(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps set with normalized timestamp (no microseconds)
+        gap_start = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_detect_gaps_with_microseconds_in_timestamp(self):
+        """Test that timestamps with microseconds are normalized correctly."""
+        # Create data with timestamps that include microseconds
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+
+        # Add microseconds to the timestamps
+        dates1_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=123456) for d in dates1])
+        dates2_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=789012) for d in dates2])
+        dates = dates1_with_micros.append(dates2_with_micros)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps with normalized timestamp (no microseconds)
+        gap_start = dates1_with_micros[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning due to normalization
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_detect_gaps_new_gap_triggers_warning(self):
+        """Test that truly new gaps trigger warnings."""
+        # Create data with two gaps
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+        dates3 = pd.date_range('2024-02-01', periods=10, freq='h')
+        dates = dates1.append(dates2).append(dates3)
+
+        data = pd.DataFrame({'close': [100.0] * 30}, index=dates)
+
+        # Only mark first gap as known
+        gap_start_1 = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start_1)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect two gaps but only warn about the second one
+            assert len(gaps) == 2
+            mock_logger.warning.assert_called_once()
+
+            # Verify the warning is about the second gap
+            warning_msg = mock_logger.warning.call_args[0][0]
+            assert 'NEW data gap' in warning_msg
+            assert '2024-02' in warning_msg  # Second gap starts in February
+
+    def test_detect_gaps_with_timezone_aware_timestamps(self):
+        """Test gap detection with timezone-aware timestamps."""
+        # Create timezone-aware timestamps
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h', tz='UTC')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h', tz='UTC')
+        dates = dates1.append(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps with timezone-aware timestamp
+        gap_start = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_load_existing_gaps_normalizes_timestamps(self):
+        """Test that load_existing_gaps normalizes timestamps from YAML."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import tempfile
+        import yaml
+        import os
+
+        # Create temporary YAML file with gap data
+        gap_data = {
+            'gaps': {
+                'ZS1!': {
+                    '1h': [
+                        {
+                            'start_time': '2024-01-01T10:00:00.123456',  # With microseconds
+                            'end_time': '2024-01-15T10:00:00',
+                            'duration_days': 14.0
+                        }
+                    ]
+                }
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(gap_data, f)
+
+            # Temporarily change working directory
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                os.makedirs('data', exist_ok=True)
+                os.rename('historical_data_gaps_1!.yaml', 'data/historical_data_gaps_1!.yaml')
+
+                # Load gaps
+                known_gaps = load_existing_gaps('1!')
+
+                # Verify timestamp is normalized (no microseconds)
+                assert len(known_gaps) == 1
+                gap_tuple = list(known_gaps)[0]
+                assert gap_tuple[0] == 'ZS1!'
+                assert gap_tuple[1] == '1h'
+                # Verify microseconds are removed
+                assert gap_tuple[2].microsecond == 0
+                assert gap_tuple[2] == pd.Timestamp('2024-01-01T10:00:00')
+            finally:
+                os.chdir(original_cwd)
+
+    def test_gap_comparison_consistent_across_formats(self):
+        """Test that gap comparison works regardless of timestamp format."""
+        # Create data with gap
+        dates1 = pd.date_range('2024-01-01 10:00:00', periods=5, freq='h')
+        dates2 = pd.date_range('2024-01-15 10:00:00', periods=5, freq='h')
+        dates = dates1.append(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 10}, index=dates)
+
+        # Test different timestamp formats in known_gaps
+        test_cases = [
+            # Format 1: Pandas Timestamp with microseconds
+            pd.Timestamp('2024-01-01 14:00:00.999999'),
+            # Format 2: Pandas Timestamp without microseconds
+            pd.Timestamp('2024-01-01 14:00:00'),
+            # Format 3: Normalized timestamp (what we use now)
+            pd.Timestamp('2024-01-01 14:00:00').replace(microsecond=0),
+        ]
+
+        for gap_timestamp in test_cases:
+            normalized_gap = gap_timestamp.replace(microsecond=0)
+            known_gaps = {('ZS1!', '1h', normalized_gap)}
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+                # Should not log warning for known gap
+                assert len(gaps) == 1
+                mock_logger.warning.assert_not_called()

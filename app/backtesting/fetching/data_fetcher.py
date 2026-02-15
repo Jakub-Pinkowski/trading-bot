@@ -47,6 +47,10 @@ def _save_new_data(data, file_path, interval_label, full_symbol, known_gaps):
     """
     Save new data to a file.
 
+    Detects gaps in the time series data and saves the DataFrame to a parquet file.
+    This function is called when no existing data file is found for the symbol-interval
+    combination.
+
     Args:
         data: DataFrame with OHLCV columns and datetime index
         file_path: Full path where a parquet file will be created
@@ -71,7 +75,9 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol, know
     """
     Update the existing data file with new data.
 
-    Combines new data with existing data, removes duplicates, and detects gaps.
+    Combines new data with existing data, removes duplicates (keeping the latest values),
+    sorts the combined dataset, detects gaps, and saves the updated data back to the file.
+    New data takes precedence over existing data in case of overlapping timestamps.
 
     Args:
         new_data: DataFrame with new OHLCV data to add
@@ -143,13 +149,16 @@ class DataFetcher:
         """
         Initialize the data fetcher.
 
+        Validates symbols for TradingView compatibility and exchange compatibility,
+        initializes the TradingView client, and sets up data filtering parameters.
+
         Args:
             symbols: List of base symbol names (e.g., ['MZL', 'MET', 'RTY'])
             contract_suffix: Contract identifier suffix (e.g., '1!' for front month)
             exchange: Exchange name for data fetching (e.g., 'CBOT')
 
         Raises:
-            ValueError: If a symbols list is empty or parameters are invalid
+            ValueError: If symbols list is empty or parameters are invalid
         """
         if not symbols:
             raise ValueError('symbols list cannot be empty')
@@ -175,7 +184,8 @@ class DataFetcher:
         Fetch data for all configured symbols and intervals.
 
         Downloads historical data for each symbol-interval combination,
-        handles updates to existing data, and validates data quality.
+        handles updates to existing data, validates data quality, and aggregates
+        all detected gaps for saving to YAML.
 
         Args:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
@@ -218,6 +228,10 @@ class DataFetcher:
     def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir, known_gaps):
         """
         Fetch data for a single symbol-interval combination.
+
+        Downloads historical data from TradingView, validates OHLCV structure,
+        filters data from 2020 onwards, and saves or updates the parquet file.
+        Returns detected gaps for aggregation.
 
         Args:
             base_symbol: Base symbol without a contract suffix (e.g., 'ZS')
@@ -277,6 +291,10 @@ class DataFetcher:
     def _fetch_symbol_data(self, symbol, intervals, known_gaps):
         """
         Fetch data for a single symbol across multiple intervals.
+
+        Creates the output directory for the symbol and iterates through all
+        requested intervals, fetching and saving data for each. Aggregates
+        all detected gaps from the intervals.
 
         Args:
             symbol: Base symbol without a contract suffix (e.g., 'ZS')

@@ -27,11 +27,17 @@ def load_existing_gaps(contract_suffix):
     """
     Load existing gaps from the YAML file.
 
+    Reads the historical data gaps YAML file for the specified contract and returns
+    a set of known gaps for quick lookup. Timestamps are normalized by removing
+    microseconds to ensure consistent comparison across different timestamp formats
+    and prevent false "NEW gap" warnings.
+
     Args:
         contract_suffix: Contract identifier (e.g., '1!')
 
     Returns:
-        Set of tuples (symbol, interval, start_time) for a quick lookup
+        Set of tuples (symbol, interval, normalized_start_time) for quick lookup.
+        Timestamps are normalized (microseconds removed) for consistent comparison
     """
     filename = f'historical_data_gaps_{contract_suffix}.yaml'
     file_path = os.path.join('data', filename)
@@ -47,7 +53,11 @@ def load_existing_gaps(contract_suffix):
         for symbol, intervals in data.get('gaps', {}).items():
             for interval, gaps_list in intervals.items():
                 for gap in gaps_list:
-                    existing_gaps.add((symbol, interval, gap['start_time']))
+                    # Parse ISO string and normalize by removing microseconds
+                    start_time_str = gap['start_time']
+                    start_dt = pd.to_datetime(start_time_str)
+                    normalized_dt = start_dt.replace(microsecond=0)
+                    existing_gaps.add((symbol, interval, normalized_dt))
 
         return existing_gaps
     except Exception as e:
@@ -94,6 +104,10 @@ def validate_exchange_compatibility(symbols, exchange):
     """
     Validate that symbols are compatible with the specified exchange.
 
+    Filters the provided symbols to only include those that trade on the specified
+    exchange. Logs warnings for incompatible symbols and raises an error if no
+    compatible symbols remain.
+
     Args:
         symbols: List of symbol strings to validate
         exchange: Exchange name to validate against (e.g., 'CBOT', 'NYMEX')
@@ -130,6 +144,9 @@ def validate_ohlcv_data(data, symbol, interval_label):
     """
     Validate that DataFrame contains required OHLCV columns.
 
+    Checks for the presence of all required OHLCV (Open, High, Low, Close, Volume)
+    columns and verifies they contain numeric data types.
+
     Args:
         data: DataFrame to validate
         symbol: Symbol name for error messages
@@ -159,7 +176,9 @@ def detect_gaps(data, interval_label, symbol, known_gaps):
     """
     Detect significant gaps in the datetime index.
 
+    Analyzes the time series data for gaps larger than the threshold (5 days).
     Returns gap metadata and logs warnings for NEW gaps only (not in known_gaps).
+    Timestamps are normalized for comparison to prevent false warnings.
 
     Args:
         data: DataFrame with datetime index
@@ -196,8 +215,11 @@ def detect_gaps(data, interval_label, symbol, known_gaps):
             }
             gaps.append(gap_info)
 
+            # Normalize timestamp for comparison (remove microseconds, ensure timezone consistency)
+            normalized_previous = previous_time.replace(microsecond=0)
+            gap_key = (symbol, interval_label, normalized_previous)
+
             # Only warn if this is a NEW gap
-            gap_key = (symbol, interval_label, previous_time.isoformat())
             if gap_key not in known_gaps:
                 logger.warning(f'NEW data gap detected in {symbol} {interval_label}: '
                                f'from {previous_time} to {current_time} '
