@@ -664,14 +664,17 @@ class TestIntervalMapping:
 
     def test_all_expected_intervals_present(self):
         """Test all expected intervals are in mapping."""
-        expected_intervals = ['5m', '15m', '30m', '1h', '2h', '4h', '1d']
+        expected_intervals = ['3m', '5m', '15m', '30m', '45m', '1h', '2h', '3h', '4h', '1d']
 
         for interval in expected_intervals:
             assert interval in INTERVAL_MAPPING
 
     def test_mapping_values_are_interval_objects(self):
         """Test mapping values are Interval enum values."""
+        assert INTERVAL_MAPPING['3m'] == Interval.in_3_minute
+        assert INTERVAL_MAPPING['45m'] == Interval.in_45_minute
         assert INTERVAL_MAPPING['1h'] == Interval.in_1_hour
+        assert INTERVAL_MAPPING['3h'] == Interval.in_3_hour
         assert INTERVAL_MAPPING['4h'] == Interval.in_4_hour
         assert INTERVAL_MAPPING['1d'] == Interval.in_daily
 
@@ -779,7 +782,7 @@ class TestParametrizedScenarios:
         assert fetcher.exchange == exchange
         assert len(fetcher.symbols) > 0
 
-    @pytest.mark.parametrize("interval", ['5m', '15m', '30m', '1h', '2h', '4h', '1d'])
+    @pytest.mark.parametrize("interval", ['3m', '5m', '15m', '30m', '45m', '1h', '2h', '3h', '4h', '1d'])
     def test_all_intervals_accepted(self, interval, mock_tv_client):
         """Test that all supported intervals are accepted."""
         fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')

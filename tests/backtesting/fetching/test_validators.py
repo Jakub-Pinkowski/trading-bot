@@ -853,9 +853,12 @@ class TestRealDataIntegration:
         assert len(result) == 4
 
     @pytest.mark.parametrize("interval,periods", [
+        ('3m', 480),  # 1 day of 3-min data
         ('5m', 288),  # 1 day of 5-min data
         ('15m', 96),  # 1 day of 15-min data
+        ('45m', 32),  # 1 day of 45-min data
         ('1h', 24),  # 1 day of hourly data
+        ('3h', 56),  # 1 week of 3-hour data
         ('4h', 42),  # 1 week of 4-hour data
         ('1d', 30),  # 1 month of daily data
     ])

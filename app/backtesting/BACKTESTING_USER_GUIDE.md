@@ -306,7 +306,7 @@ print(top_profit_factor)
 
 **interval** (str): Filter by specific timeframe
 
-- Options: `'5m'`, `'15m'`, `'30m'`, `'1h'`, `'2h'`, `'4h'`, `'1d'`
+- Options: `'3m'`, `'5m'`, `'15m'`, `'30m'`, `'45m'`, `'1h'`, `'2h'`, `'3h'`, `'4h'`, `'1d'`
 - Optional: Leave `None` to include all intervals
 - Example: `'4h'` shows only 4-hour strategies
 
