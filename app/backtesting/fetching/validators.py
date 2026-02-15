@@ -184,7 +184,7 @@ def detect_gaps(data, interval_label, symbol, known_gaps):
 
         # Only detect gaps larger than a threshold
         if actual_gap > GAP_DETECTION_THRESHOLD:
-            # Calculate duration in the past days (including fractional days)
+            # Calculate duration in days (including fractional days)
             duration_days = actual_gap.days + (actual_gap.seconds / 86400)
 
             gap_info = {
