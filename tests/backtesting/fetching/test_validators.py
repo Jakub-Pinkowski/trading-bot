@@ -1096,6 +1096,64 @@ class TestSaveGapsToYaml:
         finally:
             os.chdir(original_cwd)
 
+    def test_save_gaps_skips_duplicates_with_different_iso_formats(self, tmp_path):
+        """Test that duplicate gaps with different ISO timestamp formats are detected."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create existing gaps file with microseconds
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00.000000',
+                                'end_time': '2024-01-15T10:00:00.000000',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Try to add same gap with different formatting (no microseconds)
+            duplicate_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(duplicate_gaps, '1!')
+
+                # Should log about skipped duplicates
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'already exist' in info_msg
+
+            # Verify no duplicate added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
     def test_save_gaps_handles_corrupted_existing_file(self, tmp_path):
         """Test saving gaps handles corrupted existing YAML file."""
         from app.backtesting.fetching.validators import save_gaps_to_yaml

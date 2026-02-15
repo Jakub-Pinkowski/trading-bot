@@ -278,9 +278,11 @@ def save_gaps_to_yaml(gaps, contract_suffix):
         }
 
         # Check for duplicate (same start_time)
+        # Normalize timestamps to handle different ISO formatting (microseconds, timezone offsets)
         existing_gaps = gaps_data['gaps'][symbol][interval]
+        new_start_normalized = pd.to_datetime(gap_entry['start_time']).replace(microsecond=0)
         is_duplicate = any(
-            g['start_time'] == gap_entry['start_time']
+            pd.to_datetime(g['start_time']).replace(microsecond=0) == new_start_normalized
             for g in existing_gaps
         )
 
