@@ -357,7 +357,7 @@ class TestDetectGaps:
 
     def test_large_gap_detected(self):
         """Test warning logged for gap larger than threshold."""
-        # Create data with a 7-day gap (larger than 4-day threshold)
+        # Create data with a 7-day gap (larger than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-08', periods=10, freq='h')
         dates = dates1.append(dates2)
@@ -378,7 +378,7 @@ class TestDetectGaps:
 
     def test_small_gap_not_logged(self):
         """Test gap smaller than threshold is not logged."""
-        # Create data with a 2-day gap (smaller than 4-day threshold)
+        # Create data with a 2-day gap (smaller than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-03', periods=10, freq='h')
         dates = dates1.append(dates2)
@@ -683,7 +683,7 @@ class TestPerformanceAndStress:
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
             detect_gaps(data, '1h', 'ZS1!', set())
 
-            # Should not log small gaps (< 4 days)
+            # Should not log small gaps (< 5 days)
             mock_logger.warning.assert_not_called()
 
 

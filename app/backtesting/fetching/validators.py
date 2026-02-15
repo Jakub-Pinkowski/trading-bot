@@ -27,6 +27,9 @@ def load_existing_gaps(contract_suffix):
     """
     Load existing gaps from the YAML file.
 
+    Args:
+        contract_suffix: Contract identifier (e.g., '1!')
+
     Returns:
         Set of tuples (symbol, interval, start_time) for a quick lookup
     """
@@ -281,6 +284,9 @@ def save_gaps_to_yaml(gaps, contract_suffix):
     # Atomic write with a temp file
     temp_path = None
     try:
+        # Ensure the data directory exists before creating a temp file
+        os.makedirs('data', exist_ok=True)
+
         # Write to a temp file first
         temp_fd, temp_path = tempfile.mkstemp(dir='data', suffix='.yaml')
         with os.fdopen(temp_fd, 'w') as f:

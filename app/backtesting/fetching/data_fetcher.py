@@ -47,6 +47,13 @@ def _save_new_data(data, file_path, interval_label, full_symbol, known_gaps):
     """
     Save new data to a file.
 
+    Args:
+        data: DataFrame with OHLCV columns and datetime index
+        file_path: Full path where a parquet file will be created
+        interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+        full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+        known_gaps: Set of known gap tuples (symbol, interval, start_time)
+
     Returns:
         List of detected gaps (passed up for aggregation)
     """
@@ -63,6 +70,15 @@ def _save_new_data(data, file_path, interval_label, full_symbol, known_gaps):
 def _update_existing_data(new_data, file_path, interval_label, full_symbol, known_gaps):
     """
     Update the existing data file with new data.
+
+    Combines new data with existing data, removes duplicates, and detects gaps.
+
+    Args:
+        new_data: DataFrame with new OHLCV data to add
+        file_path: Full path to an existing parquet file
+        interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+        full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+        known_gaps: Set of known gap tuples (symbol, interval, start_time)
 
     Returns:
         List of detected gaps (passed up for aggregation)
@@ -186,6 +202,10 @@ class DataFetcher:
             symbol_gaps = self._fetch_symbol_data(symbol, intervals, known_gaps)
             all_gaps.extend(symbol_gaps)
 
+            # Update known_gaps with newly discovered gaps to prevent duplicate warnings
+            for gap in symbol_gaps:
+                known_gaps.add((gap['symbol'], gap['interval'], gap['start_time']))
+
         # Save all collected gaps to YAML
         if all_gaps:
             logger.info(f'Processing {len(all_gaps)} detected gap(s)...')
@@ -198,6 +218,13 @@ class DataFetcher:
     def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir, known_gaps):
         """
         Fetch data for a single symbol-interval combination.
+
+        Args:
+            base_symbol: Base symbol without a contract suffix (e.g., 'ZS')
+            full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+            interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+            output_dir: Directory path where a parquet file will be saved
+            known_gaps: Set of known gap tuples (symbol, interval, start_time)
 
         Returns:
             List of detected gaps (empty list on error)
@@ -250,6 +277,11 @@ class DataFetcher:
     def _fetch_symbol_data(self, symbol, intervals, known_gaps):
         """
         Fetch data for a single symbol across multiple intervals.
+
+        Args:
+            symbol: Base symbol without a contract suffix (e.g., 'ZS')
+            intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
+            known_gaps: Set of known gap tuples (symbol, interval, start_time)
 
         Returns:
             List of detected gaps aggregated from all intervals

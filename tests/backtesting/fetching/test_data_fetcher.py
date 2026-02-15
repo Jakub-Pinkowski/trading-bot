@@ -443,7 +443,7 @@ class TestSaveNewData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(sample_ohlcv_data, str(file_path), set(), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 assert file_path.exists()
 
@@ -453,7 +453,7 @@ class TestSaveNewData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(sample_ohlcv_data, str(file_path), set(), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 loaded_data = pd.read_parquet(file_path)
 
@@ -480,7 +480,7 @@ class TestSaveNewData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _save_new_data(sample_ohlcv_data, str(file_path), set(), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called_once()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -498,7 +498,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data_2024, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -525,7 +525,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -548,7 +548,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -562,7 +562,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data_2024, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -577,7 +577,7 @@ class TestUpdateExistingData:
         # Try to add same data again
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(old_data_2020, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(old_data_2020, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -597,7 +597,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 # Should log info for no new data (overlapping data)
                 mock_logger.info.assert_called()
@@ -624,7 +624,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 # Check that warning was called (new_entries should be negative)
                 # existing_count = 100 (with dupes), combined after dedup = 50, so new_entries = -50
@@ -639,7 +639,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_gaps:
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data_2024, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 # Should be called once with combined data
                 mock_gaps.assert_called_once()
@@ -652,7 +652,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             # Should not raise, just log
-            _update_existing_data(new_data_2024, str(file_path), set(), '1h', 'ZS1!')
+            _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
             mock_logger.error.assert_called()
             error_msg = mock_logger.error.call_args[0][0]
@@ -804,7 +804,7 @@ class TestParametrizedScenarios:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(data, str(file_path), set(), '1h', 'ZS1!')
+                _save_new_data(data, str(file_path), '1h', 'ZS1!', set())
 
                 loaded = pd.read_parquet(file_path)
                 assert len(loaded) == data_periods
@@ -870,7 +870,7 @@ class TestPerformanceAndStress:
 
             with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
-                    _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                    _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
         # Verify all updates succeeded
         final_data = pd.read_parquet(file_path)
@@ -908,7 +908,7 @@ class TestPerformanceAndStress:
 
         with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), set(), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 result = pd.read_parquet(file_path)
 
