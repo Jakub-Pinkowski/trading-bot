@@ -40,7 +40,7 @@ def load_existing_gaps(contract_suffix):
         Timestamps are normalized (microseconds removed) for consistent comparison
     """
     filename = f'historical_data_gaps_{contract_suffix}.yaml'
-    file_path = os.path.join('data', filename)
+    file_path = os.path.join('data', 'historical_data', filename)
 
     if not os.path.exists(file_path):
         return set()
@@ -245,7 +245,7 @@ def save_gaps_to_yaml(gaps, contract_suffix):
 
     # Build file path
     filename = f'historical_data_gaps_{contract_suffix}.yaml'
-    file_path = os.path.join('data', filename)
+    file_path = os.path.join('data', 'historical_data', filename)
 
     # Load existing gaps file to merge
     gaps_data = {'gaps': {}, 'meta': {}}
@@ -307,10 +307,10 @@ def save_gaps_to_yaml(gaps, contract_suffix):
     temp_path = None
     try:
         # Ensure the data directory exists before creating a temp file
-        os.makedirs('data', exist_ok=True)
+        os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
         # Write to a temp file first
-        temp_fd, temp_path = tempfile.mkstemp(dir='data', suffix='.yaml')
+        temp_fd, temp_path = tempfile.mkstemp(dir=os.path.join('data', 'historical_data'), suffix='.yaml')
         with os.fdopen(temp_fd, 'w') as f:
             yaml.dump(gaps_data, f, default_flow_style=False, sort_keys=False)
 

@@ -927,7 +927,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             with patch('app.backtesting.fetching.validators.logger') as mock_logger:
                 save_gaps_to_yaml([], '1!')
@@ -939,7 +939,7 @@ class TestSaveGapsToYaml:
                 assert 'skipping save' in info_msg
 
                 # Should not create file
-                file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+                file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
                 assert not os.path.exists(file_path)
         finally:
             os.chdir(original_cwd)
@@ -952,7 +952,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -968,7 +968,7 @@ class TestSaveGapsToYaml:
                 save_gaps_to_yaml(gaps, '1!')
 
             # Verify file was created
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             assert os.path.exists(file_path)
 
             # Verify content
@@ -992,7 +992,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create existing gaps file
             existing_data = {
@@ -1010,7 +1010,7 @@ class TestSaveGapsToYaml:
                 'meta': {'total_gaps': 1}
             }
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 yaml.dump(existing_data, f)
 
@@ -1046,7 +1046,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create existing gaps file
             existing_data = {
@@ -1064,7 +1064,7 @@ class TestSaveGapsToYaml:
                 'meta': {'total_gaps': 1}
             }
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 yaml.dump(existing_data, f)
 
@@ -1104,10 +1104,10 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create corrupted YAML file
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 f.write('invalid: yaml: content: [[[')
 
@@ -1144,7 +1144,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -1160,12 +1160,12 @@ class TestSaveGapsToYaml:
                 save_gaps_to_yaml(gaps, '1!')
 
             # Verify no temp files left behind
-            data_files = os.listdir('data')
+            data_files = os.listdir(os.path.join('data', 'historical_data'))
             temp_files = [f for f in data_files if f.endswith('.tmp') or 'tmp' in f.lower()]
             assert len(temp_files) == 0
 
             # Verify final file exists
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             assert os.path.exists(file_path)
         finally:
             os.chdir(original_cwd)
@@ -1178,7 +1178,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -1197,7 +1197,7 @@ class TestSaveGapsToYaml:
                         save_gaps_to_yaml(gaps, '1!')
 
             # Verify temp files are cleaned up
-            data_files = os.listdir('data')
+            data_files = os.listdir(os.path.join('data', 'historical_data'))
             # Should not have any temp YAML files
             yaml_files = [f for f in data_files if f.endswith('.yaml')]
             # Only temp files if any should be cleaned
@@ -1213,7 +1213,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -1242,7 +1242,7 @@ class TestSaveGapsToYaml:
             with patch('app.backtesting.fetching.validators.logger'):
                 save_gaps_to_yaml(gaps, '1!')
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'r') as f:
                 data = yaml.safe_load(f)
 
@@ -1262,7 +1262,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -1277,7 +1277,7 @@ class TestSaveGapsToYaml:
             with patch('app.backtesting.fetching.validators.logger'):
                 save_gaps_to_yaml(gaps, '1!')
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'r') as f:
                 data = yaml.safe_load(f)
 
@@ -1298,7 +1298,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create existing gaps file with one gap
             existing_data = {
@@ -1316,7 +1316,7 @@ class TestSaveGapsToYaml:
                 'meta': {'total_gaps': 1}
             }
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 yaml.dump(existing_data, f)
 
@@ -1363,7 +1363,7 @@ class TestSaveGapsToYaml:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             gaps = [
                 {
@@ -1377,7 +1377,7 @@ class TestSaveGapsToYaml:
 
             # Create a real temp file first, then make operations fail
             import tempfile
-            real_fd, real_temp_path = tempfile.mkstemp(dir='data', suffix='.yaml')
+            real_fd, real_temp_path = tempfile.mkstemp(dir=os.path.join('data', 'historical_data'), suffix='.yaml')
             os.close(real_fd)
 
             # Patch os.replace to raise error and os.path.exists to return True for temp file
@@ -1427,7 +1427,7 @@ class TestLoadExistingGaps:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             result = load_existing_gaps('1!')
 
@@ -1444,7 +1444,7 @@ class TestLoadExistingGaps:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create gaps file
             gaps_data = {
@@ -1475,7 +1475,7 @@ class TestLoadExistingGaps:
                 }
             }
 
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 yaml.dump(gaps_data, f)
 
@@ -1499,10 +1499,10 @@ class TestLoadExistingGaps:
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
-            os.makedirs('data', exist_ok=True)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
 
             # Create corrupted file
-            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
             with open(file_path, 'w') as f:
                 f.write('invalid: yaml: [[[')
 
@@ -1644,8 +1644,8 @@ class TestTimestampNormalization:
             original_cwd = os.getcwd()
             try:
                 os.chdir(tmpdir)
-                os.makedirs('data', exist_ok=True)
-                os.rename('historical_data_gaps_1!.yaml', 'data/historical_data_gaps_1!.yaml')
+                os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+                os.rename('historical_data_gaps_1!.yaml', 'data/historical_data/historical_data_gaps_1!.yaml')
 
                 # Load gaps
                 known_gaps = load_existing_gaps('1!')
