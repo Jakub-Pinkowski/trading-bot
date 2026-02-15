@@ -947,6 +947,204 @@ class TestPerformanceAndStress:
                         assert loaded.index.min().year >= DATA_START_YEAR
 
 
+class TestGapAggregationAndSaving:
+    """Test gap aggregation and saving functionality in fetch_all_data."""
+
+    def test_fetch_all_data_aggregates_gaps_from_multiple_symbols(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps from multiple symbols are aggregated correctly."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS', 'ZC'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            # Mock detect_gaps to return gaps
+            gap1 = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+            gap2 = {
+                'symbol': 'ZC1!',
+                'interval': '1h',
+                'start_time': '2024-02-01T10:00:00',
+                'end_time': '2024-02-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
+                            # Return different gaps for each symbol
+                            mock_detect.side_effect = [[gap1], [gap2]]
+
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Should save aggregated gaps
+                            mock_save.assert_called_once()
+                            saved_gaps = mock_save.call_args[0][0]
+                            assert len(saved_gaps) == 2
+                            assert gap1 in saved_gaps
+                            assert gap2 in saved_gaps
+
+                            # Should log processing message
+                            info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
+                            assert any('Processing 2 detected gap(s)' in msg for msg in info_calls)
+
+    def test_fetch_all_data_updates_known_gaps_during_fetching(self, mock_tv_client, sample_ohlcv_data, temp_data_dir):
+        """Test that known_gaps set is updated as gaps are discovered."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS', 'ZC'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml'):
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            # First symbol returns gap, second returns empty
+                            mock_detect.side_effect = [[gap], []]
+
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Verify detect_gaps was called twice with updated known_gaps
+                            assert mock_detect.call_count == 2
+
+                            # Second call should have the gap from first call in known_gaps
+                            second_call_known_gaps = mock_detect.call_args_list[1][0][3]
+                            assert isinstance(second_call_known_gaps, set)
+                            # The known_gaps should contain the gap from first symbol
+                            assert len(second_call_known_gaps) >= 1
+
+    def test_fetch_all_data_no_gaps_detected_logs_message(self, mock_tv_client, sample_ohlcv_data, temp_data_dir):
+        """Test that no gaps message is logged when no gaps detected."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Should not call save_gaps_to_yaml
+                            mock_save.assert_not_called()
+
+                            # Should log no gaps message
+                            info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
+                            assert any('No gaps detected' in msg for msg in info_calls)
+
+    def test_fetch_all_data_saves_gaps_with_correct_contract_suffix(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps are saved with correct contract suffix."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='2!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap = {
+                'symbol': 'ZS2!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[gap]):
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Verify contract suffix passed correctly
+                            mock_save.assert_called_once()
+                            assert mock_save.call_args[0][1] == '2!'
+
+    def test_fetch_all_data_gaps_from_multiple_intervals_aggregated(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps from multiple intervals are aggregated."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap_1h = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+            gap_4h = {
+                'symbol': 'ZS1!',
+                'interval': '4h',
+                'start_time': '2024-02-01T10:00:00',
+                'end_time': '2024-02-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            # Return different gaps for each interval
+                            mock_detect.side_effect = [[gap_1h], [gap_4h]]
+
+                            fetcher.fetch_all_data(['1h', '4h'])
+
+                            # Should save both gaps
+                            mock_save.assert_called_once()
+                            saved_gaps = mock_save.call_args[0][0]
+                            assert len(saved_gaps) == 2
+                            assert gap_1h in saved_gaps
+                            assert gap_4h in saved_gaps
+
+
 class TestRealDataIntegration:
     """Test with realistic data scenarios and edge cases."""
 

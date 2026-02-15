@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+import yaml
 
 from app.backtesting.fetching.validators import (
     validate_symbols,
@@ -913,6 +914,610 @@ class TestRealDataIntegration:
             'volume': [0, 0, 1000, 0, 2000]  # Some zero volume bars
         })
         validate_ohlcv_data(data_zero_volume, 'ZS', '1h')
+
+
+class TestSaveGapsToYaml:
+    """Test save_gaps_to_yaml function."""
+
+    def test_save_empty_gaps_list_skips_save(self, tmp_path):
+        """Test that empty gaps list skips save and logs info."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml([], '1!')
+
+                # Should log info about skipping
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'No gaps detected' in info_msg
+                assert 'skipping save' in info_msg
+
+                # Should not create file
+                file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+                assert not os.path.exists(file_path)
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_creates_new_file(self, tmp_path):
+        """Test saving gaps creates a new YAML file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            # Verify file was created
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            assert os.path.exists(file_path)
+
+            # Verify content
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'gaps' in data
+            assert 'ZS1!' in data['gaps']
+            assert '1h' in data['gaps']['ZS1!']
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['gaps']['ZS1!']['1h'][0]['start_time'] == '2024-01-01T10:00:00'
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_merges_with_existing(self, tmp_path):
+        """Test saving gaps merges with existing file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create existing gaps file
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Add new gaps
+            new_gaps = [
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-02-01T10:00:00',
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(new_gaps, '1!')
+
+            # Verify merged content
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'ZS1!' in data['gaps']
+            assert 'ZC1!' in data['gaps']
+            assert data['meta']['total_gaps'] == 2
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_skips_duplicates(self, tmp_path):
+        """Test that duplicate gaps are skipped."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create existing gaps file
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Try to add same gap again
+            duplicate_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(duplicate_gaps, '1!')
+
+                # Should log about skipped duplicates
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'already exist' in info_msg
+
+            # Verify no duplicate added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_handles_corrupted_existing_file(self, tmp_path):
+        """Test saving gaps handles corrupted existing YAML file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create corrupted YAML file
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                f.write('invalid: yaml: content: [[[')
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(gaps, '1!')
+
+                # Should log warning about failed load
+                mock_logger.warning.assert_called()
+
+            # Should create fresh file
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'gaps' in data
+            assert 'ZS1!' in data['gaps']
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_atomic_write(self, tmp_path):
+        """Test that gaps are saved atomically using temp file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            # Verify no temp files left behind
+            data_files = os.listdir('data')
+            temp_files = [f for f in data_files if f.endswith('.tmp') or 'tmp' in f.lower()]
+            assert len(temp_files) == 0
+
+            # Verify final file exists
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            assert os.path.exists(file_path)
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_error_handling_cleanup(self, tmp_path):
+        """Test that temp file is cleaned up on error."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            # Mock os.replace to raise error
+            with patch('os.replace', side_effect=OSError('Disk full')):
+                with patch('app.backtesting.fetching.validators.logger'):
+                    with pytest.raises(OSError):
+                        save_gaps_to_yaml(gaps, '1!')
+
+            # Verify temp files are cleaned up
+            data_files = os.listdir('data')
+            # Should not have any temp YAML files
+            yaml_files = [f for f in data_files if f.endswith('.yaml')]
+            # Only temp files if any should be cleaned
+            assert len([f for f in data_files if '.yaml' in f and 'tmp' not in f.lower()]) == 0
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_with_multiple_symbols_and_intervals(self, tmp_path):
+        """Test saving gaps for multiple symbols and intervals."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '4h',
+                    'start_time': '2024-02-01T10:00:00',
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-03-01T10:00:00',
+                    'end_time': '2024-03-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'ZS1!' in data['gaps']
+            assert 'ZC1!' in data['gaps']
+            assert '1h' in data['gaps']['ZS1!']
+            assert '4h' in data['gaps']['ZS1!']
+            assert data['meta']['total_gaps'] == 3
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_updates_metadata(self, tmp_path):
+        """Test that metadata is correctly updated."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'meta' in data
+            assert 'last_updated' in data['meta']
+            assert 'total_gaps' in data['meta']
+            assert 'symbols_scanned' in data['meta']
+            assert data['meta']['total_gaps'] == 1
+            assert 'ZS1!' in data['meta']['symbols_scanned']
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_mixed_new_and_duplicate(self, tmp_path):
+        """Test logging when both new gaps are added and duplicates are skipped."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create existing gaps file with one gap
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Add mix of new and duplicate gaps
+            mixed_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',  # Duplicate
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-02-01T10:00:00',  # New
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(mixed_gaps, '1!')
+
+                # Should log about both added and skipped
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'Saved 1 new gap(s)' in info_msg
+                assert 'skipped 1 duplicate(s)' in info_msg
+
+            # Verify only new gap added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert data['meta']['total_gaps'] == 2
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_cleanup_failure_warning(self, tmp_path):
+        """Test that cleanup failure is logged as warning without masking main exception."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            # Create a real temp file first, then make operations fail
+            import tempfile
+            real_fd, real_temp_path = tempfile.mkstemp(dir='data', suffix='.yaml')
+            os.close(real_fd)
+
+            # Patch os.replace to raise error and os.path.exists to return True for temp file
+            with patch('os.replace', side_effect=OSError('Disk full')):
+                with patch('os.path.exists') as mock_exists:
+                    # Return True for temp file check, False for initial file check
+                    def exists_side_effect(path):
+                        if '.yaml' in path and 'tmp' in path:
+                            return True
+                        return False
+
+                    mock_exists.side_effect = exists_side_effect
+
+                    with patch('os.remove', side_effect=PermissionError('Cannot delete')):
+                        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                            # Patch tempfile.mkstemp to return our pre-created temp file
+                            with patch('tempfile.mkstemp',
+                                       return_value=(os.open(real_temp_path, os.O_RDWR), real_temp_path)):
+                                with pytest.raises(OSError, match='Disk full'):
+                                    save_gaps_to_yaml(gaps, '1!')
+
+                                # Should log error for main failure
+                                error_calls = [str(call[0][0]) for call in mock_logger.error.call_args_list]
+                                assert any('Failed to save gaps file' in msg for msg in error_calls)
+
+                                # Should log warning for cleanup failure
+                                warning_calls = [str(call[0][0]) for call in mock_logger.warning.call_args_list]
+                                assert any('Failed to clean up temporary file' in msg for msg in warning_calls)
+        finally:
+            os.chdir(original_cwd)
+            # Clean up our temp file if it still exists
+            try:
+                if os.path.exists(real_temp_path):
+                    os.remove(real_temp_path)
+            except:
+                pass
+
+
+class TestLoadExistingGaps:
+    """Test load_existing_gaps function."""
+
+    def test_load_nonexistent_file_returns_empty_set(self, tmp_path):
+        """Test loading non-existent file returns empty set."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            result = load_existing_gaps('1!')
+
+            assert isinstance(result, set)
+            assert len(result) == 0
+        finally:
+            os.chdir(original_cwd)
+
+    def test_load_existing_gaps_returns_set(self, tmp_path):
+        """Test loading existing gaps returns correct set."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create gaps file
+            gaps_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            },
+                            {
+                                'start_time': '2024-02-01T10:00:00',
+                                'end_time': '2024-02-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    },
+                    'ZC1!': {
+                        '4h': [
+                            {
+                                'start_time': '2024-03-01T10:00:00',
+                                'end_time': '2024-03-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                }
+            }
+
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(gaps_data, f)
+
+            result = load_existing_gaps('1!')
+
+            assert isinstance(result, set)
+            assert len(result) == 3
+
+            # Verify tuples in set (timestamps should be normalized)
+            assert ('ZS1!', '1h', pd.Timestamp('2024-01-01T10:00:00')) in result
+            assert ('ZS1!', '1h', pd.Timestamp('2024-02-01T10:00:00')) in result
+            assert ('ZC1!', '4h', pd.Timestamp('2024-03-01T10:00:00')) in result
+        finally:
+            os.chdir(original_cwd)
+
+    def test_load_gaps_handles_corrupted_file(self, tmp_path):
+        """Test loading corrupted YAML returns empty set and logs warning."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs('data', exist_ok=True)
+
+            # Create corrupted file
+            file_path = os.path.join('data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                f.write('invalid: yaml: [[[')
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                result = load_existing_gaps('1!')
+
+                # Should log warning
+                mock_logger.warning.assert_called_once()
+                warning_msg = mock_logger.warning.call_args[0][0]
+                assert 'Failed to load existing gaps' in warning_msg
+
+            assert isinstance(result, set)
+            assert len(result) == 0
+        finally:
+            os.chdir(original_cwd)
 
 
 class TestTimestampNormalization:
