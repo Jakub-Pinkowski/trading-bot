@@ -14,7 +14,9 @@ from app.backtesting.fetching.validators import (
     validate_symbols,
     validate_exchange_compatibility,
     validate_ohlcv_data,
-    detect_and_log_gaps
+    detect_gaps,
+    save_gaps_to_yaml,
+    load_existing_gaps
 )
 from app.utils.logger import get_logger
 from config import HISTORICAL_DATA_DIR
@@ -41,18 +43,52 @@ INTERVAL_MAPPING = {
 # ==================== Helper Functions ====================
 
 
-def _save_new_data(data, file_path, interval_label, full_symbol):
-    """Save new data to a file."""
-    # Detect gaps
-    detect_and_log_gaps(data, interval_label, full_symbol)
+def _save_new_data(data, file_path, interval_label, full_symbol, known_gaps):
+    """
+    Save new data to a file.
 
-    # Save data
+    Detects gaps in the time series data and saves the DataFrame to a parquet file.
+    This function is called when no existing data file is found for the symbol-interval
+    combination.
+
+    Args:
+        data: DataFrame with OHLCV columns and datetime index
+        file_path: Full path where a parquet file will be created
+        interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+        full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+        known_gaps: Set of known gap tuples (symbol, interval, start_time)
+
+    Returns:
+        List of detected gaps (passed up for aggregation)
+    """
+    # Detect gaps in the data
+    gaps = detect_gaps(data, interval_label, full_symbol, known_gaps)
+
+    # Save data to parquet
     data.to_parquet(file_path)
-    logger.info(f'  ✅ Created {len(data)} rows')
+    logger.info(f'{full_symbol} {interval_label}: ✅ Created {len(data)} rows')
+
+    return gaps
 
 
-def _update_existing_data(new_data, file_path, interval_label, full_symbol):
-    """Update the existing data file with new data."""
+def _update_existing_data(new_data, file_path, interval_label, full_symbol, known_gaps):
+    """
+    Update the existing data file with new data.
+
+    Combines new data with existing data, removes duplicates (keeping the latest values),
+    sorts the combined dataset, detects gaps, and saves the updated data back to the file.
+    New data takes precedence over existing data in case of overlapping timestamps.
+
+    Args:
+        new_data: DataFrame with new OHLCV data to add
+        file_path: Full path to an existing parquet file
+        interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+        full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+        known_gaps: Set of known gap tuples (symbol, interval, start_time)
+
+    Returns:
+        List of detected gaps (passed up for aggregation)
+    """
     try:
         # Load existing data
         existing_data = pd.read_parquet(file_path)
@@ -64,8 +100,8 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
         # Remove duplicates, keeping LAST occurrence (new data takes precedence)
         combined_data = combined_data[~combined_data.index.duplicated(keep='last')].sort_index()  # type: ignore
 
-        # Detect gaps
-        detect_and_log_gaps(combined_data, interval_label, full_symbol)
+        # Detect gaps and capture returned data
+        gaps = detect_gaps(combined_data, interval_label, full_symbol, known_gaps)
 
         # Save combined data
         combined_data.to_parquet(file_path)
@@ -74,15 +110,18 @@ def _update_existing_data(new_data, file_path, interval_label, full_symbol):
         new_entries = len(combined_data) - existing_count
 
         if new_entries > 0:
-            logger.info(f'  ✅ +{new_entries} rows')
+            logger.info(f'{full_symbol} {interval_label}: ✅ +{new_entries} rows')
         elif new_entries < 0:
-            logger.warning(f'  ⚠️  {new_entries} rows')
+            logger.warning(f'{full_symbol} {interval_label}: ⚠️  {new_entries} rows')
         else:
-            logger.info(f'  No new data')
+            logger.info(f'{full_symbol} {interval_label}: No new data')
+
+        return gaps
 
     except Exception as e:
         # Log error without re-raising because the caller handles failures gracefully
         logger.error(f'Error updating existing file {file_path}: {e}')
+        return []
 
 
 # ==================== Data Fetcher Class ====================
@@ -110,13 +149,16 @@ class DataFetcher:
         """
         Initialize the data fetcher.
 
+        Validates symbols for TradingView compatibility and exchange compatibility,
+        initializes the TradingView client, and sets up data filtering parameters.
+
         Args:
             symbols: List of base symbol names (e.g., ['MZL', 'MET', 'RTY'])
             contract_suffix: Contract identifier suffix (e.g., '1!' for front month)
             exchange: Exchange name for data fetching (e.g., 'CBOT')
 
         Raises:
-            ValueError: If a symbols list is empty or parameters are invalid
+            ValueError: If symbols list is empty or parameters are invalid
         """
         if not symbols:
             raise ValueError('symbols list cannot be empty')
@@ -142,7 +184,8 @@ class DataFetcher:
         Fetch data for all configured symbols and intervals.
 
         Downloads historical data for each symbol-interval combination,
-        handles updates to existing data, and validates data quality.
+        handles updates to existing data, validates data quality, and aggregates
+        all detected gaps for saving to YAML.
 
         Args:
             intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
@@ -159,16 +202,50 @@ class DataFetcher:
             raise ValueError(f'Invalid intervals: {invalid_intervals}. '
                              f'Supported: {list(INTERVAL_MAPPING.keys())}')
 
+        # Load existing gaps to avoid warning on known issues
+        known_gaps = load_existing_gaps(self.contract_suffix)
+
+        # Collect all gaps during fetching
+        all_gaps = []
+
         for symbol in self.symbols:
-            self._fetch_symbol_data(symbol, intervals)
+            symbol_gaps = self._fetch_symbol_data(symbol, intervals, known_gaps)
+            all_gaps.extend(symbol_gaps)
+
+            # Update known_gaps with newly discovered gaps to prevent duplicate warnings
+            for gap in symbol_gaps:
+                known_gaps.add((gap['symbol'], gap['interval'], gap['start_time']))
+
+        # Save all collected gaps to YAML
+        if all_gaps:
+            logger.info(f'Processing {len(all_gaps)} detected gap(s)...')
+            save_gaps_to_yaml(all_gaps, self.contract_suffix)
+        else:
+            logger.info('No gaps detected during data fetch')
 
     # ==================== Private Methods ====================
 
-    def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir):
-        """Fetch data for a single symbol-interval combination."""
+    def _fetch_interval_data(self, base_symbol, full_symbol, interval_label, output_dir, known_gaps):
+        """
+        Fetch data for a single symbol-interval combination.
+
+        Downloads historical data from TradingView, validates OHLCV structure,
+        filters data from 2020 onwards, and saves or updates the parquet file.
+        Returns detected gaps for aggregation.
+
+        Args:
+            base_symbol: Base symbol without a contract suffix (e.g., 'ZS')
+            full_symbol: Symbol with contract suffix (e.g., 'ZS1!')
+            interval_label: Interval identifier (e.g., '5m', '1h', '1d')
+            output_dir: Directory path where a parquet file will be saved
+            known_gaps: Set of known gap tuples (symbol, interval, start_time)
+
+        Returns:
+            List of detected gaps (empty list on error)
+        """
         if interval_label not in INTERVAL_MAPPING:
             logger.warning(f'Invalid interval: {interval_label}. Skipping.')
-            return
+            return []
 
         interval = INTERVAL_MAPPING[interval_label]
 
@@ -184,7 +261,7 @@ class DataFetcher:
 
             if data is None or len(data) == 0:
                 logger.warning(f'No data received for {full_symbol} {interval_label}')
-                return
+                return []
 
             # Validate OHLCV data structure
             validate_ohlcv_data(data, full_symbol, interval_label)
@@ -194,26 +271,46 @@ class DataFetcher:
 
             if len(data) == 0:
                 logger.warning(f'No data after year filtering for {full_symbol} {interval_label}')
-                return
+                return []
 
             # Save or update the data
             file_path = os.path.join(output_dir, f'{base_symbol}_{interval_label}.parquet')
 
             if os.path.exists(file_path):
-                _update_existing_data(data, file_path, interval_label, full_symbol)
+                return _update_existing_data(data, file_path, interval_label, full_symbol, known_gaps)
             else:
-                _save_new_data(data, file_path, interval_label, full_symbol)
+                return _save_new_data(data, file_path, interval_label, full_symbol, known_gaps)
 
         except ValueError as e:
             logger.error(f'Data validation failed for {full_symbol} {interval_label}: {e}')
+            return []
         except Exception as e:
             logger.error(f'Error fetching data for {full_symbol} {interval_label}: {e}')
+            return []
 
-    def _fetch_symbol_data(self, symbol, intervals):
-        """Fetch data for a single symbol across multiple intervals."""
+    def _fetch_symbol_data(self, symbol, intervals, known_gaps):
+        """
+        Fetch data for a single symbol across multiple intervals.
+
+        Creates the output directory for the symbol and iterates through all
+        requested intervals, fetching and saving data for each. Aggregates
+        all detected gaps from the intervals.
+
+        Args:
+            symbol: Base symbol without a contract suffix (e.g., 'ZS')
+            intervals: List of interval labels to fetch (e.g., ['5m', '1h', '1d'])
+            known_gaps: Set of known gap tuples (symbol, interval, start_time)
+
+        Returns:
+            List of detected gaps aggregated from all intervals
+        """
         full_symbol = symbol + self.contract_suffix
         output_dir = os.path.join(HISTORICAL_DATA_DIR, self.contract_suffix, symbol)
         os.makedirs(output_dir, exist_ok=True)
 
+        symbol_gaps = []
         for idx, interval_label in enumerate(intervals, 1):
-            self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir)
+            interval_gaps = self._fetch_interval_data(symbol, full_symbol, interval_label, output_dir, known_gaps)
+            symbol_gaps.extend(interval_gaps)
+
+        return symbol_gaps

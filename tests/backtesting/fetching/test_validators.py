@@ -16,12 +16,13 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+import yaml
 
 from app.backtesting.fetching.validators import (
     validate_symbols,
     validate_exchange_compatibility,
     validate_ohlcv_data,
-    detect_and_log_gaps
+    detect_gaps
 )
 
 
@@ -338,7 +339,7 @@ class TestValidateOHLCVData:
         assert '4h' in error_msg
 
 
-class TestDetectAndLogGaps:
+class TestDetectGaps:
     """Test gap detection in time series data."""
 
     def test_no_gaps_detected(self):
@@ -350,48 +351,65 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings should be logged
             mock_logger.warning.assert_not_called()
 
+            # No gaps should be returned
+            assert len(gaps) == 0
+            assert isinstance(gaps, list)
+
     def test_large_gap_detected(self):
         """Test warning logged for gap larger than threshold."""
-        # Create data with a 7-day gap (larger than 4-day threshold)
+        # Create data with a 7-day gap (larger than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-08', periods=10, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 20
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
-            # Warning should be logged
+            # Gap should be logged
             mock_logger.warning.assert_called_once()
             warning_msg = mock_logger.warning.call_args[0][0]
-            assert 'Data gap detected' in warning_msg
+            assert 'NEW data gap detected' in warning_msg
             assert 'ZS1!' in warning_msg
             assert '1h' in warning_msg
 
+            # Verify return value structure
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert 'start_time' in gap
+            assert 'end_time' in gap
+            assert 'duration_days' in gap
+            assert 6.0 < gap['duration_days'] < 8.0  # Approximately 7 days
+
     def test_small_gap_not_logged(self):
         """Test gap smaller than threshold is not logged."""
-        # Create data with a 2-day gap (smaller than 4-day threshold)
+        # Create data with a 2-day gap (smaller than 5-day threshold)
         dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
         dates2 = pd.date_range('2024-01-03', periods=10, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 20
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warning should be logged for small gaps
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_multiple_gaps_detected(self):
         """Test multiple gaps are all logged."""
@@ -399,17 +417,38 @@ class TestDetectAndLogGaps:
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-10', periods=5, freq='h')
         dates3 = pd.date_range('2024-01-20', periods=5, freq='h')
-        dates = dates1.append(dates2).append(dates3)
+        dates = dates1.union(dates2).union(dates3)
 
         data = pd.DataFrame({
             'close': [100.0] * 15
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Two gaps should be logged
             assert mock_logger.warning.call_count == 2
+
+            # Two gaps should be returned
+            assert len(gaps) == 2
+
+            # Verify first gap structure
+            gap1 = gaps[0]
+            assert gap1['symbol'] == 'ZS1!'
+            assert gap1['interval'] == '1h'
+            assert 'start_time' in gap1
+            assert 'end_time' in gap1
+            assert 'duration_days' in gap1
+            assert 8.0 < gap1['duration_days'] < 10.0  # Approximately 9 days
+
+            # Verify second gap structure
+            gap2 = gaps[1]
+            assert gap2['symbol'] == 'ZS1!'
+            assert gap2['interval'] == '1h'
+            assert 'start_time' in gap2
+            assert 'end_time' in gap2
+            assert 'duration_days' in gap2
+            assert 9.0 < gap2['duration_days'] < 11.0  # Approximately 10 days
 
     def test_single_row_data(self):
         """Test no error with single row of data."""
@@ -418,20 +457,26 @@ class TestDetectAndLogGaps:
         }, index=[datetime(2024, 1, 1)])
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for single row
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_empty_dataframe(self):
         """Test no error with empty DataFrame."""
         data = pd.DataFrame()
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for empty data
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_unsorted_index_handled(self):
         """Test gap detection works with unsorted datetime index."""
@@ -448,58 +493,72 @@ class TestDetectAndLogGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should still be detected after sorting
             mock_logger.warning.assert_called()
 
+            # Should return one gap
+            assert len(gaps) == 1
+            assert gaps[0]['symbol'] == 'ZS1!'
+
     def test_gap_at_threshold_boundary(self):
         """Test gap exactly at threshold is not logged."""
-        # Create gap exactly equal to threshold (4 days)
+        # Create gap exactly equal to threshold (5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
-        dates2 = pd.date_range('2024-01-05', periods=5, freq='h')
-        dates = dates1.append(dates2)
+        dates2 = pd.date_range('2024-01-06', periods=5, freq='h')
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap at threshold should not be logged (only > threshold)
             mock_logger.warning.assert_not_called()
 
+            # No gaps should be returned
+            assert len(gaps) == 0
+
     def test_gap_slightly_above_threshold(self):
         """Test gap just above threshold is logged."""
-        # Create gap just above threshold (>4 days)
+        # Create gap just above threshold (>5 days)
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
-        dates2 = pd.date_range('2024-01-06', periods=5, freq='h')  # 5 days gap
-        dates = dates1.append(dates2)
+        dates2 = pd.date_range('2024-01-07', periods=5, freq='h')  # ~6 days gap
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should be logged
             mock_logger.warning.assert_called_once()
+
+            # Should return one gap
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert gap['duration_days'] > 5.0
 
     def test_warning_message_format(self):
         """Test warning message contains all required information."""
         # Create data with gap
         dates1 = pd.date_range('2024-01-01', periods=5, freq='h')
         dates2 = pd.date_range('2024-01-10', periods=5, freq='h')
-        dates = dates1.append(dates2)
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 10
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'CL1!')
+            gaps = detect_gaps(data, '1h', 'CL1!', set())
 
             warning_msg = mock_logger.warning.call_args[0][0]
             assert 'CL1!' in warning_msg
@@ -507,6 +566,11 @@ class TestDetectAndLogGaps:
             assert 'from' in warning_msg
             assert 'to' in warning_msg
             assert 'duration' in warning_msg
+
+            # Verify return value
+            assert len(gaps) == 1
+            assert gaps[0]['symbol'] == 'CL1!'
+            assert gaps[0]['interval'] == '1h'
 
 
 class TestIntegrationScenarios:
@@ -616,17 +680,24 @@ class TestPerformanceAndStress:
         dates1 = pd.date_range('2020-01-01', periods=2000, freq='h')
         dates2 = pd.date_range('2020-05-01', periods=2000, freq='h')  # Large gap
         dates3 = pd.date_range('2020-09-01', periods=2000, freq='h')  # Another large gap
-        dates = dates1.append(dates2).append(dates3)
+        dates = dates1.union(dates2).union(dates3)
 
         data = pd.DataFrame({
             'close': [100.0] * 6000
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect both gaps
             assert mock_logger.warning.call_count == 2
+
+            # Should return two gaps
+            assert len(gaps) == 2
+            for gap in gaps:
+                assert gap['symbol'] == 'ZS1!'
+                assert gap['interval'] == '1h'
+                assert 'duration_days' in gap
 
     def test_unsorted_large_dataset(self):
         """Test gap detection with large unsorted dataset."""
@@ -645,10 +716,14 @@ class TestPerformanceAndStress:
         }, index=all_dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should still detect gap despite unsorted data
             mock_logger.warning.assert_called()
+
+            # Should return at least one gap
+            assert len(gaps) >= 1
+            assert all(gap['symbol'] == 'ZS1!' for gap in gaps)
 
     @pytest.mark.parametrize("num_rows", [10, 100, 1000, 5000])
     def test_validation_scales_with_data_size(self, num_rows):
@@ -681,9 +756,9 @@ class TestPerformanceAndStress:
         }, index=pd.DatetimeIndex(all_dates))
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            detect_gaps(data, '1h', 'ZS1!', set())
 
-            # Should not log small gaps (< 4 days)
+            # Should not log small gaps (< 5 days)
             mock_logger.warning.assert_not_called()
 
 
@@ -721,27 +796,37 @@ class TestRealDataIntegration:
         }, index=pd.DatetimeIndex(dates))
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Weekend gaps (~2.5 days) should not trigger warnings
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned (all below threshold)
+            assert len(gaps) == 0
 
     def test_holiday_gap_scenario(self):
         """Test gap detection with extended holiday gap."""
         # Simulate week-long holiday break
         dates1 = pd.date_range('2024-01-01', periods=50, freq='h')
-        dates2 = pd.date_range('2024-01-15', periods=50, freq='h')  # 14-day gap
-        dates = dates1.append(dates2)
+        dates2 = pd.date_range('2024-01-15', periods=50, freq='h')  # ~12-day gap
+        dates = dates1.union(dates2)
 
         data = pd.DataFrame({
             'close': [100.0] * 100
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_and_log_gaps(data, '1h', 'ZS1!')
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect extended gap
             mock_logger.warning.assert_called_once()
+
+            # Should return one gap
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert 11.0 < gap['duration_days'] < 13.0  # Approximately 12 days
 
     def test_mixed_symbol_categories(self):
         """Test validation with symbols from different categories."""
@@ -829,3 +914,837 @@ class TestRealDataIntegration:
             'volume': [0, 0, 1000, 0, 2000]  # Some zero volume bars
         })
         validate_ohlcv_data(data_zero_volume, 'ZS', '1h')
+
+
+class TestSaveGapsToYaml:
+    """Test save_gaps_to_yaml function."""
+
+    def test_save_empty_gaps_list_skips_save(self, tmp_path):
+        """Test that empty gaps list skips save and logs info."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml([], '1!')
+
+                # Should log info about skipping
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'No gaps detected' in info_msg
+                assert 'skipping save' in info_msg
+
+                # Should not create file
+                file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+                assert not os.path.exists(file_path)
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_creates_new_file(self, tmp_path):
+        """Test saving gaps creates a new YAML file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            # Verify file was created
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            assert os.path.exists(file_path)
+
+            # Verify content
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'gaps' in data
+            assert 'ZS1!' in data['gaps']
+            assert '1h' in data['gaps']['ZS1!']
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['gaps']['ZS1!']['1h'][0]['start_time'] == '2024-01-01T10:00:00'
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_merges_with_existing(self, tmp_path):
+        """Test saving gaps merges with existing file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create existing gaps file
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Add new gaps
+            new_gaps = [
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-02-01T10:00:00',
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(new_gaps, '1!')
+
+            # Verify merged content
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'ZS1!' in data['gaps']
+            assert 'ZC1!' in data['gaps']
+            assert data['meta']['total_gaps'] == 2
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_skips_duplicates(self, tmp_path):
+        """Test that duplicate gaps are skipped."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create existing gaps file
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Try to add same gap again
+            duplicate_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(duplicate_gaps, '1!')
+
+                # Should log about skipped duplicates
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'already exist' in info_msg
+
+            # Verify no duplicate added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_skips_duplicates_with_different_iso_formats(self, tmp_path):
+        """Test that duplicate gaps with different ISO timestamp formats are detected."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create existing gaps file with microseconds
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00.000000',
+                                'end_time': '2024-01-15T10:00:00.000000',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Try to add same gap with different formatting (no microseconds)
+            duplicate_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(duplicate_gaps, '1!')
+
+                # Should log about skipped duplicates
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'already exist' in info_msg
+
+            # Verify no duplicate added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert len(data['gaps']['ZS1!']['1h']) == 1
+            assert data['meta']['total_gaps'] == 1
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_handles_corrupted_existing_file(self, tmp_path):
+        """Test saving gaps handles corrupted existing YAML file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create corrupted YAML file
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                f.write('invalid: yaml: content: [[[')
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(gaps, '1!')
+
+                # Should log warning about failed load
+                mock_logger.warning.assert_called()
+
+            # Should create fresh file
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'gaps' in data
+            assert 'ZS1!' in data['gaps']
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_atomic_write(self, tmp_path):
+        """Test that gaps are saved atomically using temp file."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            # Verify no temp files left behind
+            data_files = os.listdir(os.path.join('data', 'historical_data'))
+            temp_files = [f for f in data_files if f.endswith('.tmp') or 'tmp' in f.lower()]
+            assert len(temp_files) == 0
+
+            # Verify final file exists
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            assert os.path.exists(file_path)
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_error_handling_cleanup(self, tmp_path):
+        """Test that temp file is cleaned up on error."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            # Mock os.replace to raise error
+            with patch('os.replace', side_effect=OSError('Disk full')):
+                with patch('app.backtesting.fetching.validators.logger'):
+                    with pytest.raises(OSError):
+                        save_gaps_to_yaml(gaps, '1!')
+
+            # Verify temp files are cleaned up
+            data_files = os.listdir(os.path.join('data', 'historical_data'))
+            # Should not have any temp YAML files
+            yaml_files = [f for f in data_files if f.endswith('.yaml')]
+            # Only temp files if any should be cleaned
+            assert len([f for f in data_files if '.yaml' in f and 'tmp' not in f.lower()]) == 0
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_with_multiple_symbols_and_intervals(self, tmp_path):
+        """Test saving gaps for multiple symbols and intervals."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '4h',
+                    'start_time': '2024-02-01T10:00:00',
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-03-01T10:00:00',
+                    'end_time': '2024-03-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'ZS1!' in data['gaps']
+            assert 'ZC1!' in data['gaps']
+            assert '1h' in data['gaps']['ZS1!']
+            assert '4h' in data['gaps']['ZS1!']
+            assert data['meta']['total_gaps'] == 3
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_updates_metadata(self, tmp_path):
+        """Test that metadata is correctly updated."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger'):
+                save_gaps_to_yaml(gaps, '1!')
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert 'meta' in data
+            assert 'last_updated' in data['meta']
+            assert 'total_gaps' in data['meta']
+            assert 'symbols_scanned' in data['meta']
+            assert data['meta']['total_gaps'] == 1
+            assert 'ZS1!' in data['meta']['symbols_scanned']
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_mixed_new_and_duplicate(self, tmp_path):
+        """Test logging when both new gaps are added and duplicates are skipped."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create existing gaps file with one gap
+            existing_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                },
+                'meta': {'total_gaps': 1}
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(existing_data, f)
+
+            # Add mix of new and duplicate gaps
+            mixed_gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',  # Duplicate
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                },
+                {
+                    'symbol': 'ZC1!',
+                    'interval': '1h',
+                    'start_time': '2024-02-01T10:00:00',  # New
+                    'end_time': '2024-02-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                save_gaps_to_yaml(mixed_gaps, '1!')
+
+                # Should log about both added and skipped
+                mock_logger.info.assert_called_once()
+                info_msg = mock_logger.info.call_args[0][0]
+                assert 'Saved 1 new gap(s)' in info_msg
+                assert 'skipped 1 duplicate(s)' in info_msg
+
+            # Verify only new gap added
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+
+            assert data['meta']['total_gaps'] == 2
+        finally:
+            os.chdir(original_cwd)
+
+    def test_save_gaps_cleanup_failure_warning(self, tmp_path):
+        """Test that cleanup failure is logged as warning without masking main exception."""
+        from app.backtesting.fetching.validators import save_gaps_to_yaml
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            gaps = [
+                {
+                    'symbol': 'ZS1!',
+                    'interval': '1h',
+                    'start_time': '2024-01-01T10:00:00',
+                    'end_time': '2024-01-15T10:00:00',
+                    'duration_days': 14.0
+                }
+            ]
+
+            # Create a real temp file first, then make operations fail
+            import tempfile
+            real_fd, real_temp_path = tempfile.mkstemp(dir=os.path.join('data', 'historical_data'), suffix='.yaml')
+            os.close(real_fd)
+
+            # Patch os.replace to raise error and os.path.exists to return True for temp file
+            with patch('os.replace', side_effect=OSError('Disk full')):
+                with patch('os.path.exists') as mock_exists:
+                    # Return True for temp file check, False for initial file check
+                    def exists_side_effect(path):
+                        if '.yaml' in path and 'tmp' in path:
+                            return True
+                        return False
+
+                    mock_exists.side_effect = exists_side_effect
+
+                    with patch('os.remove', side_effect=PermissionError('Cannot delete')):
+                        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                            # Patch tempfile.mkstemp to return our pre-created temp file
+                            with patch('tempfile.mkstemp',
+                                       return_value=(os.open(real_temp_path, os.O_RDWR), real_temp_path)):
+                                with pytest.raises(OSError, match='Disk full'):
+                                    save_gaps_to_yaml(gaps, '1!')
+
+                                # Should log error for main failure
+                                error_calls = [str(call[0][0]) for call in mock_logger.error.call_args_list]
+                                assert any('Failed to save gaps file' in msg for msg in error_calls)
+
+                                # Should log warning for cleanup failure
+                                warning_calls = [str(call[0][0]) for call in mock_logger.warning.call_args_list]
+                                assert any('Failed to clean up temporary file' in msg for msg in warning_calls)
+        finally:
+            os.chdir(original_cwd)
+            # Clean up our temp file if it still exists
+            try:
+                if os.path.exists(real_temp_path):
+                    os.remove(real_temp_path)
+            except:
+                pass
+
+
+class TestLoadExistingGaps:
+    """Test load_existing_gaps function."""
+
+    def test_load_nonexistent_file_returns_empty_set(self, tmp_path):
+        """Test loading non-existent file returns empty set."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            result = load_existing_gaps('1!')
+
+            assert isinstance(result, set)
+            assert len(result) == 0
+        finally:
+            os.chdir(original_cwd)
+
+    def test_load_existing_gaps_returns_set(self, tmp_path):
+        """Test loading existing gaps returns correct set."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create gaps file
+            gaps_data = {
+                'gaps': {
+                    'ZS1!': {
+                        '1h': [
+                            {
+                                'start_time': '2024-01-01T10:00:00',
+                                'end_time': '2024-01-15T10:00:00',
+                                'duration_days': 14.0
+                            },
+                            {
+                                'start_time': '2024-02-01T10:00:00',
+                                'end_time': '2024-02-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    },
+                    'ZC1!': {
+                        '4h': [
+                            {
+                                'start_time': '2024-03-01T10:00:00',
+                                'end_time': '2024-03-15T10:00:00',
+                                'duration_days': 14.0
+                            }
+                        ]
+                    }
+                }
+            }
+
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(gaps_data, f)
+
+            result = load_existing_gaps('1!')
+
+            assert isinstance(result, set)
+            assert len(result) == 3
+
+            # Verify tuples in set (timestamps should be normalized)
+            assert ('ZS1!', '1h', pd.Timestamp('2024-01-01T10:00:00')) in result
+            assert ('ZS1!', '1h', pd.Timestamp('2024-02-01T10:00:00')) in result
+            assert ('ZC1!', '4h', pd.Timestamp('2024-03-01T10:00:00')) in result
+        finally:
+            os.chdir(original_cwd)
+
+    def test_load_gaps_handles_corrupted_file(self, tmp_path):
+        """Test loading corrupted YAML returns empty set and logs warning."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+
+            # Create corrupted file
+            file_path = os.path.join('data', 'historical_data', 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                f.write('invalid: yaml: [[[')
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                result = load_existing_gaps('1!')
+
+                # Should log warning
+                mock_logger.warning.assert_called_once()
+                warning_msg = mock_logger.warning.call_args[0][0]
+                assert 'Failed to load existing gaps' in warning_msg
+
+            assert isinstance(result, set)
+            assert len(result) == 0
+        finally:
+            os.chdir(original_cwd)
+
+
+class TestTimestampNormalization:
+    """Test timestamp normalization for gap detection to prevent false NEW gap warnings."""
+
+    def test_detect_gaps_with_known_gaps_no_warning(self):
+        """Test that known gaps don't trigger NEW gap warnings."""
+        # Create data with a 10-day gap
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+        dates = dates1.union(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps set with normalized timestamp (no microseconds)
+        gap_start = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_detect_gaps_with_microseconds_in_timestamp(self):
+        """Test that timestamps with microseconds are normalized correctly."""
+        # Create data with timestamps that include microseconds
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+
+        # Add microseconds to the timestamps
+        dates1_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=123456) for d in dates1])
+        dates2_with_micros = pd.DatetimeIndex([d + pd.Timedelta(microseconds=789012) for d in dates2])
+        dates = dates1_with_micros.union(dates2_with_micros)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps with normalized timestamp (no microseconds)
+        gap_start = dates1_with_micros[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning due to normalization
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_detect_gaps_new_gap_triggers_warning(self):
+        """Test that truly new gaps trigger warnings."""
+        # Create data with two gaps
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h')
+        dates3 = pd.date_range('2024-02-01', periods=10, freq='h')
+        dates = dates1.union(dates2).union(dates3)
+
+        data = pd.DataFrame({'close': [100.0] * 30}, index=dates)
+
+        # Only mark first gap as known
+        gap_start_1 = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start_1)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect two gaps but only warn about the second one
+            assert len(gaps) == 2
+            mock_logger.warning.assert_called_once()
+
+            # Verify the warning is about the second gap
+            warning_msg = mock_logger.warning.call_args[0][0]
+            assert 'NEW data gap' in warning_msg
+            assert '2024-02' in warning_msg  # Second gap starts in February
+
+    def test_detect_gaps_with_timezone_aware_timestamps(self):
+        """Test gap detection with timezone-aware timestamps."""
+        # Create timezone-aware timestamps
+        dates1 = pd.date_range('2024-01-01', periods=10, freq='h', tz='UTC')
+        dates2 = pd.date_range('2024-01-15', periods=10, freq='h', tz='UTC')
+        dates = dates1.union(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 20}, index=dates)
+
+        # Create known_gaps with timezone-aware timestamp
+        gap_start = dates1[-1].replace(microsecond=0)
+        known_gaps = {('ZS1!', '1h', gap_start)}
+
+        with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+            gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+            # Should detect the gap but not log warning
+            assert len(gaps) == 1
+            mock_logger.warning.assert_not_called()
+
+    def test_load_existing_gaps_normalizes_timestamps(self):
+        """Test that load_existing_gaps normalizes timestamps from YAML."""
+        from app.backtesting.fetching.validators import load_existing_gaps
+        import tempfile
+        import yaml
+        import os
+
+        # Create temporary YAML file with gap data
+        gap_data = {
+            'gaps': {
+                'ZS1!': {
+                    '1h': [
+                        {
+                            'start_time': '2024-01-01T10:00:00.123456',  # With microseconds
+                            'end_time': '2024-01-15T10:00:00',
+                            'duration_days': 14.0
+                        }
+                    ]
+                }
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, 'historical_data_gaps_1!.yaml')
+            with open(file_path, 'w') as f:
+                yaml.dump(gap_data, f)
+
+            # Temporarily change working directory
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                os.makedirs(os.path.join('data', 'historical_data'), exist_ok=True)
+                os.rename('historical_data_gaps_1!.yaml', 'data/historical_data/historical_data_gaps_1!.yaml')
+
+                # Load gaps
+                known_gaps = load_existing_gaps('1!')
+
+                # Verify timestamp is normalized (no microseconds)
+                assert len(known_gaps) == 1
+                gap_tuple = list(known_gaps)[0]
+                assert gap_tuple[0] == 'ZS1!'
+                assert gap_tuple[1] == '1h'
+                # Verify microseconds are removed
+                assert gap_tuple[2].microsecond == 0
+                assert gap_tuple[2] == pd.Timestamp('2024-01-01T10:00:00')
+            finally:
+                os.chdir(original_cwd)
+
+    def test_gap_comparison_consistent_across_formats(self):
+        """Test that gap comparison works regardless of timestamp format."""
+        # Create data with gap
+        dates1 = pd.date_range('2024-01-01 10:00:00', periods=5, freq='h')
+        dates2 = pd.date_range('2024-01-15 10:00:00', periods=5, freq='h')
+        dates = dates1.union(dates2)
+
+        data = pd.DataFrame({'close': [100.0] * 10}, index=dates)
+
+        # Test different timestamp formats in known_gaps
+        test_cases = [
+            # Format 1: Pandas Timestamp with microseconds
+            pd.Timestamp('2024-01-01 14:00:00.999999'),
+            # Format 2: Pandas Timestamp without microseconds
+            pd.Timestamp('2024-01-01 14:00:00'),
+            # Format 3: Normalized timestamp (what we use now)
+            pd.Timestamp('2024-01-01 14:00:00').replace(microsecond=0),
+        ]
+
+        for gap_timestamp in test_cases:
+            normalized_gap = gap_timestamp.replace(microsecond=0)
+            known_gaps = {('ZS1!', '1h', normalized_gap)}
+
+            with patch('app.backtesting.fetching.validators.logger') as mock_logger:
+                gaps = detect_gaps(data, '1h', 'ZS1!', known_gaps)
+
+                # Should not log warning for known gap
+                assert len(gaps) == 1
+                mock_logger.warning.assert_not_called()

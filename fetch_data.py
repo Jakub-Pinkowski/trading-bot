@@ -14,7 +14,7 @@ INTERVALS = ['5m']
 
 # Select which categories to fetch (see CATEGORIES.keys() for all available)
 # Available categories: Grains, Softs, Energy, Metals, Crypto, Index, Forex
-CATEGORIES_TO_FETCH = ['Grains', 'Softs']
+CATEGORIES_TO_FETCH = ['Grains', 'Softs', 'Energy', 'Metals', 'Crypto', 'Index', 'Forex']
 
 # Build symbol list from selected categories
 SYMBOLS_TO_FETCH = []

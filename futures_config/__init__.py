@@ -17,7 +17,6 @@ from futures_config.categories import (
     FOREX,
     CATEGORIES,
 )
-
 # Import helper functions
 from futures_config.helpers import (
     get_exchange_for_symbol,
@@ -27,7 +26,16 @@ from futures_config.helpers import (
     get_margin_requirement,
     is_tradingview_compatible,
 )
-
+# Import symbol groups
+from futures_config.symbol_groups import (
+    SYMBOL_GROUPS,
+    SYMBOL_TO_GROUP,
+    get_group_for_symbol,
+    get_symbols_in_group,
+    are_symbols_correlated,
+    get_representative_symbol,
+    filter_to_one_per_group,
+)
 # Import symbol mapping
 from futures_config.symbol_mapping import (
     TV_TO_IBKR_MAPPING,
@@ -35,7 +43,6 @@ from futures_config.symbol_mapping import (
     map_tv_to_ibkr,
     map_ibkr_to_tv,
 )
-
 # Import symbol specifications
 from futures_config.symbol_specs import SYMBOL_SPECS, DEFAULT_TICK_SIZE
 
@@ -49,6 +56,15 @@ __all__ = [
     'IBKR_TO_TV_MAPPING',
     'map_tv_to_ibkr',
     'map_ibkr_to_tv',
+
+    # Symbol groups
+    'SYMBOL_GROUPS',
+    'SYMBOL_TO_GROUP',
+    'get_group_for_symbol',
+    'get_symbols_in_group',
+    'are_symbols_correlated',
+    'get_representative_symbol',
+    'filter_to_one_per_group',
 
     # Categories
     'GRAINS',

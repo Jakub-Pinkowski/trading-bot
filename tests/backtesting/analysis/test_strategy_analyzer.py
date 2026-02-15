@@ -985,3 +985,176 @@ class TestAggregationMetrics:
         expected_avg = top_strategy['total_trades'] / (top_strategy['symbol_count'] * top_strategy['interval_count'])
 
         assert abs(top_strategy['avg_trades_per_combination'] - expected_avg) < 0.1
+
+
+class TestOnePerGroupFiltering:
+    """Test one_per_group filtering to avoid correlation bias."""
+
+    @pytest.fixture
+    def analyzer_with_correlated_symbols(self, monkeypatch):
+        """Create analyzer with correlated symbols (ZC, XC, MZC for corn)."""
+        # Create test data with correlated symbols
+        data = {
+            'strategy': ['CornStrategy'] * 6,
+            'symbol': ['ZC', 'XC', 'MZC', 'ZC', 'XC', 'MZC'],
+            'interval': ['1h', '1h', '1h', '4h', '4h', '4h'],
+            'slippage_ticks': [2] * 6,
+            'total_trades': [100, 95, 98, 105, 100, 102],
+            'win_rate': [0.60] * 6,
+            'profit_factor': [2.5] * 6,
+            'total_return_percentage_of_contract': [200] * 6,
+            'average_trade_return_percentage_of_contract': [2.0] * 6,
+            'average_win_percentage_of_contract': [5.0] * 6,
+            'average_loss_percentage_of_contract': [-2.0] * 6,
+            'total_wins_percentage_of_contract': [300] * 6,
+            'total_losses_percentage_of_contract': [100] * 6,
+            'sharpe_ratio': [1.5] * 6,
+            'sortino_ratio': [2.0] * 6,
+            'calmar_ratio': [1.8] * 6,
+            'maximum_drawdown_percentage': [10] * 6,
+            'value_at_risk': [5] * 6,
+            'expected_shortfall': [7] * 6,
+            'ulcer_index': [3] * 6,
+            'average_trade_duration_hours': [12] * 6,
+        }
+        test_df = pd.DataFrame(data)
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+            lambda *_args, **_kwargs: test_df
+        )
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        return StrategyAnalyzer()
+
+    def test_one_per_group_filters_correlated_symbols(self, analyzer_with_correlated_symbols):
+        """Test that one_per_group filters out correlated corn symbols."""
+        result = analyzer_with_correlated_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            one_per_group=True
+        )
+
+        # Should have only 1 symbol (first corn symbol encountered: ZC)
+        strategy = result[result['strategy'] == 'CornStrategy'].iloc[0]
+        assert strategy['symbol_count'] == 1
+
+    def test_one_per_group_false_keeps_all_symbols(self, analyzer_with_correlated_symbols):
+        """Test that one_per_group=False keeps all correlated symbols."""
+        result = analyzer_with_correlated_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            one_per_group=False
+        )
+
+        # Should have all 3 symbols (ZC, XC, MZC)
+        strategy = result[result['strategy'] == 'CornStrategy'].iloc[0]
+        assert strategy['symbol_count'] == 3
+
+    def test_one_per_group_non_aggregated(self, analyzer_with_correlated_symbols):
+        """Test that one_per_group works without aggregation."""
+        result = analyzer_with_correlated_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=False,
+            one_per_group=True
+        )
+
+        # Should only have rows for ZC (first symbol in group)
+        unique_symbols = result['symbol'].unique()
+        assert 'ZC' in unique_symbols
+        assert 'XC' not in unique_symbols
+        assert 'MZC' not in unique_symbols
+
+    @pytest.fixture
+    def analyzer_with_mixed_symbols(self, monkeypatch):
+        """Create analyzer with mix of correlated and uncorrelated symbols."""
+        data = {
+            'strategy': ['MultiMarketStrategy'] * 10,
+            'symbol': ['ZC', 'XC', 'MZC', 'CL', 'MCL', 'ES', 'MES', 'GC', 'ZW', 'ZS'],
+            'interval': ['1h'] * 10,
+            'slippage_ticks': [2] * 10,
+            'total_trades': [100] * 10,
+            'win_rate': [0.60] * 10,
+            'profit_factor': [2.5] * 10,
+            'total_return_percentage_of_contract': [200] * 10,
+            'average_trade_return_percentage_of_contract': [2.0] * 10,
+            'average_win_percentage_of_contract': [5.0] * 10,
+            'average_loss_percentage_of_contract': [-2.0] * 10,
+            'total_wins_percentage_of_contract': [300] * 10,
+            'total_losses_percentage_of_contract': [100] * 10,
+            'sharpe_ratio': [1.5] * 10,
+            'sortino_ratio': [2.0] * 10,
+            'calmar_ratio': [1.8] * 10,
+            'maximum_drawdown_percentage': [10] * 10,
+            'value_at_risk': [5] * 10,
+            'expected_shortfall': [7] * 10,
+            'ulcer_index': [3] * 10,
+            'average_trade_duration_hours': [12] * 10,
+        }
+        test_df = pd.DataFrame(data)
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.pd.read_parquet',
+            lambda *_args, **_kwargs: test_df
+        )
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        return StrategyAnalyzer()
+
+    def test_one_per_group_mixed_symbols(self, analyzer_with_mixed_symbols):
+        """Test filtering with mix of correlated and unique symbols."""
+        result = analyzer_with_mixed_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            one_per_group=True
+        )
+
+        strategy = result[result['strategy'] == 'MultiMarketStrategy'].iloc[0]
+
+        # Should have 6 symbols total:
+        # - ZC (not XC, MZC - corn group)
+        # - CL (not MCL - crude oil group)
+        # - ES (not MES - S&P group)
+        # - GC (gold - only one)
+        # - ZW (wheat - only one)
+        # - ZS (soybeans - only one)
+        assert strategy['symbol_count'] == 6
+
+    def test_one_per_group_preserves_trades(self, analyzer_with_correlated_symbols):
+        """Test that filtering doesn't lose trade data for kept symbols."""
+        result_all = analyzer_with_correlated_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            one_per_group=False
+        )
+
+        result_filtered = analyzer_with_correlated_symbols.get_top_strategies(
+            metric='profit_factor',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            one_per_group=True
+        )
+
+        # Filtered should have fewer total trades (only ZC's trades)
+        assert result_filtered.iloc[0]['total_trades'] < result_all.iloc[0]['total_trades']
+
+        # Filtered should have roughly 1/3 of the trades (ZC only vs ZC+XC+MZC)
+        ratio = result_filtered.iloc[0]['total_trades'] / result_all.iloc[0]['total_trades']
+        assert 0.3 < ratio < 0.4  # Should be around 1/3

@@ -127,6 +127,7 @@ trading-bot/
 │   ├── __init__.py
 │   ├── categories.py                             # Category definitions for futures symbols
 │   ├── helpers.py                                # Helper functions for futures specs
+│   ├── symbol_groups.py                          # Symbol correlation groups (mini/micro contracts)
 │   ├── symbol_mapping.py                         # TradingView to IBKR symbol mapping
 │   └── symbol_specs.py                           # Symbol specifications (exchange, tick size, etc.)
 ├── logs/
@@ -163,15 +164,15 @@ trading-bot/
 └── pytest.ini                                    # Pytest configuration
 
 # Backtesting
-# NOTE: I've got a date gap for the 5m interval from 2025-05-20 to 2025-06-09 and 2025-07-04 to 2025-12-08, slightly different for each symbol
-# NOTE: I've got a date gap for the 10m interval from 2025-07-04 2025-10-01, slightly different for each symbol
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [MEDIUM]: Create a separate file to keep track of data gaps, validators.py should handle that
+# TODO [MEDIUM]: Add functionality to the whole backtesting module to handle 2m, 10m, 45m, and 3h intervals
+# TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
 # TODO [MEDIUM]: Add missing contract switch dates for all the symbols
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Check intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
+# TODO [LOW]: Remove obsolete directory handling in the config.py
 # TODO [LOW]: Add advanced portfolio-level backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.13]

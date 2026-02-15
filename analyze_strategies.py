@@ -76,6 +76,15 @@ Configuration Parameters:
     Examples: 2, 3, 4
     Use None for no symbol count requirement
     Purpose: Filter out strategies that only work on one or two symbols (avoid overfitting)
+
+'one_per_group' (bool):
+    Filter to only one symbol per correlated group (e.g., keep ZC, exclude XC/MZC)
+    - True: Avoid pseudo-replication from mini/micro contracts tracking same market
+    - False: Include all symbols (may inflate symbol counts and skew aggregation)
+    Recommended: True for accurate analysis
+    Explanation: ZC (standard corn), XC (mini corn), and MZC (micro corn) all track
+                 the same corn market with nearly identical candle patterns. Including
+                 all three would give 3x weight to corn strategies vs other markets.
     
 Optional Parameters (not shown in examples below):
     'symbol' (str or None): 
@@ -98,7 +107,8 @@ ANALYSES = [
         'interval': None,
         'weighted': True,
         'min_slippage_ticks': 2,
-        'min_symbol_count': 3
+        'min_symbol_count': 3,
+        'one_per_group': True
     },
     {
         'name': 'Best Average Return (4h, weighted)',
@@ -109,7 +119,8 @@ ANALYSES = [
         'interval': '4h',
         'weighted': True,
         'min_slippage_ticks': 2,
-        'min_symbol_count': 3
+        'min_symbol_count': 3,
+        'one_per_group': True
     },
     {
         'name': 'Best Sharpe Ratio (all intervals, simple)',
@@ -119,7 +130,8 @@ ANALYSES = [
         'aggregate': True,
         'weighted': False,
         'min_slippage_ticks': 2,
-        'min_symbol_count': 2
+        'min_symbol_count': 2,
+        'one_per_group': True
     },
 ]
 

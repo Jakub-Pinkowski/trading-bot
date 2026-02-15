@@ -195,21 +195,32 @@ class TestFetchAllData:
         fetcher = DataFetcher(symbols=['ZS', 'ZC'], contract_suffix='1!', exchange='CBOT')
 
         with patch.object(fetcher, '_fetch_symbol_data') as mock_fetch:
+            mock_fetch.return_value = []  # Return empty gaps list
             fetcher.fetch_all_data(['1h', '4h'])
 
-            # Should be called once per symbol
+            # Should be called once per symbol with known_gaps parameter
             assert mock_fetch.call_count == 2
-            mock_fetch.assert_any_call('ZS', ['1h', '4h'])
-            mock_fetch.assert_any_call('ZC', ['1h', '4h'])
+            # Check calls include intervals and known_gaps (which is a set)
+            calls = mock_fetch.call_args_list
+            assert calls[0][0][0] == 'ZS'  # First arg is symbol
+            assert calls[0][0][1] == ['1h', '4h']  # Second arg is intervals
+            assert calls[1][0][0] == 'ZC'
+            assert calls[1][0][1] == ['1h', '4h']
 
     def test_single_symbol_single_interval(self, mock_tv_client):
         """Test fetch with single symbol and interval."""
         fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
 
         with patch.object(fetcher, '_fetch_symbol_data') as mock_fetch:
+            mock_fetch.return_value = []  # Return empty gaps list
             fetcher.fetch_all_data(['1h'])
 
-            mock_fetch.assert_called_once_with('ZS', ['1h'])
+            # Check it was called once with symbol, intervals, and known_gaps
+            assert mock_fetch.call_count == 1
+            calls = mock_fetch.call_args_list
+            assert calls[0][0][0] == 'ZS'  # symbol
+            assert calls[0][0][1] == ['1h']  # intervals
+            # Third arg is known_gaps (set)
 
 
 class TestFetchIntervalData:
@@ -221,10 +232,10 @@ class TestFetchIntervalData:
         mock_tv_client.get_hist.return_value = sample_ohlcv_data
 
         with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-            with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.detect_gaps'):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
                     output_dir = str(temp_data_dir)
-                    fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+                    fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
                     # Verify TradingView API was called
                     mock_tv_client.get_hist.assert_called_once_with(
@@ -246,7 +257,7 @@ class TestFetchIntervalData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             output_dir = str(temp_data_dir)
-            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
             # Warning should be logged
             mock_logger.warning.assert_called()
@@ -260,7 +271,7 @@ class TestFetchIntervalData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             output_dir = str(temp_data_dir)
-            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
             mock_logger.warning.assert_called()
 
@@ -283,10 +294,10 @@ class TestFetchIntervalData:
         mock_tv_client.get_hist.return_value = mixed_data
 
         with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-            with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
                     output_dir = str(temp_data_dir)
-                    fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+                    fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
                     # Load saved file and verify only 2020+ data
                     file_path = Path(output_dir) / 'ZS_1h.parquet'
@@ -314,7 +325,7 @@ class TestFetchIntervalData:
         with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 output_dir = str(temp_data_dir)
-                fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+                fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
                 # Warning should be logged
                 warning_calls = [call[0][0] for call in mock_logger.warning.call_args_list]
@@ -330,7 +341,7 @@ class TestFetchIntervalData:
 
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
                 output_dir = str(temp_data_dir)
-                fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+                fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
                 # Error should be logged
                 mock_logger.error.assert_called()
@@ -344,7 +355,7 @@ class TestFetchIntervalData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             output_dir = str(temp_data_dir)
-            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir)
+            fetcher._fetch_interval_data('ZS', 'ZS1!', '1h', output_dir, set())
 
             # Error should be logged
             mock_logger.error.assert_called()
@@ -357,7 +368,7 @@ class TestFetchIntervalData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             output_dir = str(temp_data_dir)
-            fetcher._fetch_interval_data('ZS', 'ZS1!', 'INVALID', output_dir)
+            fetcher._fetch_interval_data('ZS', 'ZS1!', 'INVALID', output_dir, set())
 
             # Warning should be logged
             mock_logger.warning.assert_called()
@@ -378,7 +389,7 @@ class TestFetchSymbolData:
 
             with patch.object(fetcher, '_fetch_interval_data'):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
-                    fetcher._fetch_symbol_data('ZS', ['1h'])
+                    fetcher._fetch_symbol_data('ZS', ['1h'], set())
 
                     # Directory should exist
                     expected_dir = temp_data_dir / '1!' / 'ZS'
@@ -392,7 +403,7 @@ class TestFetchSymbolData:
 
             with patch.object(fetcher, '_fetch_interval_data') as mock_fetch:
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
-                    fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'])
+                    fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'], set())
 
                     # Should be called 3 times
                     assert mock_fetch.call_count == 3
@@ -404,7 +415,7 @@ class TestFetchSymbolData:
 
             with patch.object(fetcher, '_fetch_interval_data') as mock_fetch:
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
-                    fetcher._fetch_symbol_data('ZS', ['1h'])
+                    fetcher._fetch_symbol_data('ZS', ['1h'], set())
 
                     # Verify full symbol
                     call_args = mock_fetch.call_args[0]
@@ -417,7 +428,7 @@ class TestFetchSymbolData:
 
             with patch.object(fetcher, '_fetch_interval_data') as mock_fetch:
                 # No logger.info progress messages expected anymore
-                fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'])
+                fetcher._fetch_symbol_data('ZS', ['1h', '4h', '1d'], set())
 
                 # _fetch_interval_data should be called once per interval
                 assert mock_fetch.call_count == 3
@@ -430,9 +441,9 @@ class TestSaveNewData:
         """Test parquet file is created."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 assert file_path.exists()
 
@@ -440,9 +451,9 @@ class TestSaveNewData:
         """Test saved data matches input data."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 loaded_data = pd.read_parquet(file_path)
 
@@ -455,19 +466,21 @@ class TestSaveNewData:
         """Test gap detection is called before saving."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps') as mock_gaps:
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_gaps:
+            mock_gaps.return_value = []  # Return empty gaps list
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
-                mock_gaps.assert_called_once_with(sample_ohlcv_data, '1h', 'ZS1!')
+                # Now expects 4 args: data, interval, symbol, known_gaps
+                mock_gaps.assert_called_once_with(sample_ohlcv_data, '1h', 'ZS1!', set())
 
     def test_success_logged(self, sample_ohlcv_data, temp_data_dir):
         """Test success message is logged."""
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!')
+                _save_new_data(sample_ohlcv_data, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called_once()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -483,9 +496,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data_2020.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -510,9 +523,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -533,9 +546,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 combined = pd.read_parquet(file_path)
 
@@ -547,9 +560,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data_2020.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -562,9 +575,9 @@ class TestUpdateExistingData:
         old_data_2020.to_parquet(file_path)
 
         # Try to add same data again
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(old_data_2020, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(old_data_2020, str(file_path), '1h', 'ZS1!', set())
 
                 mock_logger.info.assert_called()
                 info_msg = mock_logger.info.call_args[0][0]
@@ -582,9 +595,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 # Should log info for no new data (overlapping data)
                 mock_logger.info.assert_called()
@@ -609,9 +622,9 @@ class TestUpdateExistingData:
         # The deduplication will reduce total rows
         new_data = pd.DataFrame({'close': [110.0] * 50}, index=dates)  # Same dates
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
-                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 # Check that warning was called (new_entries should be negative)
                 # existing_count = 100 (with dupes), combined after dedup = 50, so new_entries = -50
@@ -624,9 +637,9 @@ class TestUpdateExistingData:
         file_path = temp_data_dir / 'test.parquet'
         old_data_2020.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps') as mock_gaps:
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_gaps:
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
                 # Should be called once with combined data
                 mock_gaps.assert_called_once()
@@ -639,7 +652,7 @@ class TestUpdateExistingData:
 
         with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
             # Should not raise, just log
-            _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!')
+            _update_existing_data(new_data_2024, str(file_path), '1h', 'ZS1!', set())
 
             mock_logger.error.assert_called()
             error_msg = mock_logger.error.call_args[0][0]
@@ -680,7 +693,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = sample_ohlcv_data
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         # Fetch data
                         fetcher.fetch_all_data(['1h'])
@@ -705,7 +718,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = sample_ohlcv_data
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h', '4h'])
 
@@ -739,7 +752,7 @@ class TestIntegrationScenarios:
             mock_tv_client.get_hist.return_value = new_data_2024
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -789,9 +802,9 @@ class TestParametrizedScenarios:
 
         file_path = temp_data_dir / 'test.parquet'
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _save_new_data(data, str(file_path), '1h', 'ZS1!')
+                _save_new_data(data, str(file_path), '1h', 'ZS1!', set())
 
                 loaded = pd.read_parquet(file_path)
                 assert len(loaded) == data_periods
@@ -828,7 +841,7 @@ class TestPerformanceAndStress:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -855,9 +868,9 @@ class TestPerformanceAndStress:
                 'volume': [1500] * 10
             }, index=dates)
 
-            with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+            with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                 with patch('app.backtesting.fetching.data_fetcher.logger'):
-                    _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                    _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
         # Verify all updates succeeded
         final_data = pd.read_parquet(file_path)
@@ -893,9 +906,9 @@ class TestPerformanceAndStress:
         file_path = temp_data_dir / 'test.parquet'
         old_data.to_parquet(file_path)
 
-        with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+        with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
             with patch('app.backtesting.fetching.data_fetcher.logger'):
-                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!')
+                _update_existing_data(new_data, str(file_path), '1h', 'ZS1!', set())
 
                 result = pd.read_parquet(file_path)
 
@@ -923,7 +936,7 @@ class TestPerformanceAndStress:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -932,6 +945,204 @@ class TestPerformanceAndStress:
 
                         # Should only have data from 2020 onwards
                         assert loaded.index.min().year >= DATA_START_YEAR
+
+
+class TestGapAggregationAndSaving:
+    """Test gap aggregation and saving functionality in fetch_all_data."""
+
+    def test_fetch_all_data_aggregates_gaps_from_multiple_symbols(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps from multiple symbols are aggregated correctly."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS', 'ZC'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            # Mock detect_gaps to return gaps
+            gap1 = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+            gap2 = {
+                'symbol': 'ZC1!',
+                'interval': '1h',
+                'start_time': '2024-02-01T10:00:00',
+                'end_time': '2024-02-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
+                            # Return different gaps for each symbol
+                            mock_detect.side_effect = [[gap1], [gap2]]
+
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Should save aggregated gaps
+                            mock_save.assert_called_once()
+                            saved_gaps = mock_save.call_args[0][0]
+                            assert len(saved_gaps) == 2
+                            assert gap1 in saved_gaps
+                            assert gap2 in saved_gaps
+
+                            # Should log processing message
+                            info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
+                            assert any('Processing 2 detected gap(s)' in msg for msg in info_calls)
+
+    def test_fetch_all_data_updates_known_gaps_during_fetching(self, mock_tv_client, sample_ohlcv_data, temp_data_dir):
+        """Test that known_gaps set is updated as gaps are discovered."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS', 'ZC'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml'):
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            # First symbol returns gap, second returns empty
+                            mock_detect.side_effect = [[gap], []]
+
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Verify detect_gaps was called twice with updated known_gaps
+                            assert mock_detect.call_count == 2
+
+                            # Second call should have the gap from first call in known_gaps
+                            second_call_known_gaps = mock_detect.call_args_list[1][0][3]
+                            assert isinstance(second_call_known_gaps, set)
+                            # The known_gaps should contain the gap from first symbol
+                            assert len(second_call_known_gaps) >= 1
+
+    def test_fetch_all_data_no_gaps_detected_logs_message(self, mock_tv_client, sample_ohlcv_data, temp_data_dir):
+        """Test that no gaps message is logged when no gaps detected."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger') as mock_logger:
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Should not call save_gaps_to_yaml
+                            mock_save.assert_not_called()
+
+                            # Should log no gaps message
+                            info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
+                            assert any('No gaps detected' in msg for msg in info_calls)
+
+    def test_fetch_all_data_saves_gaps_with_correct_contract_suffix(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps are saved with correct contract suffix."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='2!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap = {
+                'symbol': 'ZS2!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[gap]):
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            fetcher.fetch_all_data(['1h'])
+
+                            # Verify contract suffix passed correctly
+                            mock_save.assert_called_once()
+                            assert mock_save.call_args[0][1] == '2!'
+
+    def test_fetch_all_data_gaps_from_multiple_intervals_aggregated(
+        self,
+        mock_tv_client,
+        sample_ohlcv_data,
+        temp_data_dir
+    ):
+        """Test that gaps from multiple intervals are aggregated."""
+        with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
+            fetcher = DataFetcher(
+                symbols=['ZS'],
+                contract_suffix='1!',
+                exchange='CBOT'
+            )
+
+            mock_tv_client.get_hist.return_value = sample_ohlcv_data
+
+            gap_1h = {
+                'symbol': 'ZS1!',
+                'interval': '1h',
+                'start_time': '2024-01-01T10:00:00',
+                'end_time': '2024-01-15T10:00:00',
+                'duration_days': 14.0
+            }
+            gap_4h = {
+                'symbol': 'ZS1!',
+                'interval': '4h',
+                'start_time': '2024-02-01T10:00:00',
+                'end_time': '2024-02-15T10:00:00',
+                'duration_days': 14.0
+            }
+
+            with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps') as mock_detect:
+                    with patch('app.backtesting.fetching.data_fetcher.save_gaps_to_yaml') as mock_save:
+                        with patch('app.backtesting.fetching.data_fetcher.logger'):
+                            # Return different gaps for each interval
+                            mock_detect.side_effect = [[gap_1h], [gap_4h]]
+
+                            fetcher.fetch_all_data(['1h', '4h'])
+
+                            # Should save both gaps
+                            mock_save.assert_called_once()
+                            saved_gaps = mock_save.call_args[0][0]
+                            assert len(saved_gaps) == 2
+                            assert gap_1h in saved_gaps
+                            assert gap_4h in saved_gaps
 
 
 class TestRealDataIntegration:
@@ -955,7 +1166,7 @@ class TestRealDataIntegration:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -985,7 +1196,7 @@ class TestRealDataIntegration:
 
         with patch('app.backtesting.fetching.data_fetcher.HISTORICAL_DATA_DIR', str(temp_data_dir)):
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -1014,7 +1225,7 @@ class TestRealDataIntegration:
                 )
 
                 with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                    with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                    with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                         with patch('app.backtesting.fetching.data_fetcher.logger'):
                             fetcher.fetch_all_data(['1h'])
 
@@ -1044,7 +1255,7 @@ class TestRealDataIntegration:
             )
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['1h'])
 
@@ -1098,7 +1309,7 @@ class TestRealDataIntegration:
             fetcher = DataFetcher(symbols=['ZS'], contract_suffix='1!', exchange='CBOT')
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         fetcher.fetch_all_data(['5m', '1h', '1d'])
 
@@ -1139,7 +1350,7 @@ class TestRealDataIntegration:
             )
 
             with patch('app.backtesting.fetching.data_fetcher.validate_ohlcv_data'):
-                with patch('app.backtesting.fetching.data_fetcher.detect_and_log_gaps'):
+                with patch('app.backtesting.fetching.data_fetcher.detect_gaps', return_value=[]):
                     with patch('app.backtesting.fetching.data_fetcher.logger'):
                         # Should not raise, continues to next symbol
                         fetcher.fetch_all_data(['1h'])
