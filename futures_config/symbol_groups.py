@@ -8,7 +8,7 @@ would artificially inflate symbol counts and skew aggregated results.
 Example:
     ZC (standard corn), XC (mini corn), and MZC (micro corn) all track the same
     corn futures market with nearly identical candle patterns. Including all three
-    in analysis would give 3x weight to corn strategies versus other markets.
+    in the analysis would give 3x weight to corn strategies versus other markets.
 
 Usage:
     - For strategy analysis: Use only one symbol per group to avoid correlation bias
@@ -125,7 +125,7 @@ def get_representative_symbol(group_name):
         group_name: Name of the symbol group
 
     Returns:
-        First symbol in the group, or None if group doesn't exist
+        First symbol in the group, or None if a group doesn't exist
 
     Example:
         get_representative_symbol('Corn')
@@ -137,7 +137,7 @@ def get_representative_symbol(group_name):
 
 def filter_to_one_per_group(symbols):
     """
-    Filter symbol list to include only one symbol per correlated group.
+    Filter the symbol list to include only one symbol per correlated group.
 
     For each group, always keeps the representative (standard size) symbol and excludes
     mini/micro variants. Symbols not in any group are kept as-is.
