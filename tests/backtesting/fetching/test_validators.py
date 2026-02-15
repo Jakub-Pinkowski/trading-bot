@@ -350,10 +350,14 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings should be logged
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
+            assert isinstance(gaps, list)
 
     def test_large_gap_detected(self):
         """Test warning logged for gap larger than threshold."""
@@ -367,7 +371,7 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should be logged
             mock_logger.warning.assert_called_once()
@@ -375,6 +379,16 @@ class TestDetectGaps:
             assert 'NEW data gap detected' in warning_msg
             assert 'ZS1!' in warning_msg
             assert '1h' in warning_msg
+
+            # Verify return value structure
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert 'start_time' in gap
+            assert 'end_time' in gap
+            assert 'duration_days' in gap
+            assert 6.0 < gap['duration_days'] < 8.0  # Approximately 7 days
 
     def test_small_gap_not_logged(self):
         """Test gap smaller than threshold is not logged."""
@@ -388,10 +402,13 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warning should be logged for small gaps
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_multiple_gaps_detected(self):
         """Test multiple gaps are all logged."""
@@ -406,10 +423,31 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Two gaps should be logged
             assert mock_logger.warning.call_count == 2
+
+            # Two gaps should be returned
+            assert len(gaps) == 2
+
+            # Verify first gap structure
+            gap1 = gaps[0]
+            assert gap1['symbol'] == 'ZS1!'
+            assert gap1['interval'] == '1h'
+            assert 'start_time' in gap1
+            assert 'end_time' in gap1
+            assert 'duration_days' in gap1
+            assert 8.0 < gap1['duration_days'] < 10.0  # Approximately 9 days
+
+            # Verify second gap structure
+            gap2 = gaps[1]
+            assert gap2['symbol'] == 'ZS1!'
+            assert gap2['interval'] == '1h'
+            assert 'start_time' in gap2
+            assert 'end_time' in gap2
+            assert 'duration_days' in gap2
+            assert 9.0 < gap2['duration_days'] < 11.0  # Approximately 10 days
 
     def test_single_row_data(self):
         """Test no error with single row of data."""
@@ -418,20 +456,26 @@ class TestDetectGaps:
         }, index=[datetime(2024, 1, 1)])
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for single row
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_empty_dataframe(self):
         """Test no error with empty DataFrame."""
         data = pd.DataFrame()
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # No warnings for empty data
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_unsorted_index_handled(self):
         """Test gap detection works with unsorted datetime index."""
@@ -448,10 +492,14 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should still be detected after sorting
             mock_logger.warning.assert_called()
+
+            # Should return one gap
+            assert len(gaps) == 1
+            assert gaps[0]['symbol'] == 'ZS1!'
 
     def test_gap_at_threshold_boundary(self):
         """Test gap exactly at threshold is not logged."""
@@ -465,10 +513,13 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap at threshold should not be logged (only > threshold)
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned
+            assert len(gaps) == 0
 
     def test_gap_slightly_above_threshold(self):
         """Test gap just above threshold is logged."""
@@ -482,10 +533,17 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Gap should be logged
             mock_logger.warning.assert_called_once()
+
+            # Should return one gap
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert gap['duration_days'] > 5.0
 
     def test_warning_message_format(self):
         """Test warning message contains all required information."""
@@ -499,7 +557,7 @@ class TestDetectGaps:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'CL1!', set())
+            gaps = detect_gaps(data, '1h', 'CL1!', set())
 
             warning_msg = mock_logger.warning.call_args[0][0]
             assert 'CL1!' in warning_msg
@@ -507,6 +565,11 @@ class TestDetectGaps:
             assert 'from' in warning_msg
             assert 'to' in warning_msg
             assert 'duration' in warning_msg
+
+            # Verify return value
+            assert len(gaps) == 1
+            assert gaps[0]['symbol'] == 'CL1!'
+            assert gaps[0]['interval'] == '1h'
 
 
 class TestIntegrationScenarios:
@@ -623,10 +686,17 @@ class TestPerformanceAndStress:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect both gaps
             assert mock_logger.warning.call_count == 2
+
+            # Should return two gaps
+            assert len(gaps) == 2
+            for gap in gaps:
+                assert gap['symbol'] == 'ZS1!'
+                assert gap['interval'] == '1h'
+                assert 'duration_days' in gap
 
     def test_unsorted_large_dataset(self):
         """Test gap detection with large unsorted dataset."""
@@ -645,10 +715,14 @@ class TestPerformanceAndStress:
         }, index=all_dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should still detect gap despite unsorted data
             mock_logger.warning.assert_called()
+
+            # Should return at least one gap
+            assert len(gaps) >= 1
+            assert all(gap['symbol'] == 'ZS1!' for gap in gaps)
 
     @pytest.mark.parametrize("num_rows", [10, 100, 1000, 5000])
     def test_validation_scales_with_data_size(self, num_rows):
@@ -721,16 +795,19 @@ class TestRealDataIntegration:
         }, index=pd.DatetimeIndex(dates))
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Weekend gaps (~2.5 days) should not trigger warnings
             mock_logger.warning.assert_not_called()
+
+            # No gaps should be returned (all below threshold)
+            assert len(gaps) == 0
 
     def test_holiday_gap_scenario(self):
         """Test gap detection with extended holiday gap."""
         # Simulate week-long holiday break
         dates1 = pd.date_range('2024-01-01', periods=50, freq='h')
-        dates2 = pd.date_range('2024-01-15', periods=50, freq='h')  # 14-day gap
+        dates2 = pd.date_range('2024-01-15', periods=50, freq='h')  # ~12-day gap
         dates = dates1.append(dates2)
 
         data = pd.DataFrame({
@@ -738,10 +815,17 @@ class TestRealDataIntegration:
         }, index=dates)
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
-            detect_gaps(data, '1h', 'ZS1!', set())
+            gaps = detect_gaps(data, '1h', 'ZS1!', set())
 
             # Should detect extended gap
             mock_logger.warning.assert_called_once()
+
+            # Should return one gap
+            assert len(gaps) == 1
+            gap = gaps[0]
+            assert gap['symbol'] == 'ZS1!'
+            assert gap['interval'] == '1h'
+            assert 11.0 < gap['duration_days'] < 13.0  # Approximately 12 days
 
     def test_mixed_symbol_categories(self):
         """Test validation with symbols from different categories."""
