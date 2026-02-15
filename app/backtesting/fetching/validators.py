@@ -298,7 +298,7 @@ def save_gaps_to_yaml(gaps, contract_suffix):
     )
 
     gaps_data['meta'] = {
-        'last_updated': datetime.now().isoformat(),
+        'last_updated': datetime.now().replace(microsecond=0).isoformat(),
         'total_gaps': total_gaps,
         'symbols_scanned': sorted(list(gaps_data['gaps'].keys()))
     }
@@ -326,7 +326,12 @@ def save_gaps_to_yaml(gaps, contract_suffix):
             logger.info(f'All {skipped_count} gap(s) already exist → {total_gaps} total in {file_path}')
     except Exception as e:
         logger.error(f'Failed to save gaps file {file_path}: {e}')
-        # Clean up the temp file if it exists
+
+        # Clean up the temp file if it exists (wrap in try-except to avoid masking the original exception)
         if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+            try:
+                os.remove(temp_path)
+            except Exception as cleanup_error:
+                logger.warning(f'Failed to clean up temporary file {temp_path}: {cleanup_error}')
+
         raise
