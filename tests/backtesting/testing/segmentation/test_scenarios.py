@@ -300,9 +300,11 @@ class TestRealisticDataPatterns:
 
         expected_columns = ['open', 'high', 'low', 'close', 'volume']
 
+        # Verify columns exist when slicing data with segment boundaries
         for segment in segments:
+            segment_slice = realistic_zc_5m_gapped_data.loc[segment['start_date']:segment['end_date']]
             for col in expected_columns:
-                assert col in segment['df'].columns, \
+                assert col in segment_slice.columns, \
                     f"Column {col} missing from segment {segment['segment_id']}"
 
 
@@ -361,8 +363,10 @@ class TestMultiColumnData:
         periods = detect_periods(realistic_zc_5m_gapped_data, '5m')
         segments = split_all_periods(periods, segments_per_period=3)
 
+        # Verify columns are preserved when slicing with segment boundaries
         for segment in segments:
-            segment_columns = set(segment['df'].columns)
+            segment_slice = realistic_zc_5m_gapped_data.loc[segment['start_date']:segment['end_date']]
+            segment_columns = set(segment_slice.columns)
             assert segment_columns == original_columns, \
                 "Segment should have same columns as original"
 
@@ -373,7 +377,9 @@ class TestMultiColumnData:
         periods = detect_periods(realistic_zc_5m_gapped_data, '5m')
         segments = split_all_periods(periods, segments_per_period=2)
 
+        # Verify dtypes are preserved when slicing with segment boundaries
         for segment in segments:
+            segment_slice = realistic_zc_5m_gapped_data.loc[segment['start_date']:segment['end_date']]
             for col in original_dtypes.index:
-                assert segment['df'][col].dtype == original_dtypes[col], \
+                assert segment_slice[col].dtype == original_dtypes[col], \
                     f"Data type mismatch for column {col}"

@@ -79,7 +79,6 @@ def _create_segment_dict(segment_id, period_id, segment_df):
     return {
         'segment_id': segment_id,
         'period_id': period_id,
-        'df': segment_df,
         'start_date': segment_df.index[0],
         'end_date': segment_df.index[-1],
         'row_count': len(segment_df)

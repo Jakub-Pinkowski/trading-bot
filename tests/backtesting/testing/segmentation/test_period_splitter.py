@@ -128,7 +128,6 @@ class TestCreateSegmentDict:
 
         assert 'segment_id' in segment
         assert 'period_id' in segment
-        assert 'df' in segment
         assert 'start_date' in segment
         assert 'end_date' in segment
         assert 'row_count' in segment
@@ -189,7 +188,8 @@ class TestSplitPeriodIntoSegments:
 
         assert len(segments) == 1
         assert segments[0]['row_count'] == 4000
-        pd.testing.assert_frame_equal(segments[0]['df'], single_period['df'])
+        assert segments[0]['start_date'] == single_period['start_date']
+        assert segments[0]['end_date'] == single_period['end_date']
 
     def test_assigns_segment_ids_sequentially(self, single_period):
         """Test that segment IDs are sequential within period."""
@@ -353,7 +353,6 @@ class TestCreateSegmentsFromAllocations:
         for segment in segments:
             assert 'segment_id' in segment
             assert 'period_id' in segment
-            assert 'df' in segment
             assert 'start_date' in segment
             assert 'end_date' in segment
             assert 'row_count' in segment

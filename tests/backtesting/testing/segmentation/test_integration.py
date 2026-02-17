@@ -183,7 +183,8 @@ class TestFixedSegmentsPerPeriod:
         # Each segment should equal its period
         for period, segment in zip(periods, segments):
             assert segment['row_count'] == period['row_count']
-            pd.testing.assert_frame_equal(segment['df'], period['df'])
+            assert segment['start_date'] == period['start_date']
+            assert segment['end_date'] == period['end_date']
 
 
 # ==================== Single Period Optimization ====================
@@ -269,11 +270,10 @@ class TestDataIntegrity:
         periods = detect_periods(zc_5m_data, '5m')
         segments = split_all_periods(periods, segments_per_period=3)
 
-        # Collect all segment date ranges
+        # Collect all segment date ranges from metadata
         date_ranges = []
         for segment in segments:
-            dates = segment['df'].index
-            date_ranges.append((dates[0], dates[-1]))
+            date_ranges.append((segment['start_date'], segment['end_date']))
 
         # Check for overlaps within same period
         for i in range(len(date_ranges)):
@@ -291,22 +291,17 @@ class TestDataIntegrity:
                         f"Segments {i} and {j} overlap"
 
     def test_dataframes_are_independent(self, zc_5m_data):
-        """Test that segment DataFrames are independent copies."""
+        """Test that segments don't store DataFrames (memory optimization)."""
         periods = detect_periods(zc_5m_data, '5m')
         segments = split_all_periods(periods, segments_per_period=2)
 
-        # Modify first segment (use a column that exists and is numeric)
-        if len(segments) > 0 and len(zc_5m_data.columns) > 0:
-            # Find a numeric column
-            numeric_cols = zc_5m_data.select_dtypes(include=['number']).columns
-            if len(numeric_cols) > 0:
-                col = numeric_cols[0]
-                original_value = zc_5m_data.iloc[0][col]
-                segments[0]['df'].iloc[0, segments[0]['df'].columns.get_loc(col)] = 99999
-
-                # Original should be unchanged
-                assert zc_5m_data.iloc[0][col] == original_value, \
-                    "Original data should not be modified"
+        # Verify segments don't contain DataFrame field
+        for segment in segments:
+            assert 'df' not in segment, "Segments should not store DataFrame (memory optimization)"
+            # Verify segments have metadata to reconstruct data if needed
+            assert 'start_date' in segment
+            assert 'end_date' in segment
+            assert 'row_count' in segment
 
 
 # ==================== Edge Cases with Real Data ====================
@@ -329,9 +324,10 @@ class TestRealDataEdgeCases:
         # Should work with timezone-aware data
         assert len(segments) > 0
         for segment in segments:
-            if segment['df'].index.tz is not None:
-                assert segment['start_date'].tz is not None
-                assert segment['end_date'].tz is not None
+            # Check timezone from segment metadata (start_date/end_date are from the original data index)
+            if df_tz.index.tz is not None:
+                assert segment['start_date'].tz is not None, "start_date should preserve timezone"
+                assert segment['end_date'].tz is not None, "end_date should preserve timezone"
 
     def test_handles_very_large_datasets(self, zc_5m_data):
         """Test performance with large real datasets."""
@@ -345,14 +341,16 @@ class TestRealDataEdgeCases:
         assert len(segments) <= 10
 
     def test_segments_maintain_data_types(self, zc_5m_data):
-        """Test that segments maintain original data types."""
+        """Test that segments can be used to slice original data maintaining data types."""
         original_dtypes = zc_5m_data.dtypes
 
         periods = detect_periods(zc_5m_data, '5m')
         segments = split_all_periods(periods, segments_per_period=2)
 
+        # Verify that slicing the original data with segment boundaries preserves dtypes
         for segment in segments:
+            segment_slice = zc_5m_data.loc[segment['start_date']:segment['end_date']]
             for col in original_dtypes.index:
-                if col in segment['df'].columns:
-                    assert segment['df'][col].dtype == original_dtypes[col], \
+                if col in segment_slice.columns:
+                    assert segment_slice[col].dtype == original_dtypes[col], \
                         f"Data type mismatch for column {col}"
