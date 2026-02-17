@@ -10,9 +10,9 @@ PERIOD:
     Periods are detected automatically by gap_detector.py based on the data's time intervals.
 
     Example - ZC 5m data:
-        Period 1: 2025-04-14 to 2025-05-20 (5,177 rows)  ← Continuous data
+        Period 1: 2025-04-14 to 2025-05-20 (5,177 rows) ← Continuous data
         [GAP: 6 days of missing data]
-        Period 2: 2025-05-27 to 2025-07-03 (5,413 rows)  ← Continuous data
+        Period 2: 2025-05-27 to 2025-07-03 (5,413 rows) ← Continuous data
         [GAP: 5 months of missing data]
         Period 3: 2025-12-01 to 2026-02-13 (10,178 rows) ← Continuous data
 
@@ -28,8 +28,8 @@ SEGMENT:
     Segments NEVER cross period boundaries (gaps).
 
     Example - Split Period 3 above into 2 segments:
-        Segment 3: 2025-12-01 to 2026-01-08 (5,089 rows)  ← First half of Period 3
-        Segment 4: 2026-01-08 to 2026-02-13 (5,089 rows)  ← Second half of Period 3
+        Segment 3: 2025-12-01 to 2026-01-08 (5,089 rows) ← First half of Period 3
+        Segment 4: 2026-01-08 to 2026-02-13 (5,089 rows) ← Second half of Period 3
 
 SEGMENTATION MODES:
 
@@ -86,19 +86,49 @@ def _create_segment_dict(segment_id, period_id, segment_df):
     }
 
 
-def _validate_segment_count(segment_count, period_rows):
+def _split_period_into_segments(period_dict, segments_per_period):
     """
-    Validate that segment count is possible for period size.
+    Split a period into equal-row segments.
 
     Args:
-        segment_count: Desired number of segments
-        period_rows: Total rows in a period
+        period_dict: Dict from detect_periods() containing period info
+        segments_per_period: Number of segments to create per period
 
     Returns:
-        Boolean indicating if segmentation is valid
+        List of segment dicts
     """
-    rows_per_segment = period_rows // segment_count
-    return rows_per_segment >= MIN_SEGMENT_ROWS
+    period_df = period_dict['df']
+    period_id = period_dict['period_id']
+    total_rows = len(period_df)
+
+    # If segments_per_period is 1, return the entire period as one segment
+    if segments_per_period == 1:
+        return [_create_segment_dict(1, period_id, period_df)]
+
+    rows_per_segment = total_rows // segments_per_period
+
+    # Warn if segments will be smaller than a recommended minimum
+    if rows_per_segment < MIN_SEGMENT_ROWS:
+        logger.warning(
+            f"Period {period_id} has only {total_rows} rows, "
+            f"segments will be smaller than {MIN_SEGMENT_ROWS}"
+        )
+
+    segments = []
+
+    for i in range(segments_per_period):
+        row_start = i * rows_per_segment
+
+        # Last segment gets remaining rows
+        if i == segments_per_period - 1:
+            row_end = total_rows
+        else:
+            row_end = (i + 1) * rows_per_segment
+
+        segment_df = period_df.iloc[row_start:row_end]
+        segments.append(_create_segment_dict(i + 1, period_id, segment_df))
+
+    return segments
 
 
 def _allocate_segments_proportionally(periods_list, total_segments):
@@ -125,7 +155,7 @@ def _allocate_segments_proportionally(periods_list, total_segments):
             # Last period gets remaining segments
             segments_for_period = total_segments - segments_allocated
         else:
-            # Round to nearest integer, minimum 1 if period is large enough
+            # Round to the nearest integer, minimum 1 if the period is large enough
             segments_for_period = max(1, round(period_proportion * total_segments))
             segments_for_period = min(segments_for_period, total_segments - segments_allocated)
 
@@ -162,7 +192,7 @@ def _create_segments_from_allocations(allocations):
             continue
 
         # Split this period into equal segments
-        period_segments = split_period_equal_rows(period, segments_for_period)
+        period_segments = _split_period_into_segments(period, segments_for_period)
 
         # Update segment IDs to be global
         for segment in period_segments:
@@ -173,60 +203,61 @@ def _create_segments_from_allocations(allocations):
     return all_segments
 
 
-# ==================== Main Splitting ====================
-
-def split_period_equal_rows(period_dict, segments_per_period):
+def _split_equal_segments_across_periods(periods_list, total_segments):
     """
-    Split a period into equal-row segments.
+    Distribute segments proportionally across periods without crossing gaps.
+
+    Allocates segments to periods based on their relative size, then splits
+    each period into its allocated number of segments. Segments NEVER span
+    across period boundaries (gaps).
+
+    Example:
+        Period 1: 5,177 rows (25%) → gets 1 segment
+        Period 2: 5,413 rows (26%) → gets 1 segment
+        Period 3: 10,178 rows (49%) → gets 2 segments
+        Total: 20,768 rows → 4 total segments
+
+        Result:
+        - Segment 1: Period 1 (5,177 rows)
+        - Segment 2: Period 2 (5,413 rows)
+        - Segment 3: Period 3 first half (5,089 rows)
+        - Segment 4: Period 3 second half (5,089 rows)
 
     Args:
-        period_dict: Dict from detect_periods() containing period info
-        segments_per_period: Number of segments to create per period
-                            Set to 1 to treat each period as a single segment
+        periods_list: List of period dicts from detect_periods()
+        total_segments: Total number of segments to create
 
     Returns:
-        List of segment dicts, each containing:
-        {
-            'segment_id': 1,
-            'period_id': 1,
-            'df': DataFrame slice,
-            'start_date': pd.Timestamp,
-            'end_date': pd.Timestamp,
-            'row_count': int
-        }
+        List of segment dicts
     """
-    period_df = period_dict['df']
-    period_id = period_dict['period_id']
-    total_rows = len(period_df)
+    if not periods_list:
+        logger.warning("No periods provided for segmentation")
+        return []
 
-    # If segments_per_period is 1, return the entire period as one segment
-    if segments_per_period == 1:
-        return [_create_segment_dict(1, period_id, period_df)]
+    if total_segments <= 0:
+        logger.warning(f"total_segments must be positive, got {total_segments}")
+        return []
 
-    rows_per_segment = total_rows // segments_per_period
+    # If only 1 period, no need for proportional allocation
+    if len(periods_list) == 1:
+        return _split_period_into_segments(periods_list[0], total_segments)
 
-    # Validate
-    if not _validate_segment_count(segments_per_period, total_rows):
+    if total_segments < len(periods_list):
         logger.warning(
-            f"Period {period_id} has only {total_rows} rows, "
-            f"segments will be smaller than {MIN_SEGMENT_ROWS}"
+            f"total_segments ({total_segments}) is less than number of periods ({len(periods_list)}). "
+            f"Some periods will not have any segments."
         )
 
-    segments = []
+    # Allocate segments proportionally to period size
+    allocations = _allocate_segments_proportionally(periods_list, total_segments)
 
-    for i in range(segments_per_period):
-        row_start = i * rows_per_segment
+    # Create segments from allocations
+    all_segments = _create_segments_from_allocations(allocations)
 
-        # Last segment gets remaining rows
-        if i == segments_per_period - 1:
-            row_end = total_rows
-        else:
-            row_end = (i + 1) * rows_per_segment
+    return all_segments
 
-        segment_df = period_df.iloc[row_start:row_end]
-        segments.append(_create_segment_dict(i + 1, period_id, segment_df))
 
-    return segments
+# ==================== Public API ====================
 
 
 def split_all_periods(periods_list, segments_per_period=None, total_segments=None):
@@ -256,67 +287,13 @@ def split_all_periods(periods_list, segments_per_period=None, total_segments=Non
 
     # If total_segments is specified, use equal-row splitting across all periods
     if total_segments is not None:
-        return split_equal_segments_across_periods(periods_list, total_segments)
+        return _split_equal_segments_across_periods(periods_list, total_segments)
 
     # Otherwise, split each period individually
     all_segments = []
 
     for period in periods_list:
-        period_segments = split_period_equal_rows(period, segments_per_period)
+        period_segments = _split_period_into_segments(period, segments_per_period)
         all_segments.extend(period_segments)
-
-    return all_segments
-
-
-def split_equal_segments_across_periods(periods_list, total_segments):
-    """
-    Distribute segments proportionally across periods without crossing gaps.
-
-    Allocates segments to periods based on their relative size, then splits
-    each period into its allocated number of segments. Segments NEVER span
-    across period boundaries (gaps).
-
-    Example:
-        Period 1: 5,177 rows (25%)  → gets 1 segment
-        Period 2: 5,413 rows (26%)  → gets 1 segment
-        Period 3: 10,178 rows (49%) → gets 2 segments
-        Total: 20,768 rows → 4 total segments
-
-        Result:
-        - Segment 1: Period 1 (5,177 rows)
-        - Segment 2: Period 2 (5,413 rows)
-        - Segment 3: Period 3 first half (5,089 rows)
-        - Segment 4: Period 3 second half (5,089 rows)
-
-    Args:
-        periods_list: List of period dicts from detect_periods()
-        total_segments: Total number of segments to create
-
-    Returns:
-        List of segment dicts
-    """
-    if not periods_list:
-        logger.warning("No periods provided for segmentation")
-        return []
-
-    if total_segments <= 0:
-        logger.warning(f"total_segments must be positive, got {total_segments}")
-        return []
-
-    # If only 1 period, no need for proportional allocation
-    if len(periods_list) == 1:
-        return split_period_equal_rows(periods_list[0], total_segments)
-
-    if total_segments < len(periods_list):
-        logger.warning(
-            f"total_segments ({total_segments}) is less than number of periods ({len(periods_list)}). "
-            f"Some periods will not have any segments."
-        )
-
-    # Allocate segments proportionally to period size
-    allocations = _allocate_segments_proportionally(periods_list, total_segments)
-
-    # Create segments from allocations
-    all_segments = _create_segments_from_allocations(allocations)
 
     return all_segments

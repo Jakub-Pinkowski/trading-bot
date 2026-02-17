@@ -34,26 +34,6 @@ MIN_PERIOD_ROWS = 1000
 
 # ==================== Helper Functions ====================
 
-def _create_period_dict(period_id, period_df):
-    """
-    Create a standardized period dictionary.
-
-    Args:
-        period_id: Unique period identifier
-        period_df: DataFrame slice for this period
-
-    Returns:
-        Dict with period metadata
-    """
-    return {
-        'period_id': period_id,
-        'df': period_df,
-        'start_date': period_df.index[0],
-        'end_date': period_df.index[-1],
-        'row_count': len(period_df)
-    }
-
-
 def _parse_interval_to_minutes(interval):
     """
     Parse interval string to minutes.
@@ -151,6 +131,26 @@ def _calculate_gap_threshold(interval, threshold_multiplier):
     return expected_delta * threshold_multiplier
 
 
+def _create_period_dict(period_id, period_df):
+    """
+    Create a standardized period dictionary.
+
+    Args:
+        period_id: Unique period identifier
+        period_df: DataFrame slice for this period
+
+    Returns:
+        Dict with period metadata
+    """
+    return {
+        'period_id': period_id,
+        'df': period_df,
+        'start_date': period_df.index[0],
+        'end_date': period_df.index[-1],
+        'row_count': len(period_df)
+    }
+
+
 def _split_dataframe_at_gaps(df, gap_indices, min_rows):
     """
     Split DataFrame into periods at gap locations.
@@ -183,7 +183,7 @@ def _split_dataframe_at_gaps(df, gap_indices, min_rows):
 
         start_idx = gap_location
 
-    # Add final period
+    # Add a final period
     final_period_df = df.iloc[start_idx:].copy()
     if len(final_period_df) >= min_rows:
         periods.append(_create_period_dict(period_id, final_period_df))
@@ -196,7 +196,7 @@ def _split_dataframe_at_gaps(df, gap_indices, min_rows):
     return periods
 
 
-# ==================== Main Detection ====================
+# ==================== Public API ====================
 
 def detect_periods(df, interval, min_rows=MIN_PERIOD_ROWS):
     """
@@ -231,16 +231,14 @@ def detect_periods(df, interval, min_rows=MIN_PERIOD_ROWS):
         logger.error("DataFrame must have a DatetimeIndex")
         raise ValueError("DataFrame must have a DatetimeIndex")
 
-    # Get a smart default threshold for this interval
-    gap_threshold = _get_smart_gap_threshold(interval)
-
     # Calculate time differences between consecutive rows
     time_diffs = df.index.to_series().diff()
 
-    # Get a gap threshold
-    threshold = _calculate_gap_threshold(interval, gap_threshold)
+    # Calculate a gap threshold using smart default for this interval
+    gap_multiplier = _get_smart_gap_threshold(interval)
+    threshold = _calculate_gap_threshold(interval, gap_multiplier)
 
-    # Find gap indices where the time difference exceeds a threshold
+    # Find gap indices where the time difference exceeds the threshold
     gaps_mask = time_diffs > threshold
     gap_indices = time_diffs[gaps_mask].index
 
