@@ -13,13 +13,21 @@ logger = get_logger('backtesting/testing/segmentation/gap_detector')
 
 # ==================== Constants ====================
 
-# Smarter default thresholds based on interval
-# For 5m/15m: Medium-large threshold to handle week-long gaps but split on month-long gaps
-# For other intraday: Moderate threshold for weekends
-# For daily+: Small threshold
-DEFAULT_GAP_THRESHOLD_5M_15M = 1000  # ~3.5 days for 5m, ~10.4 days for 15m (detects week-long gaps)
-DEFAULT_GAP_THRESHOLD_SUBDAILY = 500  # ~2 days for 30m/1h (covers weekends)
-DEFAULT_GAP_THRESHOLD_DAILY = 10  # ~10 days for daily data
+# Interval-specific gap thresholds (in number of intervals)
+# All intervals use a consistent 4-day threshold to detect significant data gaps
+# while avoiding normal market closures (weekends)
+GAP_THRESHOLDS = {
+    '3m': 1920,  # 1920 * 3min = 5760min = 4.0 days
+    '5m': 1152,  # 1152 * 5min = 5760min = 4.0 days
+    '15m': 384,  # 384 * 15min = 5760min = 4.0 days
+    '30m': 192,  # 192 * 30min = 5760min = 4.0 days
+    '45m': 128,  # 128 * 45min = 5760min = 4.0 days
+    '1h': 96,  # 96 * 60min = 5760min = 4.0 days
+    '2h': 48,  # 48 * 120min = 5760min = 4.0 days
+    '3h': 32,  # 32 * 180min = 5760min = 4.0 days
+    '4h': 24,  # 24 * 240min = 5760min = 4.0 days
+    '1d': 4,  # 4 * 1440min = 5760min = 4.0 days
+}
 
 MIN_PERIOD_ROWS = 1000
 
@@ -42,12 +50,11 @@ def _create_period_dict(period_id, period_df):
         'df': period_df,
         'start_date': period_df.index[0],
         'end_date': period_df.index[-1],
-        'row_count': len(period_df),
-        'is_continuous': True
+        'row_count': len(period_df)
     }
 
 
-def parse_interval_to_minutes(interval):
+def _parse_interval_to_minutes(interval):
     """
     Parse interval string to minutes.
 
@@ -71,31 +78,41 @@ def parse_interval_to_minutes(interval):
 
 def _get_smart_gap_threshold(interval):
     """
-    Get an intelligent gap threshold based on an interval.
+    Get interval-specific gap threshold.
 
-    For 5m/15m data: Use a very large threshold (month-long gaps are normal in your data)
-    For other intraday: Use a moderate threshold to avoid splitting on weekends
-    For daily+ data: Use a smaller threshold to detect actual data gaps
+    All intervals use consistent 4-day threshold to detect significant data gaps
+    while avoiding normal market closures (weekends):
+
+    - 3m: 1920x = 4.0 days
+    - 5m: 1152x = 4.0 days
+    - 15m: 384x = 4.0 days
+    - 30m: 192x = 4.0 days
+    - 45m: 128x = 4.0 days
+    - 1h: 96x = 4.0 days
+    - 2h: 48x = 4.0 days
+    - 3h: 32x = 4.0 days
+    - 4h: 24x = 4.0 days
+    - 1d: 4x = 4.0 days
+
+    Supported intervals: 3m, 5m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 1d
 
     Args:
-        interval: Interval string (e.g., '5m', '1h', '1d')
+        interval: Interval string (e.g., '3m', '5m', '1h', '1d')
 
     Returns:
         Threshold multiplier appropriate for the interval
-    """
-    interval_minutes = parse_interval_to_minutes(interval)
 
-    # Special handling for 5m and 15m (very gappy data)
-    if interval_minutes == 5 or interval_minutes == 15:
-        # For 5m: 1000 * 5 = 5000 min = ~3.5 days
-        # For 15m: 1000 * 15 = 15,000 min = ~10.4 days
-        return DEFAULT_GAP_THRESHOLD_5M_15M
-    elif interval_minutes < 1440:
-        # For other intraday (30m, 1h, 2h, 4h): 500x covers weekends
-        return DEFAULT_GAP_THRESHOLD_SUBDAILY
-    else:
-        # For daily data, a smaller threshold is fine
-        return DEFAULT_GAP_THRESHOLD_DAILY
+    Raises:
+        ValueError: If interval is not supported
+    """
+    if interval not in GAP_THRESHOLDS:
+        supported = ', '.join(sorted(GAP_THRESHOLDS.keys()))
+        raise ValueError(
+            f"Unsupported interval '{interval}'. "
+            f"Supported intervals: {supported}"
+        )
+
+    return GAP_THRESHOLDS[interval]
 
 
 def _calculate_gap_threshold(interval, threshold_multiplier):
@@ -109,7 +126,7 @@ def _calculate_gap_threshold(interval, threshold_multiplier):
     Returns:
         pd.Timedelta representing a gap threshold
     """
-    interval_minutes = parse_interval_to_minutes(interval)
+    interval_minutes = _parse_interval_to_minutes(interval)
     expected_delta = pd.Timedelta(minutes=interval_minutes)
     return expected_delta * threshold_multiplier
 
@@ -139,8 +156,7 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
             'df': DataFrame slice for this period,
             'start_date': pd.Timestamp,
             'end_date': pd.Timestamp,
-            'row_count': int,
-            'is_continuous': True
+            'row_count': int
         }
     """
     # Validate input
