@@ -59,7 +59,6 @@ logger = get_logger('backtesting/testing/segmentation/period_splitter')
 
 # ==================== Constants ====================
 
-DEFAULT_SEGMENT_COUNT = 4
 MIN_SEGMENT_ROWS = 1000
 
 
@@ -176,13 +175,13 @@ def _create_segments_from_allocations(allocations):
 
 # ==================== Main Splitting ====================
 
-def split_period_equal_rows(period_dict, segments_per_period=DEFAULT_SEGMENT_COUNT):
+def split_period_equal_rows(period_dict, segments_per_period):
     """
     Split a period into equal-row segments.
 
     Args:
         period_dict: Dict from detect_periods() containing period info
-        segments_per_period: Number of segments to create per period (default: 4)
+        segments_per_period: Number of segments to create per period
                             Set to 1 to treat each period as a single segment
 
     Returns:
@@ -230,15 +229,16 @@ def split_period_equal_rows(period_dict, segments_per_period=DEFAULT_SEGMENT_COU
     return segments
 
 
-def split_all_periods(periods_list, segments_per_period=DEFAULT_SEGMENT_COUNT, total_segments=None):
+def split_all_periods(periods_list, segments_per_period=None, total_segments=None):
     """
     Split all detected periods into segments.
 
     Args:
         periods_list: List of period dicts from detect_periods()
-        segments_per_period: Number of segments per period (default: 4)
+        segments_per_period: Number of segments per period
                            Set to 1 to treat each period as a single segment
                            Ignored if total_segments is specified
+                           Either segments_per_period or total_segments must be provided
         total_segments: Total number of segments distributed proportionally across ALL periods
                        If specified, overrides segments_per_period
                        Segments respect period boundaries (never cross gaps)
@@ -249,6 +249,10 @@ def split_all_periods(periods_list, segments_per_period=DEFAULT_SEGMENT_COUNT, t
     if not periods_list:
         logger.warning("No periods provided for segmentation")
         return []
+
+    # Validate that at least one splitting parameter is provided
+    if segments_per_period is None and total_segments is None:
+        raise ValueError("Either segments_per_period or total_segments must be provided")
 
     # If total_segments is specified, use equal-row splitting across all periods
     if total_segments is not None:
