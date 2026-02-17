@@ -198,15 +198,12 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
     # Get a gap threshold
     threshold = _calculate_gap_threshold(interval, gap_threshold)
 
-    logger.info(f"Gap detection for {interval}: threshold = {gap_threshold}x interval = {threshold}")
-
     # Find gap indices where the time difference exceeds a threshold
     gaps_mask = time_diffs > threshold
     gap_indices = time_diffs[gaps_mask].index
 
     if len(gap_indices) == 0:
         # No gaps - single continuous period
-        logger.info(f"No gaps detected in {interval} data - single continuous period")
         return [_create_period_dict(1, df)]
 
     # Split at gaps
@@ -247,14 +244,5 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
             f"All periods were too small."
         )
         return []
-
-    logger.info(f"Detected {len(periods)} continuous period(s) in {interval} data")
-
-    for period in periods:
-        logger.info(
-            f"  Period {period['period_id']}: "
-            f"{period['start_date']} to {period['end_date']} "
-            f"({period['row_count']} rows)"
-        )
 
     return periods

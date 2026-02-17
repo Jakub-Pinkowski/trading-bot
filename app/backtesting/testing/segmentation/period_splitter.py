@@ -189,12 +189,6 @@ def split_all_periods(periods_list, segments_per_period=DEFAULT_SEGMENT_COUNT, t
         period_segments = split_period_equal_rows(period, segments_per_period)
         all_segments.extend(period_segments)
 
-    logger.info(
-        f"Split {len(periods_list)} period(s) into "
-        f"{len(all_segments)} total segments "
-        f"({segments_per_period} segments per period)"
-    )
-
     return all_segments
 
 
@@ -235,10 +229,6 @@ def split_equal_segments_across_periods(periods_list, total_segments):
 
     # If only 1 period, no need for proportional allocation
     if len(periods_list) == 1:
-        logger.info(
-            f"Single period detected, creating {total_segments} equal segments "
-            f"(no gaps to worry about)"
-        )
         return split_period_equal_rows(periods_list[0], total_segments)
 
     if total_segments < len(periods_list):
@@ -275,18 +265,6 @@ def split_equal_segments_across_periods(periods_list, total_segments):
         })
         segments_allocated += segments_for_period
 
-    logger.info(
-        f"Creating {total_segments} segments from {len(periods_list)} period(s), "
-        f"{total_rows:,} total rows"
-    )
-
-    # Log allocation
-    for allocation in allocations:
-        logger.info(
-            f"  Period {allocation['period']['period_id']}: {allocation['rows']:,} rows "
-            f"({allocation['proportion'] * 100:.0f}%) → {allocation['segments']} segment(s)"
-        )
-
     # Split each period into its allocated segments
     all_segments = []
     global_segment_id = 1
@@ -308,5 +286,4 @@ def split_equal_segments_across_periods(periods_list, total_segments):
             global_segment_id += 1
             all_segments.append(segment)
 
-    logger.info(f"Created {len(all_segments)} segments")
     return all_segments
