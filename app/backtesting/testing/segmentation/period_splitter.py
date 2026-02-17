@@ -102,6 +102,78 @@ def _validate_segment_count(segment_count, period_rows):
     return rows_per_segment >= MIN_SEGMENT_ROWS
 
 
+def _allocate_segments_proportionally(periods_list, total_segments):
+    """
+    Allocate segments to periods proportionally based on their size.
+
+    Args:
+        periods_list: List of period dicts
+        total_segments: Total number of segments to allocate
+
+    Returns:
+        List of allocation dicts with 'period', 'segments', 'rows', 'proportion'
+    """
+    total_rows = sum(len(p['df']) for p in periods_list)
+    allocations = []
+    segments_allocated = 0
+
+    for i, period in enumerate(periods_list):
+        period_rows = len(period['df'])
+        period_proportion = period_rows / total_rows
+
+        # Allocate segments proportionally
+        if i == len(periods_list) - 1:
+            # Last period gets remaining segments
+            segments_for_period = total_segments - segments_allocated
+        else:
+            # Round to nearest integer, minimum 1 if period is large enough
+            segments_for_period = max(1, round(period_proportion * total_segments))
+            segments_for_period = min(segments_for_period, total_segments - segments_allocated)
+
+        allocations.append({
+            'period': period,
+            'segments': segments_for_period,
+            'rows': period_rows,
+            'proportion': period_proportion
+        })
+        segments_allocated += segments_for_period
+
+    return allocations
+
+
+def _create_segments_from_allocations(allocations):
+    """
+    Create segments from period allocations with global segment IDs.
+
+    Args:
+        allocations: List of allocation dicts from _allocate_segments_proportionally
+
+    Returns:
+        List of segment dicts with sequential global segment IDs
+    """
+    all_segments = []
+    global_segment_id = 1
+
+    for allocation in allocations:
+        period = allocation['period']
+        segments_for_period = allocation['segments']
+
+        # Skip if no segments allocated
+        if segments_for_period == 0:
+            continue
+
+        # Split this period into equal segments
+        period_segments = split_period_equal_rows(period, segments_for_period)
+
+        # Update segment IDs to be global
+        for segment in period_segments:
+            segment['segment_id'] = global_segment_id
+            global_segment_id += 1
+            all_segments.append(segment)
+
+    return all_segments
+
+
 # ==================== Main Splitting ====================
 
 def split_period_equal_rows(period_dict, segments_per_period=DEFAULT_SEGMENT_COUNT):
@@ -237,53 +309,10 @@ def split_equal_segments_across_periods(periods_list, total_segments):
             f"Some periods will not have any segments."
         )
 
-    # Calculate total rows and proportional allocation
-    total_rows = sum(len(p['df']) for p in periods_list)
-
     # Allocate segments proportionally to period size
-    allocations = []
-    segments_allocated = 0
+    allocations = _allocate_segments_proportionally(periods_list, total_segments)
 
-    for i, period in enumerate(periods_list):
-        period_rows = len(period['df'])
-        period_proportion = period_rows / total_rows
-
-        # Allocate segments proportionally
-        if i == len(periods_list) - 1:
-            # Last period gets remaining segments
-            segments_for_period = total_segments - segments_allocated
-        else:
-            # Round to nearest integer, minimum 1 if period is large enough
-            segments_for_period = max(1, round(period_proportion * total_segments))
-            segments_for_period = min(segments_for_period, total_segments - segments_allocated)
-
-        allocations.append({
-            'period': period,
-            'segments': segments_for_period,
-            'rows': period_rows,
-            'proportion': period_proportion
-        })
-        segments_allocated += segments_for_period
-
-    # Split each period into its allocated segments
-    all_segments = []
-    global_segment_id = 1
-
-    for allocation in allocations:
-        period = allocation['period']
-        segments_for_period = allocation['segments']
-
-        # Skip if no segments allocated
-        if segments_for_period == 0:
-            continue
-
-        # Split this period into equal segments
-        period_segments = split_period_equal_rows(period, segments_for_period)
-
-        # Update segment IDs to be global
-        for segment in period_segments:
-            segment['segment_id'] = global_segment_id
-            global_segment_id += 1
-            all_segments.append(segment)
+    # Create segments from allocations
+    all_segments = _create_segments_from_allocations(allocations)
 
     return all_segments

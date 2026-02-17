@@ -151,6 +151,51 @@ def _calculate_gap_threshold(interval, threshold_multiplier):
     return expected_delta * threshold_multiplier
 
 
+def _split_dataframe_at_gaps(df, gap_indices, min_rows):
+    """
+    Split DataFrame into periods at gap locations.
+
+    Args:
+        df: DataFrame to split
+        gap_indices: Index values where gaps occur
+        min_rows: Minimum rows required per period
+
+    Returns:
+        List of period dicts
+    """
+    periods = []
+    start_idx = 0
+    period_id = 1
+
+    for gap_start_time in gap_indices:
+        # Get the row location where the gap starts
+        gap_location = df.index.get_loc(gap_start_time)
+        period_df = df.iloc[start_idx:gap_location].copy()
+
+        if len(period_df) >= min_rows:
+            periods.append(_create_period_dict(period_id, period_df))
+            period_id += 1
+        else:
+            logger.warning(
+                f"Skipping small period: {len(period_df)} rows "
+                f"(min: {min_rows})"
+            )
+
+        start_idx = gap_location
+
+    # Add final period
+    final_period_df = df.iloc[start_idx:].copy()
+    if len(final_period_df) >= min_rows:
+        periods.append(_create_period_dict(period_id, final_period_df))
+    else:
+        logger.warning(
+            f"Skipping final small period: {len(final_period_df)} rows "
+            f"(min: {min_rows})"
+        )
+
+    return periods
+
+
 # ==================== Main Detection ====================
 
 def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
@@ -206,36 +251,8 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
         # No gaps - single continuous period
         return [_create_period_dict(1, df)]
 
-    # Split at gaps
-    periods = []
-    start_idx = 0
-    period_id = 1
-
-    for gap_start_time in gap_indices:
-        # Get the row location where the gap starts
-        gap_location = df.index.get_loc(gap_start_time)
-        period_df = df.iloc[start_idx:gap_location].copy()
-
-        if len(period_df) >= min_rows:
-            periods.append(_create_period_dict(period_id, period_df))
-            period_id += 1
-        else:
-            logger.warning(
-                f"Skipping small period: {len(period_df)} rows "
-                f"(min: {min_rows})"
-            )
-
-        start_idx = gap_location
-
-    # Add a final period
-    final_period_df = df.iloc[start_idx:].copy()
-    if len(final_period_df) >= min_rows:
-        periods.append(_create_period_dict(period_id, final_period_df))
-    else:
-        logger.warning(
-            f"Skipping final small period: {len(final_period_df)} rows "
-            f"(min: {min_rows})"
-        )
+    # Split DataFrame at gaps
+    periods = _split_dataframe_at_gaps(df, gap_indices, min_rows)
 
     # Check if we found any valid periods
     if not periods:
