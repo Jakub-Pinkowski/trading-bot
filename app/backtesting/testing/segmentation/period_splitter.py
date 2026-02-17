@@ -125,7 +125,7 @@ def _split_period_into_segments(period_dict, segments_per_period):
         else:
             row_end = (i + 1) * rows_per_segment
 
-        segment_df = period_df.iloc[row_start:row_end]
+        segment_df = period_df.iloc[row_start:row_end].copy()
         segments.append(_create_segment_dict(i + 1, period_id, segment_df))
 
     return segments
@@ -134,6 +134,9 @@ def _split_period_into_segments(period_dict, segments_per_period):
 def _allocate_segments_proportionally(periods_list, total_segments):
     """
     Allocate segments to periods proportionally based on their size.
+
+    Uses the largest remainder method for fair distribution.
+    When total_segments >= number of periods, each period gets at least 1 segment.
 
     Args:
         periods_list: List of period dicts
@@ -144,28 +147,58 @@ def _allocate_segments_proportionally(periods_list, total_segments):
     """
     total_rows = sum(len(p['df']) for p in periods_list)
     allocations = []
-    segments_allocated = 0
 
-    for i, period in enumerate(periods_list):
+    for period in periods_list:
         period_rows = len(period['df'])
-        period_proportion = period_rows / total_rows
-
-        # Allocate segments proportionally
-        if i == len(periods_list) - 1:
-            # Last period gets remaining segments
-            segments_for_period = total_segments - segments_allocated
-        else:
-            # Round to the nearest integer, minimum 1 if the period is large enough
-            segments_for_period = max(1, round(period_proportion * total_segments))
-            segments_for_period = min(segments_for_period, total_segments - segments_allocated)
+        proportion = period_rows / total_rows
+        exact = proportion * total_segments
 
         allocations.append({
             'period': period,
-            'segments': segments_for_period,
+            'segments': int(exact),
+            'remainder': exact - int(exact),
             'rows': period_rows,
-            'proportion': period_proportion
+            'proportion': proportion
         })
-        segments_allocated += segments_for_period
+
+    # Ensure minimum 1 segment per period when possible
+    if total_segments >= len(periods_list):
+        for alloc in allocations:
+            if alloc['segments'] == 0:
+                alloc['segments'] = 1
+
+    # Correct total using largest remainder method
+    allocated = sum(a['segments'] for a in allocations)
+    remaining = total_segments - allocated
+
+    if remaining > 0:
+        # Give extra segments to periods with largest remainders
+        indices_by_remainder = sorted(
+            range(len(allocations)),
+            key=lambda i: allocations[i]['remainder'],
+            reverse=True
+        )
+        for i in indices_by_remainder[:remaining]:
+            allocations[i]['segments'] += 1
+    elif remaining < 0:
+        # Over-allocated from min-1 guarantee, reduce largest allocations first
+        indices_by_segments = sorted(
+            range(len(allocations)),
+            key=lambda i: allocations[i]['segments'],
+            reverse=True
+        )
+        for i in indices_by_segments:
+            if remaining >= 0:
+                break
+            reducible = allocations[i]['segments'] - 1
+            reduce_by = min(reducible, -remaining)
+            if reduce_by > 0:
+                allocations[i]['segments'] -= reduce_by
+                remaining += reduce_by
+
+    # Remove temporary field
+    for alloc in allocations:
+        del alloc['remainder']
 
     return allocations
 
@@ -289,11 +322,19 @@ def split_all_periods(periods_list, segments_per_period=None, total_segments=Non
     if total_segments is not None:
         return _split_equal_segments_across_periods(periods_list, total_segments)
 
-    # Otherwise, split each period individually
+    # Validate segments_per_period
+    if not isinstance(segments_per_period, int) or segments_per_period <= 0:
+        raise ValueError(f"segments_per_period must be a positive integer, got: {segments_per_period}")
+
+    # Split each period individually with globally unique segment IDs
     all_segments = []
+    global_segment_id = 1
 
     for period in periods_list:
         period_segments = _split_period_into_segments(period, segments_per_period)
+        for segment in period_segments:
+            segment['segment_id'] = global_segment_id
+            global_segment_id += 1
         all_segments.extend(period_segments)
 
     return all_segments

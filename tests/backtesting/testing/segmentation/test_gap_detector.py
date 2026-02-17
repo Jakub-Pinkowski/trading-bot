@@ -289,11 +289,12 @@ class TestSplitDataframeAtGaps:
         all_dates = period1.append(period2)
         df = pd.DataFrame({'close': range(len(all_dates))}, index=all_dates)
 
-        # Find the gap
+        # Find the gap positions
         time_diffs = df.index.to_series().diff()
-        gap_indices = time_diffs[time_diffs > pd.Timedelta(days=1)].index
+        gaps_mask = time_diffs > pd.Timedelta(days=1)
+        gap_positions = [i for i, is_gap in enumerate(gaps_mask) if is_gap]
 
-        periods = _split_dataframe_at_gaps(df, gap_indices, min_rows=500)
+        periods = _split_dataframe_at_gaps(df, gap_positions, min_rows=500)
 
         assert len(periods) == 2
         assert periods[0]['row_count'] == 1000
@@ -311,9 +312,10 @@ class TestSplitDataframeAtGaps:
         df = pd.DataFrame({'close': range(len(all_dates))}, index=all_dates)
 
         time_diffs = df.index.to_series().diff()
-        gap_indices = time_diffs[time_diffs > pd.Timedelta(days=1)].index
+        gaps_mask = time_diffs > pd.Timedelta(days=1)
+        gap_positions = [i for i, is_gap in enumerate(gaps_mask) if is_gap]
 
-        periods = _split_dataframe_at_gaps(df, gap_indices, min_rows=500)
+        periods = _split_dataframe_at_gaps(df, gap_positions, min_rows=500)
 
         assert periods[0]['period_id'] == 1
         assert periods[1]['period_id'] == 2
@@ -329,9 +331,10 @@ class TestSplitDataframeAtGaps:
         df = pd.DataFrame({'close': range(len(all_dates))}, index=all_dates)
 
         time_diffs = df.index.to_series().diff()
-        gap_indices = time_diffs[time_diffs > pd.Timedelta(days=1)].index
+        gaps_mask = time_diffs > pd.Timedelta(days=1)
+        gap_positions = [i for i, is_gap in enumerate(gaps_mask) if is_gap]
 
-        periods = _split_dataframe_at_gaps(df, gap_indices, min_rows=1000)
+        periods = _split_dataframe_at_gaps(df, gap_positions, min_rows=1000)
 
         # Only period2 should be included
         assert len(periods) == 1
@@ -342,7 +345,7 @@ class TestSplitDataframeAtGaps:
         dates = pd.date_range('2024-01-01', periods=1000, freq='5min')
         df = pd.DataFrame({'close': range(1000)}, index=dates)
 
-        periods = _split_dataframe_at_gaps(df, pd.Index([]), min_rows=500)
+        periods = _split_dataframe_at_gaps(df, [], min_rows=500)
 
         # Should return just the final period
         assert len(periods) == 1

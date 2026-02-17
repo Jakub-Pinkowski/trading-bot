@@ -78,23 +78,10 @@ def _parse_interval_to_minutes(interval):
 
 def _get_smart_gap_threshold(interval):
     """
-    Get interval-specific gap threshold.
+    Get an interval-specific gap threshold from GAP_THRESHOLDS.
 
-    All intervals use consistent 4-day threshold to detect significant data gaps
-    while avoiding normal market closures (weekends):
-
-    - 3m: 1920x = 4.0 days
-    - 5m: 1152x = 4.0 days
-    - 15m: 384x = 4.0 days
-    - 30m: 192x = 4.0 days
-    - 45m: 128x = 4.0 days
-    - 1h: 96x = 4.0 days
-    - 2h: 48x = 4.0 days
-    - 3h: 32x = 4.0 days
-    - 4h: 24x = 4.0 days
-    - 1d: 4x = 4.0 days
-
-    Supported intervals: 3m, 5m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 1d
+    All intervals use a consistent 4-day threshold to detect significant data gaps
+    while avoiding normal market closures (weekends).
 
     Args:
         interval: Interval string (e.g., '3m', '5m', '1h', '1d')
@@ -103,7 +90,7 @@ def _get_smart_gap_threshold(interval):
         Threshold multiplier appropriate for the interval
 
     Raises:
-        ValueError: If interval is not supported
+        ValueError: If an interval is not in GAP_THRESHOLDS
     """
     if interval not in GAP_THRESHOLDS:
         supported = ', '.join(sorted(GAP_THRESHOLDS.keys()))
@@ -151,13 +138,13 @@ def _create_period_dict(period_id, period_df):
     }
 
 
-def _split_dataframe_at_gaps(df, gap_indices, min_rows):
+def _split_dataframe_at_gaps(df, gap_positions, min_rows):
     """
     Split DataFrame into periods at gap locations.
 
     Args:
         df: DataFrame to split
-        gap_indices: Index values where gaps occur
+        gap_positions: Integer row positions where gaps occur
         min_rows: Minimum rows required per period
 
     Returns:
@@ -167,9 +154,7 @@ def _split_dataframe_at_gaps(df, gap_indices, min_rows):
     start_idx = 0
     period_id = 1
 
-    for gap_start_time in gap_indices:
-        # Get the row location where the gap starts
-        gap_location = df.index.get_loc(gap_start_time)
+    for gap_location in gap_positions:
         period_df = df.iloc[start_idx:gap_location].copy()
 
         if len(period_df) >= min_rows:
@@ -238,16 +223,16 @@ def detect_periods(df, interval, min_rows=MIN_PERIOD_ROWS):
     gap_multiplier = _get_smart_gap_threshold(interval)
     threshold = _calculate_gap_threshold(interval, gap_multiplier)
 
-    # Find gap indices where the time difference exceeds the threshold
+    # Find gap positions where the time difference exceeds the threshold
     gaps_mask = time_diffs > threshold
-    gap_indices = time_diffs[gaps_mask].index
+    gap_positions = [i for i, is_gap in enumerate(gaps_mask) if is_gap]
 
-    if len(gap_indices) == 0:
+    if not gap_positions:
         # No gaps - single continuous period
-        return [_create_period_dict(1, df)]
+        return [_create_period_dict(1, df.copy())]
 
     # Split DataFrame at gaps
-    periods = _split_dataframe_at_gaps(df, gap_indices, min_rows)
+    periods = _split_dataframe_at_gaps(df, gap_positions, min_rows)
 
     # Check if we found any valid periods
     if not periods:
