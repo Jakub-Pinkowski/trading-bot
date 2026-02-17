@@ -70,7 +70,7 @@ def _parse_interval_to_minutes(interval):
 
         return minutes
 
-    except (ValueError, AttributeError) as e:
+    except ValueError as e:
         if "invalid literal" in str(e):
             raise ValueError(f"Invalid interval format: '{interval}'. Expected format like '5m', '1h', '1d'")
         raise

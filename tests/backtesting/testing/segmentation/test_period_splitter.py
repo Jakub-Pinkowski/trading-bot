@@ -448,6 +448,24 @@ class TestSplitAllPeriods:
         with pytest.raises(ValueError, match="Either segments_per_period or total_segments"):
             split_all_periods(three_periods)
 
+    def test_invalid_segments_per_period_raises_error(self, three_periods):
+        """Test that non-positive or non-integer segments_per_period raises ValueError."""
+        with pytest.raises(ValueError, match="positive integer"):
+            split_all_periods(three_periods, segments_per_period=0)
+
+        with pytest.raises(ValueError, match="positive integer"):
+            split_all_periods(three_periods, segments_per_period=-1)
+
+        with pytest.raises(ValueError, match="positive integer"):
+            split_all_periods(three_periods, segments_per_period=2.5)
+
+    def test_segment_ids_are_globally_unique(self, three_periods):
+        """Test that segment IDs are globally unique across all periods."""
+        segments = split_all_periods(three_periods, segments_per_period=2)
+
+        ids = [s['segment_id'] for s in segments]
+        assert ids == list(range(1, len(ids) + 1))
+
     def test_segments_per_period_one(self, three_periods):
         """Test segments_per_period=1 (each period is one segment)."""
         segments = split_all_periods(three_periods, segments_per_period=1)
