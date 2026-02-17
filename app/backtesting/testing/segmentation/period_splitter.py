@@ -174,6 +174,10 @@ def split_all_periods(periods_list, segments_per_period=DEFAULT_SEGMENT_COUNT, t
     Returns:
         List of all segment dicts across all periods
     """
+    if not periods_list:
+        logger.warning("No periods provided for segmentation")
+        return []
+
     # If total_segments is specified, use equal-row splitting across all periods
     if total_segments is not None:
         return split_equal_segments_across_periods(periods_list, total_segments)

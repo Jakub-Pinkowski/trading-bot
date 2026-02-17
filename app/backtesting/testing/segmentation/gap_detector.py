@@ -63,17 +63,37 @@ def _parse_interval_to_minutes(interval):
 
     Returns:
         Number of minutes as integer
+
+    Raises:
+        ValueError: If an interval format is invalid or value is non-positive
     """
+    if not interval or not isinstance(interval, str):
+        raise ValueError(f"Interval must be a non-empty string, got: {interval}")
+
     interval = interval.lower().strip()
 
-    if interval.endswith('m'):
-        return int(interval[:-1])
-    elif interval.endswith('h'):
-        return int(interval[:-1]) * 60
-    elif interval.endswith('d'):
-        return int(interval[:-1]) * 60 * 24
-    else:
-        raise ValueError(f"Unsupported interval format: {interval}")
+    if not interval:
+        raise ValueError("Interval cannot be empty after stripping whitespace")
+
+    try:
+        if interval.endswith('m'):
+            minutes = int(interval[:-1])
+        elif interval.endswith('h'):
+            minutes = int(interval[:-1]) * 60
+        elif interval.endswith('d'):
+            minutes = int(interval[:-1]) * 60 * 24
+        else:
+            raise ValueError(f"Unsupported interval format: '{interval}'. Must end with 'm', 'h', or 'd'")
+
+        if minutes <= 0:
+            raise ValueError(f"Interval must be positive, got: {interval}")
+
+        return minutes
+
+    except (ValueError, AttributeError) as e:
+        if "invalid literal" in str(e):
+            raise ValueError(f"Invalid interval format: '{interval}'. Expected format like '5m', '1h', '1d'")
+        raise
 
 
 def _get_smart_gap_threshold(interval):
@@ -180,8 +200,9 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
 
     logger.info(f"Gap detection for {interval}: threshold = {gap_threshold}x interval = {threshold}")
 
-    # Find gap indices
-    gap_indices = time_diffs[time_diffs > threshold].index
+    # Find gap indices where the time difference exceeds a threshold
+    gaps_mask = time_diffs > threshold
+    gap_indices = time_diffs[gaps_mask].index
 
     if len(gap_indices) == 0:
         # No gaps - single continuous period
