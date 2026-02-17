@@ -198,7 +198,7 @@ def _split_dataframe_at_gaps(df, gap_indices, min_rows):
 
 # ==================== Main Detection ====================
 
-def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
+def detect_periods(df, interval, min_rows=MIN_PERIOD_ROWS):
     """
     Detect continuous periods in DataFrame by identifying large time gaps.
 
@@ -210,8 +210,6 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
     Args:
         df: DataFrame with DatetimeIndex
         interval: Time interval (e.g., '5m', '15m')
-        gap_threshold: Multiplier for an interval to trigger a new period
-                      If None, uses smart default based on interval
         min_rows: Minimum rows required per period (default: 1000)
 
     Returns:
@@ -233,9 +231,8 @@ def detect_periods(df, interval, gap_threshold=None, min_rows=MIN_PERIOD_ROWS):
         logger.error("DataFrame must have a DatetimeIndex")
         raise ValueError("DataFrame must have a DatetimeIndex")
 
-    # Use smart default if no threshold provided
-    if gap_threshold is None:
-        gap_threshold = _get_smart_gap_threshold(interval)
+    # Get a smart default threshold for this interval
+    gap_threshold = _get_smart_gap_threshold(interval)
 
     # Calculate time differences between consecutive rows
     time_diffs = df.index.to_series().diff()
