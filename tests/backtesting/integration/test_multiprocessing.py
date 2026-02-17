@@ -452,7 +452,8 @@ class TestRealDataMultiprocessing:
             all_combinations = orchestrator_module._generate_all_combinations(tester.tested_months,
                                                                               tester.symbols,
                                                                               tester.intervals,
-                                                                              tester.strategies)
+                                                                              tester.strategies,
+                                                                              [])
             test_combinations, skipped = orchestrator_module._prepare_test_combinations(all_combinations,
                                                                                         (pd.DataFrame(), set()),
                                                                                         False,
@@ -587,7 +588,8 @@ class TestRealDataMultiprocessing:
             all_combinations = orchestrator_module._generate_all_combinations(tester.tested_months,
                                                                               tester.symbols,
                                                                               tester.intervals,
-                                                                              tester.strategies)
+                                                                              tester.strategies,
+                                                                              [])
             test_combinations, skipped = orchestrator_module._prepare_test_combinations(all_combinations,
                                                                                         (pd.DataFrame(), set()),
                                                                                         False,

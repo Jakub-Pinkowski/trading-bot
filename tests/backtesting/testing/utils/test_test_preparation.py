@@ -38,8 +38,8 @@ class TestLoadExistingResults:
 
             assert len(df) == 2
             assert len(combinations_set) == 2
-            assert ('1!', 'ZS', '1h', 'RSI_14_30_70') in combinations_set
-            assert ('2!', 'CL', '15m', 'EMA_9_21') in combinations_set
+            assert ('1!', 'ZS', '1h', 'RSI_14_30_70', -1) in combinations_set
+            assert ('2!', 'CL', '15m', 'EMA_9_21', -1) in combinations_set
 
     def test_load_existing_results_file_not_exists(self):
         """Test loading results when file doesn't exist."""
@@ -66,7 +66,8 @@ class TestLoadExistingResults:
             'month': [f'{i % 3 + 1}!' for i in range(1000)],
             'symbol': ['ZS' if i % 2 == 0 else 'CL' for i in range(1000)],
             'interval': ['1h' if i % 3 == 0 else '15m' for i in range(1000)],
-            'strategy': [f'Strategy_{i}' for i in range(1000)]
+            'strategy': [f'Strategy_{i}' for i in range(1000)],
+            'segment_id': [-1] * 1000
         })
 
         with patch('os.path.exists', return_value=True), \
@@ -82,7 +83,8 @@ class TestLoadExistingResults:
             'month': ['1!'],
             'symbol': ['ZS'],
             'interval': ['1h'],
-            'strategy': ['RSI_14_30_70']
+            'strategy': ['RSI_14_30_70'],
+            'segment_id': [-1]
         })
 
         with patch('os.path.exists', return_value=True), \
@@ -93,7 +95,7 @@ class TestLoadExistingResults:
             assert isinstance(combinations_set, set)
             combination = list(combinations_set)[0]
             assert isinstance(combination, tuple)
-            assert len(combination) == 4
+            assert len(combination) == 5
 
 
 # ==================== Check Test Exists Tests ====================
@@ -165,7 +167,8 @@ class TestCheckPerformance:
                 'month': f'{i % 3 + 1}!',
                 'symbol': ['ZS', 'CL', 'GC'][i % 3],
                 'interval': ['15m', '1h', '4h'][i % 3],
-                'strategy': f'Strategy_{i}'
+                'strategy': f'Strategy_{i}',
+                'segment_id': -1
             })
 
         mock_df = pd.DataFrame(data)
@@ -173,7 +176,8 @@ class TestCheckPerformance:
             mock_df['month'].values,
             mock_df['symbol'].values,
             mock_df['interval'].values,
-            mock_df['strategy'].values
+            mock_df['strategy'].values,
+            [-1] * len(mock_df)
         ))
         existing_data = (mock_df, combinations_set)
 
@@ -189,13 +193,15 @@ class TestCheckPerformance:
             'month': ['1!', '2!', '3!'],
             'symbol': ['ZS', 'CL', 'GC'],
             'interval': ['1h', '15m', '4h'],
-            'strategy': ['RSI_14_30_70', 'EMA_9_21', 'MACD_12_26_9']
+            'strategy': ['RSI_14_30_70', 'EMA_9_21', 'MACD_12_26_9'],
+            'segment_id': [-1, -1, -1]
         })
         combinations_set = set(zip(
             mock_df['month'].values,
             mock_df['symbol'].values,
             mock_df['interval'].values,
-            mock_df['strategy'].values
+            mock_df['strategy'].values,
+            [-1] * len(mock_df)
         ))
         existing_data = (mock_df, combinations_set)
 
@@ -220,7 +226,8 @@ class TestTestPreparationIntegration:
             'month': ['1!', '2!'],
             'symbol': ['ZS', 'CL'],
             'interval': ['1h', '15m'],
-            'strategy': ['RSI_14_30_70', 'EMA_9_21']
+            'strategy': ['RSI_14_30_70', 'EMA_9_21'],
+            'segment_id': [-1, -1]
         })
 
         with patch('os.path.exists', return_value=True), \
@@ -242,7 +249,8 @@ class TestTestPreparationIntegration:
             'month': ['1!', '1!', '2!'],
             'symbol': ['ZS', 'ZS', 'CL'],
             'interval': ['1h', '4h', '15m'],
-            'strategy': ['RSI_14_30_70', 'EMA_9_21', 'MACD_12_26_9']
+            'strategy': ['RSI_14_30_70', 'EMA_9_21', 'MACD_12_26_9'],
+            'segment_id': [-1, -1, -1]
         })
 
         with patch('os.path.exists', return_value=True), \
@@ -293,13 +301,15 @@ class TestTestPreparationIntegration:
             'month': ['1!', '1!'],
             'symbol': ['ZS', 'ZS'],
             'interval': ['1h', '1h'],
-            'strategy': ['RSI_14_30_70', 'RSI_21_30_70']  # Different periods
+            'strategy': ['RSI_14_30_70', 'RSI_21_30_70'],  # Different periods
+            'segment_id': [-1, -1]
         })
         combinations_set = set(zip(
             mock_df['month'].values,
             mock_df['symbol'].values,
             mock_df['interval'].values,
-            mock_df['strategy'].values
+            mock_df['strategy'].values,
+            [-1] * len(mock_df)
         ))
         existing_data = (mock_df, combinations_set)
 
@@ -338,7 +348,7 @@ class TestEdgeCases:
             'interval': ['1h'],
             'strategy': ['RSI_14_30_70']
         })
-        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
+        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70', None)}
         existing_data = (mock_df, combinations_set)
 
         # Check with None should not match
@@ -353,6 +363,7 @@ class TestEdgeCases:
             'symbol': ['ZS'],
             'interval': ['1h'],
             'strategy': ['RSI_14_30_70'],
+            'segment_id': [-1],
             'extra_column': ['extra_data'],
             'timestamp': ['2024-01-01']
         })
@@ -364,21 +375,24 @@ class TestEdgeCases:
             # Should still work with extra columns
             assert len(df) == 1
             assert len(combinations_set) == 1
-            assert ('1!', 'ZS', '1h', 'RSI_14_30_70') in combinations_set
+            assert ('1!', 'ZS', '1h', 'RSI_14_30_70', -1) in combinations_set
 
     def test_load_results_with_missing_columns(self):
-        """Test loading results file with missing columns."""
+        """Test loading results file with missing segment_id column raises error."""
         mock_df = pd.DataFrame({
             'month': ['1!'],
-            'symbol': ['ZS']
-            # Missing interval and strategy columns
+            'symbol': ['ZS'],
+            'interval': ['1h'],
+            'strategy': ['RSI_14_30_70']
+            # Missing segment_id column
         })
 
         with patch('os.path.exists', return_value=True), \
                 patch('pandas.read_parquet', return_value=mock_df):
-            # Should handle missing columns gracefully and return empty
+            # Should fail when segment_id column is missing (no backward compatibility)
             df, combinations_set = load_existing_results()
 
+            # Function catches the error and returns empty
             assert df.empty
             assert len(combinations_set) == 0
 
@@ -388,9 +402,10 @@ class TestEdgeCases:
             'month': ['1!'],
             'symbol': ['ZS'],
             'interval': ['1h'],
-            'strategy': ['RSI_14_30_70_trailing=2.5_slippage=1']
+            'strategy': ['RSI_14_30_70_trailing=2.5_slippage=1'],
+            'segment_id': [-1]
         })
-        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70_trailing=2.5_slippage=1')}
+        combinations_set = {('1!', 'ZS', '1h', 'RSI_14_30_70_trailing=2.5_slippage=1', -1)}
         existing_data = (mock_df, combinations_set)
 
         result = check_test_exists(

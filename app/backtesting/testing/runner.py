@@ -21,7 +21,7 @@ def run_single_test(test_params):
     trades, calculating performance metrics, and tracking cache statistics.
 
     Args:
-        test_params: Tuple containing 8 elements in this order:
+        test_params: Tuple containing 12 elements in this order:
             - tested_month: Month identifier (e.g., '1!', '2!')
             - symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
             - interval: Timeframe (e.g., '15m', '1h', '4h', '1d')
@@ -30,6 +30,10 @@ def run_single_test(test_params):
             - verbose: If True, print progress messages
             - switch_dates: List of datetime objects for contract rollover dates
             - filepath: Path to parquet file with historical price data
+            - segment_id: Segment identifier, or None for non-segmented runs
+            - period_id: Parent period identifier, or None for non-segmented runs
+            - start_date: Segment start date for DataFrame slicing, or None
+            - end_date: Segment end date for DataFrame slicing, or None
 
     Returns:
         Dictionary with test results, or None if the test failed.
@@ -49,7 +53,7 @@ def run_single_test(test_params):
         - DataFrame validation failed (missing columns, too many NaN values, etc.)
     """
     # Unpack parameters
-    tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath = test_params
+    tested_month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath, segment_id, period_id, start_date, end_date = test_params
 
     # Track cache stats before the test
     ind_hits_before = indicator_cache.hits
@@ -62,6 +66,12 @@ def run_single_test(test_params):
     except Exception as error:
         logger.error(f'Failed to read file: {filepath}\nReason: {error}')
         return None
+
+    # Slice DataFrame to segment range if specified
+    if start_date is not None and end_date is not None:
+        df = df.loc[start_date:end_date]
+        # Only include switch dates that actually exist in the sliced DataFrame
+        switch_dates = [d for d in switch_dates if d in df.index]
 
     # Comprehensive DataFrame validation
     if not validate_dataframe(df, filepath):
@@ -96,6 +106,8 @@ def run_single_test(test_params):
             'month': tested_month,
             'symbol': symbol,
             'interval': interval,
+            'segment_id': segment_id,
+            'period_id': period_id,
             'strategy': strategy_name,
             'metrics': summary_metrics,
             'timestamp': datetime.now().isoformat(),
@@ -124,6 +136,8 @@ def run_single_test(test_params):
             'month': tested_month,
             'symbol': symbol,
             'interval': interval,
+            'segment_id': segment_id,
+            'period_id': period_id,
             'strategy': strategy_name,
             'metrics': {},  # Empty metrics
             'timestamp': datetime.now().isoformat(),

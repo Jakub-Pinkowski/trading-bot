@@ -236,14 +236,15 @@ class TestGenerateAllCombinations:
         intervals = ['1h']
         strategies = [('RSI_14_30_70', MagicMock())]
 
-        result = _generate_all_combinations(tested_months, symbols, intervals, strategies)
+        result = _generate_all_combinations(tested_months, symbols, intervals, strategies, [])
 
         # Should generate 1*1*1*1 = 1 combination
         assert len(result) == 1
         assert result[0][0] == '1!'
         assert result[0][1] == 'ZS'
         assert result[0][2] == '1h'
-        assert result[0][3] == 'RSI_14_30_70'
+        assert result[0][3] is None  # segment
+        assert result[0][4] == 'RSI_14_30_70'
 
     def test_generate_all_combinations_multiple_dimensions(self):
         """Test generating combinations with multiple values per dimension."""
@@ -255,7 +256,7 @@ class TestGenerateAllCombinations:
             ('EMA_9_21', MagicMock())
         ]
 
-        result = _generate_all_combinations(tested_months, symbols, intervals, strategies)
+        result = _generate_all_combinations(tested_months, symbols, intervals, strategies, [])
 
         # Should generate 2*2*2*2 = 16 combinations
         assert len(result) == 16
@@ -268,16 +269,17 @@ class TestGenerateAllCombinations:
         mock_strategy = MagicMock()
         strategies = [('RSI_14_30_70', mock_strategy)]
 
-        result = _generate_all_combinations(tested_months, symbols, intervals, strategies)
+        result = _generate_all_combinations(tested_months, symbols, intervals, strategies, [])
 
-        # Verify tuple structure: (month, symbol, interval, name, instance)
+        # Verify tuple structure: (month, symbol, interval, segment, name, instance)
         combo = result[0]
-        assert len(combo) == 5
+        assert len(combo) == 6
         assert combo[0] == '1!'
         assert combo[1] == 'ZS'
         assert combo[2] == '1h'
-        assert combo[3] == 'RSI_14_30_70'
-        assert combo[4] == mock_strategy
+        assert combo[3] is None  # segment
+        assert combo[4] == 'RSI_14_30_70'
+        assert combo[5] == mock_strategy
 
     def test_generate_all_combinations_large_scale(self):
         """Test generating large number of combinations."""
@@ -286,7 +288,7 @@ class TestGenerateAllCombinations:
         intervals = ['15m', '1h', '4h', '1d']
         strategies = [(f'Strategy_{i}', MagicMock()) for i in range(10)]
 
-        result = _generate_all_combinations(tested_months, symbols, intervals, strategies)
+        result = _generate_all_combinations(tested_months, symbols, intervals, strategies, [])
 
         # Should generate 3*4*4*10 = 480 combinations
         assert len(result) == 480
@@ -298,7 +300,7 @@ class TestGenerateAllCombinations:
         intervals = ['1h']
         strategies = []
 
-        result = _generate_all_combinations(tested_months, symbols, intervals, strategies)
+        result = _generate_all_combinations(tested_months, symbols, intervals, strategies, [])
 
         # Should generate 0 combinations
         assert len(result) == 0
@@ -312,7 +314,7 @@ class TestPrepareTestCombinations:
     def test_prepare_test_combinations_no_filtering(self):
         """Test preparing combinations without filtering (skip_existing=False)."""
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock())
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', MagicMock())
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': []}
@@ -332,9 +334,9 @@ class TestPrepareTestCombinations:
     def test_prepare_test_combinations_verbose_prints_combo_change(self, capsys):
         """Test that verbose mode prints when month/symbol/interval combo changes."""
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
-            ('1!', 'ZS', '1h', 'EMA_9_21', MagicMock()),
-            ('1!', 'CL', '1h', 'RSI_14_30_70', MagicMock()),
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', MagicMock()),
+            ('1!', 'ZS', '1h', None, 'EMA_9_21', MagicMock()),
+            ('1!', 'CL', '1h', None, 'RSI_14_30_70', MagicMock()),
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': [], 'CL': []}
@@ -355,7 +357,7 @@ class TestPrepareTestCombinations:
     def test_prepare_test_combinations_verbose_prints_skip_message(self, capsys):
         """Test that verbose mode prints skip message when test is skipped."""
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', MagicMock()),
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': []}
@@ -377,8 +379,8 @@ class TestPrepareTestCombinations:
     def test_prepare_test_combinations_with_filtering(self):
         """Test preparing combinations with filtering (skip_existing=True)."""
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
-            ('1!', 'ZS', '1h', 'EMA_9_21', MagicMock())
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', MagicMock()),
+            ('1!', 'ZS', '1h', None, 'EMA_9_21', MagicMock())
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': []}
@@ -403,7 +405,7 @@ class TestPrepareTestCombinations:
         """Test that preparation adds required parameters to combinations."""
         mock_strategy = MagicMock()
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', mock_strategy)
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', mock_strategy)
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates = [pd.Timestamp('2024-01-01')]
@@ -419,7 +421,7 @@ class TestPrepareTestCombinations:
 
         # Verify added parameters
         combo = test_combos[0]
-        assert len(combo) == 8  # Original 5 + verbose, switch_dates, filepath
+        assert len(combo) == 12  # month, symbol, interval, strategy_name, strategy_instance, verbose, switch_dates, filepath, segment_id, period_id, start_date, end_date
         assert combo[5] is False  # verbose
         assert combo[6] == switch_dates  # switch_dates
         assert 'ZS_1h.parquet' in combo[7]  # filepath
@@ -427,8 +429,8 @@ class TestPrepareTestCombinations:
     def test_prepare_test_combinations_constructs_correct_filepath(self):
         """Test that correct filepath is constructed for data loading."""
         all_combinations = [
-            ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
-            ('2!', 'CL', '15m', 'EMA_9_21', MagicMock())
+            ('1!', 'ZS', '1h', None, 'RSI_14_30_70', MagicMock()),
+            ('2!', 'CL', '15m', None, 'EMA_9_21', MagicMock())
         ]
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': [], 'CL': []}
@@ -574,6 +576,7 @@ class TestOrchestratorIntegration:
         tester.symbols = ['ZS']
         tester.intervals = ['1h']
         tester.switch_dates_dict = {'ZS': ['2024-01-01']}
+        tester.segments = []
         tester.results = []
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
@@ -620,6 +623,7 @@ class TestOrchestratorIntegration:
         tester.symbols = ['ZS', 'CL']
         tester.intervals = ['15m', '1h']
         tester.switch_dates_dict = {'ZS': [], 'CL': []}
+        tester.segments = []
         tester.results = []
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
@@ -644,6 +648,7 @@ class TestOrchestratorIntegration:
         tester.symbols = ['ZS']
         tester.intervals = ['1h']
         tester.switch_dates_dict = {'ZS': []}
+        tester.segments = []
         tester.results = []
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
@@ -676,6 +681,7 @@ class TestOrchestratorIntegration:
         tester.symbols = ['ZS']
         tester.intervals = ['1h']
         tester.switch_dates_dict = {'ZS': []}
+        tester.segments = []
         tester.results = []
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
@@ -712,6 +718,7 @@ class TestOrchestratorIntegration:
         tester.symbols = ['ZS']
         tester.intervals = ['1h']
         tester.switch_dates_dict = {'ZS': []}
+        tester.segments = []
         tester.results = []
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \

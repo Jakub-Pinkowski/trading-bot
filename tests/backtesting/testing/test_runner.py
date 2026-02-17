@@ -36,7 +36,11 @@ class TestRunSingleTestSuccess:
             MagicMock(),  # strategy_instance
             False,  # verbose
             [],  # switch_dates
-            '/path/to/data.parquet'  # filepath
+            '/path/to/data.parquet',  # filepath
+            None,  # segment_id
+            None,  # period_id
+            None,  # start_date
+            None,  # end_date
         )
 
         # Mock dataframe
@@ -101,7 +105,8 @@ class TestRunSingleTestSuccess:
     def test_run_single_test_returns_correct_structure(self):
         """Test that result dictionary has all required fields."""
         test_params = (
-            '2!', 'CL', '15m', 'EMA_9_21', MagicMock(), False, [], '/path/to/data.parquet'
+            '2!', 'CL', '15m', 'EMA_9_21', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -140,14 +145,15 @@ class TestRunSingleTestSuccess:
         """Test that strategy.run() is called with correct parameters."""
         mock_strategy = MagicMock()
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', mock_strategy, False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', mock_strategy, False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
             'open': [100], 'high': [102], 'low': [99], 'close': [101], 'volume': [1000]
         })
         switch_dates = [datetime(2024, 1, 1), datetime(2024, 2, 1)]
-        test_params = test_params[:6] + (switch_dates,) + (test_params[7],)
+        test_params = test_params[:6] + (switch_dates,) + test_params[7:]
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=mock_df), \
                 patch('app.backtesting.testing.runner.validate_dataframe', return_value=True), \
@@ -175,7 +181,8 @@ class TestRunSingleTestNoTrades:
     def test_run_single_test_no_trades_returns_empty_metrics(self):
         """Test that empty metrics dict is returned when no trades generated."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -201,7 +208,8 @@ class TestRunSingleTestNoTrades:
     def test_run_single_test_no_trades_includes_cache_stats(self):
         """Test that cache stats are included even when no trades generated."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -230,7 +238,8 @@ class TestRunSingleTestNoTrades:
     def test_run_single_test_no_trades_verbose_output(self, capsys):
         """Test verbose output when no trades are generated."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), True, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), True, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -257,7 +266,8 @@ class TestRunSingleTestErrorHandling:
     def test_run_single_test_file_not_found_returns_none(self):
         """Test that None is returned when data file cannot be loaded."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/nonexistent/file.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/nonexistent/file.parquet',
+            None, None, None, None
         )
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe') as mock_get_df:
@@ -270,7 +280,8 @@ class TestRunSingleTestErrorHandling:
     def test_run_single_test_invalid_dataframe_returns_none(self):
         """Test that None is returned when DataFrame validation fails."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame()  # Empty dataframe
@@ -284,7 +295,8 @@ class TestRunSingleTestErrorHandling:
     def test_run_single_test_general_exception_returns_none(self):
         """Test that general exceptions are caught and None is returned."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         with patch('app.backtesting.testing.runner.get_cached_dataframe') as mock_get_df:
@@ -303,7 +315,8 @@ class TestCacheStatistics:
     def test_cache_statistics_calculated_correctly(self):
         """Test that cache hit/miss deltas are calculated correctly."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -343,7 +356,8 @@ class TestCacheStatistics:
     def test_cache_statistics_with_multiple_trades(self):
         """Test cache statistics when multiple trades are generated."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -386,7 +400,8 @@ class TestVerboseOutput:
     def test_verbose_true_prints_strategy_execution(self, capsys):
         """Test that verbose=True prints strategy execution info."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), True, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), True, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -410,7 +425,8 @@ class TestVerboseOutput:
     def test_verbose_false_no_output(self, capsys):
         """Test that verbose=False suppresses output."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -450,7 +466,8 @@ class TestMetricsCalculation:
     def test_calculate_trade_metrics_called_for_each_trade(self):
         """Test that calculate_trade_metrics is called for each trade."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -482,7 +499,8 @@ class TestMetricsCalculation:
     def test_summary_metrics_receives_trades_with_metrics(self):
         """Test that SummaryMetrics receives trades with calculated metrics."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -526,7 +544,8 @@ class TestDataFrameValidation:
     def test_dataframe_validation_called(self):
         """Test that validate_dataframe is called."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -549,7 +568,8 @@ class TestDataFrameValidation:
     def test_insufficient_rows_warning_logged(self):
         """Test that warning is logged when DataFrame has insufficient rows."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         # Create DataFrame with very few rows
@@ -583,7 +603,8 @@ class TestRunnerIntegration:
     def test_complete_workflow_with_successful_trade(self):
         """Test complete workflow from loading data to returning results."""
         test_params = (
-            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet',
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({
@@ -634,7 +655,7 @@ class TestRunnerIntegration:
             assert 'cache_stats' in result
 
     def test_test_params_tuple_unpacking(self):
-        """Test that all 8 test parameters are unpacked correctly."""
+        """Test that all 12 test parameters are unpacked correctly."""
         tested_month = '2!'
         symbol = 'CL'
         interval = '15m'
@@ -646,7 +667,8 @@ class TestRunnerIntegration:
 
         test_params = (
             tested_month, symbol, interval, strategy_name,
-            strategy_instance, verbose, switch_dates, filepath
+            strategy_instance, verbose, switch_dates, filepath,
+            None, None, None, None
         )
 
         mock_df = pd.DataFrame({

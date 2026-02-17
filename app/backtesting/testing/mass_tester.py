@@ -29,7 +29,7 @@ class MassTester:
 
     # ==================== Initialization ====================
 
-    def __init__(self, tested_months, symbols, intervals):
+    def __init__(self, tested_months, symbols, intervals, segments=None):
         """
         Initialize the mass tester with test parameters.
 
@@ -40,11 +40,14 @@ class MassTester:
             tested_months: List of month identifiers to test (e.g., ['1!', '2!'])
             symbols: List of futures symbols to test (e.g., ['ZS', 'CL', 'GC'])
             intervals: List of timeframes to test (e.g., ['15m', '1h', '4h', '1d'])
+            segments: Optional list of segment dicts from split_all_periods(). When provided,
+                     each test is run on the segment's date range rather than the full DataFrame
         """
         self.strategies = []
         self.tested_months = tested_months
         self.symbols = symbols
         self.intervals = intervals
+        self.segments = segments if segments is not None else []
 
         # Load switch dates
         with open(SWITCH_DATES_FILE_PATH) as switch_dates_file:
@@ -249,7 +252,7 @@ class MassTester:
 
     # ==================== Public API - Execution ====================
 
-    def run_tests(self, verbose, max_workers, skip_existing):
+    def run_tests(self, verbose, max_workers, skip_existing, segment_filter=None):
         """
         Run all configured strategy tests in parallel across symbols, intervals, and months.
 
@@ -263,12 +266,17 @@ class MassTester:
                         Lower values reduce memory usage but increase execution time
             skip_existing: If True, skip tests that already have results in the database.
                           If False, re-run all tests (useful for parameter changes)
+            segment_filter: Optional list of segment IDs to test (e.g., [1, 2, 3]).
+                           Only used when segments were provided at initialization.
+                           None = test all segments
 
         Returns:
             List of result dictionaries. Each dict contains:
             - month: Tested month (e.g., '1!')
             - symbol: Tested symbol (e.g., 'ZS', 'CL', 'GC')
             - interval: Tested timeframe (e.g., '15m', '1h', '4h')
+            - segment_id: Segment identifier, or None for non-segmented runs
+            - period_id: Parent period identifier, or None for non-segmented runs
             - strategy: Strategy name with parameters
             - metrics: Dict of performance metrics (profit_factor, win_rate, etc.)
             - timestamp: ISO format timestamp of test execution
@@ -278,7 +286,8 @@ class MassTester:
             self,
             verbose=verbose,
             max_workers=max_workers,
-            skip_existing=skip_existing
+            skip_existing=skip_existing,
+            segment_filter=segment_filter
         )
 
     # ==================== Private Methods ====================

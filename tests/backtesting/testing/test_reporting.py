@@ -98,7 +98,7 @@ class TestResultsToDataFrame:
         df = results_to_dataframe(results)
 
         expected_columns = [
-            'month', 'symbol', 'interval', 'strategy',
+            'month', 'symbol', 'interval', 'segment_id', 'period_id', 'strategy',
             'total_trades', 'win_rate', 'average_trade_duration_hours',
             'total_wins_percentage_of_contract', 'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract', 'average_trade_return_percentage_of_contract',
@@ -395,11 +395,13 @@ class TestDataFrameStructure:
 
         df = results_to_dataframe(results)
 
-        # First 4 columns should be identifiers
+        # First 6 columns should be identifiers
         assert df.columns[0] == 'month'
         assert df.columns[1] == 'symbol'
         assert df.columns[2] == 'interval'
-        assert df.columns[3] == 'strategy'
+        assert df.columns[3] == 'segment_id'
+        assert df.columns[4] == 'period_id'
+        assert df.columns[5] == 'strategy'
 
     def test_numeric_columns_are_float(self):
         """Test that numeric columns have correct dtype."""

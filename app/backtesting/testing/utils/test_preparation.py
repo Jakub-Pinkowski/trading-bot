@@ -28,19 +28,27 @@ def load_existing_results():
     Returns:
         Tuple of (DataFrame, set):
         - DataFrame: Complete existing results with all columns
-        - set: Set of (month, symbol, interval, strategy) tuples for fast lookup
+        - set: Set of (month, symbol, interval, strategy, segment_id) tuples for fast lookup
         Returns (empty DataFrame, empty set) if a file doesn't exist or a load fails
+
+    Note:
+        Uses -1 as sentinel value for non-segmented tests (replaces None/NaN)
     """
     parquet_filename = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
     if os.path.exists(parquet_filename):
         try:
             df = pd.read_parquet(parquet_filename)
+
+            # Replace None/NaN with -1 to distinguish non-segmented tests
+            segment_ids = df['segment_id'].fillna(-1).astype(int).tolist()
+
             # Create set of tuples for O(1) lookup (set construction is O(n))
             existing_combinations = set(zip(
                 df['month'].values,
                 df['symbol'].values,
                 df['interval'].values,
-                df['strategy'].values
+                df['strategy'].values,
+                segment_ids
             ))
             return df, existing_combinations
         except Exception as error:
@@ -48,7 +56,7 @@ def load_existing_results():
     return pd.DataFrame(), set()
 
 
-def check_test_exists(existing_data, month, symbol, interval, strategy):
+def check_test_exists(existing_data, month, symbol, interval, strategy, segment_id=None):
     """
     Check if a specific test combination has already been executed.
 
@@ -61,15 +69,22 @@ def check_test_exists(existing_data, month, symbol, interval, strategy):
         symbol: Symbol to check (e.g., 'ZS', 'CL', 'GC')
         interval: Interval to check (e.g., '15m', '1h', '4h')
         strategy: Full strategy name with parameters to check
+        segment_id: Segment identifier to check, or None for non-segmented runs
 
     Returns:
         Boolean. True if this exact combination exists in the results database,
         False if it needs to be run
+
+    Note:
+        Uses -1 as sentinel value for None segment_id to match load_existing_results()
     """
     existing_results, existing_combinations = existing_data
 
     if existing_results.empty:
         return False
 
+    # Use -1 as a sentinel for non-segmented tests to match load_existing_results
+    segment_id_key = -1 if segment_id is None else segment_id
+
     # Check if the combination exists in the set (O(1) operation)
-    return (month, symbol, interval, strategy) in existing_combinations
+    return (month, symbol, interval, strategy, segment_id_key) in existing_combinations

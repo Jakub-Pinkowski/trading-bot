@@ -64,6 +64,7 @@ def mock_tester():
     tester.symbols = ['ZS']
     tester.intervals = ['1h']
     tester.switch_dates_dict = {'ZS': []}
+    tester.segments = []
     tester.results = []
     return tester
 
@@ -236,7 +237,10 @@ def existing_results_factory():
             return (pd.DataFrame(), set())
 
         df = pd.DataFrame(combinations, columns=['month', 'symbol', 'interval', 'strategy'])
-        combinations_set = set(combinations)
+        # Add segment_id column with -1 for non-segmented tests
+        df['segment_id'] = -1
+        # Build 5-tuples (month, symbol, interval, strategy, segment_id) matching new load_existing_results
+        combinations_set = {(m, s, i, st, -1) for m, s, i, st in combinations}
         return (df, combinations_set)
 
     return _create_existing_data

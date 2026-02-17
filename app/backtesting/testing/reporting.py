@@ -50,6 +50,8 @@ def results_to_dataframe(results):
         'month',
         'symbol',
         'interval',
+        'segment_id',
+        'period_id',
         'strategy',
         'total_trades',
         'win_rate',
@@ -78,7 +80,7 @@ def results_to_dataframe(results):
     n_results = len(results)
 
     # Create arrays for numeric columns
-    numeric_columns = columns[4:]  # All columns except month, symbol, interval, strategy
+    numeric_columns = columns[6:]  # All columns except month, symbol, interval, segment_id, period_id, strategy
 
     # Pre-allocate arrays for all columns with proper types
     # Using dict[str, list] to avoid type inference issues
@@ -86,6 +88,8 @@ def results_to_dataframe(results):
         'month': [''] * n_results,
         'symbol': [''] * n_results,
         'interval': [''] * n_results,
+        'segment_id': [None] * n_results,
+        'period_id': [None] * n_results,
         'strategy': [''] * n_results,
     }
 
@@ -103,6 +107,8 @@ def results_to_dataframe(results):
         data['month'][i] = result['month']
         data['symbol'][i] = result['symbol']
         data['interval'][i] = result['interval']
+        data['segment_id'][i] = result.get('segment_id')
+        data['period_id'][i] = result.get('period_id')
         data['strategy'][i] = result['strategy']
 
         # Fill numeric columns with validation

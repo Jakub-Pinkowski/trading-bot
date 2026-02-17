@@ -533,7 +533,8 @@ class TestRunTests:
                 tester,
                 verbose=True,
                 max_workers=4,
-                skip_existing=False
+                skip_existing=False,
+                segment_filter=None
             )
             assert result == []
 

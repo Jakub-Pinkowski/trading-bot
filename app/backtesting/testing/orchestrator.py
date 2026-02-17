@@ -24,7 +24,8 @@ def run_tests(
     tester,
     verbose,
     max_workers,
-    skip_existing
+    skip_existing,
+    segment_filter=None
 ):
     """
     Core orchestration function that executes all configured backtests in parallel.
@@ -45,6 +46,9 @@ def run_tests(
         skip_existing: If True, check a database for existing results and skip already-run tests.
                       If False, re-run all tests regardless of existing results.
                       Useful when parameters or logic have changed
+        segment_filter: Optional list of segment IDs to run (e.g., [1, 2, 3]).
+                       Only applies when tester.segments is non-empty.
+                       None = run all segments
 
     Returns:
         List of test result dictionaries stored in tester.results. Each dict contains:
@@ -73,7 +77,31 @@ def run_tests(
     # Load existing results to check for already run tests
     existing_data = load_existing_results() if skip_existing else (pd.DataFrame(), set())
 
-    total_combinations = len(tester.tested_months) * len(tester.symbols) * len(tester.intervals) * len(tester.strategies)
+    # Determine active segments based on filter
+    active_segments = []
+    if tester.segments:
+        active_segments = [
+            segment for segment in tester.segments
+            if segment_filter is None or segment['segment_id'] in segment_filter
+        ]
+
+    # Handle case where segments is empty list vs None
+    if not tester.segments:
+        # No segments configured - run normal (non-segmented) tests
+        segment_count = 1
+    elif active_segments:
+        # Segments configured and filter matched some
+        segment_count = len(active_segments)
+    else:
+        # Segments configured but filter matched none
+        segment_count = 0
+        logger.warning(
+            f"segment_filter resulted in 0 active segments. "
+            f"No tests will run. Available segment IDs: "
+            f"{[s['segment_id'] for s in tester.segments]}"
+        )
+
+    total_combinations = len(tester.tested_months) * len(tester.symbols) * len(tester.intervals) * len(tester.strategies) * segment_count
     print(f'Found {total_combinations} potential test combinations...')
 
     # Clear previous results
@@ -89,7 +117,8 @@ def run_tests(
         tester.tested_months,
         tester.symbols,
         tester.intervals,
-        tester.strategies
+        tester.strategies,
+        active_segments
     )
 
     # Prepare all test combinations
@@ -179,13 +208,24 @@ def _get_switch_dates_for_symbols(symbols, switch_dates_dict):
 
 # --- Combination Generation ---
 
-def _generate_all_combinations(tested_months, symbols, intervals, strategies):
-    """Generate all combinations of months, symbols, intervals, and strategies."""
-    return [(tested_month, symbol, interval, strategy_name, strategy_instance)
+def _generate_all_combinations(tested_months, symbols, intervals, strategies, segments):
+    """Generate all combinations of months, symbols, intervals, segments, and strategies."""
+    if segments:
+        return [
+            (tested_month, symbol, interval, segment, strategy_name, strategy_instance)
             for tested_month in tested_months
             for symbol in symbols
             for interval in intervals
-            for strategy_name, strategy_instance in strategies]
+            for segment in segments
+            for strategy_name, strategy_instance in strategies
+        ]
+    return [
+        (tested_month, symbol, interval, None, strategy_name, strategy_instance)
+        for tested_month in tested_months
+        for symbol in symbols
+        for interval in intervals
+        for strategy_name, strategy_instance in strategies
+    ]
 
 
 # --- Test Preparation ---
@@ -204,19 +244,27 @@ def _prepare_test_combinations(
 
     # Filter out already run tests
     for combo in all_combinations:
-        tested_month, symbol, interval, strategy_name, strategy_instance = combo
+        tested_month, symbol, interval, segment, strategy_name, strategy_instance = combo
 
-        # Print verbose output only when a month/symbol/interval combination changes
-        if verbose and (tested_month, symbol, interval) != last_verbose_combo:
-            print(f'Preparing: Month={tested_month}, Symbol={symbol}, Interval={interval}')
-            last_verbose_combo = (tested_month, symbol, interval)
+        # Extract segment metadata
+        segment_id = segment['segment_id'] if segment is not None else None
+        period_id = segment['period_id'] if segment is not None else None
+        start_date = segment['start_date'] if segment is not None else None
+        end_date = segment['end_date'] if segment is not None else None
+
+        # Print verbose output for each unique combination (including segment)
+        if verbose and (tested_month, symbol, interval, segment_id) != last_verbose_combo:
+            segment_info = f", Segment {segment_id}" if segment_id is not None else ""
+            print(f'Preparing: Month={tested_month}, Symbol={symbol}, Interval={interval}{segment_info}')
+            last_verbose_combo = (tested_month, symbol, interval, segment_id)
 
         # Check if this test has already been run
         if skip_existing and check_test_exists(existing_data,
                                                tested_month,
                                                symbol,
                                                interval,
-                                               strategy_name):
+                                               strategy_name,
+                                               segment_id):
             if verbose:
                 print(f'Skipping already run test: Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}')
             skipped_combinations += 1
@@ -225,7 +273,7 @@ def _prepare_test_combinations(
         # Build filepath on-demand (string interpolation is negligible overhead)
         filepath = f'{HISTORICAL_DATA_DIR}/{tested_month}/{symbol}/{symbol}_{interval}.parquet'
 
-        # Add switch dates and filepath to the test parameters
+        # Add switch dates, filepath, and segment metadata to the test parameters
         test_combinations.append((
             tested_month,
             symbol,
@@ -234,7 +282,11 @@ def _prepare_test_combinations(
             strategy_instance,
             verbose,
             switch_dates_by_symbol[symbol],
-            filepath
+            filepath,
+            segment_id,
+            period_id,
+            start_date,
+            end_date
         ))
 
     return test_combinations, skipped_combinations
