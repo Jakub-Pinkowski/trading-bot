@@ -22,11 +22,13 @@
    → Keep only strategies with >X trades
    → Run when: enough unique strategies tested (e.g. 50k+)
 
-3. SEGMENTED VALIDATION (Multiple Scenarios)
+3. SEGMENTED VALIDATION (Multiple Scenarios, Separate Files)
    → Scenario A: 5 periods → 4 train, 1 test
+     Saves to: mass_test_results_segment_5_periods_4_train_1_test.parquet
    → Scenario B: 4 periods → 3 train, 1 test
+     Saves to: mass_test_results_segment_4_periods_3_train_1_test.parquet
    → Scenario C: 3 periods → 2 train, 1 test
-   → Each appends to mass_test_results_all.parquet (same file, different segment_id)
+     Saves to: mass_test_results_segment_3_periods_2_train_1_test.parquet
 
 4. FINAL SELECTION
    → Compare degradation across all scenarios
@@ -40,7 +42,7 @@
 
 1. [Architecture Overview](#architecture-overview)
 2. [Phase 1: Core Segmentation (COMPLETE)](#phase-1-core-segmentation-complete)
-3. [Phase 2: Massive Testing & Filtering](#phase-2-massive-testing--filtering)
+3. [Phase 2: Incremental Batch Testing & Filtering](#phase-2-incremental-batch-testing--filtering)
 4. [Phase 3: Multi-Scenario Validation](#phase-3-multi-scenario-validation)
 5. [File Organization](#file-organization)
 6. [Implementation Details](#implementation-details)
@@ -104,7 +106,6 @@ segments = split_all_periods(periods, segments_per_period=4)
 │         ↓                                                       │
 │  Append to: mass_test_results_all.parquet (deduplicated)      │
 │    - Columns: month, symbol, interval, strategy, metrics      │
-│    - segment_id=None for all full-period results              │
 │         ↓                                                       │
 │  ← Repeat with next batch until coverage is sufficient →      │
 │                                                                 │
@@ -116,8 +117,7 @@ segments = split_all_periods(periods, segments_per_period=4)
 │                                                                 │
 │  Check progress: unique strategies tested, coverage by type   │
 │         ↓                                                       │
-│  Load full-period rows: mass_test_results_all.parquet         │
-│    (filter: segment_id IS NULL)                               │
+│  Load: mass_test_results_all.parquet (pure full-period data)  │
 │         ↓                                                       │
 │  Rank by: profit_factor / sharpe_ratio / win_rate             │
 │         ↓                                                       │
@@ -125,7 +125,7 @@ segments = split_all_periods(periods, segments_per_period=4)
 │         ↓                                                       │
 │  Select: Top 1% of tested strategies                          │
 │         ↓                                                       │
-│  Save: strategy_rankings_top_1pct.csv                         │
+│  Save: strategy_rankings_top_1_percentage.csv                 │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                          ↓
@@ -141,7 +141,7 @@ segments = split_all_periods(periods, segments_per_period=4)
 │  │  split_all_periods(periods, segments_per_period=5)      │ │
 │  │  segment_filter=[1,2,3,4] → Train                       │ │
 │  │  segment_filter=[5]       → Test (OOS)                  │ │
-│  │  Save: mass_test_results_seg_5p_4train_1test.parquet   │ │
+│  │  Save: mass_test_results_segment_5_periods_4_train_1_test.parquet │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐ │
@@ -150,7 +150,7 @@ segments = split_all_periods(periods, segments_per_period=4)
 │  │  split_all_periods(periods, segments_per_period=4)      │ │
 │  │  segment_filter=[1,2,3] → Train                         │ │
 │  │  segment_filter=[4]     → Test (OOS)                    │ │
-│  │  Save: mass_test_results_seg_4p_3train_1test.parquet   │ │
+│  │  Save: mass_test_results_segment_4_periods_3_train_1_test.parquet │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐ │
@@ -159,7 +159,7 @@ segments = split_all_periods(periods, segments_per_period=4)
 │  │  split_all_periods(periods, segments_per_period=3)      │ │
 │  │  segment_filter=[1,2] → Train                           │ │
 │  │  segment_filter=[3]   → Test (OOS)                      │ │
-│  │  Save: mass_test_results_seg_3p_2train_1test.parquet   │ │
+│  │  Save: mass_test_results_segment_3_periods_2_train_1_test.parquet │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -245,13 +245,12 @@ app/backtesting/testing/
 ```python
 from app.backtesting.testing.selection import (
     rank_strategies,  # Rank by metric (profit_factor, sharpe_ratio, etc.)
-    select_top_strategies,  # Select top N or top %
-    filter_by_metrics  # Multi-criteria filtering
+    select_top_strategies  # Select top N or top %
 )
 
 # Example usage:
 ranked = rank_strategies(results_df, metric='profit_factor', min_trades=20)
-top_1pct = select_top_strategies(ranked, top_pct=0.01)
+top_strategies = select_top_strategies(ranked, top_percentage=0.01)
 ```
 
 **Used by**: Phase 2 scripts (filtering top 1%)
@@ -264,16 +263,35 @@ top_1pct = select_top_strategies(ranked, top_pct=0.01)
 
 ```python
 from app.backtesting.testing.validation import (
-    prepare_segments_for_scenario,  # Create segments for a scenario
-    run_scenario,  # Execute train + test phases
-    calculate_scenario_degradation,  # Calculate train vs OOS degradation
+    SCENARIO_CONFIGS,  # List of 3 pre-defined scenario dicts
+    prepare_segments_for_scenario,  # Load data → detect periods → split into segments
+    run_scenario,  # Execute train + test phases, returns segment ID lists
+    calculate_scenario_degradation,  # Calculate train vs OOS degradation per strategy
     validate_strategies  # Apply pass/fail criteria
 )
 
+# Actual signatures:
+# prepare_segments_for_scenario(tested_month, reference_symbol, reference_interval,
+#                               segments_per_period, train_count)
+#   → (segments, train_segment_ids, test_segment_ids)
+
+# run_scenario(scenario_config, strategy_adder_func, tested_months, symbols, intervals,
+#              reference_symbol, max_workers, skip_existing, verbose)
+#   → (train_segment_ids, test_segment_ids)
+
 # Example usage:
-segments = prepare_segments_for_scenario(load_func, symbols, intervals, 5)
-train_results, test_results = run_scenario(scenario, strategy_adder, ...)
-degradation_df = calculate_scenario_degradation(results_df, train_segs, test_segs)
+for scenario in SCENARIO_CONFIGS:
+    train_segment_ids, test_segment_ids = run_scenario(
+        scenario_config=scenario,
+        strategy_adder_func=lambda t: add_top_strategies(t, top_strategy_names),
+        tested_months=TESTED_MONTHS,
+        symbols=SYMBOLS,
+        intervals=INTERVALS,
+        reference_symbol='ZC',
+        max_workers=4,
+        skip_existing=True,
+        verbose=False
+    )
 ```
 
 **Used by**: Phase 3 scripts (multi-scenario validation)
@@ -291,10 +309,17 @@ from app.backtesting.testing.analysis import (
     generate_validation_report  # Create comprehensive summary
 )
 
+# Actual signatures:
+# compare_scenarios(scenario_results, metric)          ← metric is MANDATORY, no default
+#   → DataFrame with columns: strategy, train_metric, test_metric,
+#                             degradation_percentage, scenario_name
+# find_robust_strategies(comparison_df, max_degradation_percentage=30.0) → List[str]
+# generate_validation_report(comparison_df, output_dir, max_degradation_percentage=30.0)
+
 # Example usage:
-comparison = compare_scenarios(scenario_results_list)
-robust = find_robust_strategies(comparison, max_degradation=30.0)
-report = generate_validation_report(comparison, output_path='summary.csv')
+comparison_df = compare_scenarios(scenario_results_list, metric='profit_factor')
+robust = find_robust_strategies(comparison_df, max_degradation_percentage=30.0)
+generate_validation_report(comparison_df, output_dir=BACKTESTING_DIR)
 ```
 
 **Used by**: Phase 4 scripts (final selection)
@@ -336,13 +361,15 @@ Running 1-2M strategies in a single session would overwhelm a laptop. Instead:
 
 - Each batch run is independent and safe to interrupt
 - `skip_existing=True` ensures no strategy is ever tested twice
-- All results accumulate into one file: **`mass_test_results_all.parquet`**
-- Phase 3 (segmented) results also go to the same file, distinguished by `segment_id`
+- All Phase 2 results accumulate into one file: **`mass_test_results_all.parquet`**
 
-> **Important**: `load_existing_results()` in `test_preparation.py` is hardcoded to
-> `mass_test_results_all.parquet`. This is the single source of truth for both Phase 2
-> and Phase 3 results. Do NOT use a different filename or `skip_existing` will not
-> detect previously tested strategies.
+> **Important**: `mass_test_results_all.parquet` is the **pure full-period file**.
+> Phase 3 segmented results go to separate per-scenario files and never touch this file.
+> This keeps the file clean and means Phase 2 filtering never needs a `segment_id` filter.
+>
+> `load_existing_results()` in `test_preparation.py` is hardcoded to
+> `mass_test_results_all.parquet`. Phase 3 requires a code change to `save_results()`
+> and `load_existing_results()` to accept a configurable output path (see Phase 3 notes).
 
 ### Implementation
 
@@ -438,17 +465,14 @@ BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 df = pd.read_parquet(
     f'{BACKTESTING_DIR}/mass_test_results_all.parquet',
-    columns=['strategy', 'symbol', 'interval', 'segment_id']
+    columns=['strategy', 'symbol', 'interval']
 )
 
-# Full-period rows only (Phase 2 results)
-full_period = df[df['segment_id'].isna()]
-
-print(f"Unique strategies tested: {full_period['strategy'].nunique():,}")
-print(f"Total rows (strategy × symbol × interval): {len(full_period):,}")
+print(f"Unique strategies tested: {df['strategy'].nunique():,}")
+print(f"Total rows (strategy × symbol × interval): {len(df):,}")
 print(f"\nBreakdown by strategy type:")
-full_period['strategy_type'] = full_period['strategy'].str.split('_').str[0]
-print(full_period.groupby('strategy_type')['strategy'].nunique().to_string())
+df['strategy_type'] = df['strategy'].str.split('_').str[0]
+print(df.groupby('strategy_type')['strategy'].nunique().to_string())
 ```
 
 Run filtering (Phase 2.3) when you have enough unique strategies (suggested: 30k+
@@ -461,7 +485,7 @@ across at least 2 strategy types).
 ```python
 """
 Step 2: Load full-period results, rank, and select top 1%.
-Saves rankings to: strategy_rankings_top_1pct.csv
+Saves rankings to: strategy_rankings_top_1_percentage.csv
 
 Uses selection.py module for reusable ranking logic.
 """
@@ -478,12 +502,10 @@ RANKING_METRIC = 'profit_factor'  # or 'sharpe_ratio', 'win_rate'
 MIN_TRADES = 20
 TOP_PERCENTAGE = 0.01  # Top 1%
 
-# ==================== Load Full-Period Results Only ====================
+# ==================== Load Results ====================
 
-# Must filter segment_id IS NULL to exclude any segmented (Phase 3) results
-# that may already be in the same file
-all_df = pd.read_parquet(f'{BACKTESTING_DIR}/mass_test_results_all.parquet')
-results_df = all_df[all_df['segment_id'].isna()].copy()
+# mass_test_results_all.parquet contains only Phase 2 (full-period) results
+results_df = pd.read_parquet(f'{BACKTESTING_DIR}/mass_test_results_all.parquet')
 
 print(f"Total unique strategies tested: {results_df['strategy'].nunique():,}")
 
@@ -506,7 +528,7 @@ print(f"\nTop {TOP_PERCENTAGE * 100:.1f}%: {len(top_strategies):,} strategies")
 # ==================== Save Rankings ====================
 
 top_strategies.to_csv(
-    f'{BACKTESTING_DIR}/strategy_rankings_top_1pct.csv',
+    f'{BACKTESTING_DIR}/strategy_rankings_top_1_percentage.csv',
     index=False
 )
 
@@ -534,6 +556,64 @@ Different market conditions might favor different train/test splits:
 
 **Robust strategies should validate across ALL scenarios.**
 
+### Required Code Changes Before Running Phase 3
+
+#### 1. Configurable results path (`skip_existing` correctness)
+
+Phase 3 saves results to **separate per-scenario parquet files**, not to
+`mass_test_results_all.parquet`. Without this change, `skip_existing=True` will
+check the wrong file and re-run everything on every invocation (no crash, just wasted work).
+
+- **`reporting.py`**: Add an optional `output_path` parameter to `save_results()`.
+  Default stays `mass_test_results_all.parquet` so Phase 2 is unchanged.
+- **`test_preparation.py`**: Add an optional `results_path` parameter to
+  `load_existing_results()`. Default stays `mass_test_results_all.parquet`.
+- **`orchestrator.py`**: Thread `results_path` through `run_tests()`.
+- **`validation.py`**: `run_scenario()` derives the path from the scenario name
+  and passes it to the orchestrator:
+
+```python
+# Derived automatically inside run_scenario():
+results_path = BACKTESTING_DIR / f"mass_test_results_segment_{scenario_config['name']}.parquet"
+```
+
+> **Ordering**: implement this change before running Phase 3 with `skip_existing=True`.
+> Running Phase 3 without it will work (results still save correctly to the scenario
+> file) but will re-run all tests on every invocation instead of skipping done work.
+
+#### 2. Filtering strategies by name (`add_top_strategies`)
+
+Phase 3 tests only the **top 1% strategies**, not the full parameter space.
+`MassTester.add_*_tests()` currently generates all parameter combinations — there is
+no built-in mechanism to restrict to a subset of strategy names.
+
+**Required**: Add a `filter_strategies(strategy_names)` method to `MassTester`:
+
+```python
+def filter_strategies(self, strategy_names):
+    """Keep only strategies whose names are in strategy_names."""
+    name_set = set(strategy_names)
+    self.strategies = [(name, inst) for name, inst in self.strategies
+                       if name in name_set]
+```
+
+Then `add_top_strategies` in the Phase 3 script becomes:
+
+```python
+def add_top_strategies(tester, top_strategy_names):
+    # Add the same parameter space used in Phase 2
+    tester.add_rsi_tests(rsi_periods=range(5, 50), ...)
+    tester.add_ema_tests(...)
+    # ...
+    # Trim to only the top strategies
+    tester.filter_strategies(top_strategy_names)
+```
+
+> **Note**: `add_*_tests` builds strategy objects for the full parameter space before
+> filtering. For very large spaces (>500k combinations), generating objects upfront may
+> be slow. If this becomes a bottleneck, add a `strategy_name_filter` set parameter to
+> each `add_*_tests` method to filter during generation instead.
+
 ### Implementation
 
 #### 3.1 Segmentation Scenario Runner
@@ -543,88 +623,89 @@ Different market conditions might favor different train/test splits:
 ```python
 """
 Step 3: Test top 1% strategies across multiple segmentation scenarios.
+Each scenario saves to its own parquet file.
 
 Uses validation.py module for reusable scenario execution logic.
+
+Prerequisites:
+  - reporting.py / test_preparation.py / orchestrator.py must have the
+    configurable results_path change implemented (for skip_existing to work)
+  - MassTester must have filter_strategies() method implemented
 """
 
 import pandas as pd
-from app.backtesting.testing.validation import (
-    DEFAULT_SCENARIOS,
-    prepare_segments_for_scenario,
-    run_scenario,
-    extract_scenario_results
-)
+from app.backtesting.testing.validation import SCENARIO_CONFIGS, run_scenario
 from config import DATA_DIR
 
 BACKTESTING_DIR = DATA_DIR / "backtesting"
 
+# ==================== Configuration ====================
+
+TESTED_MONTHS = ['1!', '2!']
+SYMBOLS = ['ZC', 'ZS', 'CL', 'GC', 'ES']
+INTERVALS = ['15m', '1h', '4h']
+REFERENCE_SYMBOL = 'ZC'  # Used to detect period structure (segment date ranges)
+MAX_WORKERS = 4
+
 # ==================== Load Top Strategies ====================
 
 top_strategies_df = pd.read_csv(
-    f'{BACKTESTING_DIR}/strategy_rankings_top_1pct.csv'
+    f'{BACKTESTING_DIR}/strategy_rankings_top_1_percentage.csv'
 )
-
 top_strategy_names = top_strategies_df['strategy'].tolist()
-print(f"Testing {len(top_strategy_names):,} top strategies")
+print(f"Testing {len(top_strategy_names):,} top strategies across {len(SCENARIO_CONFIGS)} scenarios")
+
+
+# ==================== Strategy Adder ====================
+
+def add_top_strategies(tester, strategy_names):
+    """
+    Add the same full parameter space used in Phase 2, then trim to
+    only the top strategies. Requires MassTester.filter_strategies().
+    """
+    tester.add_rsi_tests(
+        rsi_periods=range(5, 50),
+        lower_thresholds=range(20, 45),
+        upper_thresholds=range(55, 80),
+        rollovers=[False],
+        trailing_stops=[None, 2],
+        slippage_ticks_list=[1, 2]
+    )
+    # Add other strategy types here to cover the full Phase 2 parameter space
+    # tester.add_ema_tests(...)
+    tester.filter_strategies(strategy_names)
+
 
 # ==================== Run Each Scenario ====================
 
-for scenario in DEFAULT_SCENARIOS:
+for scenario in SCENARIO_CONFIGS:
     print(f"\n{'=' * 80}")
     print(f"Running Scenario: {scenario['name']}")
     print(f"  {scenario['description']}")
+    print(f"  Saves to: mass_test_results_segment_{scenario['name']}.parquet")
     print(f"{'=' * 80}")
 
-    # Use validation.py module to run scenario
-    train_results, test_results = run_scenario(
-        scenario=scenario,
+    train_segment_ids, test_segment_ids = run_scenario(
+        scenario_config=scenario,
         strategy_adder_func=lambda t: add_top_strategies(t, top_strategy_names),
-        data_loader_func=load_data,
         tested_months=TESTED_MONTHS,
         symbols=SYMBOLS,
         intervals=INTERVALS,
-        max_workers=16,
+        reference_symbol=REFERENCE_SYMBOL,
+        max_workers=MAX_WORKERS,
         skip_existing=True,
         verbose=False
     )
 
-    # Extract and save scenario-specific results
-    all_segments = scenario['train_segments'] + scenario['test_segments']
-    extract_scenario_results(scenario['name'], all_segments)
-
     print(f"✓ Scenario {scenario['name']} complete!")
+    print(f"  Train segment IDs: {train_segment_ids}")
+    print(f"  Test segment IDs:  {test_segment_ids}")
 ```
 
-**Key Insight**: All scenarios save to the **same parquet file**:
-
-- `mass_test_results_segmented.parquet`
-- Use **segment_id** to identify which scenario/phase
-- Use **custom metadata column** to tag scenarios
-
-**Better Approach**: Separate files per scenario for clarity:
-
-```python
-# At the end of each scenario loop:
-
-# Load the main results file
-all_results = pd.read_parquet(
-    f'{BACKTESTING_DIR}/mass_test_results_segmented.parquet'
-)
-
-# Filter to this scenario's segments
-scenario_segments = scenario['train_segments'] + scenario['test_segments']
-scenario_results = all_results[
-    all_results['segment_id'].isin(scenario_segments)
-]
-
-# Save to scenario-specific file
-scenario_results.to_parquet(
-    f'{BACKTESTING_DIR}/mass_test_results_seg_{scenario["name"]}.parquet',
-    index=False
-)
-
-print(f"  Saved to: mass_test_results_seg_{scenario['name']}.parquet")
-```
+> **Key Design**: Each scenario's results are isolated in its own parquet file.
+> `mass_test_results_all.parquet` stays pure — it only ever contains full-period
+> Phase 2 results. Segment IDs in scenario files are independent and do not
+> conflict across scenarios.
 
 #### 3.2 Cross-Scenario Analysis
 
@@ -644,65 +725,85 @@ from app.backtesting.testing.analysis import (
     find_robust_strategies,
     generate_validation_report
 )
-from app.backtesting.testing.validation import DEFAULT_SCENARIOS
+from app.backtesting.testing.validation import SCENARIO_CONFIGS
 from config import DATA_DIR
 
 BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 # ==================== Configuration ====================
 
-MAX_DEGRADATION_PCT = 30.0  # Maximum acceptable degradation
+MAX_DEGRADATION_PERCENTAGE = 30.0  # Maximum acceptable degradation
 METRIC = 'profit_factor'
 
-# ==================== Load Scenario Results ====================
+# ==================== Load Per-Scenario Results ====================
 
+# Each scenario has its own parquet file — no segment_id filtering needed
+# train_segment_ids and test_segment_ids come from the scenario config
+# (re-derived here from SCENARIO_CONFIGS for analysis, not re-running)
 scenario_results = []
 
-for scenario in DEFAULT_SCENARIOS:
-    df = pd.read_parquet(
-        f'{BACKTESTING_DIR}/mass_test_results_seg_{scenario["name"]}.parquet'
-    )
+for scenario in SCENARIO_CONFIGS:
+    path = BACKTESTING_DIR / f"mass_test_results_segment_{scenario['name']}.parquet"
+    scenario_df = pd.read_parquet(path)
+
+    # Derive segment IDs from the scenario config
+    # (same logic as _compute_segment_filters in validation.py)
+    segments_per_period = scenario['segments_per_period']
+    train_count = scenario['train_count']
+
+    # For single-period data (≥15m): segment IDs are 1..segments_per_period
+    # train = first train_count, test = remainder
+    train_segment_ids = list(range(1, train_count + 1))
+    test_segment_ids = list(range(train_count + 1, segments_per_period + 1))
+
     scenario_results.append({
         'name': scenario['name'],
-        'df': df,
-        'train_segments': scenario['train_segments'],
-        'test_segments': scenario['test_segments']
+        'df': scenario_df,
+        'train_segments': train_segment_ids,
+        'test_segments': test_segment_ids
     })
+
+    print(f"Loaded {scenario['name']}: {len(scenario_df):,} rows")
 
 # ==================== Compare Across Scenarios ====================
 
-# Use analysis.py module
 comparison_df = compare_scenarios(
     scenario_results,
     metric=METRIC
 )
 
-# Find strategies passing all scenarios
 robust_strategies = find_robust_strategies(
     comparison_df,
-    max_degradation_pct=MAX_DEGRADATION_PCT
+    max_degradation_percentage=MAX_DEGRADATION_PERCENTAGE
 )
 
 print(f"\n{'=' * 80}")
 print(f"VALIDATION SUMMARY")
 print(f"{'=' * 80}")
 print(f"Total strategies tested: {comparison_df['strategy'].nunique()}")
-print(f"Passed all {len(DEFAULT_SCENARIOS)} scenarios: {len(robust_strategies)}")
+print(f"Passed all {len(SCENARIO_CONFIGS)} scenarios: {len(robust_strategies)}")
 print(f"Pass rate: {len(robust_strategies) / comparison_df['strategy'].nunique() * 100:.1f}%")
 
 # ==================== Export Results ====================
 
-# Generate comprehensive validation report
 generate_validation_report(
     comparison_df,
     output_dir=BACKTESTING_DIR,
-    max_degradation_pct=MAX_DEGRADATION_PCT
+    max_degradation_percentage=MAX_DEGRADATION_PERCENTAGE
 )
 
 print(f"\n✓ Results exported:")
 print(f"  - validation_summary_all_scenarios.csv (all strategies)")
 print(f"  - final_robust_strategies.csv (passed all scenarios)")
 ```
+
+> **Note on segment ID derivation in analysis**: The script above derives
+> `train_segment_ids` and `test_segment_ids` from the scenario config for
+> single-period data (≥15m intervals, always 1 period). For multi-period data,
+> the IDs span periods (e.g., periods 1-3 × 5 segments = IDs 1-15). In that case,
+> save `train_segment_ids` and `test_segment_ids` returned by `run_scenario()` to
+> a JSON sidecar file alongside the parquet, and load them here instead of
+> re-deriving.
 
 ---
 
@@ -712,45 +813,29 @@ print(f"  - final_robust_strategies.csv (passed all scenarios)")
 
 ```
 data/backtesting/
-├── mass_test_results_full_periods.parquet
-├── strategy_rankings_top_1pct.csv
-├── mass_test_results_segmented.parquet
-├── mass_test_results_seg_5p_4train_1test.parquet
-├── mass_test_results_seg_4p_3train_1test.parquet
-├── mass_test_results_seg_3p_2train_1test.parquet
+├── mass_test_results_all.parquet                              # Phase 2: full-period results ONLY
+├── strategy_rankings_top_1_percentage.csv                     # Top 1% ranked strategies
+├── mass_test_results_segment_5_periods_4_train_1_test.parquet # Phase 3 Scenario A
+├── mass_test_results_segment_4_periods_3_train_1_test.parquet # Phase 3 Scenario B
+├── mass_test_results_segment_3_periods_2_train_1_test.parquet # Phase 3 Scenario C
 ├── validation_summary_all_scenarios.csv
 └── final_robust_strategies.csv
 ```
 
-### Naming Convention
+### Data File Convention
 
-**Pattern**: `mass_test_results_seg_{segments_per_period}p_{train_count}train_{test_count}test.parquet`
+Each phase has its own file. No `segment_id` filtering is needed at read time:
 
-**Examples**:
+| File                                                         | Contents                 | Phase   |
+|--------------------------------------------------------------|--------------------------|---------|
+| `mass_test_results_all.parquet`                              | Full-period results only | Phase 2 |
+| `mass_test_results_segment_5_periods_4_train_1_test.parquet` | Scenario A rows          | Phase 3 |
+| `mass_test_results_segment_4_periods_3_train_1_test.parquet` | Scenario B rows          | Phase 3 |
+| `mass_test_results_segment_3_periods_2_train_1_test.parquet` | Scenario C rows          | Phase 3 |
 
-- `mass_test_results_seg_5p_4train_1test.parquet` → 5 segments: [1,2,3,4] train, [5] test
-- `mass_test_results_seg_4p_3train_1test.parquet` → 4 segments: [1,2,3] train, [4] test
-- `mass_test_results_seg_3p_2train_1test.parquet` → 3 segments: [1,2] train, [3] test
-
-**Why separate files?**
-
-- ✅ Easy to identify which scenario
-- ✅ Can analyze scenarios independently
-- ✅ Simpler querying (no need to filter by segment_id every time)
-- ✅ Can delete individual scenarios if re-running
-
-**Alternative**: Single file with scenario column
-
-```python
-# Add scenario identifier
-df['scenario'] = '5p_4train_1test'
-```
-
-- ❌ Larger file size
-- ❌ Need to filter every query
-- ✅ Single file to manage
-
-**Recommendation**: **Separate files per scenario** for clarity and flexibility.
+> **Segment IDs within Phase 3 files**: Segment IDs are scenario-specific.
+> Scenario A uses IDs 1–5 per period, Scenario B uses 1–4, Scenario C uses 1–3.
+> Because each scenario has its own file, there is no ID collision.
 
 ---
 
@@ -785,43 +870,46 @@ segments_1h = split_all_periods(periods_1h, segments_per_period=4)
 
 **Question**: How do segment IDs work across different scenarios?
 
-**Answer**: Segment IDs are **globally unique** within each scenario run.
+**Answer**: Segment IDs are **globally unique** within each scenario run, and
+each scenario saves to its **own file**, so there is no cross-contamination.
 
 ```python
 # Scenario A: 5 segments per period
 # Period 1: segments [1, 2, 3, 4, 5]
 # Period 2: segments [6, 7, 8, 9, 10]
 # Period 3: segments [11, 12, 13, 14, 15]
+# Saved to: mass_test_results_segment_5_periods_4_train_1_test.parquet
 
 # Scenario B: 4 segments per period
 # Period 1: segments [1, 2, 3, 4]
 # Period 2: segments [5, 6, 7, 8]
 # Period 3: segments [9, 10, 11, 12]
+# Saved to: mass_test_results_segment_4_periods_3_train_1_test.parquet
 
-# They're NOT comparable across scenarios!
-# Use separate files to avoid confusion.
+# Segment ID 3 means something different in each scenario,
+# but since they are in separate files there is no ambiguity.
 ```
 
 ### Computational Estimates
 
-**Phase 2: Massive Testing (1-2M strategies)**
+**Phase 2: Incremental Batch Testing**
 
-- Strategies: 2,000,000
-- Symbols: 20
-- Intervals: 5
-- Months: 3
-- Total tests: 2M × 20 × 5 × 3 = 600M tests
-- Estimated time (16 cores): 3-7 days
+- Batch size: 10k-20k strategies
+- Symbols: 5-10 (start small, expand)
+- Intervals: 3-5
+- Months: 2-3
+- Rows per batch: ~20k × 5 × 3 × 2 = 600k
+- Estimated time per batch (4 workers, laptop): 20-60 minutes
+- Repeat across N sessions until coverage is sufficient
 
-**Phase 3: Segmented Validation (10-20k strategies)**
+**Phase 3: Segmented Validation (top 1% of tested strategies)**
 
-- Strategies: 15,000 (top 1%)
-- Scenarios: 3
+- Strategies: depends on Phase 2 coverage (e.g., 300-500 if 30k-50k tested)
+- Scenarios: 3 (each to its own file)
 - Segments per scenario: ~4 avg
-- Total tests: 15k × 20 × 5 × 3 × 3 × 4 = 54M tests
-- Estimated time (16 cores): 12-24 hours per scenario
+- Estimated time (4 workers, laptop): 1-3 hours per scenario
 
-**Total**: ~4-8 days for complete workflow
+**Total**: Spread over multiple sessions at your own pace
 
 ---
 
@@ -830,78 +918,88 @@ segments_1h = split_all_periods(periods_1h, segments_per_period=4)
 ### Complete End-to-End Workflow
 
 ```python
-# ==================== STEP 1: Massive Testing ====================
+# ==================== STEP 1: Incremental Batch Testing ====================
 
 from app.backtesting.testing import MassTester
 
-tester = MassTester(['1!', '2!', '3!'], SYMBOLS, INTERVALS, segments=None)
-tester.add_rsi_tests(...)  # Add 2M strategies
-results = tester.run_tests(max_workers=16, skip_existing=True)
+# Run once per session with a different parameter subset each time
+tester = MassTester(['1!', '2!'], SYMBOLS, INTERVALS, segments=None)
+tester.add_rsi_tests(
+    rsi_periods=range(5, 20),  # Change this range each batch
+    lower_thresholds=range(20, 40),
+    upper_thresholds=range(60, 80),
+    rollovers=[False],
+    trailing_stops=[None, 2],
+    slippage_ticks_list=[1, 2]
+)
+# skip_existing=True: safe to re-run, never duplicates work
+results = tester.run_tests(verbose=False, max_workers=4, skip_existing=True)
 
-# Saves to: mass_test_results_full_periods.parquet
+# Appends to: mass_test_results_all.parquet (pure full-period data)
 
-# ==================== STEP 2: Filter Top 1% ====================
+# ==================== STEP 2: Filter Top 1% (when ready) ====================
 
 import pandas as pd
+from app.backtesting.testing.selection import rank_strategies, select_top_strategies
 
-df = pd.read_parquet('data/backtesting/mass_test_results_full_periods.parquet')
-filtered = df[df['total_trades'] >= 20]
-aggregated = filtered.groupby('strategy')['profit_factor'].mean().sort_values(ascending=False)
-top_1pct = aggregated.head(int(len(aggregated) * 0.01))
-top_1pct.to_csv('data/backtesting/strategy_rankings_top_1pct.csv')
+# mass_test_results_all.parquet is pure Phase 2 data — load directly, no filter needed
+results_df = pd.read_parquet('data/backtesting/mass_test_results_all.parquet')
+
+ranked = rank_strategies(results_df, metric='profit_factor', min_trades=20, ascending=False)
+top_strategies = select_top_strategies(ranked, top_percentage=0.01)
+top_strategies.to_csv('data/backtesting/strategy_rankings_top_1_percentage.csv')
 
 # ==================== STEP 3: Run Segmentation Scenarios ====================
 
-from app.backtesting.testing.segmentation import detect_periods, split_all_periods
+from app.backtesting.testing.validation import SCENARIO_CONFIGS, run_scenario
 
-scenarios = [
-    {'name': '5p_4train_1test', 'segs': 5, 'train': [1, 2, 3, 4], 'test': [5]},
-    {'name': '4p_3train_1test', 'segs': 4, 'train': [1, 2, 3], 'test': [4]},
-    {'name': '3p_2train_1test', 'segs': 3, 'train': [1, 2], 'test': [3]}
-]
+top_strategy_names = top_strategies['strategy'].tolist()
 
-for scenario in scenarios:
-    # Prepare segments
-    df = load_data('ZC', '5m')
-    periods = detect_periods(df, '5m')
-    segments = split_all_periods(periods, segments_per_period=scenario['segs'])
 
-    # Test top strategies
-    tester = MassTester(['1!'], ['ZC'], ['5m'], segments=segments)
-    add_top_strategies(tester, top_1pct.index)
+def add_top_strategies(tester, strategy_names):
+    # Add same parameter space as Phase 2, then trim to the top strategies
+    tester.add_rsi_tests(rsi_periods=range(5, 50), ...)
+    # tester.add_ema_tests(...)
+    tester.filter_strategies(strategy_names)  # Requires MassTester.filter_strategies()
 
-    # Train
-    tester.run_tests(segment_filter=scenario['train'])
 
-    # Test (OOS)
-    tester.run_tests(segment_filter=scenario['test'])
-
-    # Extract and save scenario results
-    save_scenario_results(scenario['name'])
+for scenario in SCENARIO_CONFIGS:
+    # run_scenario saves results to a per-scenario parquet file:
+    #   mass_test_results_segment_{scenario['name']}.parquet
+    train_segment_ids, test_segment_ids = run_scenario(
+        scenario_config=scenario,
+        strategy_adder_func=lambda t: add_top_strategies(t, top_strategy_names),
+        tested_months=['1!', '2!'],
+        symbols=SYMBOLS,
+        intervals=INTERVALS,
+        reference_symbol='ZC',
+        max_workers=4,
+        skip_existing=True,
+        verbose=False
+    )
 
 # ==================== STEP 4: Analyze & Select ====================
 
-# Compare degradation across all scenarios
-summary = []
-for scenario in scenarios:
-    df = pd.read_parquet(f'data/backtesting/mass_test_results_seg_{scenario["name"]}.parquet')
-    train = df[df['segment_id'].isin(scenario['train'])].groupby('strategy')['profit_factor'].mean()
-    test = df[df['segment_id'].isin(scenario['test'])].groupby('strategy')['profit_factor'].mean()
+from app.backtesting.testing.analysis import compare_scenarios, find_robust_strategies, generate_validation_report
 
-    for strategy in train.index:
-        degradation = ((train[strategy] - test[strategy]) / train[strategy]) * 100
-        summary.append({'strategy': strategy, 'scenario': scenario['name'],
-                        'degradation': degradation, 'passed': degradation < 30})
+# Segment IDs: valid for ≥15m (1 period). For <15m multi-period data, load
+# train/test IDs from a sidecar JSON saved during run_scenario instead.
+scenario_results = []
+for scenario in SCENARIO_CONFIGS:
+    path = f'data/backtesting/mass_test_results_segment_{scenario["name"]}.parquet'
+    scenario_df = pd.read_parquet(path)
+    scenario_results.append({
+        'name': scenario['name'],
+        'df': scenario_df,
+        'train_segments': list(range(1, scenario['train_count'] + 1)),
+        'test_segments': list(range(scenario['train_count'] + 1, scenario['segments_per_period'] + 1))
+    })
 
-summary_df = pd.DataFrame(summary)
+comparison_df = compare_scenarios(scenario_results, metric='profit_factor')
+robust_strategies = find_robust_strategies(comparison_df, max_degradation_percentage=30.0)
 
-# Find strategies that passed ALL scenarios
-robust = summary_df.groupby('strategy')['passed'].sum()
-robust = robust[robust == len(scenarios)].index
-
-print(f"Robust strategies: {len(robust)}")
-robust_df = summary_df[summary_df['strategy'].isin(robust)]
-robust_df.to_csv('data/backtesting/final_robust_strategies.csv')
+print(f"Robust strategies: {len(robust_strategies)}")
+generate_validation_report(comparison_df, output_dir='data/backtesting/')
 ```
 
 ---
@@ -921,32 +1019,31 @@ trading-bot/
 │           │   ├── gap_detector.py
 │           │   └── period_splitter.py
 │           │
-│           ├── selection.py                            # 🆕 NEW (Phases 2-4)
-│           ├── validation.py                           # 🆕 NEW (Phases 2-4)
-│           ├── analysis.py                             # 🆕 NEW (Phases 2-4)
+│           ├── selection.py                            # ✅ COMPLETE (Phase 2)
+│           ├── validation.py                           # ✅ COMPLETE (Phase 3)
+│           ├── analysis.py                             # ✅ COMPLETE (Phase 4)
 │           │
-│           ├── mass_tester.py                          # ✅ COMPLETE
-│           ├── orchestrator.py                         # ✅ COMPLETE
+│           ├── mass_tester.py                          # ✅ COMPLETE (needs filter_strategies() for Phase 3)
+│           ├── orchestrator.py                         # ✅ COMPLETE (needs results_path param for Phase 3)
 │           ├── runner.py                               # ✅ COMPLETE
-│           ├── reporting.py                            # ✅ COMPLETE
+│           ├── reporting.py                            # ✅ COMPLETE (needs output_path param for Phase 3)
 │           │
 │           └── utils/
-│               └── test_preparation.py                 # ✅ COMPLETE
+│               └── test_preparation.py                 # ✅ COMPLETE (needs results_path param for Phase 3)
 │
 ├── data/
 │   └── backtesting/
-│       ├── mass_test_results_full_periods.parquet      # 1-2M strategies on full periods
-│       ├── strategy_rankings_top_1pct.csv              # Top 1% ranked strategies
-│       ├── mass_test_results_segmented.parquet         # Intermediate file (all scenarios)
-│       ├── mass_test_results_seg_5p_4train_1test.parquet
-│       ├── mass_test_results_seg_4p_3train_1test.parquet
-│       ├── mass_test_results_seg_3p_2train_1test.parquet
+│       ├── mass_test_results_all.parquet               # Phase 2 ONLY: pure full-period results
+│       ├── mass_test_results_segment_5_periods_4_train_1_test.parquet  # Phase 3 Scenario A
+│       ├── mass_test_results_segment_4_periods_3_train_1_test.parquet  # Phase 3 Scenario B
+│       ├── mass_test_results_segment_3_periods_2_train_1_test.parquet  # Phase 3 Scenario C
+│       ├── strategy_rankings_top_1_percentage.csv      # Top 1% ranked strategies
 │       ├── validation_summary_all_scenarios.csv
 │       └── final_robust_strategies.csv
 │
 ├── scripts/                                             # 🔲 NEW FOLDER
-│   ├── phase2_massive_testing/
-│   │   ├── mass_backtest_full_periods.py
+│   ├── phase2_batch_testing/
+│   │   ├── mass_backtest_full_periods.py               # Run repeatedly per batch
 │   │   └── filter_top_strategies.py
 │   │
 │   ├── phase3_validation/
@@ -976,37 +1073,37 @@ trading-bot/
 
 ```
 scripts/
-├── phase2_massive_testing/
-│   ├── mass_backtest_full_periods.py
-│   └── filter_top_strategies.py
+├── phase2_batch_testing/
+│   ├── mass_backtest_full_periods.py   # Run repeatedly per batch
+│   └── filter_top_strategies.py        # Run once, when coverage is sufficient
 ├── phase3_validation/
 │   └── run_segmented_validation.py
 └── phase4_analysis/
     └── analyze_validation_results.py
 ```
 
-### Data Files Naming Convention
+### Data Files
 
-**Full Period Results**:
-
-```
-mass_test_results_full_periods.parquet
-```
-
-**Segmented Results**:
+Phase 2 and Phase 3 results live in **separate files**:
 
 ```
-mass_test_results_seg_{X}p_{Y}train_{Z}test.parquet
+mass_test_results_all.parquet
+  └── Full-period results only (Phase 2, accumulates over time)
 
-Examples:
-├── mass_test_results_seg_5p_4train_1test.parquet  # 5 segs: [1-4] train, [5] test
-├── mass_test_results_seg_4p_3train_1test.parquet  # 4 segs: [1-3] train, [4] test
-└── mass_test_results_seg_3p_2train_1test.parquet  # 3 segs: [1-2] train, [3] test
+mass_test_results_segment_5_periods_4_train_1_test.parquet
+  └── Scenario A: 4 train segments + 1 test segment per period
+
+mass_test_results_segment_4_periods_3_train_1_test.parquet
+  └── Scenario B: 3 train segments + 1 test segment per period
+
+mass_test_results_segment_3_periods_2_train_1_test.parquet
+  └── Scenario C: 2 train segments + 1 test segment per period
 ```
 
-**Analysis Results**:
+**Analysis outputs**:
 
 ```
+strategy_rankings_top_1_percentage.csv
 validation_summary_all_scenarios.csv
 final_robust_strategies.csv
 ```
@@ -1018,17 +1115,22 @@ final_robust_strategies.csv
 ### The Complete Plan
 
 1. ✅ **Phase 1 Complete**: Segmentation infrastructure production-ready
-2. **Phase 2**: Test 1-2M strategies on full periods → Filter to top 1%
-3. **Phase 3**: Validate top 1% across 3 segmentation scenarios
+2. **Phase 2**: Accumulate full-period results via repeated batch runs → Filter to top 1% when ready
+3. **Phase 3**: Validate top 1% across 3 segmentation scenarios (each to its own file)
 4. **Phase 4**: Compare cross-scenario, select robust strategies
 
 ### Key Decisions Made
 
-✅ **Separate parquet files per scenario** for clarity  
-✅ **Naming convention**: `mass_test_results_seg_{X}p_{Y}train_{Z}test.parquet`  
-✅ **Top 1% threshold**: ~10-20k strategies for segmented validation  
-✅ **3 scenarios**: 5p/4train/1test, 4p/3train/1test, 3p/2train/1test  
+✅ **Separate parquet files**: `mass_test_results_all.parquet` (Phase 2 only) + per-scenario files (Phase 3)
+✅ **No segment_id filter needed** when reading Phase 2 or Phase 3 files — each file is pure
+✅ **Incremental batches** of 10k-20k strategies, 4 workers, safe to run on a laptop
+✅ **Top 1% of tested strategies** for segmented validation (not a fixed count)
+✅ **3 scenarios**: 5p/4train/1test, 4p/3train/1test, 3p/2train/1test
 ✅ **Pass criteria**: <30% degradation in ALL scenarios
+✅ **Configurable `results_path`**: `save_results()`, `load_existing_results()`, `orchestrator.run_tests()`,
+`MassTester.run_tests()` all accept an optional path; `run_scenario()` derives it from the scenario name automatically
+✅ **`filter_strategies()`**: `MassTester` has a `filter_strategies(strategy_names)` method to trim to top 1% before
+Phase 3 runs
 
 ### What's Ready to Use Now
 
@@ -1045,31 +1147,29 @@ results = tester.run_tests(segment_filter=[1, 2, 3])
 
 ### What Needs to Be Built
 
+**Code Changes in `app/backtesting/testing/`**:
+
+- [x] `mass_tester.py` - Add `filter_strategies(strategy_names)` method (trim strategy list to a name set) ✅
+- [x] `reporting.py` - Add optional `output_path` param to `save_results()` (default: current hardcoded path) ✅
+- [x] `test_preparation.py` - Add optional `results_path` param to `load_existing_results()` ✅
+- [x] `orchestrator.py` - Thread `results_path` through `run_tests()` ✅
+- [x] `validation.py` - In `run_scenario()`, derive and pass the per-scenario `results_path` ✅
+
 **New Modules in `app/backtesting/testing/`**:
 
-- [ ] `selection.py` - Strategy filtering and ranking functions
-- [ ] `validation.py` - Scenario execution and degradation calculation
-- [ ] `analysis.py` - Cross-scenario comparison and reporting
+- [x] `selection.py` - Strategy filtering and ranking functions ✅
+- [x] `validation.py` - Scenario execution and degradation calculation ✅
+- [x] `analysis.py` - Cross-scenario comparison and reporting ✅
 
 **New Scripts in `scripts/`**:
 
-- [ ] `mass_backtest_full_periods.py` - Run 1-2M strategies
-- [ ] `filter_top_strategies.py` - Rank and select top 1%
+- [ ] `mass_backtest_full_periods.py` - Batch runner (run repeatedly per subset)
+- [ ] `filter_top_strategies.py` - Rank and select top 1% (run when ready)
 - [ ] `run_segmented_validation.py` - Multi-scenario testing
 - [ ] `analyze_validation_results.py` - Cross-scenario analysis
 
-**Estimated Implementation Time**: 1-2 weeks for modules + scripts + testing
-
 ---
 
-**Document Version**: 3.0  
-**Last Updated**: February 17, 2026  
-**Status**: Phase 1 Complete, Phases 2-4 Designed
-
-
-
-
-
-
-
-
+**Document Version**: 5.1
+**Last Updated**: February 18, 2026
+**Status**: Phase 1 Complete, Phases 2-4 Designed (Incremental Batch, Separate Files)
