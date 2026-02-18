@@ -5,61 +5,6 @@ from app.utils.logger import get_logger
 logger = get_logger('backtesting/testing/selection')
 
 
-# ==================== Helper Functions ====================
-
-def _get_strategy_list(results_df):
-    """
-    Extract unique strategy names from results.
-
-    Args:
-        results_df: DataFrame with backtest results
-
-    Returns:
-        List of unique strategy names
-    """
-    return results_df['strategy'].unique().tolist()
-
-
-def _compare_strategy_sets(set_a, set_b, label_a='Set A', label_b='Set B'):
-    """
-    Compare two sets of strategies and show overlap.
-
-    Args:
-        set_a: List or set of strategy names
-        set_b: List or set of strategy names
-        label_a: Label for the first set
-        label_b: Label for the second set
-
-    Returns:
-        Dict with overlap statistics
-    """
-    set_a = set(set_a)
-    set_b = set(set_b)
-
-    overlap = set_a & set_b
-    only_a = set_a - set_b
-    only_b = set_b - set_a
-
-    stats = {
-        'total_a': len(set_a),
-        'total_b': len(set_b),
-        'overlap': len(overlap),
-        'only_a': len(only_a),
-        'only_b': len(only_b),
-        'overlap_percentage_a': len(overlap) / len(set_a) * 100 if set_a else 0,
-        'overlap_percentage_b': len(overlap) / len(set_b) * 100 if set_b else 0
-    }
-
-    logger.info(
-        f'{label_a}: {stats["total_a"]}, '
-        f'{label_b}: {stats["total_b"]}, '
-        f'Overlap: {stats["overlap"]} '
-        f'({stats["overlap_percentage_a"]:.1f}%/{stats["overlap_percentage_b"]:.1f}%)'
-    )
-
-    return stats
-
-
 # ==================== Strategy Ranking ====================
 
 def rank_strategies(
