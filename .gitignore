@@ -2,9 +2,6 @@
 .idea/
 __pycache__/
 
-# Prompts
-.github/prompts/
-
 # macOS
 .DS_Store
 
