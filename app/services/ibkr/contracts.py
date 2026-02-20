@@ -10,7 +10,7 @@ logger = get_logger('services/ibkr/contracts')
 
 # ==================== Module Configuration ====================
 
-MIN_DAYS_UNTIL_EXPIRY = 60
+MIN_DAYS_UNTIL_EXPIRY = 60  # Minimum days before expiration for a contract to be considered valid
 
 # ==================== Module Paths ====================
 
@@ -18,6 +18,14 @@ CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
 
 
 def fetch_contract(symbol):
+    """Fetch contract data from the IBKR API for a given symbol.
+
+    Args:
+        symbol: TradingView-formatted symbol string (e.g. 'ES1!')
+
+    Returns:
+        List of contract dictionaries, or an empty list on error
+    """
     parsed_symbol = parse_symbol(symbol)
     endpoint = f'/trsrv/futures?symbols={parsed_symbol}'
 
@@ -30,6 +38,21 @@ def fetch_contract(symbol):
 
 
 def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+    """Select the nearest valid contract that is not close to expiration.
+
+    Filters contracts to those expiring more than min_days_until_expiry days
+    from today, then returns the one with the earliest expiration date.
+
+    Args:
+        contracts: List of contract dicts each containing an 'expirationDate' (format: YYYYMMDD)
+        min_days_until_expiry: Minimum days until expiration for a contract to be valid
+
+    Returns:
+        Contract dictionary with the earliest valid expiration date
+
+    Raises:
+        ValueError: If no contracts with sufficient time until expiry are available
+    """
     # Look for any valid contracts
     valid_contracts = [
         contract for contract in contracts
@@ -47,6 +70,22 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+    """Get the IBKR contract ID for a symbol, using a file cache to avoid redundant API calls.
+
+    Looks up the cached contract list for the symbol and selects the closest valid
+    contract. If the cache is missing, invalid, or contains no valid contracts,
+    fetches fresh data from the IBKR API and updates the cache.
+
+    Args:
+        symbol: TradingView-formatted symbol string (e.g. 'ES1!')
+        min_days_until_expiry: Minimum days until expiry for a contract to be considered valid
+
+    Returns:
+        Integer contract ID (conid) of the nearest valid contract
+
+    Raises:
+        ValueError: If no contracts are found or none meet the expiry requirement
+    """
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_file(CONTRACTS_FILE_PATH)
     contract_list = contracts_cache.get(parsed_symbol)

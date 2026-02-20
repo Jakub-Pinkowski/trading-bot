@@ -6,11 +6,16 @@ logger = get_logger('services/ibkr/orders')
 
 # ==================== Module Configuration ====================
 
-QUANTITY_TO_TRADE = 1
-AGGRESSIVE_TRADING = True
+QUANTITY_TO_TRADE = 1  # Default number of contracts per order
+AGGRESSIVE_TRADING = True  # Double quantity when reversing an existing position to close and reverse in one trade
 
 
 def invalidate_cache():
+    """Invalidate the IBKR portfolio position cache to force fresh data on the next fetch.
+
+    IBKR caches position data server-side; calling this before fetching positions
+    ensures the response reflects the current real-time state.
+    """
     endpoint = f'portfolio/{ACCOUNT_ID}/positions/invalidate'
 
     try:
@@ -20,6 +25,18 @@ def invalidate_cache():
 
 
 def get_contract_position(conid):
+    """Get the current open position quantity for a given contract.
+
+    Invalidates the server-side cache before fetching to ensure the position
+    reflects real-time state. Returns a positive value for long positions,
+    negative for short, and 0 if no position is held.
+
+    Args:
+        conid: IBKR contract ID to look up
+
+    Returns:
+        Integer position quantity (positive = long, negative = short, 0 = no position)
+    """
     # Invalidate cache to get the real contracts data
     invalidate_cache()
 
@@ -43,6 +60,15 @@ def get_contract_position(conid):
 
 
 def suppress_messages(message_ids):
+    """Suppress IBKR confirmation dialogs that would otherwise block order submission.
+
+    Some orders trigger server-side confirmation prompts that must be acknowledged
+    before the order can proceed. Called automatically by place_order when the
+    API returns messageIds in the response.
+
+    Args:
+        message_ids: List of message ID strings to suppress
+    """
     endpoint = 'iserver/questions/suppress'
     suppression_data = {'messageIds': message_ids}
 
@@ -56,6 +82,20 @@ def suppress_messages(message_ids):
 
 # TODO [MEDIUM]: Remove Aggressive trading variable as this is now integrates into the strategies instead
 def place_order(conid, side):
+    """Place a market order for a futures contract, handling position reversals and message suppression.
+
+    Checks the current position before placing the order. If a position in the
+    opposite direction exists, doubles the quantity when AGGRESSIVE_TRADING is enabled
+    to close and reverse in one trade. Skips the order if already in the desired
+    direction. Automatically suppresses any IBKR confirmation prompts and retries.
+
+    Args:
+        conid: IBKR contract ID to trade
+        side: Direction of the order ('B' for buy, 'S' for sell)
+
+    Returns:
+        API response dict on success, or a dict with 'success': False and 'error' on failure
+    """
     contract_position = get_contract_position(conid)
 
     quantity = QUANTITY_TO_TRADE
