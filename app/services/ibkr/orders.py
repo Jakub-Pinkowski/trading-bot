@@ -1,5 +1,5 @@
+from app.services.ibkr.utils.orders_utils import suppress_messages, get_contract_position
 from app.utils.api_utils import api_post
-from app.utils.ibkr_utils.orders_utils import suppress_messages, get_contract_position
 from app.utils.logger import get_logger
 from config import ACCOUNT_ID
 

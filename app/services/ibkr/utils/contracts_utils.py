@@ -4,7 +4,7 @@ from app.utils.api_utils import api_get
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 
-logger = get_logger('ibkr_utils/contracts_utils')
+logger = get_logger('services/ibkr/utils/contracts_utils')
 
 # ==================== Module Configuration ====================
 
