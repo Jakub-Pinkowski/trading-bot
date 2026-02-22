@@ -184,41 +184,19 @@ def test_place_order_existing_same_position(mock_get_contract_position):
     mock_get_contract_position.assert_called_once_with("123456")
 
 
-def test_place_order_reverse_position_aggressive(
-    monkeypatch, mock_get_contract_position, mock_api_post_orders
-):
-    """Test that place_order reverses an existing position with double quantity in aggressive mode"""
-
-    # Enable aggressive trading mode and mock existing long position with API response
-    monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", True)
-    mock_get_contract_position.return_value = 1  # existing long
-    mock_api_post_orders.return_value = {"id": "123456"}
-
-    # Call place_order with sell side to reverse an existing long position in aggressive mode
-    result = place_order("123456", "S")
-
-    # Verify function returns API response and places a SELL order with double quantity to close and reverse
-    assert result == {"id": "123456"}
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    order_details = mock_api_post_orders.call_args[0][1]
-    assert order_details["orders"][0]["side"] == "SELL"
-    assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE * 2
-
-
-def test_place_order_reverse_position_not_aggressive(
+def test_place_order_reverse_position(
     mock_get_contract_position, mock_api_post_orders
 ):
-    """Test that place_order reverses an existing position with standard quantity in non-aggressive mode"""
+    """Test that place_order reverses an existing position with standard quantity"""
 
-    # Mock existing short position and API response (with default non-aggressive mode)
+    # Mock existing short position and API response
     mock_get_contract_position.return_value = -1  # existing short
     mock_api_post_orders.return_value = {"id": "123456"}
 
-    # Call place_order with buy side to reverse an existing short position in non-aggressive mode
+    # Call place_order with buy side to reverse an existing short position
     result = place_order("123456", "B")
 
-    # Verify function returns API response and places a BUY order with standard quantity (not doubled)
+    # Verify function returns API response and places a BUY order with standard quantity
     assert result == {"id": "123456"}
     mock_get_contract_position.assert_called_once_with("123456")
     mock_api_post_orders.assert_called_once()

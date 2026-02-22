@@ -133,12 +133,6 @@ def mock_suppress_messages(monkeypatch):
     return mock
 
 
-@pytest.fixture(autouse=True)
-def reset_aggressive_trading(monkeypatch):
-    # Reset AGGRESSIVE_TRADING to False unless individually overridden
-    monkeypatch.setattr("app.services.ibkr.orders.AGGRESSIVE_TRADING", False)
-
-
 # Webhook fixtures
 @pytest.fixture
 def mock_validate_ip(monkeypatch):

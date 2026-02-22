@@ -7,7 +7,6 @@ logger = get_logger('services/ibkr/orders')
 # ==================== Module Configuration ====================
 
 QUANTITY_TO_TRADE = 1  # Default number of contracts per order
-AGGRESSIVE_TRADING = True  # Double quantity when reversing an existing position to close and reverse in one trade
 
 
 def invalidate_cache():
@@ -80,13 +79,10 @@ def suppress_messages(message_ids):
         logger.error(f'Error suppressing messages: {err}')
 
 
-# TODO [MEDIUM]: Remove Aggressive trading variable as this is now integrates into the strategies instead
 def place_order(conid, side):
     """Place a market order for a futures contract, handling position reversals and message suppression.
 
-    Checks the current position before placing the order. If a position in the
-    opposite direction exists, doubles the quantity when AGGRESSIVE_TRADING is enabled
-    to close and reverse in one trade. Skips the order if already in the desired
+    Checks the current position before placing the order. Skips the order if already in the desired
     direction. Automatically suppresses any IBKR confirmation prompts and retries.
 
     Args:
@@ -100,13 +96,8 @@ def place_order(conid, side):
 
     quantity = QUANTITY_TO_TRADE
 
-    # Existing position opposite to incoming signal; adjust quantity if aggressive trading
-    if (contract_position > 0 and side == 'S') or (contract_position < 0 and side == 'B'):
-        if AGGRESSIVE_TRADING:
-            quantity *= 2
-
     # Existing position same as incoming signal; no action needed
-    elif (contract_position > 0 and side == 'B') or (contract_position < 0 and side == 'S'):
+    if (contract_position > 0 and side == 'B') or (contract_position < 0 and side == 'S'):
         return {'success': True, 'message': 'No action needed: already in desired position'}
 
     # Convert side: "B" -> "BUY", "S" -> "SELL"
