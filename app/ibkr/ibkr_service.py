@@ -45,6 +45,11 @@ def process_trading_data(trading_data):
 
     contract_id = get_contract_id(symbol)
     order = place_order(contract_id, side)
-    logger.info(f'Order placed: {order}')
 
+    # Return order details on failure
+    if isinstance(order, dict) and order.get('success') is False:
+        logger.error(f'Order failed: {order}')
+        return {'status': 'order_failed', 'order': order}
+
+    logger.info(f'Order placed: {order}')
     return {'status': 'order_placed', 'order': order}

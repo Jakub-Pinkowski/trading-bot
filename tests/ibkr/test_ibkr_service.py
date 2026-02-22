@@ -130,6 +130,29 @@ def test_process_trading_data_missing_side(mock_logger_ibkr_service, mock_place_
     mock_place_order.assert_not_called()
 
 
+def test_process_trading_data_order_failed(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
+    """Test that process_trading_data returns order_failed status when place_order reports failure"""
+
+    # Configure place_order to return a failure response (e.g. insufficient funds)
+    mock_get_contract_id.return_value = "123456"
+    mock_place_order.return_value = {"success": False, "error": "Insufficient funds", "details": {}}
+    trading_data = {
+        "dummy": "NO",
+        "symbol": "ZC",
+        "side": "B",
+        "price": "4500.00"
+    }
+
+    # Call process_trading_data and verify it reports failure rather than success
+    result = process_trading_data(trading_data)
+
+    # Verify the error is logged and the status reflects the failure
+    assert result == {'status': 'order_failed',
+                      'order': {"success": False, "error": "Insufficient funds", "details": {}}}
+    mock_logger_ibkr_service.error.assert_called_once()
+    mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
+
+
 def test_process_trading_data_error_handling(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
     """Test that process_trading_data propagates exceptions from get_contract_id"""
 
