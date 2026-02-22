@@ -1,13 +1,13 @@
 from unittest.mock import patch
 
-from app.services.ibkr.orders import (place_order, invalidate_cache, get_contract_position,
-                                      suppress_messages, QUANTITY_TO_TRADE)
+from app.services.orders import (place_order, invalidate_cache, get_contract_position,
+                                 suppress_messages, QUANTITY_TO_TRADE)
 from config import ACCOUNT_ID
 
 
 # ==================== invalidate_cache Tests ====================
 
-@patch('app.services.ibkr.orders.api_post')
+@patch('app.services.orders.api_post')
 def test_invalidate_cache_success(mock_api_post):
     """Test that invalidate_cache successfully calls the API."""
 
@@ -18,7 +18,7 @@ def test_invalidate_cache_success(mock_api_post):
     mock_api_post.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions/invalidate", {})
 
 
-@patch('app.services.ibkr.orders.api_post')
+@patch('app.services.orders.api_post')
 def test_invalidate_cache_error(mock_api_post):
     """Test that invalidate_cache handles errors gracefully."""
 
@@ -34,8 +34,8 @@ def test_invalidate_cache_error(mock_api_post):
 
 # ==================== get_contract_position Tests ====================
 
-@patch('app.services.ibkr.orders.invalidate_cache')
-@patch('app.services.ibkr.orders.api_get')
+@patch('app.services.orders.invalidate_cache')
+@patch('app.services.orders.api_get')
 def test_get_contract_position_found(mock_api_get, mock_invalidate_cache):
     """Test that get_contract_position returns the correct position when found."""
 
@@ -54,8 +54,8 @@ def test_get_contract_position_found(mock_api_get, mock_invalidate_cache):
     mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
 
 
-@patch('app.services.ibkr.orders.invalidate_cache')
-@patch('app.services.ibkr.orders.api_get')
+@patch('app.services.orders.invalidate_cache')
+@patch('app.services.orders.api_get')
 def test_get_contract_position_not_found(mock_api_get, mock_invalidate_cache):
     """Test that get_contract_position returns 0 when the contract is not found."""
 
@@ -73,8 +73,8 @@ def test_get_contract_position_not_found(mock_api_get, mock_invalidate_cache):
     mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
 
 
-@patch('app.services.ibkr.orders.invalidate_cache')
-@patch('app.services.ibkr.orders.api_get')
+@patch('app.services.orders.invalidate_cache')
+@patch('app.services.orders.api_get')
 def test_get_contract_position_api_error(mock_api_get, mock_invalidate_cache):
     """Test that get_contract_position handles API errors gracefully."""
 
@@ -92,7 +92,7 @@ def test_get_contract_position_api_error(mock_api_get, mock_invalidate_cache):
 
 # ==================== suppress_messages Tests ====================
 
-@patch('app.services.ibkr.orders.api_post')
+@patch('app.services.orders.api_post')
 def test_suppress_messages_success(mock_api_post):
     """Test that suppress_messages successfully calls the API."""
 
@@ -106,7 +106,7 @@ def test_suppress_messages_success(mock_api_post):
     mock_api_post.assert_called_once_with("iserver/questions/suppress", {"messageIds": ["1", "2"]})
 
 
-@patch('app.services.ibkr.orders.api_post')
+@patch('app.services.orders.api_post')
 def test_suppress_messages_error(mock_api_post):
     """Test that suppress_messages handles errors gracefully."""
     # Setup mock to raise an exception

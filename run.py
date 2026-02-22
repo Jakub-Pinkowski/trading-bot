@@ -1,7 +1,7 @@
 from flask import Flask
 
 from app.routes.webhook import webhook_blueprint
-from app.services.ibkr.connection import start_ibkr_scheduler
+from app.services.connection import start_ibkr_scheduler
 from config import PORT
 
 app = Flask(__name__)

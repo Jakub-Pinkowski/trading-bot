@@ -3,14 +3,14 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.ibkr.contracts import (get_contract_id, get_closest_contract, fetch_contract,
-                                         CONTRACTS_FILE_PATH, MIN_DAYS_UNTIL_EXPIRY)
+from app.services.contracts import (get_contract_id, get_closest_contract, fetch_contract,
+                                    CONTRACTS_FILE_PATH, MIN_DAYS_UNTIL_EXPIRY)
 
 
 # ==================== fetch_contract Tests ====================
 
-@patch('app.services.ibkr.contracts.parse_symbol')
-@patch('app.services.ibkr.contracts.api_get')
+@patch('app.services.contracts.parse_symbol')
+@patch('app.services.contracts.api_get')
 def test_fetch_contract_success(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract successfully fetches and returns contract data."""
 
@@ -27,8 +27,8 @@ def test_fetch_contract_success(mock_api_get, mock_parse_symbol):
     mock_api_get.assert_called_once_with("/trsrv/futures?symbols=ES")
 
 
-@patch('app.services.ibkr.contracts.parse_symbol')
-@patch('app.services.ibkr.contracts.api_get')
+@patch('app.services.contracts.parse_symbol')
+@patch('app.services.contracts.api_get')
 def test_fetch_contract_api_error(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract handles API errors gracefully."""
 
@@ -45,8 +45,8 @@ def test_fetch_contract_api_error(mock_api_get, mock_parse_symbol):
     mock_api_get.assert_called_once_with("/trsrv/futures?symbols=ES")
 
 
-@patch('app.services.ibkr.contracts.parse_symbol')
-@patch('app.services.ibkr.contracts.api_get')
+@patch('app.services.contracts.parse_symbol')
+@patch('app.services.contracts.api_get')
 def test_fetch_contract_empty_response(mock_api_get, mock_parse_symbol):
     """Test that fetch_contract handles empty API responses."""
 

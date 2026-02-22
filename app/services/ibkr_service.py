@@ -1,5 +1,5 @@
-from app.services.ibkr.contracts import get_contract_id
-from app.services.ibkr.orders import place_order
+from app.services.contracts import get_contract_id
+from app.services.orders import place_order
 from app.utils.logger import get_logger
 
 logger = get_logger()

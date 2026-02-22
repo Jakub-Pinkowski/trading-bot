@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 from apscheduler.events import JobExecutionEvent
 
-from app.services.ibkr.connection import tickle_ibkr_api, log_missed_job, start_ibkr_scheduler
+from app.services.connection import tickle_ibkr_api, log_missed_job, start_ibkr_scheduler
 
 
 def test_tickle_ibkr_api_success(mock_logger_connection, mock_api_post_connection):
