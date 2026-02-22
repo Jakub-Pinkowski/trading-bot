@@ -27,10 +27,8 @@ def fetch_contract(parsed_symbol):
     Returns:
         List of contract dictionaries, or an empty list on error
     """
-    endpoint = f'/trsrv/futures?symbols={parsed_symbol}'
-
     try:
-        contracts_data = api_get(endpoint)
+        contracts_data = api_get(f'/trsrv/futures?symbols={parsed_symbol}')
         return contracts_data.get(parsed_symbol, [])
     except Exception as err:
         logger.error(f'Error fetching contract data: {err}')
@@ -100,7 +98,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
             closest_contract = get_closest_contract(contract_list, min_days_until_expiry)
             return closest_contract['conid']
         except ValueError as err:
-            logger.warning(f'Cache invalid for symbol \'{parsed_symbol}\': {err}')
+            logger.warning(f"Cache invalid for symbol '{parsed_symbol}': {err}")
 
     # Cache miss or invalid entry; fetch and update cache
     fresh_contracts = fetch_contract(parsed_symbol)
@@ -116,5 +114,5 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
         closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)
         return closest_contract['conid']
     except ValueError as err:
-        logger.error(f'No valid contract found in fresh data for symbol \'{parsed_symbol}\': {err}')
+        logger.error(f"No valid contract found in fresh data for symbol '{parsed_symbol}': {err}")
         raise
