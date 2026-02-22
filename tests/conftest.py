@@ -144,7 +144,7 @@ def mock_validate_ip(monkeypatch):
 @pytest.fixture
 def mock_process_trading_data(monkeypatch):
     mock = MagicMock()
-    monkeypatch.setattr("app.routes.webhook.safe_process_trading_data", mock)
+    monkeypatch.setattr("app.routes.webhook.process_trading_data", mock)
     return mock
 
 
