@@ -1,11 +1,9 @@
 import requests
 import urllib3
 
-from app.utils.logger import get_logger
 from config import BASE_URL
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-logger = get_logger()
 
 
 def get_headers():
