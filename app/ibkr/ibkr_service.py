@@ -5,7 +5,29 @@ from app.utils.logger import get_logger
 logger = get_logger('ibkr/service')
 
 
+# ==================== Public API ====================
+
 def process_trading_data(trading_data):
+    """
+    Process an incoming TradingView webhook signal and place an order via IBKR.
+
+    Validates required fields, skips execution for dummy signals, resolves the
+    contract ID for the given symbol, and delegates order placement to place_order.
+
+    Args:
+        trading_data: Dict containing signal fields. Expected keys:
+            - 'symbol': TradingView symbol string (e.g. 'ZC1!')
+            - 'side': Order direction ('B' for buy, 'S' for sell)
+            - 'dummy': Set to 'YES' to simulate without placing a real order
+
+    Returns:
+        Dict with a 'status' key indicating the outcome:
+            - {'status': 'dummy_skip'} if the signal was a dummy
+            - {'status': 'order_placed', 'order': <api_response>} on success
+
+    Raises:
+        ValueError: If 'symbol' or 'side' is missing from trading_data
+    """
     logger.info(f'Trading data received: {trading_data}')
 
     symbol = trading_data.get('symbol')
@@ -17,6 +39,7 @@ def process_trading_data(trading_data):
     if not side:
         raise ValueError('Missing required field: side')
 
+    # Skip order placement for dummy signals
     if dummy == 'YES':
         return {'status': 'dummy_skip'}
 

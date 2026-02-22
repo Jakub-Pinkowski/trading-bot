@@ -8,7 +8,7 @@ Docstrings standard:
 """
 Brief description.
 
-Extended explanation of behavior and purpose.
+Extended explanation of behavior and purpose. (can be skipped for simple functions)
 
 Args:
 param: Description with examples (e.g., [1, 2, 3])

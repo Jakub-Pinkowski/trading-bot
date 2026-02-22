@@ -17,15 +17,18 @@ MIN_DAYS_UNTIL_EXPIRY = 60  # Minimum days before expiration for a contract to b
 CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
 
 
+# ==================== API ====================
+
 def fetch_contract(parsed_symbol):
-    """Fetch contract data from the IBKR API for a given symbol.
+    """
+    Fetch contract data from the IBKR API for a given symbol.
 
     Args:
         parsed_symbol: Plain symbol string (e.g. 'ZC'), with any TradingView
             suffix already stripped by the caller
 
     Returns:
-        List of contract dictionaries, or an empty list on error
+        List of contract dicts from the API, or an empty list on error
     """
     try:
         contracts_data = api_get(f'/trsrv/futures?symbols={parsed_symbol}')
@@ -35,18 +38,23 @@ def fetch_contract(parsed_symbol):
         return []
 
 
-def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
-    """Select the nearest valid contract that is not close to expiration.
+# ==================== Contract Selection ====================
 
-    Filters contracts to those expiring more than min_days_until_expiry days
-    from today, then returns the one with the earliest expiration date.
+def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+    """
+    Select the nearest valid contract that is not close to expiration.
+
+    Parses expiration dates once, filters to those beyond the cutoff, then
+    returns the contract with the earliest remaining valid expiration date.
 
     Args:
-        contracts: List of contract dicts each containing an 'expirationDate' (format: YYYYMMDD)
-        min_days_until_expiry: Minimum days until expiration for a contract to be valid
+        contracts: List of contract dicts each containing an 'expirationDate'
+            field in YYYYMMDD format (e.g. [{'conid': '123', 'expirationDate': '20251215'}])
+        min_days_until_expiry: Minimum days until expiration for a contract to
+            be considered valid (default: MIN_DAYS_UNTIL_EXPIRY)
 
     Returns:
-        Contract dictionary with the earliest valid expiration date
+        Contract dict with the earliest valid expiration date
 
     Raises:
         ValueError: If no contracts with sufficient time until expiry are available
@@ -70,8 +78,11 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
     return valid_contracts[0][1]
 
 
+# ==================== Cache Management ====================
+
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
-    """Get the IBKR contract ID for a symbol, using a file cache to avoid redundant API calls.
+    """
+    Get the IBKR contract ID for a symbol, using a file cache to avoid redundant API calls.
 
     Looks up the cached contract list for the symbol and selects the closest valid
     contract. If the cache is missing, invalid, or contains no valid contracts,
@@ -79,19 +90,21 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
 
     Args:
         symbol: TradingView-formatted symbol string (e.g. 'ZC1!')
-        min_days_until_expiry: Minimum days until expiry for a contract to be considered valid
+        min_days_until_expiry: Minimum days until expiry for a contract to be
+            considered valid (default: MIN_DAYS_UNTIL_EXPIRY)
 
     Returns:
         Integer contract ID (conid) of the nearest valid contract
 
     Raises:
-        ValueError: If no contracts are found or none meet the expiry requirement
+        ValueError: If no contracts are found for the symbol, or none meet the
+            expiry requirement
     """
     parsed_symbol = parse_symbol(symbol)
     contracts_cache = load_file(CONTRACTS_FILE_PATH)
     contract_list = contracts_cache.get(parsed_symbol)
 
-    # Check cache first
+    # Return from cache if the entry is valid
     if isinstance(contract_list, list):
         try:
             closest_contract = get_closest_contract(contract_list, min_days_until_expiry)
@@ -99,13 +112,12 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
         except ValueError as err:
             logger.warning(f"Cache invalid for symbol '{parsed_symbol}': {err}")
 
-    # Cache miss or invalid entry; fetch and update cache
+    # Cache miss or stale entry; fetch fresh data and update cache
     fresh_contracts = fetch_contract(parsed_symbol)
     if not fresh_contracts:
         logger.error(f'No contracts found for symbol: {parsed_symbol}')
         raise ValueError(f'No contracts found for symbol: {parsed_symbol}')
 
-    # Update cache with fresh data
     contracts_cache[parsed_symbol] = fresh_contracts
     save_file(contracts_cache, CONTRACTS_FILE_PATH)
 

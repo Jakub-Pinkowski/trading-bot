@@ -10,14 +10,15 @@ QUANTITY_TO_TRADE = 1  # Default number of contracts per order
 MAX_SUPPRESS_RETRIES = 3  # Maximum attempts to suppress IBKR confirmation dialogs before giving up
 
 
-def invalidate_cache():
-    """Invalidate the IBKR portfolio position cache to force fresh data on the next fetch.
+# ==================== Cache Management ====================
 
-    IBKR caches position data server-side; calling this before fetching positions
-    ensures the response reflects the current real-time state.
+def invalidate_cache():
+    """
+    Invalidate the IBKR portfolio position cache to force fresh data on the next fetch.
 
     Raises:
-        Exception: Propagates any API error to the caller so stale data is never silently used.
+        Exception: Propagates any API error to the caller so stale data is never
+            silently used for position decisions
     """
     try:
         api_post(f'portfolio/{ACCOUNT_ID}/positions/invalidate', {})
@@ -26,18 +27,24 @@ def invalidate_cache():
         raise
 
 
+# ==================== Position Management ====================
+
 def get_contract_position(conid):
-    """Get the current open position quantity for a given contract.
+    """
+    Get the current open position quantity for a given contract.
 
     Invalidates the server-side cache before fetching to ensure the position
     reflects real-time state. Returns a positive value for long positions,
     negative for short, and 0 if no position is held.
 
     Args:
-        conid: IBKR contract ID to look up
+        conid: IBKR contract ID to look up (e.g. '265598')
 
     Returns:
-        Integer position quantity (positive = long, negative = short, 0 = no position)
+        Integer position quantity:
+            - Positive value for a long position
+            - Negative value for a short position
+            - 0 if no position is held or on API error
     """
     # Invalidate server-side position cache to ensure fresh data
     invalidate_cache()
@@ -56,15 +63,14 @@ def get_contract_position(conid):
         return 0
 
 
-def suppress_messages(message_ids):
-    """Suppress IBKR confirmation dialogs that would otherwise block order submission.
+# ==================== Message Handling ====================
 
-    Some orders trigger server-side confirmation prompts that must be acknowledged
-    before the order can proceed. Called automatically by place_order when the
-    API returns messageIds in the response.
+def suppress_messages(message_ids):
+    """
+    Suppress IBKR confirmation dialogs that would otherwise block order submission.
 
     Args:
-        message_ids: List of message ID strings to suppress
+        message_ids: List of message ID strings to suppress (e.g. ['msg1', 'msg2'])
     """
     try:
         suppression_response = api_post('iserver/questions/suppress', {'messageIds': message_ids})
@@ -74,18 +80,26 @@ def suppress_messages(message_ids):
         logger.error(f'Error suppressing messages: {err}')
 
 
-def place_order(conid, side):
-    """Place a market order for a futures contract, handling position reversals and message suppression.
+# ==================== Order Placement ====================
 
-    Checks the current position before placing the order. Skips the order if already in the desired
-    direction. Automatically suppresses any IBKR confirmation prompts and retries.
+def place_order(conid, side):
+    """
+    Place a market order for a futures contract, handling position reversals and message suppression.
+
+    Checks the current position before placing the order. Returns early if already
+    in the desired direction. Automatically suppresses any IBKR confirmation prompts
+    and retries up to MAX_SUPPRESS_RETRIES times.
 
     Args:
-        conid: IBKR contract ID to trade
-        side: Direction of the order ('B' for buy, 'S' for sell)
+        conid: IBKR contract ID to trade (e.g. '265598')
+        side: Order direction — 'B' for buy, 'S' for sell
 
     Returns:
-        API response dict on success, or a dict with 'success': False and 'error' on failure
+        Dict with the outcome:
+            - API response dict on a successful order
+            - {'success': True, 'message': '...'} if already in the desired position
+            - {'success': False, 'error': '...', 'details': ...} on a known API error
+            - {'success': False, 'error': 'An unexpected error occurred'} on an exception
 
     Raises:
         ValueError: If side is not 'B' or 'S'
@@ -115,6 +129,7 @@ def place_order(conid, side):
     }
 
     try:
+        # Retry after suppressing confirmation dialogs, up to MAX_SUPPRESS_RETRIES times
         for attempt in range(MAX_SUPPRESS_RETRIES):
             order_response = api_post(f'iserver/account/{ACCOUNT_ID}/orders', order_details)
 
@@ -122,8 +137,8 @@ def place_order(conid, side):
                 message_ids = order_response[0].get('messageIds', [])
                 if message_ids:
                     suppress_messages(message_ids)
-                    continue  # retry after suppression
-            break  # no suppression needed, exit loop
+                    continue  # Retry after suppression
+            break  # No suppression needed, exit loop
         else:
             logger.error('Order failed: exceeded maximum suppression retries')
             return {'success': False, 'error': 'Exceeded maximum suppression retries'}

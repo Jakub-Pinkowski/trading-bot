@@ -10,11 +10,16 @@ scheduler = BackgroundScheduler()
 logger = get_logger('ibkr/connection')
 
 
-def tickle_ibkr_api():
-    """Send a heartbeat request to keep the IBKR session alive.
+# ==================== Heartbeat ====================
 
-    Sends a tickle request to the IBKR API and validates the response for
-    common error states: missing session, unauthenticated user, or disconnected user.
+def tickle_ibkr_api():
+    """
+    Send a heartbeat request to keep the IBKR session alive.
+
+    Sends a tickle request to the IBKR API and checks the response for common
+    error states: missing session, unauthenticated user, or disconnected user.
+    Any of these conditions is logged as an error but does not raise, so the
+    scheduler continues running and retries on the next interval.
     """
     try:
         response = api_post('tickle', {})
@@ -39,14 +44,11 @@ def tickle_ibkr_api():
         logger.error(f'Unexpected error while tickling IBKR API: {err}')
 
 
-def start_ibkr_scheduler():
-    """Start the IBKR connection heartbeat scheduler.
+# ==================== Scheduler ====================
 
-    Configures and starts an APScheduler background job that sends a tickle
-    request every 60 seconds to maintain the IBKR session. Registers a listener
-    to log any missed job executions.
-    """
-    # Add the heartbeat job to the scheduler
+def start_ibkr_scheduler():
+    """ Start the IBKR connection heartbeat scheduler."""
+    # Send a heartbeat every 60 seconds to keep the IBKR session alive
     scheduler.add_job(tickle_ibkr_api, 'interval', seconds=60, coalesce=True, max_instances=5)
 
     # Log a warning whenever a scheduled job is missed
