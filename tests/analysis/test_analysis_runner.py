@@ -16,7 +16,7 @@ def sample_alerts_data():
 
 
 @pytest.fixture
-def sample_tw_alerts_data():
+def sample_tv_alerts_data():
     """Sample TradingView alerts data for testing."""
     return pd.DataFrame([
         {
@@ -54,7 +54,7 @@ def sample_cleaned_alerts():
 
 
 @pytest.fixture
-def sample_cleaned_tw_alerts():
+def sample_cleaned_tv_alerts():
     """Sample cleaned TradingView alerts data for testing."""
     return pd.DataFrame([
         {"trade_time": pd.Timestamp("2025-05-05 14:07:00"), "symbol": "MCL", "side": "S", "price": 56.98}
@@ -137,10 +137,10 @@ def sample_dataset_metrics():
 
 
 @patch('app.analysis.analysis_runner.get_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.get_tw_alerts_data')
+@patch('app.analysis.analysis_runner.get_tv_alerts_data')
 @patch('app.analysis.analysis_runner.get_trades_data')
 @patch('app.analysis.analysis_runner.clean_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.clean_tw_alerts_data')
+@patch('app.analysis.analysis_runner.clean_tv_alerts_data')
 @patch('app.analysis.analysis_runner.clean_trades_data')
 @patch('app.analysis.analysis_runner.match_trades')
 @patch('app.analysis.analysis_runner.add_per_trade_metrics')
@@ -154,16 +154,16 @@ def test_run_analysis_with_all_data(
     mock_add_per_trade_metrics,
     mock_match_trades,
     mock_clean_trades,
-    mock_clean_tw_alerts,
+    mock_clean_tv_alerts,
     mock_clean_ibkr_alerts,
     mock_get_trades_data,
-    mock_get_tw_alerts_data,
+    mock_get_tv_alerts_data,
     mock_get_ibkr_alerts_data,
     sample_alerts_data,
-    sample_tw_alerts_data,
+    sample_tv_alerts_data,
     sample_trades_data,
     sample_cleaned_alerts,
-    sample_cleaned_tw_alerts,
+    sample_cleaned_tv_alerts,
     sample_cleaned_trades,
     sample_matched_trades,
     sample_trades_with_metrics,
@@ -173,11 +173,11 @@ def test_run_analysis_with_all_data(
 
     # Setup mocks
     mock_get_ibkr_alerts_data.return_value = sample_alerts_data
-    mock_get_tw_alerts_data.return_value = sample_tw_alerts_data
+    mock_get_tv_alerts_data.return_value = sample_tv_alerts_data
     mock_get_trades_data.return_value = sample_trades_data
 
     mock_clean_ibkr_alerts.return_value = sample_cleaned_alerts
-    mock_clean_tw_alerts.return_value = sample_cleaned_tw_alerts
+    mock_clean_tv_alerts.return_value = sample_cleaned_tv_alerts
     mock_clean_trades.return_value = sample_cleaned_trades
 
     mock_match_trades.side_effect = [sample_matched_trades, sample_matched_trades, sample_matched_trades]
@@ -194,25 +194,25 @@ def test_run_analysis_with_all_data(
 
     # Verify the mocks were called
     mock_get_ibkr_alerts_data.assert_called_once()
-    mock_get_tw_alerts_data.assert_called_once()
+    mock_get_tv_alerts_data.assert_called_once()
     mock_get_trades_data.assert_called_once()
 
     # Verify cleaning functions were called
     mock_clean_ibkr_alerts.assert_called_once()
-    mock_clean_tw_alerts.assert_called_once()
+    mock_clean_tv_alerts.assert_called_once()
     mock_clean_trades.assert_called_once()
 
     # Verify match_trades was called for ibkr_alerts, TradingView alerts, and trades
     assert mock_match_trades.call_count == 3
     mock_match_trades.assert_any_call(sample_cleaned_alerts, is_ibkr_alerts=True)
     # The actual DataFrame passed might be slightly different due to processing, so we check positional/keyword args
-    # but mock_match_trades.assert_any_call(sample_cleaned_tw_alerts, is_tw_alerts=True) failed due to DF comparison
+    # but mock_match_trades.assert_any_call(sample_cleaned_tv_alerts, is_tv_alerts=True) failed due to DF comparison
 
     # Let's try to verify by call args instead
     calls = mock_match_trades.call_args_list
     assert any(c.kwargs.get('is_ibkr_alerts') is True for c in calls)
-    assert any(c.kwargs.get('is_tw_alerts') is True for c in calls)
-    assert any(not c.kwargs.get('is_ibkr_alerts') and not c.kwargs.get('is_tw_alerts') for c in calls)
+    assert any(c.kwargs.get('is_tv_alerts') is True for c in calls)
+    assert any(not c.kwargs.get('is_ibkr_alerts') and not c.kwargs.get('is_tv_alerts') for c in calls)
 
     # Verify add_per_trade_metrics was called three times
     assert mock_add_per_trade_metrics.call_count == 3
@@ -225,10 +225,10 @@ def test_run_analysis_with_all_data(
 
 
 @patch('app.analysis.analysis_runner.get_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.get_tw_alerts_data')
+@patch('app.analysis.analysis_runner.get_tv_alerts_data')
 @patch('app.analysis.analysis_runner.get_trades_data')
 @patch('app.analysis.analysis_runner.clean_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.clean_tw_alerts_data')
+@patch('app.analysis.analysis_runner.clean_tv_alerts_data')
 @patch('app.analysis.analysis_runner.clean_trades_data')
 @patch('app.analysis.analysis_runner.match_trades')
 @patch('app.analysis.analysis_runner.add_per_trade_metrics')
@@ -242,17 +242,17 @@ def test_run_analysis_with_no_data(
     mock_add_per_trade_metrics,
     mock_match_trades,
     mock_clean_trades,
-    mock_clean_tw_alerts,
+    mock_clean_tv_alerts,
     mock_clean_ibkr_alerts,
     mock_get_trades_data,
-    mock_get_tw_alerts_data,
+    mock_get_tv_alerts_data,
     mock_get_ibkr_alerts_data
 ):
     """Test running analysis with no data available."""
 
     # Setup mocks to return empty DataFrames
     mock_get_ibkr_alerts_data.return_value = pd.DataFrame()
-    mock_get_tw_alerts_data.return_value = pd.DataFrame()
+    mock_get_tv_alerts_data.return_value = pd.DataFrame()
     mock_get_trades_data.return_value = pd.DataFrame()
 
     # Mock is_nonempty to return False for all calls
@@ -263,12 +263,12 @@ def test_run_analysis_with_no_data(
 
     # Verify the mocks were called
     mock_get_ibkr_alerts_data.assert_called_once()
-    mock_get_tw_alerts_data.assert_called_once()
+    mock_get_tv_alerts_data.assert_called_once()
     mock_get_trades_data.assert_called_once()
 
     # Verify other functions were not called
     mock_clean_ibkr_alerts.assert_not_called()
-    mock_clean_tw_alerts.assert_not_called()
+    mock_clean_tv_alerts.assert_not_called()
     mock_clean_trades.assert_not_called()
     mock_match_trades.assert_not_called()
     mock_add_per_trade_metrics.assert_not_called()
@@ -277,30 +277,30 @@ def test_run_analysis_with_no_data(
 
 
 @patch('app.analysis.analysis_runner.get_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.get_tw_alerts_data')
+@patch('app.analysis.analysis_runner.get_tv_alerts_data')
 @patch('app.analysis.analysis_runner.get_trades_data')
 @patch('app.analysis.analysis_runner.clean_ibkr_alerts_data')
-@patch('app.analysis.analysis_runner.clean_tw_alerts_data')
+@patch('app.analysis.analysis_runner.clean_tv_alerts_data')
 @patch('app.analysis.analysis_runner.clean_trades_data')
 @patch('app.analysis.analysis_runner.match_trades')
 @patch('app.analysis.analysis_runner.add_per_trade_metrics')
 @patch('app.analysis.analysis_runner.calculate_dataset_metrics')
 @patch('app.analysis.analysis_runner.save_to_csv')
 @patch('app.analysis.analysis_runner.is_nonempty')
-def test_run_analysis_with_only_tw_alerts(
+def test_run_analysis_with_only_tv_alerts(
     mock_is_nonempty,
     mock_save_to_csv,
     mock_calculate_dataset_metrics,
     mock_add_per_trade_metrics,
     mock_match_trades,
     mock_clean_trades,
-    mock_clean_tw_alerts,
+    mock_clean_tv_alerts,
     mock_clean_ibkr_alerts,
     mock_get_trades_data,
-    mock_get_tw_alerts_data,
+    mock_get_tv_alerts_data,
     mock_get_ibkr_alerts_data,
-    sample_tw_alerts_data,
-    sample_cleaned_tw_alerts,
+    sample_tv_alerts_data,
+    sample_cleaned_tv_alerts,
     sample_matched_trades,
     sample_trades_with_metrics,
     sample_dataset_metrics
@@ -309,10 +309,10 @@ def test_run_analysis_with_only_tw_alerts(
 
     # Setup mocks
     mock_get_ibkr_alerts_data.return_value = pd.DataFrame()
-    mock_get_tw_alerts_data.return_value = sample_tw_alerts_data
+    mock_get_tv_alerts_data.return_value = sample_tv_alerts_data
     mock_get_trades_data.return_value = pd.DataFrame()
 
-    mock_clean_tw_alerts.return_value = sample_cleaned_tw_alerts
+    mock_clean_tv_alerts.return_value = sample_cleaned_tv_alerts
 
     mock_match_trades.return_value = sample_matched_trades
 
@@ -328,20 +328,20 @@ def test_run_analysis_with_only_tw_alerts(
 
     # Verify the mocks were called
     mock_get_ibkr_alerts_data.assert_called_once()
-    mock_get_tw_alerts_data.assert_called_once()
+    mock_get_tv_alerts_data.assert_called_once()
     mock_get_trades_data.assert_called_once()
 
-    # Verify clean_tw_alerts_data was called once for TradingView alerts
-    mock_clean_tw_alerts.assert_called_once_with(sample_tw_alerts_data)
+    # Verify clean_tv_alerts_data was called once for TradingView alerts
+    mock_clean_tv_alerts.assert_called_once_with(sample_tv_alerts_data)
 
     # Verify other cleaning functions were not called
     mock_clean_trades.assert_not_called()
     mock_clean_ibkr_alerts.assert_not_called()
 
     # Verify match_trades was called once for TradingView alerts
-    # mock_match_trades.assert_called_once_with(sample_cleaned_tw_alerts, is_tw_alerts=True)
+    # mock_match_trades.assert_called_once_with(sample_cleaned_tv_alerts, is_tv_alerts=True)
     assert mock_match_trades.call_count == 1
-    assert mock_match_trades.call_args.kwargs.get('is_tw_alerts') is True
+    assert mock_match_trades.call_args.kwargs.get('is_tv_alerts') is True
 
     # Verify add_per_trade_metrics was called once
     mock_add_per_trade_metrics.assert_called_once_with(sample_matched_trades)

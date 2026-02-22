@@ -109,11 +109,11 @@ trading-bot/
 │   ├── alerts/                                   # Alerts from IBKR and TradingView
 │   │   ├── ibkr_alerts/                          # IBKR alerts
 │   │   ├── trades/                               # Trades
-│   │   └── tw_alerts/                            # TradingView alerts
+│   │   └── tv_alerts/                            # TradingView alerts
 │   ├── analysis/                                 # Performance analysis
 │   │   ├── analysis_ibkr_alerts/                 # Performance analysis based on IBKR alerts
 │   │   ├── analysis_trades/                      # Performance analysis based on trades
-│   │   └── analysis_tw_alerts/                   # Performance analysis based on TradingView alerts
+│   │   └── analysis_tv_alerts/                   # Performance analysis based on TradingView alerts
 │   ├── backtesting/                              # Backtesting
 │   │   ├── cache/                                # Cache storage for backtesting
 │   │   ├── csv_results/                          # CSV results from backtesting
@@ -138,7 +138,7 @@ trading-bot/
 │   ├── indicators/                               # Indicators
 │   ├── indicators_testing/                       # Testing indicators
 │   ├── strategies/                               # Strategies
-│   └── tw_indicators/                            # TradingView indicators
+│   └── tv_indicators/                            # TradingView indicators
 ├── tests/
 │   ├── analysis/                                 # Analysis tests
 │   ├── backtesting/                              # Backtesting tests

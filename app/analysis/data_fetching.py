@@ -20,7 +20,7 @@ TIMEFRAME_TO_ANALYZE = 7
 
 ALERTS_DIR = DATA_DIR / "alerts"
 IBKR_ALERTS_DIR = ALERTS_DIR / "ibkr_alerts"
-TW_ALERTS_DIR = ALERTS_DIR / "tw_alerts"
+TV_ALERTS_DIR = ALERTS_DIR / "tv_alerts"
 TRADES_DIR = ALERTS_DIR / "trades"
 
 
@@ -39,11 +39,11 @@ def get_ibkr_alerts_data():
         return pd.DataFrame(columns=['timestamp', 'symbol', 'side', 'price'])
 
 
-def get_tw_alerts_data():
-    files = [f for f in os.listdir(TW_ALERTS_DIR) if f.startswith('TradingView_Alerts_Log_') and f.endswith('.csv')]
+def get_tv_alerts_data():
+    files = [f for f in os.listdir(TV_ALERTS_DIR) if f.startswith('TradingView_Alerts_Log_') and f.endswith('.csv')]
 
     if not files:
-        logger.warning(f'No files found in \'{TW_ALERTS_DIR}\' with prefix \'TradingView_Alerts_Log_\'.')
+        logger.warning(f'No files found in \'{TV_ALERTS_DIR}\' with prefix \'TradingView_Alerts_Log_\'.')
         return pd.DataFrame()  # Return an empty DataFrame if missing
 
     try:
@@ -56,7 +56,7 @@ def get_tw_alerts_data():
         return pd.DataFrame()
 
     latest_file = files[0]
-    alerts_file_path = os.path.join(TW_ALERTS_DIR, latest_file)
+    alerts_file_path = os.path.join(TV_ALERTS_DIR, latest_file)
 
     if not os.path.exists(alerts_file_path):
         logger.warning(f'The file \'{alerts_file_path}\' does not exist.')
