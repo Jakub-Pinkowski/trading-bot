@@ -88,7 +88,7 @@ def test_get_closest_contract_no_valid_contracts():
     ]
 
     # Verify the function raises ValueError
-    with pytest.raises(ValueError, match="No valid .* contracts available"):
+    with pytest.raises(ValueError, match="No valid contracts available for expiry cutoff"):
         get_closest_contract(contracts)
 
 
@@ -96,7 +96,7 @@ def test_get_closest_contract_empty_list():
     """Test that get_closest_contract raises ValueError when given an empty list."""
 
     # Verify the function raises ValueError when given an empty list
-    with pytest.raises(ValueError, match="No valid .* contracts available"):
+    with pytest.raises(ValueError, match="No valid contracts available for expiry cutoff"):
         get_closest_contract([])
 
 

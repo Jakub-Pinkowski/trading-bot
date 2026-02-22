@@ -64,11 +64,10 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
     ]
 
     if not valid_contracts:
-        raise ValueError('No valid (liquid, distant enough) contracts available.')
+        raise ValueError(f'No valid contracts available for expiry cutoff of {min_days_until_expiry} days.')
 
     valid_contracts.sort(key=lambda item: item[0])
-    _expiry_date, closest_contract = valid_contracts[0]
-    return closest_contract
+    return valid_contracts[0][1]
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
