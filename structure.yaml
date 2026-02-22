@@ -80,10 +80,10 @@ trading-bot/
 │   │   └── webhook.py                            # Webhooks from the TradingView
 │   ├── ibkr/
 │   │   ├── __init__.py
-│   │   ├── connection.py                     # IBKR API connections
-│   │   ├── contracts.py                      # Contracts handling
-│   │   ├── ibkr_service.py                   # IBKR logic coordinator
-│   │   └── orders.py                         # Order execution
+│   │   ├── connection.py                         # IBKR API connections
+│   │   ├── contracts.py                          # Contracts handling
+│   │   ├── ibkr_service.py                       # IBKR logic coordinator
+│   │   └── orders.py                             # Order execution
 │   ├── utils/
 │   │   ├── analysis_utils/
 │   │   │   ├── __init__.py
