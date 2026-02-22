@@ -38,7 +38,7 @@ The application uses a combination of environment variables and configuration se
 - IBKR setup (account ID, allowed IPs)
 - Data directories
 - File paths
-- Strategy parameters (minimum days until expiry, quantity to trade, aggressive trading)
+- Strategy parameters (minimum days until expiry, quantity to trade)
 - Analysis parameters (timeframe to analyze)
 
 ## Usage

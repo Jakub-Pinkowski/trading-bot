@@ -5,7 +5,7 @@ import pytest
 
 from app.analysis.data_cleaning import (
     clean_ibkr_alerts_data,
-    clean_tw_alerts_data,
+    clean_tv_alerts_data,
     clean_trades_data
 )
 
@@ -20,7 +20,7 @@ def sample_alerts_data():
 
 
 @pytest.fixture
-def sample_tw_alerts_data():
+def sample_tv_alerts_data():
     """Sample TradingView alerts data for testing."""
     return pd.DataFrame([
         {
@@ -87,10 +87,10 @@ def test_clean_ibkr_alerts_data(sample_alerts_data):
     assert result.iloc[0]["symbol"] == "ZW"
 
 
-def test_clean_tw_alerts_data(sample_tw_alerts_data):
+def test_clean_tv_alerts_data(sample_tv_alerts_data):
     """Test cleaning of TradingView alerts data."""
 
-    result = clean_tw_alerts_data(sample_tw_alerts_data)
+    result = clean_tv_alerts_data(sample_tv_alerts_data)
 
     # Check that the result has the expected columns
     assert "symbol" in result.columns
@@ -129,12 +129,12 @@ def test_clean_trades_data(sample_trades_data):
     assert isinstance(result.iloc[0]["price"], float)
 
 
-def test_clean_tw_alerts_data_exception(sample_tw_alerts_data):
-    """Test exception handling in clean_tw_alerts_data."""
+def test_clean_tv_alerts_data_exception(sample_tv_alerts_data):
+    """Test exception handling in clean_tv_alerts_data."""
 
     # Mock pd.to_datetime to raise an exception
     with patch('pandas.to_datetime', side_effect=Exception("Test exception")):
-        result = clean_tw_alerts_data(sample_tw_alerts_data)
+        result = clean_tv_alerts_data(sample_tv_alerts_data)
 
         # Check that an empty DataFrame is returned
         assert result.empty

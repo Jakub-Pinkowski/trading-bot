@@ -29,7 +29,7 @@ def clean_ibkr_alerts_data(df):
     return df
 
 
-def clean_tw_alerts_data(df):
+def clean_tv_alerts_data(df):
     # Extract relevant fields from the 'Description' column
     df['description_parsed'] = df['Description'].apply(parse_description)
     df['symbol'] = df['description_parsed'].apply(lambda x: x.get('symbol'))

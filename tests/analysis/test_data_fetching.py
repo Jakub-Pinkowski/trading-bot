@@ -6,7 +6,7 @@ import pytest
 
 from app.analysis.data_fetching import (
     get_ibkr_alerts_data,
-    get_tw_alerts_data,
+    get_tv_alerts_data,
     get_trades_data,
     fetch_trades_data
 )
@@ -23,7 +23,7 @@ def sample_alerts_data():
 
 
 @pytest.fixture
-def sample_tw_alerts_data():
+def sample_tv_alerts_data():
     """Sample TradingView ibkr_alerts data for testing."""
 
     return pd.DataFrame([
@@ -112,21 +112,21 @@ def test_get_ibkr_alerts_data_empty(mock_load_data):
 @patch('app.analysis.data_fetching.os.listdir')
 @patch('app.analysis.data_fetching.os.path.exists')
 @patch('app.analysis.data_fetching.pd.read_csv')
-def test_get_tw_alerts_data(mock_read_csv, mock_exists, mock_listdir, sample_tw_alerts_data):
+def test_get_tv_alerts_data(mock_read_csv, mock_exists, mock_listdir, sample_tv_alerts_data):
     """Test getting TradingView ibkr_alerts data."""
 
     # Setup mocks
     mock_listdir.return_value = ['TradingView_Alerts_Log_2025-05-05.csv']
     mock_exists.return_value = True
-    mock_read_csv.return_value = sample_tw_alerts_data
+    mock_read_csv.return_value = sample_tv_alerts_data
 
     # Call the function
-    result = get_tw_alerts_data()
+    result = get_tv_alerts_data()
 
     # Verify the result
     assert not result.empty
-    assert list(result.columns) == list(sample_tw_alerts_data.columns)
-    assert len(result) == len(sample_tw_alerts_data)
+    assert list(result.columns) == list(sample_tv_alerts_data.columns)
+    assert len(result) == len(sample_tv_alerts_data)
 
     # Verify the mocks were called
     mock_listdir.assert_called_once()
@@ -135,14 +135,14 @@ def test_get_tw_alerts_data(mock_read_csv, mock_exists, mock_listdir, sample_tw_
 
 
 @patch('app.analysis.data_fetching.os.listdir')
-def test_get_tw_alerts_data_no_files(mock_listdir):
+def test_get_tv_alerts_data_no_files(mock_listdir):
     """Test getting TradingView ibkr_alerts data when no files are available."""
 
     # Setup mock to return empty list
     mock_listdir.return_value = []
 
     # Call the function
-    result = get_tw_alerts_data()
+    result = get_tv_alerts_data()
 
     # Verify the result is an empty DataFrame
     assert result.empty
@@ -152,14 +152,14 @@ def test_get_tw_alerts_data_no_files(mock_listdir):
 
 
 @patch('app.analysis.data_fetching.os.listdir')
-def test_get_tw_alerts_data_invalid_date_format(mock_listdir):
+def test_get_tv_alerts_data_invalid_date_format(mock_listdir):
     """Test getting TradingView ibkr_alerts data with invalid date format in filename."""
 
     # Setup mock to return files with invalid date format
     mock_listdir.return_value = ['TradingView_Alerts_Log_invalid-date.csv']
 
     # Call the function
-    result = get_tw_alerts_data()
+    result = get_tv_alerts_data()
 
     # Verify the result is an empty DataFrame
     assert result.empty
@@ -170,7 +170,7 @@ def test_get_tw_alerts_data_invalid_date_format(mock_listdir):
 
 @patch('app.analysis.data_fetching.os.listdir')
 @patch('app.analysis.data_fetching.os.path.exists')
-def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
+def test_get_tv_alerts_data_file_not_exists(mock_exists, mock_listdir):
     """Test getting TradingView ibkr_alerts data when file doesn't exist."""
 
     # Setup mocks
@@ -178,7 +178,7 @@ def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
     mock_exists.return_value = False
 
     # Call the function
-    result = get_tw_alerts_data()
+    result = get_tv_alerts_data()
 
     # Verify the result is an empty DataFrame
     assert result.empty
@@ -191,7 +191,7 @@ def test_get_tw_alerts_data_file_not_exists(mock_exists, mock_listdir):
 @patch('app.analysis.data_fetching.os.listdir')
 @patch('app.analysis.data_fetching.os.path.exists')
 @patch('app.analysis.data_fetching.pd.read_csv')
-def test_get_tw_alerts_data_read_exception(mock_read_csv, mock_exists, mock_listdir):
+def test_get_tv_alerts_data_read_exception(mock_read_csv, mock_exists, mock_listdir):
     """Test getting TradingView ibkr_alerts data when reading file raises exception."""
 
     # Setup mocks
@@ -200,7 +200,7 @@ def test_get_tw_alerts_data_read_exception(mock_read_csv, mock_exists, mock_list
     mock_read_csv.side_effect = Exception("Error reading file")
 
     # Call the function
-    result = get_tw_alerts_data()
+    result = get_tv_alerts_data()
 
     # Verify the result is an empty DataFrame
     assert result.empty

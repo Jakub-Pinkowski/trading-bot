@@ -1,5 +1,5 @@
-from app.analysis.data_cleaning import clean_ibkr_alerts_data, clean_tw_alerts_data, clean_trades_data
-from app.analysis.data_fetching import get_ibkr_alerts_data, get_tw_alerts_data, get_trades_data
+from app.analysis.data_cleaning import clean_ibkr_alerts_data, clean_tv_alerts_data, clean_trades_data
+from app.analysis.data_fetching import get_ibkr_alerts_data, get_tv_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
@@ -15,21 +15,21 @@ logger = get_logger('analysis/runner')
 ANALYSIS_DIR = DATA_DIR / "analysis"
 ANALYSIS_IBKR_ALERTS_DIR = ANALYSIS_DIR / "ibkr_alerts"
 ANALYSIS_TRADES_DIR = ANALYSIS_DIR / "trades"
-ANALYSIS_TW_ALERTS_DIR = ANALYSIS_DIR / "tw_alerts"
+ANALYSIS_TV_ALERTS_DIR = ANALYSIS_DIR / "tv_alerts"
 
 IBKR_ALERTS_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_IBKR_ALERTS_DIR / "ibkr_alerts_per_trade_metrics.csv"
 IBKR_ALERTS_DATASET_METRICS_FILE_PATH = ANALYSIS_IBKR_ALERTS_DIR / "ibkr_alerts_dataset_metrics.csv"
 TRADES_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_TRADES_DIR / "trades_per_trade_metrics.csv"
 TRADES_DATASET_METRICS_FILE_PATH = ANALYSIS_TRADES_DIR / "trades_dataset_metrics.csv"
-TW_ALERTS_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_TW_ALERTS_DIR / "tw_alerts_per_trade_metrics.csv"
-TW_ALERTS_DATASET_METRICS_FILE_PATH = ANALYSIS_TW_ALERTS_DIR / "tw_alerts_dataset_metrics.csv"
+TV_ALERTS_PER_TRADE_METRICS_FILE_PATH = ANALYSIS_TV_ALERTS_DIR / "tv_alerts_per_trade_metrics.csv"
+TV_ALERTS_DATASET_METRICS_FILE_PATH = ANALYSIS_TV_ALERTS_DIR / "tv_alerts_dataset_metrics.csv"
 
 
 def run_analysis():
     print('Running analysis...')
     # Fetch raw data
     ibkr_alerts_data = get_ibkr_alerts_data()
-    tw_alerts_data = get_tw_alerts_data()
+    tv_alerts_data = get_tv_alerts_data()
     trades_data = get_trades_data()
 
     # Process IBKR Alerts
@@ -50,21 +50,21 @@ def run_analysis():
                     logger.info('IBKR Alerts processed successfully.')
 
     # Process TradingView Alerts
-    if is_nonempty(tw_alerts_data):
-        tw_alerts = clean_tw_alerts_data(tw_alerts_data)
-        if is_nonempty(tw_alerts):
-            tw_alerts_matched = match_trades(tw_alerts, is_tw_alerts=True)
-            if is_nonempty(tw_alerts_matched):
-                tw_alerts_with_per_trade_metrics = add_per_trade_metrics(tw_alerts_matched)
-                if is_nonempty(tw_alerts_with_per_trade_metrics):
-                    tw_alerts_dataset_metrics = calculate_dataset_metrics(tw_alerts_with_per_trade_metrics)
-                    save_to_csv(tw_alerts_with_per_trade_metrics, TW_ALERTS_PER_TRADE_METRICS_FILE_PATH)
+    if is_nonempty(tv_alerts_data):
+        tv_alerts = clean_tv_alerts_data(tv_alerts_data)
+        if is_nonempty(tv_alerts):
+            tv_alerts_matched = match_trades(tv_alerts, is_tv_alerts=True)
+            if is_nonempty(tv_alerts_matched):
+                tv_alerts_with_per_trade_metrics = add_per_trade_metrics(tv_alerts_matched)
+                if is_nonempty(tv_alerts_with_per_trade_metrics):
+                    tv_alerts_dataset_metrics = calculate_dataset_metrics(tv_alerts_with_per_trade_metrics)
+                    save_to_csv(tv_alerts_with_per_trade_metrics, TV_ALERTS_PER_TRADE_METRICS_FILE_PATH)
                     save_to_csv(
-                        tw_alerts_dataset_metrics,
-                        TW_ALERTS_DATASET_METRICS_FILE_PATH,
+                        tv_alerts_dataset_metrics,
+                        TV_ALERTS_DATASET_METRICS_FILE_PATH,
                         dictionary_columns=['Metric', 'Value']
                     )
-                    logger.info('TW Alerts processed successfully.')
+                    logger.info('TV Alerts processed successfully.')
 
     # Process Trades
     if is_nonempty(trades_data):
