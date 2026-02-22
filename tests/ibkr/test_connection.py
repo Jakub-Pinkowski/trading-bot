@@ -12,7 +12,7 @@ def test_tickle_ibkr_api_success(mock_logger_connection, mock_api_post_connectio
 
     # Verify API was called correctly and success response was logged
     mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.info.assert_called_once_with("IBKR API tickle response: %s", {"success": True})
+    mock_logger_connection.info.assert_called_once_with(f"IBKR API tickle response: {{'success': True}}")
 
 
 def test_tickle_ibkr_api_no_session_error(mock_logger_connection, mock_api_post_connection):
