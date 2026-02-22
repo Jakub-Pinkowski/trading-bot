@@ -2,11 +2,12 @@ from app.utils.api_utils import api_get, api_post
 from app.utils.logger import get_logger
 from config import ACCOUNT_ID
 
-logger = get_logger('ibkr/ibkr/orders')
+logger = get_logger('ibkr/orders')
 
 # ==================== Module Configuration ====================
 
 QUANTITY_TO_TRADE = 1  # Default number of contracts per order
+MAX_SUPPRESS_RETRIES = 3  # Maximum attempts to suppress IBKR confirmation dialogs before giving up
 
 
 def invalidate_cache():
@@ -14,13 +15,15 @@ def invalidate_cache():
 
     IBKR caches position data server-side; calling this before fetching positions
     ensures the response reflects the current real-time state.
-    """
-    endpoint = f'portfolio/{ACCOUNT_ID}/positions/invalidate'
 
+    Raises:
+        Exception: Propagates any API error to the caller so stale data is never silently used.
+    """
     try:
-        api_post(endpoint, {})
+        api_post(f'portfolio/{ACCOUNT_ID}/positions/invalidate', {})
     except Exception as err:
         logger.error(f'Error invalidating cache: {err}')
+        raise
 
 
 def get_contract_position(conid):
@@ -36,20 +39,15 @@ def get_contract_position(conid):
     Returns:
         Integer position quantity (positive = long, negative = short, 0 = no position)
     """
-    # Invalidate cache to get the real contracts data
+    # Invalidate server-side position cache to ensure fresh data
     invalidate_cache()
 
-    endpoint = f'portfolio/{ACCOUNT_ID}/positions'
-
     try:
-        # Fetch all positions data
-        positions = api_get(endpoint)
+        positions = api_get(f'portfolio/{ACCOUNT_ID}/positions')
 
-        # Iterate through the list of positions and find the one matching the conid
         for position in positions:
             if position.get('conid') == conid:
-                pos_quantity = position.get('position', 0)
-                return int(pos_quantity)  # Return found quantity (+/- values for positions)
+                return int(position.get('position', 0))
 
         return 0  # No position found for the given conid
 
@@ -68,11 +66,8 @@ def suppress_messages(message_ids):
     Args:
         message_ids: List of message ID strings to suppress
     """
-    endpoint = 'iserver/questions/suppress'
-    suppression_data = {'messageIds': message_ids}
-
     try:
-        suppression_response = api_post(endpoint, suppression_data)
+        suppression_response = api_post('iserver/questions/suppress', {'messageIds': message_ids})
         logger.info(f'Suppression response: {suppression_response}')
 
     except Exception as err:
@@ -91,20 +86,22 @@ def place_order(conid, side):
 
     Returns:
         API response dict on success, or a dict with 'success': False and 'error' on failure
+
+    Raises:
+        ValueError: If side is not 'B' or 'S'
     """
     contract_position = get_contract_position(conid)
-
-    quantity = QUANTITY_TO_TRADE
 
     # Existing position same as incoming signal; no action needed
     if (contract_position > 0 and side == 'B') or (contract_position < 0 and side == 'S'):
         return {'success': True, 'message': 'No action needed: already in desired position'}
 
-    # Convert side: "B" -> "BUY", "S" -> "SELL"
+    if side not in ('B', 'S'):
+        raise ValueError(f"Invalid side '{side}': expected 'B' or 'S'")
+
+    # Convert side: 'B' -> 'BUY', 'S' -> 'SELL'
     side = 'BUY' if side == 'B' else 'SELL'
 
-    # Buy the default quantity if no position is present
-    endpoint = f'iserver/account/{ACCOUNT_ID}/orders'
     order_details = {
         'orders': [
             {
@@ -112,41 +109,42 @@ def place_order(conid, side):
                 'orderType': 'MKT',
                 'side': side,
                 'tif': 'DAY',
-                'quantity': quantity,
+                'quantity': QUANTITY_TO_TRADE,
             }
         ]
     }
 
     try:
-        while True:
-            order_response = api_post(endpoint, order_details)
+        for attempt in range(MAX_SUPPRESS_RETRIES):
+            order_response = api_post(f'iserver/account/{ACCOUNT_ID}/orders', order_details)
 
             if isinstance(order_response, list) and 'messageIds' in order_response[0]:
                 message_ids = order_response[0].get('messageIds', [])
                 if message_ids:
                     suppress_messages(message_ids)
-                    continue  # try again after suppression
-            break  # exit loop if no suppression needed
+                    continue  # retry after suppression
+            break  # no suppression needed, exit loop
+        else:
+            logger.error('Order failed: exceeded maximum suppression retries')
+            return {'success': False, 'error': 'Exceeded maximum suppression retries'}
 
-        # Handle specific scenarios if the "error" key exists
+        # Handle specific error scenarios if the "error" key exists in the response
         if isinstance(order_response, dict) and 'error' in order_response:
             error_message = order_response['error'].lower()
 
+            # Note: 'in sufficient' with a space matches a known IBKR API typo in some error responses
             if 'available funds are in sufficient' in error_message or 'available funds are insufficient' in error_message:
                 logger.error(f'Insufficient funds: {order_response}')
                 return {'success': False, 'error': 'Insufficient funds', 'details': order_response}
 
-            elif 'does not comply with our order handling rules for derivatives' in error_message:
+            if 'does not comply with our order handling rules for derivatives' in error_message:
                 logger.error(f'Non-compliance with derivative rules: {order_response}')
                 return {'success': False, 'error': 'Non-compliance with derivative rules', 'details': order_response}
 
-            else:
-                logger.error(f'Unhandled API error: {order_response}')
-                return {'success': False, 'error': 'Unhandled error', 'details': order_response}
+            logger.error(f'Unhandled API error: {order_response}')
+            return {'success': False, 'error': 'Unhandled error', 'details': order_response}
 
-
-        else:
-            return order_response
+        return order_response
 
     except Exception as err:
         logger.exception(f'Unexpected error while placing order: {err}')

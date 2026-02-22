@@ -1,7 +1,9 @@
 from unittest.mock import patch
 
+import pytest
+
 from app.ibkr.orders import (place_order, invalidate_cache, get_contract_position,
-                             suppress_messages, QUANTITY_TO_TRADE)
+                             suppress_messages, QUANTITY_TO_TRADE, MAX_SUPPRESS_RETRIES)
 from config import ACCOUNT_ID
 
 
@@ -20,15 +22,15 @@ def test_invalidate_cache_success(mock_api_post):
 
 @patch('app.ibkr.orders.api_post')
 def test_invalidate_cache_error(mock_api_post):
-    """Test that invalidate_cache handles errors gracefully."""
+    """Test that invalidate_cache logs and propagates API errors."""
 
     # Setup mock to raise an exception
     mock_api_post.side_effect = Exception("API error")
 
-    # Call the function (should not raise an exception)
-    invalidate_cache()
+    # Verify the exception propagates so callers are not left with stale data
+    with pytest.raises(Exception, match="API error"):
+        invalidate_cache()
 
-    # Verify the API was called
     mock_api_post.assert_called_once()
 
 
@@ -88,6 +90,18 @@ def test_get_contract_position_api_error(mock_api_get, mock_invalidate_cache):
     assert result == 0
     mock_invalidate_cache.assert_called_once()
     mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
+
+
+@patch('app.ibkr.orders.invalidate_cache')
+def test_get_contract_position_invalidate_cache_error(mock_invalidate_cache):
+    """Test that get_contract_position propagates invalidate_cache errors."""
+
+    # Setup mock to raise an exception
+    mock_invalidate_cache.side_effect = Exception("Cache invalidation error")
+
+    # Verify the exception propagates out of get_contract_position
+    with pytest.raises(Exception, match="Cache invalidation error"):
+        get_contract_position("123456")
 
 
 # ==================== suppress_messages Tests ====================
@@ -184,6 +198,17 @@ def test_place_order_existing_same_position(mock_get_contract_position):
     mock_get_contract_position.assert_called_once_with("123456")
 
 
+def test_place_order_invalid_side(mock_get_contract_position):
+    """Test that place_order raises ValueError when an invalid side is provided"""
+
+    # Mock no existing position so validation is reached
+    mock_get_contract_position.return_value = 0
+
+    # Verify that an invalid side raises ValueError with a clear message
+    with pytest.raises(ValueError, match="Invalid side 'X': expected 'B' or 'S'"):
+        place_order("123456", "X")
+
+
 def test_place_order_reverse_position(
     mock_get_contract_position, mock_api_post_orders
 ):
@@ -227,6 +252,25 @@ def test_place_order_with_message_suppression(
     mock_get_contract_position.assert_called_once_with("123456")
     assert mock_api_post_orders.call_count == 2
     mock_suppress_messages.assert_called_once_with(["1", "2"])
+
+
+def test_place_order_exceeded_suppression_retries(
+    mock_logger_orders, mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
+):
+    """Test that place_order returns an error after exceeding the maximum suppression retries"""
+
+    # Mock no existing position and API always returning message IDs, never clearing them
+    mock_get_contract_position.return_value = 0
+    mock_api_post_orders.return_value = [{"messageIds": ["1", "2"]}]
+
+    # Call place_order which should give up after MAX_SUPPRESS_RETRIES attempts
+    result = place_order("123456", "B")
+
+    # Verify function returns error after exhausting retries and suppressed messages each time
+    assert result == {"success": False, "error": "Exceeded maximum suppression retries"}
+    assert mock_api_post_orders.call_count == MAX_SUPPRESS_RETRIES
+    assert mock_suppress_messages.call_count == MAX_SUPPRESS_RETRIES
+    mock_logger_orders.error.assert_called_once()
 
 
 def test_place_order_insufficient_funds_error(
