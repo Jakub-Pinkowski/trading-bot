@@ -64,7 +64,7 @@ def run_analysis():
                         TV_ALERTS_DATASET_METRICS_FILE_PATH,
                         dictionary_columns=['Metric', 'Value']
                     )
-                    logger.info('TW Alerts processed successfully.')
+                    logger.info('TV Alerts processed successfully.')
 
     # Process Trades
     if is_nonempty(trades_data):
