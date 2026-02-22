@@ -28,7 +28,7 @@ def filter_dataframe(
         df: DataFrame containing strategy results
         min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
         interval: Filter by specific interval (e.g., '1h', '4h')
-        symbol: Filter by specific symbol (e.g., 'ES', 'NQ')
+        symbol: Filter by specific symbol (e.g., 'ZC', 'NQ')
         min_slippage_ticks: Minimum slippage_ticks value to filter by
         min_symbol_count: Minimum number of unique symbols per strategy
 

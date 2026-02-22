@@ -17,16 +17,16 @@ MIN_DAYS_UNTIL_EXPIRY = 60  # Minimum days before expiration for a contract to b
 CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
 
 
-def fetch_contract(symbol):
+def fetch_contract(parsed_symbol):
     """Fetch contract data from the IBKR API for a given symbol.
 
     Args:
-        symbol: TradingView-formatted symbol string (e.g. 'ES1!')
+        parsed_symbol: Plain symbol string (e.g. 'ZC'), with any TradingView
+            suffix already stripped by the caller
 
     Returns:
         List of contract dictionaries, or an empty list on error
     """
-    parsed_symbol = parse_symbol(symbol)
     endpoint = f'/trsrv/futures?symbols={parsed_symbol}'
 
     try:
@@ -77,7 +77,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     fetches fresh data from the IBKR API and updates the cache.
 
     Args:
-        symbol: TradingView-formatted symbol string (e.g. 'ES1!')
+        symbol: TradingView-formatted symbol string (e.g. 'ZC1!')
         min_days_until_expiry: Minimum days until expiry for a contract to be considered valid
 
     Returns:
@@ -99,7 +99,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
             logger.warning(f'Cache invalid for symbol \'{parsed_symbol}\': {err}')
 
     # Cache miss or invalid entry; fetch and update cache
-    fresh_contracts = fetch_contract(symbol)
+    fresh_contracts = fetch_contract(parsed_symbol)
     if not fresh_contracts:
         logger.error(f'No contracts found for symbol: {parsed_symbol}')
         raise ValueError(f'No contracts found for symbol: {parsed_symbol}')

@@ -241,7 +241,7 @@ class StrategyAnalyzer:
             aggregate: If True, aggregate results across all symbols and intervals.
                       If False, return individual results per symbol/interval
             interval: Filter by specific interval (e.g., '1h', '4h', '1d'). None = all intervals
-            symbol: Filter by specific symbol (e.g., 'ES', 'NQ', 'ZS'). None = all symbols
+            symbol: Filter by specific symbol (e.g., 'ZC', 'NQ', 'ZS'). None = all symbols
             weighted: If True and aggregate=True, use trade-weighted averages.
                      If False, use simple averages
             min_slippage_ticks: Minimum slippage value to filter by. None = no filter

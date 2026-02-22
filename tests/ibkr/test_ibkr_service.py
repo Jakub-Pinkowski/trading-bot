@@ -11,7 +11,7 @@ def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order,
     mock_place_order.return_value = {"id": "order123"}
     trading_data = {
         "dummy": "NO",
-        "symbol": "ES",
+        "symbol": "ZC",
         "side": "B",
         "price": "4500.00"
     }
@@ -21,7 +21,7 @@ def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order,
 
     # Verify logger recorded the trading data, contract ID was retrieved, order was placed, and success was logged
     mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ES")
+    mock_get_contract_id.assert_called_once_with("ZC")
     mock_place_order.assert_called_once_with("123456", "B")
     mock_logger_ibkr_service.info.assert_any_call(f"Order placed: {{'id': 'order123'}}")
 
@@ -33,7 +33,7 @@ def test_process_trading_data_dummy(mock_logger_ibkr_service, mock_place_order, 
     mock_get_contract_id.return_value = "123456"
     trading_data = {
         "dummy": "YES",
-        "symbol": "ES",
+        "symbol": "ZC",
         "side": "B",
         "price": "4500.00"
     }
@@ -43,7 +43,7 @@ def test_process_trading_data_dummy(mock_logger_ibkr_service, mock_place_order, 
 
     # Verify logger recorded the trading data, contract ID was retrieved, but no order was placed (dummy mode)
     mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ES")
+    mock_get_contract_id.assert_called_once_with("ZC")
     mock_place_order.assert_not_called()
 
 
@@ -55,7 +55,7 @@ def test_process_trading_data_sell(mock_logger_ibkr_service, mock_place_order, m
     mock_place_order.return_value = {"id": "order123"}
     trading_data = {
         "dummy": "NO",
-        "symbol": "ES",
+        "symbol": "ZC",
         "side": "S",
         "price": "4500.00"
     }
@@ -65,7 +65,7 @@ def test_process_trading_data_sell(mock_logger_ibkr_service, mock_place_order, m
 
     # Verify logger recorded the trading data, contract ID was retrieved, sell order was placed, and success was logged
     mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ES")
+    mock_get_contract_id.assert_called_once_with("ZC")
     mock_place_order.assert_called_once_with("123456", "S")
     mock_logger_ibkr_service.info.assert_any_call(f"Order placed: {{'id': 'order123'}}")
 
@@ -77,7 +77,7 @@ def test_process_trading_data_missing_fields(mock_logger_ibkr_service, mock_plac
     mock_get_contract_id.return_value = "123456"
     trading_data = {
         # Missing dummy field
-        "symbol": "ES",
+        "symbol": "ZC",
         "side": "B",
         "price": "4500.00"
     }
@@ -87,7 +87,7 @@ def test_process_trading_data_missing_fields(mock_logger_ibkr_service, mock_plac
 
     # Verify logger recorded the trading data, contract ID was retrieved, and order was placed despite missing field
     mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ES")
+    mock_get_contract_id.assert_called_once_with("ZC")
     mock_place_order.assert_called_once_with("123456", "B")
 
 
@@ -98,7 +98,7 @@ def test_process_trading_data_error_handling(mock_logger_ibkr_service, mock_plac
     mock_get_contract_id.side_effect = ValueError("Test error")
     trading_data = {
         "dummy": "NO",
-        "symbol": "ES",
+        "symbol": "ZC",
         "side": "B",
         "price": "4500.00"
     }
@@ -110,5 +110,5 @@ def test_process_trading_data_error_handling(mock_logger_ibkr_service, mock_plac
 
     # Verify logger recorded the trading data, get_contract_id was called but failed, and place_order was never called
     mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ES")
+    mock_get_contract_id.assert_called_once_with("ZC")
     mock_place_order.assert_not_called()

@@ -11,7 +11,6 @@ def process_trading_data(trading_data):
     dummy = trading_data.get('dummy')
     symbol = trading_data.get('symbol')
     side = trading_data.get('side')
-    price = trading_data.get('price')
 
     contract = get_contract_id(symbol)
 
