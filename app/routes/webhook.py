@@ -19,17 +19,6 @@ IBKR_ALERTS_DIR = DATA_DIR / "alerts" / "ibkr_alerts"
 
 # ==================== Helper Functions ====================
 
-def validate_ip(remote_addr):
-    if remote_addr not in ALLOWED_IPS:
-        abort(403)
-
-
-def parse_request_data(req):
-    if not req.is_json:
-        abort(400, description='Unsupported Content-Type')
-    return req.get_json()
-
-
 def save_alert_data_to_file(data, alerts_dir, timezone='Europe/Berlin'):
     # Don't save dummy signals
     if data.get('dummy') == 'YES':
@@ -57,12 +46,16 @@ def save_alert_data_to_file(data, alerts_dir, timezone='Europe/Berlin'):
 
 @webhook_blueprint.route('/webhook', methods=['POST'])
 def webhook_route():
-    validate_ip(request.remote_addr)
-    data = parse_request_data(request)
+    # Validate source
+    if request.remote_addr not in ALLOWED_IPS:
+        abort(403)
+    if not request.is_json:
+        abort(400, description='Unsupported Content-Type')
+
+    data = request.get_json()
     save_alert_data_to_file(data, IBKR_ALERTS_DIR)
 
-    # Always returns 200 regardless of outcome — TradingView retries any non-200
-    # response, which would cause duplicate orders
+    # Always return 200 — TradingView retries any non-200, causing duplicate orders
     try:
         process_trading_data(data)
     except Exception as err:

@@ -135,13 +135,6 @@ def mock_suppress_messages(monkeypatch):
 
 # Webhook fixtures
 @pytest.fixture
-def mock_validate_ip(monkeypatch):
-    mock = MagicMock()
-    monkeypatch.setattr("app.routes.webhook.validate_ip", mock)
-    return mock
-
-
-@pytest.fixture
 def mock_process_trading_data(monkeypatch):
     mock = MagicMock()
     monkeypatch.setattr("app.routes.webhook.process_trading_data", mock)
