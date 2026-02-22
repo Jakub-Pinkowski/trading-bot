@@ -6,7 +6,7 @@ from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 from config import DATA_DIR
 
-logger = get_logger('ibkr/ibkr/contracts')
+logger = get_logger('ibkr/contracts')
 
 # ==================== Module Configuration ====================
 
@@ -53,20 +53,24 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
     Raises:
         ValueError: If no contracts with sufficient time until expiry are available
     """
-    # Look for any valid contracts
+    # Parse dates once, then filter and pick the minimum in a single pass
+    cutoff = datetime.today() + timedelta(days=min_days_until_expiry)
+    contracts_with_dates = [
+        (datetime.strptime(str(contract['expirationDate']), '%Y%m%d'), contract)
+        for contract in contracts
+    ]
     valid_contracts = [
-        contract for contract in contracts
-        if datetime.strptime(str(contract['expirationDate']), '%Y%m%d')
-           > datetime.today() + timedelta(days=min_days_until_expiry)
+        (expiry_date, contract)
+        for expiry_date, contract in contracts_with_dates
+        if expiry_date > cutoff
     ]
 
     if not valid_contracts:
         raise ValueError('No valid (liquid, distant enough) contracts available.')
 
-    # Sort by expiration and pick the earliest liquid enough contract
-    chosen_contract = min(valid_contracts, key=lambda x: datetime.strptime(str(x['expirationDate']), '%Y%m%d'))
-
-    return chosen_contract
+    valid_contracts.sort(key=lambda item: item[0])
+    _expiry_date, closest_contract = valid_contracts[0]
+    return closest_contract
 
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
