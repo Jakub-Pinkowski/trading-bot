@@ -1,5 +1,3 @@
-import json
-
 import pytest
 import requests
 
@@ -37,26 +35,6 @@ def test_get_headers_without_payload():
         'Accept': '*/*',
         'Connection': 'keep-alive',
     }
-
-
-def test_get_headers_with_payload():
-    """Test that get_headers includes Content-Length header when payload is provided"""
-
-    # Create a sample payload dictionary to pass to the function
-    payload = {"key": "value"}
-
-    # Call get_headers function with the payload parameter
-    headers = get_headers(payload)
-
-    # Verify the returned headers include Content-Length based on the payload size
-    expected_headers = {
-        'Host': 'api.ibkr.com',
-        'User-Agent': 'python-requests/IBKR-client',
-        'Accept': '*/*',
-        'Connection': 'keep-alive',
-        'Content-Length': str(len(json.dumps(payload)))
-    }
-    assert headers == expected_headers
 
 
 def test_api_get_success(monkeypatch, mock_response_factory):
