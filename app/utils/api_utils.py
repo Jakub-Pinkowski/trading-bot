@@ -6,6 +6,7 @@ from config import BASE_URL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+# ==================== Helper Functions ====================
 def get_headers():
     return {
         'Host': 'api.ibkr.com',
@@ -15,6 +16,7 @@ def get_headers():
     }
 
 
+# ==================== API utils ====================
 def api_get(endpoint):
     url = BASE_URL + endpoint
     response = requests.get(url=url, verify=False, headers=get_headers())
