@@ -2,7 +2,7 @@ from app.utils.api_utils import api_get, api_post
 from app.utils.logger import get_logger
 from config import ACCOUNT_ID
 
-logger = get_logger('services/ibkr/orders')
+logger = get_logger('ibkr/ibkr/orders')
 
 # ==================== Module Configuration ====================
 

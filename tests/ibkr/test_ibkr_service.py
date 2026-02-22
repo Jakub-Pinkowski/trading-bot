@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.ibkr_service import process_trading_data
+from app.ibkr.ibkr_service import process_trading_data
 
 
 def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):

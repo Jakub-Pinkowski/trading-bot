@@ -78,7 +78,7 @@ trading-bot/
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhooks from the TradingView
-│   ├── services/
+│   ├── ibkr/
 │   │   ├── ibkr/
 │   │   │   ├── __init__.py
 │   │   │   ├── connection.py                     # IBKR API connections
@@ -145,7 +145,7 @@ trading-bot/
 │   ├── e2e/                                      # End-to-end tests
 │   ├── futures_config/                           # Futures config tests
 │   ├── routes/                                   # Routes tests
-│   ├── services/                                 # Services tests
+│   ├── ibkr/                                 # Services tests
 │   └── utils/                                    # Utils tests
 ├── .env                                          # Configuration secrets
 ├── .github/                                      # GitHub configuration

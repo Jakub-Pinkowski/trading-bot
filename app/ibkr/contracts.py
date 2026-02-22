@@ -6,7 +6,7 @@ from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 from config import DATA_DIR
 
-logger = get_logger('services/ibkr/contracts')
+logger = get_logger('ibkr/ibkr/contracts')
 
 # ==================== Module Configuration ====================
 
