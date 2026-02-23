@@ -1,6 +1,11 @@
 trading-bot/
 ├── app/
 │   ├── analysis/
+│   │   ├── analysis_utils/                       # Analysis-specific utility helpers
+│   │   │   ├── __init__.py
+│   │   │   ├── analysis_utils.py                 # General calculation utilities
+│   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
+│   │   │   └── data_fetching_utils.py            # Data fetching utilities
 │   │   ├── __init__.py
 │   │   ├── analysis_runner.py                    # Analysis logic coordinator
 │   │   ├── data_cleaning.py                      # Data cleaning logic
@@ -84,11 +89,6 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   └── webhook.py                            # Webhook route for TradingView alerts
 │   ├── utils/
-│   │   ├── analysis_utils/
-│   │   │   ├── __init__.py
-│   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
-│   │   │   ├── data_fetching_utils.py            # Data fetching utilities
-│   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # IBKR REST API request helpers
 │   │   ├── file_utils.py                         # JSON file I/O (load_file, save_file)
@@ -133,6 +133,7 @@ trading-bot/
 │   └── tv_indicators/                            # TradingView indicators
 ├── tests/
 │   ├── analysis/                                 # Analysis tests (deprecated module, pending rewrite)
+│   │   └── analysis_utils/                       # Analysis utility tests
 │   ├── backtesting/
 │   │   ├── analysis/                             # Strategy analyzer tests
 │   │   ├── cache/                                # Cache tests
@@ -146,12 +147,10 @@ trading-bot/
 │   │   ├── testing/                              # Mass testing framework tests
 │   │   │   └── utils/                            # Testing utility tests
 │   │   └── validators/                           # Validator tests
-│   ├── e2e/                                      # End-to-end tests
 │   ├── futures_config/                           # Futures config tests
 │   ├── ibkr/                                     # IBKR integration tests
 │   ├── routes/                                   # Route handler tests
 │   ├── utils/                                    # Utility module tests
-│   │   └── analysis_utils/                       # Analysis utility tests (deprecated, pending rewrite)
 │   └── conftest.py                               # Top-level: pytest_plugins registration for backtesting fixtures
 ├── .env                                          # Configuration secrets
 ├── .github/                                      # GitHub configuration
@@ -189,7 +188,6 @@ trading-bot/
 
 
 # Trading
-# TODO [MEDIUM]: Rewrite IBKR logic using classes
 # TODO [LOW]: Update contracts ids [last update in 2025.05]
 # TODO [LOW]: Some symbols have different tickers on TradingView vs IBKR, for example YC vs XC etc.
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date

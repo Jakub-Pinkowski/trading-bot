@@ -2,12 +2,12 @@ import os
 
 import pandas as pd
 
+from app.analysis.analysis_utils.analysis_utils import is_nonempty
 from app.analysis.data_cleaning import clean_ibkr_alerts_data, clean_tv_alerts_data, clean_trades_data
 from app.analysis.data_fetching import get_ibkr_alerts_data, get_tv_alerts_data, get_trades_data
 from app.analysis.dataset_metrics import calculate_dataset_metrics
 from app.analysis.per_trade_metrics import add_per_trade_metrics
 from app.analysis.trades_matching import match_trades
-from app.utils.analysis_utils.analysis_utils import is_nonempty
 from app.utils.logger import get_logger
 from config import DATA_DIR
 

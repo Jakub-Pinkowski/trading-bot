@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from app.utils.analysis_utils.data_fetching_utils import save_trades_data
+from app.analysis.analysis_utils.data_fetching_utils import save_trades_data
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_save_trades_data_timezone(sample_trades):
     with patch("os.path.exists", return_value=False), \
             patch("builtins.open", mock_open()), \
             patch("json.dump") as mock_json_dump, \
-            patch("app.utils.analysis_utils.data_fetching_utils.datetime") as mock_datetime:
+            patch("app.analysis.analysis_utils.data_fetching_utils.datetime") as mock_datetime:
         # Setup the side effect for strptime
         mock_dt1 = MagicMock()
         mock_dt1.astimezone.return_value.strftime.return_value = "2025-04-01"
@@ -119,7 +119,7 @@ def test_save_trades_data_timezone(sample_trades):
         mock_dt3.astimezone.return_value.strftime.return_value = "2025-04-02"
         mock_datetime.strptime.side_effect = [mock_dt1, mock_dt2, mock_dt3]
 
-        from app.utils.analysis_utils.data_fetching_utils import save_trades_data
+        from app.analysis.analysis_utils.data_fetching_utils import save_trades_data
 
         save_trades_data(sample_trades, "test_dir", timezone="America/New_York")
 

@@ -5,7 +5,7 @@ from glob import glob
 
 import pandas as pd
 
-from app.utils.analysis_utils.data_fetching_utils import save_trades_data
+from app.analysis.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
 from app.utils.file_utils import load_file
 from app.utils.logger import get_logger

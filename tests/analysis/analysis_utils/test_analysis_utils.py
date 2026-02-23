@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.utils.analysis_utils.analysis_utils import is_nonempty
+from app.analysis.analysis_utils.analysis_utils import is_nonempty
 
 
 def test_is_nonempty_with_list():
