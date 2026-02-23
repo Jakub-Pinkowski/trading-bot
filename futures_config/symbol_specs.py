@@ -1,4 +1,5 @@
 # noinspection ALL
+# @formatter:off
 """
 Futures Symbol Specifications.
 
