@@ -182,6 +182,8 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# TODO [HIGH]: Find a way to fetch the full data without the gaps for 15m and lower intervals
+# TODO [MEDIUM]: Remove tv+compatible property from the futures_config
 # TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
 # TODO [MEDIUM]: Implement out-of-sample data testing
@@ -198,5 +200,5 @@ trading-bot/
 # TODO [LOW]: Fix all the grammar errors
 
 # Recurring
-# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.13]
+# TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.23]
 # TODO [LOW]: Update contract switch dates [last update in 2025.05]
