@@ -1,353 +1,279 @@
-from unittest.mock import patch
+"""
+Tests for IBKR Orders Module.
 
+Tests cover:
+- Cache invalidation via the IBKR portfolio API
+- Contract position retrieval with automatic cache refresh
+- Order message suppression
+- Order placement: new positions, already-in-position skips, reversals,
+  message suppression flow, known error responses, and unexpected exceptions
+"""
 import pytest
 
-from app.ibkr.orders import (place_order, invalidate_cache, get_contract_position,
-                             suppress_messages, QUANTITY_TO_TRADE, MAX_SUPPRESS_RETRIES)
+from app.ibkr.orders import (
+    get_contract_position,
+    invalidate_cache,
+    place_order,
+    suppress_messages,
+    MAX_SUPPRESS_RETRIES,
+    QUANTITY_TO_TRADE,
+)
 from config import ACCOUNT_ID
 
 
-# ==================== invalidate_cache Tests ====================
+# ==================== Test Classes ====================
 
-@patch('app.ibkr.orders.api_post')
-def test_invalidate_cache_success(mock_api_post):
-    """Test that invalidate_cache successfully calls the API."""
+class TestInvalidateCache:
+    """Test portfolio cache invalidation."""
 
-    # Call the function
-    invalidate_cache()
-
-    # Verify the API was called with the correct endpoint and data
-    mock_api_post.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions/invalidate", {})
-
-
-@patch('app.ibkr.orders.api_post')
-def test_invalidate_cache_error(mock_api_post):
-    """Test that invalidate_cache logs and propagates API errors."""
-
-    # Setup mock to raise an exception
-    mock_api_post.side_effect = Exception("API error")
-
-    # Verify the exception propagates so callers are not left with stale data
-    with pytest.raises(Exception, match="API error"):
+    def test_calls_correct_api_endpoint(self, mock_api_post_orders):
+        """Test cache invalidation calls the portfolio invalidate endpoint."""
         invalidate_cache()
 
-    mock_api_post.assert_called_once()
+        mock_api_post_orders.assert_called_once_with(
+            f"portfolio/{ACCOUNT_ID}/positions/invalidate", {}
+        )
 
+    def test_api_error_propagates(self, mock_api_post_orders):
+        """Test API exception propagates so callers are not left with stale data."""
+        mock_api_post_orders.side_effect = Exception("API error")
 
-# ==================== get_contract_position Tests ====================
+        with pytest.raises(Exception, match="API error"):
+            invalidate_cache()
 
-@patch('app.ibkr.orders.invalidate_cache')
-@patch('app.ibkr.orders.api_get')
-def test_get_contract_position_found(mock_api_get, mock_invalidate_cache):
-    """Test that get_contract_position returns the correct position when found."""
+        mock_api_post_orders.assert_called_once()
 
-    # Setup mocks
-    mock_api_get.return_value = [
-        {"conid": "123456", "position": 5},
-        {"conid": "789012", "position": -3}
-    ]
 
-    # Call the function for a contract that exists
-    result = get_contract_position("123456")
+class TestGetContractPosition:
+    """Test contract position retrieval with cache invalidation."""
 
-    # Verify the result and that the cache was invalidated
-    assert result == 5
-    mock_invalidate_cache.assert_called_once()
-    mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
+    def test_returns_position_when_found(self, mock_api_get_orders, mock_invalidate_cache):
+        """Test correct position value returned when contract exists in portfolio."""
+        mock_api_get_orders.return_value = [
+            {"conid": "123456", "position": 5},
+            {"conid": "789012", "position": -3},
+        ]
 
+        result = get_contract_position("123456")
 
-@patch('app.ibkr.orders.invalidate_cache')
-@patch('app.ibkr.orders.api_get')
-def test_get_contract_position_not_found(mock_api_get, mock_invalidate_cache):
-    """Test that get_contract_position returns 0 when the contract is not found."""
+        assert result == 5
+        mock_invalidate_cache.assert_called_once()
+        mock_api_get_orders.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
 
-    # Setup mocks
-    mock_api_get.return_value = [
-        {"conid": "789012", "position": -3}
-    ]
+    def test_returns_zero_when_not_found(self, mock_api_get_orders, mock_invalidate_cache):
+        """Test zero returned when the contract is not in the portfolio."""
+        mock_api_get_orders.return_value = [{"conid": "789012", "position": -3}]
 
-    # Call the function for a contract that doesn't exist
-    result = get_contract_position("123456")
+        result = get_contract_position("123456")
 
-    # Verify the result is 0 and that the cache was invalidated
-    assert result == 0
-    mock_invalidate_cache.assert_called_once()
-    mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
+        assert result == 0
+        mock_invalidate_cache.assert_called_once()
 
+    def test_returns_zero_on_api_error(self, mock_api_get_orders, mock_invalidate_cache):
+        """Test zero returned gracefully when API raises an exception."""
+        mock_api_get_orders.side_effect = Exception("API error")
 
-@patch('app.ibkr.orders.invalidate_cache')
-@patch('app.ibkr.orders.api_get')
-def test_get_contract_position_api_error(mock_api_get, mock_invalidate_cache):
-    """Test that get_contract_position handles API errors gracefully."""
+        result = get_contract_position("123456")
 
-    # Setup mock to raise an exception
-    mock_api_get.side_effect = Exception("API error")
+        assert result == 0
+        mock_invalidate_cache.assert_called_once()
 
-    # Call the function
-    result = get_contract_position("123456")
+    def test_propagates_invalidate_cache_error(self, mock_invalidate_cache):
+        """Test cache invalidation errors propagate to callers."""
+        mock_invalidate_cache.side_effect = Exception("Cache invalidation error")
 
-    # Verify the result is 0 and that the cache was invalidated
-    assert result == 0
-    mock_invalidate_cache.assert_called_once()
-    mock_api_get.assert_called_once_with(f"portfolio/{ACCOUNT_ID}/positions")
+        with pytest.raises(Exception, match="Cache invalidation error"):
+            get_contract_position("123456")
 
 
-@patch('app.ibkr.orders.invalidate_cache')
-def test_get_contract_position_invalidate_cache_error(mock_invalidate_cache):
-    """Test that get_contract_position propagates invalidate_cache errors."""
+class TestSuppressMessages:
+    """Test IBKR interactive message suppression."""
 
-    # Setup mock to raise an exception
-    mock_invalidate_cache.side_effect = Exception("Cache invalidation error")
+    def test_calls_correct_api_endpoint(self, mock_api_post_orders):
+        """Test suppress_messages calls the suppress endpoint with the provided IDs."""
+        mock_api_post_orders.return_value = {"success": True}
 
-    # Verify the exception propagates out of get_contract_position
-    with pytest.raises(Exception, match="Cache invalidation error"):
-        get_contract_position("123456")
+        suppress_messages(["1", "2"])
 
+        mock_api_post_orders.assert_called_once_with(
+            "iserver/questions/suppress", {"messageIds": ["1", "2"]}
+        )
 
-# ==================== suppress_messages Tests ====================
+    def test_api_error_is_swallowed(self, mock_api_post_orders):
+        """Test API errors during suppression do not propagate."""
+        mock_api_post_orders.side_effect = Exception("API error")
 
-@patch('app.ibkr.orders.api_post')
-def test_suppress_messages_success(mock_api_post):
-    """Test that suppress_messages successfully calls the API."""
+        # Should not raise
+        suppress_messages(["1", "2"])
 
-    # Setup mock
-    mock_api_post.return_value = {"success": True}
+        mock_api_post_orders.assert_called_once()
 
-    # Call the function
-    suppress_messages(["1", "2"])
 
-    # Verify the API was called with the correct endpoint and data
-    mock_api_post.assert_called_once_with("iserver/questions/suppress", {"messageIds": ["1", "2"]})
+class TestPlaceOrder:
+    """Test order placement including position checks, reversals, and error handling."""
 
+    # --- New Positions ---
 
-@patch('app.ibkr.orders.api_post')
-def test_suppress_messages_error(mock_api_post):
-    """Test that suppress_messages handles errors gracefully."""
-    # Setup mock to raise an exception
-    mock_api_post.side_effect = Exception("API error")
+    def test_new_buy_position(self, mock_get_contract_position, mock_api_post_orders):
+        """Test BUY order placed with correct quantity when no position exists."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {"id": "123456"}
 
-    # Call the function (should not raise an exception)
-    suppress_messages(["1", "2"])
+        result = place_order("123456", "B")
 
-    # Verify the API was called
-    mock_api_post.assert_called_once()
+        assert result == {"id": "123456"}
+        mock_get_contract_position.assert_called_once_with("123456")
+        order_details = mock_api_post_orders.call_args[0][1]
+        assert order_details["orders"][0]["side"] == "BUY"
+        assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
 
+    def test_new_sell_position(self, mock_get_contract_position, mock_api_post_orders):
+        """Test SELL order placed with correct quantity when no position exists."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {"id": "123456"}
 
-# ==================== place_order Tests ====================
+        result = place_order("123456", "S")
 
-def test_place_order_new_buy_position(mock_get_contract_position, mock_api_post_orders):
-    """Test that place_order creates a new buy position when no position exists"""
+        assert result == {"id": "123456"}
+        order_details = mock_api_post_orders.call_args[0][1]
+        assert order_details["orders"][0]["side"] == "SELL"
+        assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
 
-    # Mock contract position to return 0 (no existing position) and configure API response
-    mock_get_contract_position.return_value = 0  # No existing position
-    mock_api_post_orders.return_value = {"id": "123456"}
+    # --- Already In Desired Position ---
+
+    def test_already_long_skips_buy(self, mock_get_contract_position):
+        """Test no order placed when already long and a buy is requested."""
+        mock_get_contract_position.return_value = 1
+
+        result = place_order("123456", "B")
 
-    # Call place_order with a contract ID and buy side indicator
-    result = place_order("123456", "B")
+        assert result == {"success": True, "message": "No action needed: already in desired position"}
+        mock_get_contract_position.assert_called_once_with("123456")
+
+    def test_already_short_skips_sell(self, mock_get_contract_position):
+        """Test no order placed when already short and a sell is requested."""
+        mock_get_contract_position.return_value = -1
+
+        result = place_order("123456", "S")
+
+        assert result == {"success": True, "message": "No action needed: already in desired position"}
+        mock_get_contract_position.assert_called_once_with("123456")
+
+    def test_invalid_side_raises_value_error(self, mock_get_contract_position):
+        """Test ValueError raised for unrecognized side indicator."""
+        mock_get_contract_position.return_value = 0
+
+        with pytest.raises(ValueError, match="Invalid side 'X': expected 'B' or 'S'"):
+            place_order("123456", "X")
 
-    # Verify the function returns the API response, checks position, places a BUY order with correct quantity
-    assert result == {"id": "123456"}
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    order_details = mock_api_post_orders.call_args[0][1]
-    assert order_details["orders"][0]["side"] == "BUY"
-    assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
+    # --- Position Reversals ---
+
+    def test_reverses_short_to_long(self, mock_get_contract_position, mock_api_post_orders):
+        """Test BUY order placed with standard quantity to reverse an existing short."""
+        mock_get_contract_position.return_value = -1
+        mock_api_post_orders.return_value = {"id": "123456"}
+
+        result = place_order("123456", "B")
 
-
-def test_place_order_new_sell_position(mock_get_contract_position, mock_api_post_orders):
-    """Test that place_order creates a new sell position when no position exists"""
-
-    # Mock contract position to return 0 (no existing position) and configure API response
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.return_value = {"id": "123456"}
-
-    # Call place_order with a contract ID and sell side indicator
-    result = place_order("123456", "S")
-
-    # Verify the function returns the API response, checks position, places a SELL order with correct quantity
-    assert result == {"id": "123456"}
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    order_details = mock_api_post_orders.call_args[0][1]
-    assert order_details["orders"][0]["side"] == "SELL"
-    assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
-
-
-def test_place_order_existing_same_position(mock_get_contract_position):
-    """Test that place_order takes no action when the desired position already exists"""
-
-    # Test case 1: Mock existing long position (1) and attempt to buy more
-    mock_get_contract_position.return_value = 1
-
-    # Call place_order with buy side when already in a long position
-    result = place_order("123456", "B")
-
-    # Verify function returns success message without placing an order since position already exists
-    assert result == {"success": True, "message": "No action needed: already in desired position"}
-    mock_get_contract_position.assert_called_once_with("123456")
-
-    # Test case 2: Mock existing short position (-1) and attempt to sell more
-    mock_get_contract_position.reset_mock()
-    mock_get_contract_position.return_value = -1
-
-    # Call place_order with sell side when already in a short position
-    result = place_order("123456", "S")
-
-    # Verify function returns success message without placing an order since position already exists
-    assert result == {"success": True, "message": "No action needed: already in desired position"}
-    mock_get_contract_position.assert_called_once_with("123456")
-
-
-def test_place_order_invalid_side(mock_get_contract_position):
-    """Test that place_order raises ValueError when an invalid side is provided"""
-
-    # Mock no existing position so validation is reached
-    mock_get_contract_position.return_value = 0
-
-    # Verify that an invalid side raises ValueError with a clear message
-    with pytest.raises(ValueError, match="Invalid side 'X': expected 'B' or 'S'"):
-        place_order("123456", "X")
-
-
-def test_place_order_reverse_position(
-    mock_get_contract_position, mock_api_post_orders
-):
-    """Test that place_order reverses an existing position with standard quantity"""
-
-    # Mock existing short position and API response
-    mock_get_contract_position.return_value = -1  # existing short
-    mock_api_post_orders.return_value = {"id": "123456"}
-
-    # Call place_order with buy side to reverse an existing short position
-    result = place_order("123456", "B")
-
-    # Verify function returns API response and places a BUY order with standard quantity
-    assert result == {"id": "123456"}
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    order_details = mock_api_post_orders.call_args[0][1]
-    assert order_details["orders"][0]["side"] == "BUY"
-    assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
-
-
-def test_place_order_with_message_suppression(
-    mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
-):
-    """Test that place_order handles message suppression before completing an order"""
-
-    # Reset mock, set no existing position, and configure API to first return message IDs then success
-    mock_get_contract_position.reset_mock()
-    mock_get_contract_position.return_value = 0
-    # First call returns message IDs, second call returns success
-    mock_api_post_orders.side_effect = [
-        [{"messageIds": ["1", "2"]}],
-        {"id": "123456"},
-    ]
-
-    # Call place_order which should handle message suppression before completing the order
-    result = place_order("123456", "B")
-
-    # Verify function returns final API response, checks position, calls API twice, and suppresses messages
-    assert result == {"id": "123456"}
-    mock_get_contract_position.assert_called_once_with("123456")
-    assert mock_api_post_orders.call_count == 2
-    mock_suppress_messages.assert_called_once_with(["1", "2"])
-
-
-def test_place_order_exceeded_suppression_retries(
-    mock_logger_orders, mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
-):
-    """Test that place_order returns an error after exceeding the maximum suppression retries"""
-
-    # Mock no existing position and API always returning message IDs, never clearing them
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.return_value = [{"messageIds": ["1", "2"]}]
-
-    # Call place_order which should give up after MAX_SUPPRESS_RETRIES attempts
-    result = place_order("123456", "B")
-
-    # Verify function returns error after exhausting retries and suppressed messages each time
-    assert result == {"success": False, "error": "Exceeded maximum suppression retries"}
-    assert mock_api_post_orders.call_count == MAX_SUPPRESS_RETRIES
-    assert mock_suppress_messages.call_count == MAX_SUPPRESS_RETRIES
-    mock_logger_orders.error.assert_called_once()
-
-
-def test_place_order_insufficient_funds_error(
-    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
-):
-    """Test that place_order handles and logs insufficient funds errors"""
-
-    # Mock no existing position and API returning an insufficient funds error
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.return_value = {"error": "available funds are insufficient"}
-
-    # Call place_order which should handle the insufficient funds error
-    result = place_order("123456", "B")
-
-    # Verify function returns error response with appropriate message, logs the error, and doesn't place order
-    assert result["success"] is False
-    assert result["error"] == "Insufficient funds"
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    mock_logger_orders.error.assert_called_once()
-
-
-def test_place_order_derivative_rules_error(
-    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
-):
-    """Test that place_order handles and logs derivative rules compliance errors"""
-
-    # Mock no existing position and API returning a derivative rules compliance error
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.return_value = {"error": "does not comply with our order handling rules for derivatives"}
-
-    # Call place_order which should handle the derivative rules error
-    result = place_order("123456", "B")
-
-    # Verify function returns error with appropriate message, logs the error, and doesn't complete the order
-    assert result["success"] is False
-    assert result["error"] == "Non-compliance with derivative rules"
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    mock_logger_orders.error.assert_called_once()
-
-
-def test_place_order_unhandled_error(
-    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
-):
-    """Test that place_order handles and logs unrecognized error types"""
-
-    # Mock no existing position and API returning an unrecognized error type
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.return_value = {"error": "some other error"}
-
-    # Call place_order which should handle unknown error types with a generic response
-    result = place_order("123456", "B")
-
-    # Verify function returns generic error message, logs the error, and doesn't complete the order
-    assert result["success"] is False
-    assert result["error"] == "Unhandled error"
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    mock_logger_orders.error.assert_called_once()
-
-
-def test_place_order_unexpected_exception(
-    mock_logger_orders, mock_api_post_orders, mock_get_contract_position
-):
-    """Test that place_order catches and logs unexpected exceptions"""
-
-    # Mock no existing position and API raising an unexpected exception
-    mock_get_contract_position.return_value = 0
-    mock_api_post_orders.side_effect = Exception("Test error")
-
-    # Call place_order which should catch and handle any unexpected exceptions
-    result = place_order("123456", "B")
-
-    # Verify function returns generic error message, logs the exception, and gracefully handles the failure
-    assert result["success"] is False
-    assert result["error"] == "An unexpected error occurred"
-    mock_get_contract_position.assert_called_once_with("123456")
-    mock_api_post_orders.assert_called_once()
-    mock_logger_orders.exception.assert_called_once()
+        assert result == {"id": "123456"}
+        order_details = mock_api_post_orders.call_args[0][1]
+        assert order_details["orders"][0]["side"] == "BUY"
+        assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
+
+    # --- Message Suppression Flow ---
+
+    def test_suppresses_messages_then_retries(
+        self, mock_get_contract_position, mock_api_post_orders, mock_suppress_messages
+    ):
+        """Test message suppression handled and order retried successfully."""
+        mock_get_contract_position.return_value = 0
+        # First call requires suppression, second call succeeds
+        mock_api_post_orders.side_effect = [
+            [{"messageIds": ["1", "2"]}],
+            {"id": "123456"},
+        ]
+
+        result = place_order("123456", "B")
+
+        assert result == {"id": "123456"}
+        assert mock_api_post_orders.call_count == 2
+        mock_suppress_messages.assert_called_once_with(["1", "2"])
+
+    def test_returns_error_after_max_suppression_retries(
+        self,
+        mock_logger_orders,
+        mock_get_contract_position,
+        mock_api_post_orders,
+        mock_suppress_messages,
+    ):
+        """Test error returned after exceeding the maximum suppression retry limit."""
+        mock_get_contract_position.return_value = 0
+        # Always returns message IDs, suppression never clears
+        mock_api_post_orders.return_value = [{"messageIds": ["1", "2"]}]
+
+        result = place_order("123456", "B")
+
+        assert result == {"success": False, "error": "Exceeded maximum suppression retries"}
+        assert mock_api_post_orders.call_count == MAX_SUPPRESS_RETRIES
+        assert mock_suppress_messages.call_count == MAX_SUPPRESS_RETRIES
+        mock_logger_orders.error.assert_called_once()
+
+    # --- Known Error Responses ---
+
+    def test_insufficient_funds_returns_error(
+        self, mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    ):
+        """Test insufficient funds error returns a structured failure response."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {"error": "available funds are insufficient"}
+
+        result = place_order("123456", "B")
+
+        assert result["success"] is False
+        assert result["error"] == "Insufficient funds"
+        mock_get_contract_position.assert_called_once_with("123456")
+        mock_logger_orders.error.assert_called_once()
+
+    def test_derivative_rules_error_returns_error(
+        self, mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    ):
+        """Test derivative rules non-compliance returns a structured failure response."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {
+            "error": "does not comply with our order handling rules for derivatives"
+        }
+
+        result = place_order("123456", "B")
+
+        assert result["success"] is False
+        assert result["error"] == "Non-compliance with derivative rules"
+        mock_get_contract_position.assert_called_once_with("123456")
+        mock_logger_orders.error.assert_called_once()
+
+    def test_unrecognized_error_returns_generic_message(
+        self, mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    ):
+        """Test unrecognized error type returns a generic failure message."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {"error": "some other error"}
+
+        result = place_order("123456", "B")
+
+        assert result["success"] is False
+        assert result["error"] == "Unhandled error"
+        mock_logger_orders.error.assert_called_once()
+
+    # --- Unexpected Exceptions ---
+
+    def test_unexpected_exception_caught_and_logged(
+        self, mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    ):
+        """Test unexpected exception is caught, logged, and returns a failure response."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.side_effect = Exception("Test error")
+
+        result = place_order("123456", "B")
+
+        assert result["success"] is False
+        assert result["error"] == "An unexpected error occurred"
+        mock_logger_orders.exception.assert_called_once()
