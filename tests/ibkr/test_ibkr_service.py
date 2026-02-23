@@ -138,3 +138,17 @@ class TestProcessTradingData:
 
         mock_get_contract_id.assert_called_once_with("ZC")
         mock_place_order.assert_not_called()
+
+    def test_place_order_exception_propagates(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test exception from place_order propagates out of process_trading_data."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.side_effect = ValueError("Invalid side 'X': expected 'B' or 'S'")
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "X", "price": "4500.00"}
+
+        with pytest.raises(ValueError, match="Invalid side"):
+            process_trading_data(trading_data)
+
+        mock_get_contract_id.assert_called_once_with("ZC")
+        mock_place_order.assert_called_once_with("123456", "X")

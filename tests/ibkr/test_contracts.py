@@ -43,6 +43,14 @@ class TestFetchContract:
         assert result == []
         mock_api_get_contracts.assert_called_once_with("/trsrv/futures?symbols=ZC")
 
+    def test_api_error_logs_error(self, mock_logger_contracts, mock_api_get_contracts):
+        """Test API error is logged before returning empty list."""
+        mock_api_get_contracts.side_effect = Exception("API error")
+
+        fetch_contract("ZC")
+
+        mock_logger_contracts.error.assert_called_once()
+
     def test_empty_response_returns_empty_list(self, mock_api_get_contracts):
         """Test empty API response returns empty list."""
         mock_api_get_contracts.return_value = {}
@@ -103,12 +111,33 @@ class TestGetClosestContract:
 
         assert result["conid"] == "789012"
 
+    def test_returns_earliest_when_contracts_in_reverse_order(self):
+        """Test sorting works correctly when contracts are provided latest-first."""
+        today = datetime.today()
+        earlier = today + timedelta(days=MIN_DAYS_UNTIL_EXPIRY + 10)
+        later = today + timedelta(days=MIN_DAYS_UNTIL_EXPIRY + 30)
+
+        # Later contract provided first — sort must still return the earlier one
+        contracts = [
+            {"conid": "789012", "expirationDate": later.strftime("%Y%m%d")},
+            {"conid": "123456", "expirationDate": earlier.strftime("%Y%m%d")},
+        ]
+
+        result = get_closest_contract(contracts)
+
+        assert result["conid"] == "123456"
+
 
 class TestGetContractId:
     """Test contract ID retrieval with caching and error handling."""
 
     def test_returns_id_from_cache(
-        self, mock_logger_contracts, mock_load_file, mock_parse_symbol, mock_get_closest_contract
+        self,
+        mock_logger_contracts,
+        mock_load_file,
+        mock_parse_symbol,
+        mock_fetch_contract,
+        mock_get_closest_contract,
     ):
         """Test contract ID returned from cache without fetching from API."""
         mock_parse_symbol.return_value = "ZC"
@@ -123,6 +152,8 @@ class TestGetContractId:
         mock_get_closest_contract.assert_called_once_with(
             [{"conid": "123456", "expiry": "20231215"}], MIN_DAYS_UNTIL_EXPIRY
         )
+        # Cache hit must not trigger an API fetch
+        mock_fetch_contract.assert_not_called()
         mock_logger_contracts.warning.assert_not_called()
 
     def test_fetches_and_caches_on_cache_miss(

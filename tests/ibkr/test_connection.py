@@ -4,7 +4,10 @@ Tests for IBKR Connection Module.
 Tests cover:
 - API heartbeat (tickle) with successful, error, and unauthenticated responses
 - Scheduler initialization and configuration
+- Missed-job listener callback logging
 """
+from unittest.mock import MagicMock
+
 from app.ibkr.connection import tickle_ibkr_api, start_ibkr_scheduler
 
 
@@ -87,3 +90,18 @@ class TestStartIbkrScheduler:
         mock_scheduler.add_job.assert_called_once()
         mock_scheduler.add_listener.assert_called_once()
         mock_scheduler.start.assert_called_once()
+
+    def test_missed_job_listener_logs_warning(self, mock_logger_connection, mock_scheduler):
+        """Test the missed-job listener callback logs a warning with job details."""
+        start_ibkr_scheduler()
+
+        # Extract the on_job_missed callback registered with add_listener
+        on_job_missed = mock_scheduler.add_listener.call_args[0][0]
+
+        mock_event = MagicMock()
+        mock_event.job_id = "tickle_job"
+        mock_event.scheduled_run_time = "2024-01-01 00:00:00"
+
+        on_job_missed(mock_event)
+
+        mock_logger_connection.warning.assert_called_once()

@@ -180,6 +180,18 @@ class TestPlaceOrder:
         assert order_details["orders"][0]["side"] == "BUY"
         assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
 
+    def test_reverses_long_to_short(self, mock_get_contract_position, mock_api_post_orders):
+        """Test SELL order placed with standard quantity to reverse an existing long."""
+        mock_get_contract_position.return_value = 1
+        mock_api_post_orders.return_value = {"id": "123456"}
+
+        result = place_order("123456", "S")
+
+        assert result == {"id": "123456"}
+        order_details = mock_api_post_orders.call_args[0][1]
+        assert order_details["orders"][0]["side"] == "SELL"
+        assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
+
     # --- Message Suppression Flow ---
 
     def test_suppresses_messages_then_retries(
@@ -232,6 +244,19 @@ class TestPlaceOrder:
         assert result["success"] is False
         assert result["error"] == "Insufficient funds"
         mock_get_contract_position.assert_called_once_with("123456")
+        mock_logger_orders.error.assert_called_once()
+
+    def test_insufficient_funds_alternate_spelling_returns_error(
+        self, mock_logger_orders, mock_api_post_orders, mock_get_contract_position
+    ):
+        """Test IBKR API typo variant 'in sufficient' (with space) is also handled."""
+        mock_get_contract_position.return_value = 0
+        mock_api_post_orders.return_value = {"error": "available funds are in sufficient"}
+
+        result = place_order("123456", "B")
+
+        assert result["success"] is False
+        assert result["error"] == "Insufficient funds"
         mock_logger_orders.error.assert_called_once()
 
     def test_derivative_rules_error_returns_error(
