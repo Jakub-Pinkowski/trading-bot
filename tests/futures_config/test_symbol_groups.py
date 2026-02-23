@@ -49,11 +49,18 @@ class TestSymbolGroupsStructure:
         assert 'Crude_Oil' in SYMBOL_GROUPS
         assert 'Natural_Gas' in SYMBOL_GROUPS
 
+    def test_softs_groups_present(self):
+        """Test that softs groups are present."""
+        assert 'Sugar' in SYMBOL_GROUPS
+        assert 'Coffee' in SYMBOL_GROUPS
+        assert 'Cocoa' in SYMBOL_GROUPS
+
     def test_metals_groups_present(self):
         """Test that metal groups are present."""
         assert 'Gold' in SYMBOL_GROUPS
         assert 'Silver' in SYMBOL_GROUPS
         assert 'Copper' in SYMBOL_GROUPS
+        assert 'Platinum' in SYMBOL_GROUPS
 
     def test_index_groups_present(self):
         """Test that index groups are present."""
@@ -61,6 +68,22 @@ class TestSymbolGroupsStructure:
         assert 'NASDAQ' in SYMBOL_GROUPS
         assert 'Dow' in SYMBOL_GROUPS
         assert 'Russell' in SYMBOL_GROUPS
+        assert 'T_Bond' in SYMBOL_GROUPS
+
+    def test_forex_groups_present(self):
+        """Test that forex groups are present."""
+        assert 'Euro' in SYMBOL_GROUPS
+        assert 'Japanese_Yen' in SYMBOL_GROUPS
+        assert 'British_Pound' in SYMBOL_GROUPS
+        assert 'Australian_Dollar' in SYMBOL_GROUPS
+        assert 'Canadian_Dollar' in SYMBOL_GROUPS
+        assert 'Swiss_Franc' in SYMBOL_GROUPS
+
+    def test_all_symbol_specs_covered(self):
+        """Test that every symbol in SYMBOL_SPECS has a group."""
+        from futures_config.symbol_specs import SYMBOL_SPECS
+        for symbol in SYMBOL_SPECS:
+            assert symbol in SYMBOL_TO_GROUP, f"{symbol} from SYMBOL_SPECS has no group"
 
     def test_no_duplicate_symbols_across_groups(self):
         """Test that no symbol appears in multiple groups."""
@@ -90,6 +113,21 @@ class TestSymbolToGroupMapping:
         assert SYMBOL_TO_GROUP.get('MES') == 'SP500'
         assert SYMBOL_TO_GROUP.get('NQ') == 'NASDAQ'
         assert SYMBOL_TO_GROUP.get('MNQ') == 'NASDAQ'
+
+    def test_forex_symbols_map_correctly(self):
+        """Test that forex symbols map to correct groups."""
+        assert SYMBOL_TO_GROUP.get('6E') == 'Euro'
+        assert SYMBOL_TO_GROUP.get('M6E') == 'Euro'
+        assert SYMBOL_TO_GROUP.get('6B') == 'British_Pound'
+        assert SYMBOL_TO_GROUP.get('M6B') == 'British_Pound'
+        assert SYMBOL_TO_GROUP.get('6J') == 'Japanese_Yen'
+        assert SYMBOL_TO_GROUP.get('6C') == 'Canadian_Dollar'
+
+    def test_softs_symbols_map_correctly(self):
+        """Test that softs symbols map to correct groups."""
+        assert SYMBOL_TO_GROUP.get('SB') == 'Sugar'
+        assert SYMBOL_TO_GROUP.get('KC') == 'Coffee'
+        assert SYMBOL_TO_GROUP.get('CC') == 'Cocoa'
 
     def test_all_group_symbols_in_reverse_mapping(self):
         """Test that all symbols in SYMBOL_GROUPS are in SYMBOL_TO_GROUP."""
@@ -322,7 +360,7 @@ class TestSymbolGroupsIntegration:
 
     def test_all_micro_contracts_identified(self):
         """Test that all micro contracts are properly grouped."""
-        micro_symbols = ['MZC', 'MZW', 'MZS', 'MCL', 'MGC', 'MES', 'MNQ']
+        micro_symbols = ['MZC', 'MZW', 'MZS', 'MCL', 'MGC', 'MES', 'MNQ', 'M6E', 'M6A', 'M6B']
 
         for symbol in micro_symbols:
             group = get_group_for_symbol(symbol)
@@ -331,3 +369,19 @@ class TestSymbolGroupsIntegration:
             # Should be grouped with standard contracts
             group_symbols = get_symbols_in_group(group)
             assert len(group_symbols) > 1, f"Micro {symbol} should have standard version"
+
+    def test_forex_micro_correlated_with_standard(self):
+        """Test that micro forex symbols are correlated with their standard versions."""
+        assert are_symbols_correlated('6E', 'M6E') is True
+        assert are_symbols_correlated('6B', 'M6B') is True
+        assert are_symbols_correlated('6A', 'M6A') is True
+
+    def test_single_symbol_groups(self):
+        """Test that standalone symbols (no mini/micro) form their own group."""
+        standalone = ['SB', 'KC', 'CC', 'PL', 'ZB', '6J', '6C', '6S']
+
+        for symbol in standalone:
+            group = get_group_for_symbol(symbol)
+            assert group is not None, f"{symbol} has no group"
+            group_symbols = get_symbols_in_group(group)
+            assert symbol in group_symbols
