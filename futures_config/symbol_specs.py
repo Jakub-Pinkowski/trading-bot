@@ -64,10 +64,10 @@ SYMBOL_SPECS = {
     # ==================== Metals ====================
 
     # --- Normal ---
-    'GC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 100, 'tick_size': 0.10, 'margin': 37605.98},    # Gold
-    'SI': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 5000, 'tick_size': 0.005, 'margin': 74460.96},  # Silver
-    'HG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 25000, 'tick_size': 0.0005, 'margin': 18786.14},# Copper
-    'PL': {'category': 'Metals', 'exchange': 'NYMEX', 'multiplier': 50, 'tick_size': 0.10, 'margin': 21928.24},     # Platinum
+    'GC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 100, 'tick_size': 0.10, 'margin': 37605.98},     # Gold
+    'SI': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 5000, 'tick_size': 0.005, 'margin': 74460.96},   # Silver
+    'HG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 25000, 'tick_size': 0.0005, 'margin': 18786.14}, # Copper
+    'PL': {'category': 'Metals', 'exchange': 'NYMEX', 'multiplier': 50, 'tick_size': 0.10, 'margin': 21928.24},      # Platinum
 
     # --- Micro ---
     'MGC': {'category': 'Metals', 'exchange': 'COMEX_MINI', 'multiplier': 10, 'tick_size': 0.10, 'margin': 3760.60},    # Micro Gold
