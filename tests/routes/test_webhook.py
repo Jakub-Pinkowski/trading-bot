@@ -3,6 +3,7 @@ Tests for the webhook route handler.
 
 Tests cover:
 - Alert data persistence to daily JSON files
+- Appending to existing daily alert files
 - Dummy signal filtering
 - IP allowlist enforcement
 - JSON content type validation
@@ -39,6 +40,45 @@ class TestSaveAlertDataToFile:
         assert "23-05-01 10:30:45" in saved_data
         assert saved_data["23-05-01 10:30:45"] == data
 
+    def test_appends_to_existing_alerts(
+        self, mock_datetime_webhook, mock_load_file_webhook, mock_save_file_webhook
+    ):
+        """Test new alert is merged with existing entries without overwriting them."""
+        mock_now = MagicMock()
+        mock_now.strftime.side_effect = (
+            lambda fmt: "23-05-01 11:00:00" if fmt == "%y-%m-%d %H:%M:%S" else "2023-05-01"
+        )
+        mock_datetime_webhook.now.return_value = mock_now
+        existing_entry = {"symbol": "ZC", "side": "S"}
+        mock_load_file_webhook.return_value = {"23-05-01 10:00:00": existing_entry}
+        data = {"symbol": "ZS", "side": "B"}
+
+        save_alert_data_to_file(data, "alerts_dir")
+
+        saved_data = mock_save_file_webhook.call_args[0][0]
+        # Existing entry is preserved
+        assert saved_data["23-05-01 10:00:00"] == existing_entry
+        # New entry is added
+        assert saved_data["23-05-01 11:00:00"] == data
+
+    def test_file_path_uses_current_date(
+        self, mock_datetime_webhook, mock_load_file_webhook, mock_save_file_webhook
+    ):
+        """Test daily file path is constructed using the current date."""
+        mock_now = MagicMock()
+        mock_now.strftime.side_effect = (
+            lambda fmt: "23-05-01 10:30:45" if fmt == "%y-%m-%d %H:%M:%S" else "2023-05-01"
+        )
+        mock_datetime_webhook.now.return_value = mock_now
+        mock_load_file_webhook.return_value = {}
+
+        save_alert_data_to_file({"symbol": "ZS"}, "alerts_dir")
+
+        load_path = mock_load_file_webhook.call_args[0][0]
+        save_path = mock_save_file_webhook.call_args[0][1]
+        assert "alerts_2023-05-01.json" in load_path
+        assert "alerts_2023-05-01.json" in save_path
+
     def test_skips_dummy_yes_alerts(self, mock_load_file_webhook, mock_save_file_webhook):
         """Test dummy=YES alerts are not persisted."""
         data = {"dummy": "YES", "symbol": "AAPL"}
@@ -69,7 +109,9 @@ class TestSaveAlertDataToFile:
 class TestWebhookRoute:
     """Test webhook HTTP endpoint."""
 
-    def test_valid_request_returns_200(self, mock_process_trading_data, client):
+    def test_valid_request_returns_200(
+        self, mock_save_alert_to_file, mock_process_trading_data, client
+    ):
         """Test valid JSON from an allowed IP is processed and returns 200."""
         response = client.post(
             '/webhook',
@@ -79,6 +121,43 @@ class TestWebhookRoute:
         )
 
         mock_process_trading_data.assert_called_once_with({"data": "valid"})
+        assert response.status_code == 200
+
+    def test_alert_saved_with_request_data(
+        self, mock_save_alert_to_file, mock_process_trading_data, client
+    ):
+        """Test alert persistence is called with the parsed request payload."""
+        data = {"symbol": "ZS", "side": "B"}
+
+        client.post(
+            '/webhook',
+            json=data,
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_save_alert_to_file.assert_called_once()
+        assert mock_save_alert_to_file.call_args[0][0] == data
+
+    def test_dummy_signal_dispatched_to_processor(
+        self, mock_save_alert_to_file, mock_process_trading_data, client
+    ):
+        """Test dummy=YES signals are still dispatched to process_trading_data.
+
+        Saving is filtered inside save_alert_data_to_file, but the route always
+        dispatches to process_trading_data so the IBKR service can handle dummy
+        mode in its own logic.
+        """
+        data = {"dummy": "YES", "symbol": "ZS", "side": "B"}
+
+        response = client.post(
+            '/webhook',
+            json=data,
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_process_trading_data.assert_called_once_with(data)
         assert response.status_code == 200
 
     def test_unallowed_ip_returns_403(self, client):
@@ -104,7 +183,15 @@ class TestWebhookRoute:
         assert response.status_code == 400
         assert b'Unsupported Content-Type' in response.data
 
-    def test_processing_error_still_returns_200(self, mock_process_trading_data, client):
+    def test_get_method_not_allowed(self, client):
+        """Test GET request to webhook endpoint returns 405 Method Not Allowed."""
+        response = client.get('/webhook')
+
+        assert response.status_code == 405
+
+    def test_processing_error_still_returns_200(
+        self, mock_save_alert_to_file, mock_process_trading_data, client
+    ):
         """Test processing exception is caught and 200 is still returned.
 
         TradingView requires a 200 response or it will keep retrying the same

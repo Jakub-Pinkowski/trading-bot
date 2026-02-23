@@ -60,3 +60,11 @@ def mock_datetime_webhook(monkeypatch):
     mock = MagicMock()
     monkeypatch.setattr("app.routes.webhook.datetime", mock)
     return mock
+
+
+@pytest.fixture
+def mock_save_alert_to_file(monkeypatch):
+    """Mock save_alert_data_to_file in webhook module to isolate route tests from file I/O."""
+    mock = MagicMock()
+    monkeypatch.setattr("app.routes.webhook.save_alert_data_to_file", mock)
+    return mock
