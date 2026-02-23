@@ -1,175 +1,154 @@
+"""
+Tests for IBKR Service Module.
+
+Tests cover:
+- Normal order placement for buy and sell sides
+- Dummy mode skip behavior
+- Missing required field validation
+- Order failure status handling
+- Exception propagation from dependencies
+"""
 import pytest
 
 from app.ibkr.ibkr_service import process_trading_data
 
 
-def test_process_trading_data_normal(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data correctly processes normal trading data and places an order"""
+# ==================== Test Classes ====================
 
-    # Configure mocks to return expected values and create normal trading data with "dummy" set to "NO"
-    mock_get_contract_id.return_value = "123456"
-    mock_place_order.return_value = {"id": "order123"}
-    trading_data = {
-        "dummy": "NO",
-        "symbol": "ZC",
-        "side": "B",
-        "price": "4500.00"
-    }
+class TestProcessTradingData:
+    """Test trading data processing and order dispatch."""
 
-    # Call process_trading_data with the prepared trading data
-    result = process_trading_data(trading_data)
+    # --- Successful Order Placement ---
 
-    # Verify logger recorded the trading data, contract ID was retrieved, order was placed, and success was logged
-    mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ZC")
-    mock_place_order.assert_called_once_with("123456", "B")
-    mock_logger_ibkr_service.info.assert_any_call(f"Order placed: {{'id': 'order123'}}")
-    assert result == {'status': 'order_placed', 'order': {"id": "order123"}}
+    def test_normal_buy_places_order(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test buy order is placed and success is logged."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.return_value = {"id": "order123"}
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "B", "price": "4500.00"}
 
+        result = process_trading_data(trading_data)
 
-def test_process_trading_data_dummy(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data skips the API call and order when in dummy mode"""
+        assert result == {"status": "order_placed", "order": {"id": "order123"}}
+        mock_get_contract_id.assert_called_once_with("ZC")
+        mock_place_order.assert_called_once_with("123456", "B")
+        mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
+        mock_logger_ibkr_service.info.assert_any_call("Order placed: {'id': 'order123'}")
 
-    # Create trading data with "dummy" set to "YES" to test dummy mode
-    trading_data = {
-        "dummy": "YES",
-        "symbol": "ZC",
-        "side": "B",
-        "price": "4500.00"
-    }
+    def test_normal_sell_places_order(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test sell order is placed and success is logged."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.return_value = {"id": "order123"}
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "S", "price": "4500.00"}
 
-    # Call process_trading_data with dummy trading data
-    result = process_trading_data(trading_data)
+        result = process_trading_data(trading_data)
 
-    # Verify logger recorded the trading data, no API call was made, and no order was placed
-    mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_not_called()
-    mock_place_order.assert_not_called()
-    assert result == {'status': 'dummy_skip'}
+        assert result == {"status": "order_placed", "order": {"id": "order123"}}
+        mock_place_order.assert_called_once_with("123456", "S")
 
+    def test_missing_dummy_field_places_order(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test order is placed when dummy field is absent (defaults to live mode)."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.return_value = {"id": "order123"}
+        trading_data = {"symbol": "ZC", "side": "B", "price": "4500.00"}
 
-def test_process_trading_data_sell(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data correctly processes sell orders"""
+        result = process_trading_data(trading_data)
 
-    # Configure mocks and create trading data with "side" set to "S" (sell) to test sell orders
-    mock_get_contract_id.return_value = "123456"
-    mock_place_order.return_value = {"id": "order123"}
-    trading_data = {
-        "dummy": "NO",
-        "symbol": "ZC",
-        "side": "S",
-        "price": "4500.00"
-    }
+        assert result == {"status": "order_placed", "order": {"id": "order123"}}
+        mock_get_contract_id.assert_called_once_with("ZC")
+        mock_place_order.assert_called_once_with("123456", "B")
 
-    # Call process_trading_data with sell order trading data
-    result = process_trading_data(trading_data)
+    # --- Dummy Mode ---
 
-    # Verify logger recorded the trading data, contract ID was retrieved, sell order was placed, and success was logged
-    mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ZC")
-    mock_place_order.assert_called_once_with("123456", "S")
-    mock_logger_ibkr_service.info.assert_any_call(f"Order placed: {{'id': 'order123'}}")
-    assert result == {'status': 'order_placed', 'order': {"id": "order123"}}
+    def test_dummy_mode_skips_order(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test dummy=YES skips API call and order placement."""
+        trading_data = {"dummy": "YES", "symbol": "ZC", "side": "B", "price": "4500.00"}
 
+        result = process_trading_data(trading_data)
 
-def test_process_trading_data_missing_dummy_field(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data places an order when the dummy field is absent"""
+        assert result == {"status": "dummy_skip"}
+        mock_get_contract_id.assert_not_called()
+        mock_place_order.assert_not_called()
+        mock_logger_ibkr_service.info.assert_called_once_with(
+            f"Trading data received: {trading_data}"
+        )
 
-    # Configure mock and create trading data with missing "dummy" field to test default behavior
-    mock_get_contract_id.return_value = "123456"
-    mock_place_order.return_value = {"id": "order123"}
-    trading_data = {
-        "symbol": "ZC",
-        "side": "B",
-        "price": "4500.00"
-    }
+    # --- Validation Errors ---
 
-    # Call process_trading_data with incomplete trading data
-    result = process_trading_data(trading_data)
+    def test_missing_symbol_raises_value_error(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test ValueError raised before any API call when symbol is missing."""
+        trading_data = {"dummy": "NO", "side": "B", "price": "4500.00"}
 
-    # Verify logger recorded the trading data, contract ID was retrieved, and order was placed despite missing dummy field
-    mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ZC")
-    mock_place_order.assert_called_once_with("123456", "B")
-    assert result == {'status': 'order_placed', 'order': {"id": "order123"}}
+        with pytest.raises(ValueError, match="Missing required field: symbol"):
+            process_trading_data(trading_data)
 
+        mock_get_contract_id.assert_not_called()
+        mock_place_order.assert_not_called()
 
-def test_process_trading_data_missing_symbol(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data raises ValueError when symbol is missing"""
+    def test_missing_side_raises_value_error(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test ValueError raised before any API call when side is missing."""
+        trading_data = {"dummy": "NO", "symbol": "ZC", "price": "4500.00"}
 
-    # Create trading data without a symbol field
-    trading_data = {
-        "dummy": "NO",
-        "side": "B",
-        "price": "4500.00"
-    }
+        with pytest.raises(ValueError, match="Missing required field: side"):
+            process_trading_data(trading_data)
 
-    # Verify that a missing symbol raises ValueError before any API call is made
-    with pytest.raises(ValueError, match="Missing required field: symbol"):
-        process_trading_data(trading_data)
+        mock_get_contract_id.assert_not_called()
+        mock_place_order.assert_not_called()
 
-    mock_get_contract_id.assert_not_called()
-    mock_place_order.assert_not_called()
+    # --- Order Failure Handling ---
 
+    def test_order_failure_returns_failed_status(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test order_failed status returned and error logged when place_order reports failure."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.return_value = {"success": False, "error": "Insufficient funds", "details": {}}
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "B", "price": "4500.00"}
 
-def test_process_trading_data_missing_side(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data raises ValueError when side is missing"""
+        result = process_trading_data(trading_data)
 
-    # Create trading data without a side field
-    trading_data = {
-        "dummy": "NO",
-        "symbol": "ZC",
-        "price": "4500.00"
-    }
+        assert result == {
+            "status": "order_failed",
+            "order": {"success": False, "error": "Insufficient funds", "details": {}},
+        }
+        mock_logger_ibkr_service.error.assert_called_once()
 
-    # Verify that a missing side raises ValueError before any API call is made
-    with pytest.raises(ValueError, match="Missing required field: side"):
-        process_trading_data(trading_data)
+    # --- Exception Propagation ---
 
-    mock_get_contract_id.assert_not_called()
-    mock_place_order.assert_not_called()
+    def test_contract_id_exception_propagates(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test ValueError from get_contract_id propagates out of process_trading_data."""
+        mock_get_contract_id.side_effect = ValueError("Test error")
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "B", "price": "4500.00"}
 
+        with pytest.raises(ValueError, match="Test error"):
+            process_trading_data(trading_data)
 
-def test_process_trading_data_order_failed(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data returns order_failed status when place_order reports failure"""
+        mock_get_contract_id.assert_called_once_with("ZC")
+        mock_place_order.assert_not_called()
 
-    # Configure place_order to return a failure response (e.g. insufficient funds)
-    mock_get_contract_id.return_value = "123456"
-    mock_place_order.return_value = {"success": False, "error": "Insufficient funds", "details": {}}
-    trading_data = {
-        "dummy": "NO",
-        "symbol": "ZC",
-        "side": "B",
-        "price": "4500.00"
-    }
+    def test_place_order_exception_propagates(
+        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+    ):
+        """Test exception from place_order propagates out of process_trading_data."""
+        mock_get_contract_id.return_value = "123456"
+        mock_place_order.side_effect = ValueError("Invalid side 'X': expected 'B' or 'S'")
+        trading_data = {"dummy": "NO", "symbol": "ZC", "side": "X", "price": "4500.00"}
 
-    # Call process_trading_data and verify it reports failure rather than success
-    result = process_trading_data(trading_data)
+        with pytest.raises(ValueError, match="Invalid side"):
+            process_trading_data(trading_data)
 
-    # Verify the error is logged and the status reflects the failure
-    assert result == {'status': 'order_failed',
-                      'order': {"success": False, "error": "Insufficient funds", "details": {}}}
-    mock_logger_ibkr_service.error.assert_called_once()
-    mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
-
-
-def test_process_trading_data_error_handling(mock_logger_ibkr_service, mock_place_order, mock_get_contract_id):
-    """Test that process_trading_data propagates exceptions from get_contract_id"""
-
-    # Configure mock to raise an exception when get_contract_id is called and create normal trading data
-    mock_get_contract_id.side_effect = ValueError("Test error")
-    trading_data = {
-        "dummy": "NO",
-        "symbol": "ZC",
-        "side": "B",
-        "price": "4500.00"
-    }
-
-    # Verify that the ValueError from get_contract_id propagates through process_trading_data
-    with pytest.raises(ValueError, match="Test error"):
-        process_trading_data(trading_data)
-
-    # Verify logger recorded the trading data, get_contract_id was called but failed, and place_order was never called
-    mock_logger_ibkr_service.info.assert_called_once_with(f"Trading data received: {trading_data}")
-    mock_get_contract_id.assert_called_once_with("ZC")
-    mock_place_order.assert_not_called()
+        mock_get_contract_id.assert_called_once_with("ZC")
+        mock_place_order.assert_called_once_with("123456", "X")

@@ -12,12 +12,19 @@ Tests cover:
 - File saving integration
 - Error handling
 """
-from unittest.mock import patch
+import os
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
-from app.backtesting.testing.reporting import results_to_dataframe, save_results
+from app.backtesting.testing.reporting import results_to_dataframe, save_results, save_to_parquet
+
+
+@pytest.fixture
+def sample_dataframe():
+    return pd.DataFrame({"name": ["Item 1", "Item 2"], "value": [100, 200]})
 
 
 # ==================== Results to DataFrame Tests ====================
@@ -574,3 +581,121 @@ class TestReportingIntegration:
 
         assert len(df) == 100
         assert df['total_trades'].tolist() == list(range(100))
+
+
+# ==================== Save to Parquet Tests ====================
+
+class TestSaveToParquet:
+    """Test save_to_parquet function."""
+
+    def test_new_file_saves_dataframe(self, monkeypatch, sample_dataframe):
+        """Test new file path creates directory and writes directly."""
+        mock_lock = MagicMock()
+        mock_makedirs = MagicMock()
+        mock_to_parquet = MagicMock()
+
+        monkeypatch.setattr(os, "makedirs", mock_makedirs)
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", MagicMock(return_value=mock_lock))
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        mock_makedirs.assert_called_once_with("test_dir", exist_ok=True)
+        mock_to_parquet.assert_called_once_with("test_dir/test_file.parquet", index=False)
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
+
+    def test_existing_file_appends_data(self, monkeypatch, sample_dataframe):
+        """Test existing file path reads, concatenates, deduplicates, then saves."""
+        existing_df = pd.DataFrame({"name": ["Item 3"], "value": [300]})
+        mock_lock = MagicMock()
+        mock_to_parquet = MagicMock()
+        mock_concat = MagicMock(return_value=pd.DataFrame())
+
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: True)
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", MagicMock(return_value=mock_lock))
+        monkeypatch.setattr(pd, "read_parquet", MagicMock(return_value=existing_df))
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+        monkeypatch.setattr(pd, "concat", mock_concat)
+
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        mock_concat.assert_called_once()
+        mock_to_parquet.assert_called_once()
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
+
+    def test_existing_file_read_error_logs_and_saves(self, monkeypatch, sample_dataframe):
+        """Test read error on existing file is logged and save still proceeds."""
+        mock_lock = MagicMock()
+        mock_logger = MagicMock()
+        mock_to_parquet = MagicMock()
+
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: True)
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", MagicMock(return_value=mock_lock))
+        monkeypatch.setattr(pd, "read_parquet", MagicMock(side_effect=Exception("Parquet read error")))
+        monkeypatch.setattr("app.backtesting.testing.reporting.logger", mock_logger)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+
+        save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        mock_logger.error.assert_called_once()
+        mock_to_parquet.assert_called_once()
+        mock_lock.__enter__.assert_called_once()
+        mock_lock.__exit__.assert_called_once()
+
+    def test_invalid_data_type_raises_value_error(self):
+        """Test ValueError raised when data is not a DataFrame."""
+        with pytest.raises(ValueError, match="Data must be a Pandas DataFrame for parquet format"):
+            save_to_parquet({"key": "value"}, "test_dir/test_file.parquet")
+
+    def test_lock_timeout_logs_and_reraises(self, monkeypatch, sample_dataframe):
+        """Test FileLock timeout is logged and re-raised."""
+        from filelock import Timeout as FileLockTimeout
+
+        mock_lock = MagicMock()
+        mock_lock.__enter__.side_effect = FileLockTimeout("test_file.parquet.lock")
+        mock_logger = MagicMock()
+
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", MagicMock(return_value=mock_lock))
+        monkeypatch.setattr("app.backtesting.testing.reporting.logger", mock_logger)
+
+        with pytest.raises(FileLockTimeout):
+            save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        mock_logger.error.assert_called_once()
+
+    def test_general_exception_logs_and_reraises(self, monkeypatch, sample_dataframe):
+        """Test unexpected write error is logged and re-raised."""
+        mock_lock = MagicMock()
+        mock_logger = MagicMock()
+
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", MagicMock(return_value=mock_lock))
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", MagicMock(side_effect=Exception("Write error")))
+        monkeypatch.setattr("app.backtesting.testing.reporting.logger", mock_logger)
+
+        with pytest.raises(Exception, match="Write error"):
+            save_to_parquet(sample_dataframe, "test_dir/test_file.parquet")
+
+        assert mock_logger.error.call_count >= 1
+
+    def test_uses_absolute_path_for_lock(self, monkeypatch, sample_dataframe):
+        """Test FileLock is called with the absolute path and .lock suffix."""
+        mock_lock = MagicMock()
+        mock_filelock = MagicMock(return_value=mock_lock)
+
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        monkeypatch.setattr(os.path, "abspath", MagicMock(return_value="/absolute/path/test_file.parquet"))
+        monkeypatch.setattr("app.backtesting.testing.reporting.FileLock", mock_filelock)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", MagicMock())
+
+        save_to_parquet(sample_dataframe, "relative/path/test_file.parquet")
+
+        mock_filelock.assert_called_once_with("/absolute/path/test_file.parquet.lock", timeout=120)

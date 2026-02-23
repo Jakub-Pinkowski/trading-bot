@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.utils.analysis_utils.data_cleaning_utils import fractional_to_decimal, parse_description
+from app.analysis.analysis_utils.data_cleaning_utils import fractional_to_decimal, parse_description
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 

@@ -1,97 +1,107 @@
+"""
+Tests for IBKR Connection Module.
+
+Tests cover:
+- API heartbeat (tickle) with successful, error, and unauthenticated responses
+- Scheduler initialization and configuration
+- Missed-job listener callback logging
+"""
+from unittest.mock import MagicMock
+
 from app.ibkr.connection import tickle_ibkr_api, start_ibkr_scheduler
 
 
-def test_tickle_ibkr_api_success(mock_logger_connection, mock_api_post_connection):
-    """Test that tickle_ibkr_api logs success response when API call succeeds"""
+# ==================== Test Classes ====================
 
-    # Mock API to return a successful response
-    mock_api_post_connection.return_value = {"success": True}
+class TestTickleIbkrApi:
+    """Test IBKR API heartbeat (tickle) function."""
 
-    # Call the tickle_ibkr_api function
-    tickle_ibkr_api()
+    def test_success_logs_response(self, mock_logger_connection, mock_api_post_connection):
+        """Test successful tickle logs the API response."""
+        mock_api_post_connection.return_value = {"success": True}
 
-    # Verify API was called correctly and success response was logged
-    mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.info.assert_called_once_with(f"IBKR API tickle response: {{'success': True}}")
+        tickle_ibkr_api()
 
+        mock_api_post_connection.assert_called_once_with("tickle", {})
+        mock_logger_connection.info.assert_called_once_with(
+            f"IBKR API tickle response: {{'success': True}}"
+        )
 
-def test_tickle_ibkr_api_no_session_error(mock_logger_connection, mock_api_post_connection):
-    """Test that tickle_ibkr_api logs an error when API returns 'no session' error"""
+    def test_no_session_error_logs_error(self, mock_logger_connection, mock_api_post_connection):
+        """Test no-session response logs an error."""
+        mock_api_post_connection.return_value = {"error": "no session"}
 
-    # Mock API to return a no session error response
-    mock_api_post_connection.return_value = {"error": "no session"}
+        tickle_ibkr_api()
 
-    # Call the tickle_ibkr_api function with error response
-    tickle_ibkr_api()
+        mock_api_post_connection.assert_called_once_with("tickle", {})
+        mock_logger_connection.error.assert_called_once()
 
-    # Verify API was called correctly and error was logged
-    mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.error.assert_called_once()
-
-
-def test_tickle_ibkr_api_not_authenticated(mock_logger_connection, mock_api_post_connection):
-    """Test that tickle_ibkr_api logs an error when user is not authenticated"""
-
-    # Mock API to return a response indicating user is not authenticated
-    mock_api_post_connection.return_value = {
-        "iserver": {
-            "authStatus": {
-                "authenticated": False,
-                "connected": True
+    def test_not_authenticated_logs_error(self, mock_logger_connection, mock_api_post_connection):
+        """Test unauthenticated status logs an error."""
+        mock_api_post_connection.return_value = {
+            "iserver": {
+                "authStatus": {
+                    "authenticated": False,
+                    "connected": True,
+                }
             }
         }
-    }
 
-    # Call the tickle_ibkr_api function with not authenticated status
-    tickle_ibkr_api()
+        tickle_ibkr_api()
 
-    # Verify API was called correctly and authentication error was logged
-    mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.error.assert_called_once()
+        mock_api_post_connection.assert_called_once_with("tickle", {})
+        mock_logger_connection.error.assert_called_once()
 
-
-def test_tickle_ibkr_api_not_connected(mock_logger_connection, mock_api_post_connection):
-    """Test that tickle_ibkr_api logs an error when user is authenticated but not connected"""
-
-    # Mock API to return a response indicating user is authenticated but not connected
-    mock_api_post_connection.return_value = {
-        "iserver": {
-            "authStatus": {
-                "authenticated": True,
-                "connected": False
+    def test_not_connected_logs_error(self, mock_logger_connection, mock_api_post_connection):
+        """Test connected=False status logs an error."""
+        mock_api_post_connection.return_value = {
+            "iserver": {
+                "authStatus": {
+                    "authenticated": True,
+                    "connected": False,
+                }
             }
         }
-    }
 
-    # Call the tickle_ibkr_api function with not connected status
-    tickle_ibkr_api()
+        tickle_ibkr_api()
 
-    # Verify API was called correctly and connection error was logged
-    mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.error.assert_called_once()
+        mock_api_post_connection.assert_called_once_with("tickle", {})
+        mock_logger_connection.error.assert_called_once()
 
+    def test_unexpected_exception_logged(self, mock_logger_connection, mock_api_post_connection):
+        """Test unexpected exception is caught and logged with the exception message."""
+        mock_api_post_connection.side_effect = Exception("Test error")
 
-def test_tickle_ibkr_api_unexpected_error(mock_logger_connection, mock_api_post_connection):
-    """Test that tickle_ibkr_api handles and logs generic exceptions"""
+        tickle_ibkr_api()
 
-    # Mock API to raise a generic Exception when called
-    mock_api_post_connection.side_effect = Exception("Test error")
-
-    # Call the tickle_ibkr_api function which should handle the unexpected exception
-    tickle_ibkr_api()
-
-    # Verify API was called correctly and generic error message was logged
-    mock_api_post_connection.assert_called_once_with("tickle", {})
-    mock_logger_connection.error.assert_called_once_with("Unexpected error while tickling IBKR API: Test error")
+        mock_api_post_connection.assert_called_once_with("tickle", {})
+        mock_logger_connection.error.assert_called_once_with(
+            "Unexpected error while tickling IBKR API: Test error"
+        )
 
 
-def test_start_ibkr_scheduler(mock_scheduler):
-    """Test that start_ibkr_scheduler correctly configures and starts the scheduler"""
+class TestStartIbkrScheduler:
+    """Test IBKR scheduler initialization."""
 
-    # Call the start_ibkr_scheduler function to initialize the scheduler
-    start_ibkr_scheduler()
+    def test_scheduler_configured_and_started(self, mock_scheduler):
+        """Test scheduler receives a job and listener, and is started."""
+        start_ibkr_scheduler()
 
-    # Verify scheduler was configured correctly with job, listener, and started
-    mock_scheduler.add_job.assert_called_once()
-    mock_scheduler.add_listener.assert_called_once()
-    mock_scheduler.start.assert_called_once()
+        mock_scheduler.add_job.assert_called_once()
+        mock_scheduler.add_listener.assert_called_once()
+        mock_scheduler.start.assert_called_once()
+
+    def test_missed_job_listener_logs_warning(self, mock_logger_connection, mock_scheduler):
+        """Test the missed-job listener callback logs a warning with job details."""
+        start_ibkr_scheduler()
+
+        # Extract the on_job_missed callback registered with add_listener
+        on_job_missed = mock_scheduler.add_listener.call_args[0][0]
+
+        mock_event = MagicMock()
+        mock_event.job_id = "tickle_job"
+        mock_event.scheduled_run_time = "2024-01-01 00:00:00"
+
+        on_job_missed(mock_event)
+
+        mock_logger_connection.warning.assert_called_once()

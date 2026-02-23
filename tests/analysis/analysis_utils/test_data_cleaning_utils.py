@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.utils.analysis_utils.data_cleaning_utils import parse_description, fractional_to_decimal
+from app.analysis.analysis_utils.data_cleaning_utils import parse_description, fractional_to_decimal
 
 
 def test_parse_description_valid_json():

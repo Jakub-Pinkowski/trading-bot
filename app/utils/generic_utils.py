@@ -5,6 +5,8 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+# ==================== Symbol Parsing ====================
+
 def parse_symbol(symbol):
     match = re.match(r'^([A-Za-z]+)', symbol)
     if not match:

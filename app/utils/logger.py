@@ -8,7 +8,8 @@ from config import BASE_DIR
 LOGS_DIR = BASE_DIR / "logs"
 
 
-# Custom logger
+# ==================== Logger Setup ====================
+
 def get_logger(name='app'):
     # Create the logs directory if it doesn't exist
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
