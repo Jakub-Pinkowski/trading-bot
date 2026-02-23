@@ -72,7 +72,7 @@ SYMBOL_SPECS = {
     'GC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 100, 'tick_size': 0.10, 'margin': 37605.98,
            'tv_compatible': True},  # Gold
     'SI': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 5000, 'tick_size': 0.005, 'margin': 74460.96,
-           'tv_compatible': True},  # Silver
+           'tv_compatible': False},  # Silver
     'HG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 25000, 'tick_size': 0.0005, 'margin': 18786.14,
            'tv_compatible': True},  # Copper
     'PL': {'category': 'Metals', 'exchange': 'NYMEX', 'multiplier': 50, 'tick_size': 0.10, 'margin': 21928.24,
@@ -82,7 +82,7 @@ SYMBOL_SPECS = {
             'tv_compatible': False},  # Mini Platinum
     # Metals - Micro
     'MGC': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 10, 'tick_size': 0.10, 'margin': 3760.60,
-            'tv_compatible': True},  # Micro Gold
+            'tv_compatible': False},  # Micro Gold
     'SIL': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 1000, 'tick_size': 0.005, 'margin': 14892.19,
             'tv_compatible': True},  # Micro Silver (TradingView symbol, maps to QI in IBKR)
     'MHG': {'category': 'Metals', 'exchange': 'COMEX', 'multiplier': 2500, 'tick_size': 0.0005, 'margin': 1878.61,
@@ -119,8 +119,6 @@ SYMBOL_SPECS = {
             'tv_compatible': True},  # Micro E-mini Dow
     'M2K': {'category': 'Index', 'exchange': 'CME', 'multiplier': 5, 'tick_size': 0.10, 'margin': 1046.50,
             'tv_compatible': False},  # Micro E-mini Russell 2000
-    'MHNG': {'category': 'Index', 'exchange': 'CME', 'multiplier': 2500, 'tick_size': None, 'margin': None,
-             'tv_compatible': False},  # Micro Henry Hub Natural Gas
 
     # Forex - Normal
     '6E': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.00005, 'margin': 3435.30,

@@ -36,7 +36,7 @@ class TestValidateSymbols:
         (['ZS', 'ZC'], 2),
         (['ZS', 'ZC', 'CL'], 3),
         (['CL', 'NG'], 2),
-        (['GC', 'SI'], 2),
+        (['GC', 'HG'], 2),
         (['YM', 'ZB'], 2),
     ])
     def test_valid_symbols_parametrized(self, symbols, expected_count):
@@ -834,7 +834,7 @@ class TestRealDataIntegration:
         symbols_by_category = {
             'grains': ['ZS', 'ZC', 'ZW'],
             'energies': ['CL', 'NG'],
-            'metals': ['GC', 'SI']
+            'metals': ['GC', 'HG']
         }
 
         for category, symbols in symbols_by_category.items():

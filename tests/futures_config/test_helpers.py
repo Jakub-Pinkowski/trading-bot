@@ -230,7 +230,7 @@ class TestIsTradingViewCompatible:
         ('CL', True),
         ('GC', True),
         ('XC', True),
-        ('MGC', True),
+        ('MGC', False),
         ('SIL', True),
         ('ES', False),
         ('NQ', False),

@@ -145,13 +145,11 @@ class TestMetalsCategory:
     def test_metals_major_symbols(self):
         """Test that major metals symbols are present."""
         assert 'GC' in METALS  # Gold
-        assert 'SI' in METALS  # Silver
         assert 'HG' in METALS  # Copper
         assert 'PL' in METALS  # Platinum
 
     def test_metals_micro_symbols(self):
         """Test that micro metals symbols are present."""
-        assert 'MGC' in METALS  # Micro Gold
         assert 'SIL' in METALS  # Micro Silver
 
     def test_all_metals_from_symbol_specs(self):
