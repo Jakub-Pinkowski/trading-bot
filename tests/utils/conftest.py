@@ -82,6 +82,7 @@ def mock_logging_setup(monkeypatch, tmp_path):
     monkeypatch.setattr("app.utils.logger.logging", mock_logging)
     monkeypatch.setattr("app.utils.logger.LOGS_DIR", mock_logs_dir)
     monkeypatch.setattr("app.utils.logger.sys", mock_sys)
+    monkeypatch.delenv("PYTEST_RUNNING", raising=False)
 
     return {
         "logging": mock_logging,

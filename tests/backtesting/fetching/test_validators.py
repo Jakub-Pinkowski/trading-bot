@@ -2,7 +2,7 @@
 Tests for Data Fetching Validators Module.
 
 Tests cover:
-- Symbol validation for TradingView compatibility
+- Symbol validation against SYMBOL_SPECS
 - Exchange compatibility validation
 - OHLCV data structure validation
 - Gap detection in time series data
@@ -29,7 +29,7 @@ from app.backtesting.fetching.validators import (
 # ==================== Test Classes ====================
 
 class TestValidateSymbols:
-    """Test symbol validation for TradingView compatibility."""
+    """Test symbol validation against SYMBOL_SPECS."""
 
     @pytest.mark.parametrize("symbols,expected_count", [
         (['ZS'], 1),
@@ -83,10 +83,9 @@ class TestValidateSymbols:
         with pytest.raises(ValueError, match='No valid symbols provided'):
             validate_symbols([])
 
-    def test_tv_incompatible_symbols_filtered(self):
-        """Test that symbols marked as tv_compatible=False are filtered."""
-        # YC and QC are marked as tv_compatible=False in SYMBOL_SPECS
-        symbols = ['ZS', 'YC', 'QC']
+    def test_unknown_symbols_filtered(self):
+        """Test that symbols not in SYMBOL_SPECS are filtered."""
+        symbols = ['ZS', 'UNKNOWN1', 'UNKNOWN2']
 
         with patch('app.backtesting.fetching.validators.logger') as mock_logger:
             result = validate_symbols(symbols)
@@ -635,7 +634,7 @@ class TestIntegrationScenarios:
         result = validate_exchange_compatibility(result, 'NYMEX')
         assert len(result) == 2
 
-        # Index (CBOT - using tv_compatible symbols)
+        # Index (CBOT)
         indices = ['YM', 'ZB']
         result = validate_symbols(indices)
         assert len(result) == 2

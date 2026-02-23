@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 from config import BASE_DIR
@@ -20,8 +21,10 @@ def get_logger(name='app'):
     # Formatter to ensure uniform log format
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    # Check if we're running in a test environment
-    is_test_environment = 'pytest' in sys.modules
+    # Check if we're running in a test environment.
+    # os.environ check covers spawned subprocess workers (ProcessPoolExecutor)
+    # where sys.modules does not contain pytest.
+    is_test_environment = 'pytest' in sys.modules or os.environ.get('PYTEST_RUNNING') == '1'
 
     # Add handlers to the logger in the correct order
     if not logger.handlers:

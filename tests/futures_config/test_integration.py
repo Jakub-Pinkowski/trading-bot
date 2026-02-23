@@ -31,7 +31,6 @@ from futures_config import (
     get_tick_size,
     get_contract_multiplier,
     get_margin_requirement,
-    is_tradingview_compatible,
 )
 
 
@@ -60,7 +59,6 @@ class TestPackageImports:
             'get_tick_size',
             'get_contract_multiplier',
             'get_margin_requirement',
-            'is_tradingview_compatible',
         ]
 
         for export in expected_exports:
@@ -99,7 +97,6 @@ class TestCrossModuleIntegration:
             # Should not raise errors
             get_exchange_for_symbol(symbol)
             get_category_for_symbol(symbol)
-            is_tradingview_compatible(symbol)
 
     def test_categories_dict_consistency(self):
         """Test that CATEGORIES dict is consistent with individual lists."""
@@ -116,10 +113,7 @@ class TestTradingViewWorkflow:
         # TradingView alert comes in with XC
         tv_symbol = 'XC'
 
-        # Step 1: Verify symbol is TradingView compatible
-        assert is_tradingview_compatible(tv_symbol)
-
-        # Step 2: Get symbol information
+        # Step 1: Get symbol information
         category = get_category_for_symbol(tv_symbol)
         exchange = get_exchange_for_symbol(tv_symbol)
 
@@ -144,9 +138,6 @@ class TestTradingViewWorkflow:
         # TradingView alert with ZS (no mapping needed)
         tv_symbol = 'ZS'
 
-        # Verify TradingView compatible
-        assert is_tradingview_compatible(tv_symbol)
-
         # Map to IBKR (should return same symbol)
         ibkr_symbol = map_tv_to_ibkr(tv_symbol)
         assert ibkr_symbol == 'ZS'
@@ -162,9 +153,6 @@ class TestTradingViewWorkflow:
         """Test complete workflow for micro silver (SIL -> QI)."""
         tv_symbol = 'SIL'
 
-        # Verify compatibility
-        assert is_tradingview_compatible(tv_symbol)
-
         # Map to IBKR
         ibkr_symbol = map_tv_to_ibkr(tv_symbol)
         assert ibkr_symbol == 'QI'
@@ -174,7 +162,7 @@ class TestTradingViewWorkflow:
         exchange = get_exchange_for_symbol(tv_symbol)
 
         assert category == 'Metals'
-        assert exchange == 'COMEX'
+        assert exchange == 'COMEX_MINI'
 
 
 class TestPositionTrackingWorkflow:
@@ -188,9 +176,6 @@ class TestPositionTrackingWorkflow:
         # Map to TradingView symbol
         tv_symbol = map_ibkr_to_tv(ibkr_symbol)
         assert tv_symbol == 'XC'
-
-        # Verify it's TV compatible
-        assert is_tradingview_compatible(tv_symbol)
 
         # Get category for grouping
         category = get_category_for_symbol(tv_symbol)
@@ -250,14 +235,6 @@ class TestCategoryFiltering:
         assert 'XC' in mini_grains
         assert 'MZC' in micro_grains
 
-    def test_get_tv_compatible_by_category(self):
-        """Test that all category symbols are TV compatible."""
-        for category_name, symbols in CATEGORIES.items():
-            for symbol in symbols:
-                assert is_tradingview_compatible(symbol), \
-                    f"Symbol {symbol} in {category_name} not TV compatible"
-
-
 class TestRiskManagement:
     """Test risk management calculations."""
 
@@ -302,22 +279,19 @@ class TestDataQuality:
             # TV symbol must be in SYMBOL_SPECS
             assert tv_symbol in SYMBOL_SPECS, f"TV symbol {tv_symbol} not in SYMBOL_SPECS"
 
-    def test_all_tv_compatible_symbols_queryable(self):
-        """Test that all TV-compatible symbols can be queried."""
-        tv_symbols = [s for s, spec in SYMBOL_SPECS.items() if spec['tv_compatible']]
-
-        for symbol in tv_symbols:
+    def test_all_symbols_queryable(self):
+        """Test that all symbols can be queried."""
+        for symbol in SYMBOL_SPECS.keys():
             # All should work without errors
             get_exchange_for_symbol(symbol)
             get_category_for_symbol(symbol)
             get_tick_size(symbol)
 
-    def test_categories_cover_all_tv_symbols(self):
-        """Test that categories include all TV-compatible symbols."""
+    def test_categories_cover_all_symbols(self):
+        """Test that categories include all symbols."""
         all_category_symbols = set(GRAINS + SOFTS + ENERGY + METALS + CRYPTO + INDEX + FOREX)
-        tv_compatible_symbols = {s for s, spec in SYMBOL_SPECS.items() if spec['tv_compatible']}
 
-        assert all_category_symbols == tv_compatible_symbols
+        assert all_category_symbols == set(SYMBOL_SPECS.keys())
 
     def test_symbol_specs_completeness(self):
         """Test that SYMBOL_SPECS has reasonable completeness."""
@@ -359,13 +333,10 @@ class TestRealWorldScenarios:
         ('CL', 'Energy', 'NYMEX'),
         ('GC', 'Metals', 'COMEX'),
         ('XC', 'Grains', 'CBOT'),
-        ('SIL', 'Metals', 'COMEX'),
+        ('SIL', 'Metals', 'COMEX_MINI'),
     ])
     def test_complete_symbol_lookup(self, tv_symbol, expected_category, expected_exchange):
         """Test complete symbol lookup workflow."""
-        # Verify TV compatible
-        assert is_tradingview_compatible(tv_symbol)
-
         # Get category and exchange
         category = get_category_for_symbol(tv_symbol)
         exchange = get_exchange_for_symbol(tv_symbol)
@@ -384,16 +355,12 @@ class TestRealWorldScenarios:
         portfolio_info = {}
         for symbol in portfolio_symbols:
             portfolio_info[symbol] = {
-                'tv_compatible': is_tradingview_compatible(symbol),
                 'category': get_category_for_symbol(symbol),
                 'exchange': get_exchange_for_symbol(symbol),
                 'ibkr_symbol': map_tv_to_ibkr(symbol),
                 'tick_size': get_tick_size(symbol),
                 'multiplier': get_contract_multiplier(symbol),
             }
-
-        # All should be TV compatible
-        assert all(info['tv_compatible'] for info in portfolio_info.values())
 
         # Should have diverse categories
         categories = {info['category'] for info in portfolio_info.values()}

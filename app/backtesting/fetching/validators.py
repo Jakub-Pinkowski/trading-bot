@@ -69,7 +69,7 @@ def load_existing_gaps(contract_suffix):
 
 def validate_symbols(symbols):
     """
-    Validate that all symbols are TradingView-compatible.
+    Validate that all symbols exist in SYMBOL_SPECS.
 
     Logs warnings for invalid symbols and raises an error if no valid symbols remain.
 
@@ -77,7 +77,7 @@ def validate_symbols(symbols):
         symbols: List of symbol strings to validate
 
     Returns:
-        List of valid symbols that are TradingView-compatible
+        List of valid symbols that exist in SYMBOL_SPECS
 
     Raises:
         ValueError: If no valid symbols are provided
@@ -86,7 +86,7 @@ def validate_symbols(symbols):
     invalid_symbols = []
 
     for symbol in symbols:
-        if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tv_compatible']:
+        if symbol in SYMBOL_SPECS:
             valid_symbols.append(symbol)
         else:
             invalid_symbols.append(symbol)

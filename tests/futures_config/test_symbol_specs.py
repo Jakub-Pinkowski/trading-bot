@@ -25,7 +25,7 @@ class TestSymbolSpecsStructure:
 
     def test_all_symbols_have_required_keys(self):
         """Test that all symbols have required specification keys."""
-        required_keys = {'category', 'exchange', 'multiplier', 'tick_size', 'margin', 'tv_compatible'}
+        required_keys = {'category', 'exchange', 'multiplier', 'tick_size', 'margin'}
 
         for symbol, specs in SYMBOL_SPECS.items():
             assert isinstance(specs, dict), f"Symbol {symbol} specs is not a dict"
@@ -40,15 +40,10 @@ class TestSymbolSpecsStructure:
 
     def test_exchange_values_valid(self):
         """Test that all exchange values are from expected set."""
-        valid_exchanges = {'CBOT', 'ICEUS', 'NYMEX', 'COMEX', 'CME'}
+        valid_exchanges = {'CBOT', 'ICEUS', 'NYMEX', 'COMEX', 'CME', 'CME_MINI', 'COMEX_MINI'}
 
         for symbol, specs in SYMBOL_SPECS.items():
             assert specs['exchange'] in valid_exchanges, f"Symbol {symbol} has invalid exchange: {specs['exchange']}"
-
-    def test_tv_compatible_is_boolean(self):
-        """Test that tv_compatible is always a boolean."""
-        for symbol, specs in SYMBOL_SPECS.items():
-            assert isinstance(specs['tv_compatible'], bool), f"Symbol {symbol} tv_compatible is not boolean"
 
     @pytest.mark.parametrize("symbol", ['ZS', 'CL', 'GC', 'ES', 'BTC', '6E'])
     def test_major_symbols_exist(self, symbol):
@@ -169,35 +164,6 @@ class TestExchangeMapping:
         assert len(cme_symbols) > 0
 
 
-class TestTradingViewCompatibility:
-    """Test TradingView compatibility flags."""
-
-    def test_tv_compatible_symbols_exist(self):
-        """Test that TradingView compatible symbols exist."""
-        tv_compatible = [s for s, spec in SYMBOL_SPECS.items() if spec['tv_compatible']]
-
-        assert len(tv_compatible) > 0
-        assert 'ZS' in tv_compatible
-        assert 'CL' in tv_compatible
-        assert 'GC' in tv_compatible
-
-    def test_mini_grains_tv_compatible(self):
-        """Test that mini grains with mapping are TradingView compatible."""
-        # XC, XW, XK should be TV compatible (they map to YC, YW, YK in IBKR)
-        assert SYMBOL_SPECS['XC']['tv_compatible'] is True
-        assert SYMBOL_SPECS['XW']['tv_compatible'] is True
-        assert SYMBOL_SPECS['XK']['tv_compatible'] is True
-
-    def test_micro_silver_tv_compatible(self):
-        """Test that SIL (micro silver) is TradingView compatible."""
-        # SIL maps to QI in IBKR but is TV compatible
-        assert SYMBOL_SPECS['SIL']['tv_compatible'] is True
-
-    def test_es_not_tv_compatible(self):
-        """Test that ES is not marked as TradingView compatible."""
-        assert SYMBOL_SPECS['ES']['tv_compatible'] is False
-
-
 class TestSpecificSymbols:
     """Test specific symbol specifications."""
 
@@ -209,7 +175,6 @@ class TestSpecificSymbols:
         assert zs['exchange'] == 'CBOT'
         assert zs['multiplier'] == 50
         assert zs['tick_size'] == 0.25
-        assert zs['tv_compatible'] is True
 
     def test_cl_specifications(self):
         """Test CL (Crude Oil) specifications."""
@@ -219,7 +184,6 @@ class TestSpecificSymbols:
         assert cl['exchange'] == 'NYMEX'
         assert cl['multiplier'] == 1000
         assert cl['tick_size'] == 0.01
-        assert cl['tv_compatible'] is True
 
     def test_gc_specifications(self):
         """Test GC (Gold) specifications."""
@@ -229,7 +193,6 @@ class TestSpecificSymbols:
         assert gc['exchange'] == 'COMEX'
         assert gc['multiplier'] == 100
         assert gc['tick_size'] == 0.10
-        assert gc['tv_compatible'] is True
 
     def test_xc_specifications(self):
         """Test XC (Mini Corn) specifications."""
@@ -239,7 +202,6 @@ class TestSpecificSymbols:
         assert xc['exchange'] == 'CBOT'
         assert xc['multiplier'] == 1000
         assert xc['tick_size'] == 0.125
-        assert xc['tv_compatible'] is True
 
 
 class TestDefaultTickSize:

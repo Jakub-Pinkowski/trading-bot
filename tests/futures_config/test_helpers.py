@@ -7,7 +7,6 @@ Tests cover:
 - get_tick_size function with fallback behavior
 - get_contract_multiplier function
 - get_margin_requirement function
-- is_tradingview_compatible function
 - Error handling for unknown symbols
 - Edge cases and boundary conditions
 
@@ -21,7 +20,6 @@ from futures_config.helpers import (
     get_tick_size,
     get_contract_multiplier,
     get_margin_requirement,
-    is_tradingview_compatible,
 )
 from futures_config.symbol_specs import DEFAULT_TICK_SIZE
 
@@ -36,7 +34,7 @@ class TestGetExchangeForSymbol:
         ('NG', 'NYMEX'),
         ('GC', 'COMEX'),
         ('SI', 'COMEX'),
-        ('ES', 'CME'),
+        ('ES', 'CME_MINI'),
         ('BTC', 'CME'),
         ('6E', 'CME'),
     ])
@@ -59,7 +57,7 @@ class TestGetExchangeForSymbol:
         """Test exchange for micro symbols."""
         assert get_exchange_for_symbol('MZC') == 'CBOT'
         assert get_exchange_for_symbol('MCL') == 'NYMEX'
-        assert get_exchange_for_symbol('MGC') == 'COMEX'
+        assert get_exchange_for_symbol('MGC') == 'COMEX_MINI'
 
 
 class TestGetCategoryForSymbol:
@@ -222,40 +220,6 @@ class TestGetMarginRequirement:
                 assert margin > 0, f"Symbol {symbol} margin is not positive"
 
 
-class TestIsTradingViewCompatible:
-    """Test is_tradingview_compatible function."""
-
-    @pytest.mark.parametrize("symbol,expected", [
-        ('ZS', True),
-        ('CL', True),
-        ('GC', True),
-        ('XC', True),
-        ('MGC', False),
-        ('SIL', True),
-        ('ES', False),
-        ('NQ', False),
-        ('MES', False),
-    ])
-    def test_tv_compatibility_check(self, symbol, expected):
-        """Test TradingView compatibility for various symbols."""
-        assert is_tradingview_compatible(symbol) == expected
-
-    def test_unknown_symbol_raises_error(self):
-        """Test that unknown symbol raises ValueError."""
-        with pytest.raises(ValueError, match='Unknown symbol'):
-            is_tradingview_compatible('UNKNOWN')
-
-    def test_mini_grains_tv_compatible(self):
-        """Test that mini grains are TradingView compatible."""
-        assert is_tradingview_compatible('XC') is True
-        assert is_tradingview_compatible('XW') is True
-        assert is_tradingview_compatible('XK') is True
-
-    def test_micro_silver_tv_compatible(self):
-        """Test that micro silver is TradingView compatible."""
-        assert is_tradingview_compatible('SIL') is True
-
-
 class TestErrorHandling:
     """Test error handling across all helper functions."""
 
@@ -264,7 +228,6 @@ class TestErrorHandling:
         get_category_for_symbol,
         get_contract_multiplier,
         get_margin_requirement,
-        is_tradingview_compatible,
     ])
     def test_unknown_symbol_error_message(self, func):
         """Test that error message includes symbol name."""
@@ -299,27 +262,12 @@ class TestIntegrationScenarios:
         tick_size = get_tick_size(symbol)
         multiplier = get_contract_multiplier(symbol)
         margin = get_margin_requirement(symbol)
-        tv_compatible = is_tradingview_compatible(symbol)
 
         assert exchange == 'CBOT'
         assert category == 'Grains'
         assert tick_size == 0.25
         assert multiplier == 50
         assert margin > 0
-        assert tv_compatible is True
-
-    def test_filter_tv_compatible_symbols(self):
-        """Test filtering for TradingView compatible symbols."""
-        from futures_config.symbol_specs import SYMBOL_SPECS
-
-        tv_symbols = [
-            symbol for symbol in SYMBOL_SPECS.keys()
-            if is_tradingview_compatible(symbol)
-        ]
-
-        assert 'ZS' in tv_symbols
-        assert 'CL' in tv_symbols
-        assert 'ES' not in tv_symbols
 
     def test_get_tick_size_with_fallback(self):
         """Test tick size retrieval with fallback for unknown symbols."""
@@ -350,14 +298,12 @@ class TestIntegrationScenarios:
         """Test validating a trading setup using helpers."""
         symbol = 'CL'
 
-        # Check if symbol is TV compatible
-        if is_tradingview_compatible(symbol):
-            exchange = get_exchange_for_symbol(symbol)
-            margin = get_margin_requirement(symbol)
+        exchange = get_exchange_for_symbol(symbol)
+        margin = get_margin_requirement(symbol)
 
-            assert exchange == 'NYMEX'
-            assert margin is not None
-            assert margin > 0
+        assert exchange == 'NYMEX'
+        assert margin is not None
+        assert margin > 0
 
 
 class TestEdgeCases:
@@ -392,7 +338,6 @@ class TestEdgeCases:
             get_tick_size(symbol)  # May return default
             get_contract_multiplier(symbol)  # May return None
             get_margin_requirement(symbol)  # May return None
-            is_tradingview_compatible(symbol)
 
     def test_special_character_symbols(self):
         """Test symbols with special characters."""

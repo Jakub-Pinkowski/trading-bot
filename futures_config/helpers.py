@@ -134,26 +134,3 @@ def get_margin_requirement(symbol):
         raise ValueError(f'Unknown symbol: {symbol}')
     return SYMBOL_SPECS[symbol]['margin']
 
-
-def is_tradingview_compatible(symbol):
-    """
-    Check if a symbol is TradingView-compatible.
-
-    Args:
-        symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
-
-    Returns:
-        Boolean indicating TradingView compatibility
-
-    Raises:
-        ValueError: If the symbol is not recognized
-
-    Example:
-        is_tradingview_compatible('ZS')
-        True
-        is_tradingview_compatible('ES')
-        False
-    """
-    if symbol not in SYMBOL_SPECS:
-        raise ValueError(f'Unknown symbol: {symbol}')
-    return SYMBOL_SPECS[symbol]['tv_compatible']

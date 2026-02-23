@@ -94,7 +94,7 @@ class TestGrainsCategory:
         """Test that all grains match SYMBOL_SPECS."""
         expected_grains = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Grains' and spec['tv_compatible']
+            if spec['category'] == 'Grains'
         ])
         assert GRAINS == expected_grains
 
@@ -112,7 +112,7 @@ class TestSoftsCategory:
         """Test that all softs match SYMBOL_SPECS."""
         expected_softs = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Softs' and spec['tv_compatible']
+            if spec['category'] == 'Softs'
         ])
         assert SOFTS == expected_softs
 
@@ -134,7 +134,7 @@ class TestEnergyCategory:
         """Test that all energy symbols match SYMBOL_SPECS."""
         expected_energy = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Energy' and spec['tv_compatible']
+            if spec['category'] == 'Energy'
         ])
         assert ENERGY == expected_energy
 
@@ -156,7 +156,7 @@ class TestMetalsCategory:
         """Test that all metals match SYMBOL_SPECS."""
         expected_metals = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Metals' and spec['tv_compatible']
+            if spec['category'] == 'Metals'
         ])
         assert METALS == expected_metals
 
@@ -177,7 +177,7 @@ class TestCryptoCategory:
         """Test that all crypto symbols match SYMBOL_SPECS."""
         expected_crypto = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Crypto' and spec['tv_compatible']
+            if spec['category'] == 'Crypto'
         ])
         assert CRYPTO == expected_crypto
 
@@ -194,15 +194,15 @@ class TestIndexCategory:
         """Test that micro index symbols are present."""
         assert 'MYM' in INDEX  # Micro E-mini Dow
 
-    def test_es_not_in_index(self):
-        """Test that ES is not in INDEX (not TV compatible)."""
-        assert 'ES' not in INDEX
+    def test_es_in_index(self):
+        """Test that ES is in INDEX (TV compatible)."""
+        assert 'ES' in INDEX
 
     def test_all_index_from_symbol_specs(self):
         """Test that all index symbols match SYMBOL_SPECS."""
         expected_index = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Index' and spec['tv_compatible']
+            if spec['category'] == 'Index'
         ])
         assert INDEX == expected_index
 
@@ -221,7 +221,7 @@ class TestForexCategory:
         """Test that all forex symbols match SYMBOL_SPECS."""
         expected_forex = sorted([
             s for s, spec in SYMBOL_SPECS.items()
-            if spec['category'] == 'Forex' and spec['tv_compatible']
+            if spec['category'] == 'Forex'
         ])
         assert FOREX == expected_forex
 
@@ -259,56 +259,15 @@ class TestCategoriesDictionary:
         assert len(CATEGORIES[category_name]) > 0
 
 
-class TestTvCompatibilityFiltering:
-    """Test that only TV-compatible symbols are in categories."""
-
-    def test_only_tv_compatible_in_grains(self):
-        """Test that all grains are TV compatible."""
-        for symbol in GRAINS:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_softs(self):
-        """Test that all softs are TV compatible."""
-        for symbol in SOFTS:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_energy(self):
-        """Test that all energy symbols are TV compatible."""
-        for symbol in ENERGY:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_metals(self):
-        """Test that all metals are TV compatible."""
-        for symbol in METALS:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_crypto(self):
-        """Test that all crypto symbols are TV compatible."""
-        for symbol in CRYPTO:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_index(self):
-        """Test that all index symbols are TV compatible."""
-        for symbol in INDEX:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-    def test_only_tv_compatible_in_forex(self):
-        """Test that all forex symbols are TV compatible."""
-        for symbol in FOREX:
-            assert SYMBOL_SPECS[symbol]['tv_compatible'] is True
-
-
 class TestCategoryCompleteness:
-    """Test that categories cover all TV-compatible symbols."""
+    """Test that categories cover all symbols."""
 
-    def test_all_tv_compatible_symbols_in_categories(self):
-        """Test that every TV-compatible symbol is in a category."""
+    def test_all_symbols_in_categories(self):
+        """Test that every symbol is in a category."""
         all_category_symbols = set(GRAINS + SOFTS + ENERGY + METALS + CRYPTO + INDEX + FOREX)
-        tv_compatible_symbols = {
-            s for s, spec in SYMBOL_SPECS.items() if spec['tv_compatible']
-        }
+        all_symbols = set(SYMBOL_SPECS.keys())
 
-        assert all_category_symbols == tv_compatible_symbols
+        assert all_category_symbols == all_symbols
 
     def test_no_symbol_in_multiple_categories(self):
         """Test that no symbol appears in multiple categories."""
@@ -316,16 +275,13 @@ class TestCategoryCompleteness:
         assert len(all_symbols) == len(set(all_symbols)), "Symbol appears in multiple categories"
 
     def test_category_counts_sum_to_total(self):
-        """Test that sum of category counts equals total TV-compatible symbols."""
+        """Test that sum of category counts equals total symbols."""
         total_in_categories = (
                 len(GRAINS) + len(SOFTS) + len(ENERGY) + len(METALS) +
                 len(CRYPTO) + len(INDEX) + len(FOREX)
         )
-        tv_compatible_count = sum(
-            1 for spec in SYMBOL_SPECS.values() if spec['tv_compatible']
-        )
 
-        assert total_in_categories == tv_compatible_count
+        assert total_in_categories == len(SYMBOL_SPECS)
 
 
 class TestCategoryUseCases:

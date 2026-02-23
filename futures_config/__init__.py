@@ -24,7 +24,6 @@ from futures_config.helpers import (
     get_tick_size,
     get_contract_multiplier,
     get_margin_requirement,
-    is_tradingview_compatible,
 )
 # Import symbol groups
 from futures_config.symbol_groups import (
@@ -82,5 +81,4 @@ __all__ = [
     'get_tick_size',
     'get_contract_multiplier',
     'get_margin_requirement',
-    'is_tradingview_compatible',
 ]
