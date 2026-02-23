@@ -1,7 +1,9 @@
 """
 Tests for Indicators Utils Module.
 
-Tests hash_series function for different data types and edge cases.
+Tests cover:
+- hash_series for numeric, integer, Arrow-backed, and empty Series
+- Hash determinism and collision resistance
 """
 import numpy as np
 import pandas as pd
@@ -9,69 +11,61 @@ import pandas as pd
 from app.backtesting.indicators.indicators_utils import hash_series
 
 
-def test_hash_series_numeric():
-    """Test hashing numeric pandas Series."""
-    series = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0])
-    result = hash_series(series)
+# ==================== Test Classes ====================
 
-    # Should return a valid hex digest
-    assert isinstance(result, str)
-    assert len(result) == 32  # MD5 hex digest length
+class TestHashSeries:
+    """Test deterministic MD5 hashing of pandas Series."""
 
-    # Same data should produce same hash
-    series2 = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0])
-    result2 = hash_series(series2)
-    assert result == result2
+    def test_numeric_series_returns_md5_hex_digest(self):
+        """Test numeric Series returns a 32-character hex digest."""
+        result = hash_series(pd.Series([1.0, 2.0, 3.0, 4.0, 5.0]))
 
+        assert isinstance(result, str)
+        assert len(result) == 32
 
-def test_hash_series_integer():
-    """Test hashing integer pandas Series."""
-    series = pd.Series([1, 2, 3, 4, 5])
-    result = hash_series(series)
+    def test_same_data_produces_same_hash(self):
+        """Test identical Series values produce the same hash."""
+        hash1 = hash_series(pd.Series([1.0, 2.0, 3.0, 4.0, 5.0]))
+        hash2 = hash_series(pd.Series([1.0, 2.0, 3.0, 4.0, 5.0]))
 
-    assert isinstance(result, str)
-    assert len(result) == 32
+        assert hash1 == hash2
 
+    def test_integer_series_returns_hex_digest(self):
+        """Test integer Series returns a 32-character hex digest."""
+        result = hash_series(pd.Series([1, 2, 3, 4, 5]))
 
-def test_hash_series_arrow_backed():
-    """Test hashing Arrow-backed pandas Series (fallback path)."""
+        assert isinstance(result, str)
+        assert len(result) == 32
 
-    # Create a class that mimics Arrow-backed arrays
-    class MockArrowValues:
-        def tobytes(self):
-            raise AttributeError("Arrow arrays don't have tobytes")
+    def test_arrow_backed_series_uses_fallback_path(self):
+        """Test Series whose .values lacks tobytes() falls back to __array__."""
 
-    class MockSeries:
-        def __init__(self):
-            self.values = MockArrowValues()
+        class MockArrowValues:
+            def tobytes(self):
+                raise AttributeError("Arrow arrays don't have tobytes")
 
-        def __array__(self, *args, **kwargs):
-            # Return a deterministic NumPy array for hashing, ignoring NumPy-specific arguments
-            return np.array([1, 2, 3], dtype=object)
+        class MockSeries:
+            def __init__(self):
+                self.values = MockArrowValues()
 
-    mock_series = MockSeries()
-    result = hash_series(mock_series)
+            def __array__(self, *args, **kwargs):
+                return np.array([1, 2, 3], dtype=object)
 
-    # Should successfully compute hash using fallback path
-    assert isinstance(result, str)
-    assert len(result) == 32
+        result = hash_series(MockSeries())
 
+        assert isinstance(result, str)
+        assert len(result) == 32
 
-def test_hash_series_different_data_different_hash():
-    """Test that different data produces different hashes."""
-    series1 = pd.Series([1.0, 2.0, 3.0])
-    series2 = pd.Series([1.0, 2.0, 4.0])
+    def test_different_data_produces_different_hash(self):
+        """Test Series with different values produce distinct hashes."""
+        hash1 = hash_series(pd.Series([1.0, 2.0, 3.0]))
+        hash2 = hash_series(pd.Series([1.0, 2.0, 4.0]))
 
-    hash1 = hash_series(series1)
-    hash2 = hash_series(series2)
+        assert hash1 != hash2
 
-    assert hash1 != hash2
+    def test_empty_series_returns_hex_digest(self):
+        """Test empty Series returns a valid 32-character hex digest."""
+        result = hash_series(pd.Series([], dtype=float))
 
-
-def test_hash_series_empty():
-    """Test hashing empty Series."""
-    series = pd.Series([], dtype=float)
-    result = hash_series(series)
-
-    assert isinstance(result, str)
-    assert len(result) == 32
+        assert isinstance(result, str)
+        assert len(result) == 32
