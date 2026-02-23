@@ -176,6 +176,10 @@ trading-bot/
 ├── structure.yaml                                # App's structure
 └── pytest.ini                                    # Pytest configuration
 
+# Analysis
+# NOTE: The whole analysis is deprecated, to be rewritten to match backtesting structure
+# TODO [MEDIUM]: Rewrite analysis logic using classes
+
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
@@ -186,22 +190,14 @@ trading-bot/
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Add new strategies
 
-
-# Tests
-# TODO [LOW]: Add e2e tests
-# TODO [LOW]: Fix all the grammar errors
-
-
 # Trading
 # TODO [MEDIUM]: Add functionality to handle different symbols between tradingView and IBKR
 # TODO [LOW]: Some symbols have different tickers on TradingView vs IBKR, for example YC vs XC etc.
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
-
-# Analysis
-# NOTE: The whole analysis is deprecated, to be rewritten to match backtesting structure
-# TODO [MEDIUM]: Rewrite analysis logic using classes
-
+# Tests
+# TODO [LOW]: Add e2e tests
+# TODO [LOW]: Fix all the grammar errors
 
 # Recurring
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.13]
