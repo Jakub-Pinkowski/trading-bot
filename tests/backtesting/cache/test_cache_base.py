@@ -549,6 +549,12 @@ class TestSaveCacheErrorHandling:
 
         _cleanup_cache_files(cache)
 
+    def test_save_cache_zero_retries_returns_false(self, basic_cache):
+        """Test save_cache returns False immediately when max_retries=0 (line 126)."""
+        result = basic_cache.save_cache(max_retries=0)
+
+        assert result is False
+
     def test_save_cache_handles_lock_timeout(self, cache_name):
         """Test save_cache handles lock acquisition timeout (line 121)."""
         cache = Cache(cache_name=cache_name, max_size=100, max_age=3600)

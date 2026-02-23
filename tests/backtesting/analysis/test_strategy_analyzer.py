@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer
+from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer, _aggregate_strategies
 
 
 # ==================== Fixtures ====================
@@ -715,6 +715,16 @@ class TestEdgeCases:
         assert len(result_simple) > 0
         assert 'average_trade_duration_hours' in result_simple.columns
         assert result_simple['average_trade_duration_hours'].isna().all()
+
+    def test_aggregate_strategies_raises_for_none_df(self):
+        """Test _aggregate_strategies raises ValueError when df is None (lines 69-70)."""
+        with pytest.raises(ValueError, match='No results available'):
+            _aggregate_strategies(None, 0, None, None, True, None, None)
+
+    def test_aggregate_strategies_raises_for_empty_df(self):
+        """Test _aggregate_strategies raises ValueError when df is empty (lines 69-70)."""
+        with pytest.raises(ValueError, match='No results available'):
+            _aggregate_strategies(pd.DataFrame(), 0, None, None, True, None, None)
 
 
 class TestSaveResultsToCSV:

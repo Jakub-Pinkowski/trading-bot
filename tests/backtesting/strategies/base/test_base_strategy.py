@@ -824,29 +824,42 @@ class TestEdgeCases:
         assert isinstance(trades, list)
 
     def test_skip_signal_continues_loop_without_executing(self):
-        """Test skip_signal=True causes loop to continue without signal execution (lines 255-257)."""
-        # Create strategy with rollover enabled
+        """Test skip_signal=True causes loop to continue without signal execution (lines 255-257).
+
+        Requires INDICATOR_WARMUP_PERIOD + N bars so the post-warmup loop is entered.
+        With only 50 bars all rows are consumed by the warmup (period=100) and the
+        switch handler is never reached, so this test would be a no-op with small data.
+        """
+        bars = INDICATOR_WARMUP_PERIOD + 15  # Enough to clear warmup
+        dates = pd.date_range('2024-01-01', periods=bars, freq='1D')
+
+        # Signal at bar WARMUP+2; position opens at WARMUP+3
+        # Switch at bar WARMUP+10; position is open → skip_signal=True (lines 255-257)
+        signal_bar = INDICATOR_WARMUP_PERIOD + 2
+        switch_bar = INDICATOR_WARMUP_PERIOD + 10
+        switch_date = dates[switch_bar]
+
         strategy = ConcreteTestStrategy(
-            signal_indices=[(5, 1), (10, -1)],  # Set signals
+            signal_indices=[(signal_bar, 1)],
             rollover=True,
             trailing=None,
             slippage_ticks=0,
             symbol='ZS'
         )
 
-        # Create data with multiple bars
-        df = create_small_ohlcv_dataframe(50)
+        df = pd.DataFrame({
+            'open': [100.0] * bars,
+            'high': [101.0] * bars,
+            'low': [99.0] * bars,
+            'close': [100.5] * bars,
+            'volume': [1000] * bars,
+        }, index=dates)
 
-        # Set a contract switch date right in the middle
-        switch_dates = [df.index[6]]  # Switch after first signal
+        trades = strategy.run(df, switch_dates=[switch_date])
 
-        # Run strategy - when switch happens, skip_signal should be True
-        trades = strategy.run(df, switch_dates)
-
-        # The strategy should handle the skip gracefully
-        # Trades should still be generated (though behavior may differ due to rollover)
-        assert isinstance(trades, list)
-        # The key is that the function completes without error despite skip_signal being True
+        # Position opened before the switch must be closed at the switch point
+        assert len(trades) >= 1
+        assert trades[0]['side'] == 'long'
 
 
 class TestStateReset:
