@@ -9,8 +9,9 @@ from futures_config import CATEGORIES, get_exchange_for_symbol
 
 # ==================== Configuration ====================
 
+# Available intervals: 3m, 5m, 15m, 30m, 45, 1h, 2h, 3h, 4h, 1d
 CONTRACT_SUFFIX = '1!'
-INTERVALS = ['5m']
+INTERVALS = ['3m', '5m', '15m', '30m', '45m', '1h', '2h', '3h', '4h', '1d']
 
 # Select which categories to fetch (see CATEGORIES.keys() for all available)
 # Available categories: Grains, Softs, Energy, Metals, Crypto, Index, Forex
