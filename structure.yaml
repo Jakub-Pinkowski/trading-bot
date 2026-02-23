@@ -190,7 +190,7 @@ trading-bot/
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Add new strategies
 
-# Trading
+# IBKR
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Tests
