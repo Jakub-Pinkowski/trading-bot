@@ -191,7 +191,6 @@ trading-bot/
 # TODO [LOW]: Add new strategies
 
 # Trading
-# TODO [MEDIUM]: Add functionality to handle different symbols between tradingView and IBKR
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Tests
