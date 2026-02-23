@@ -193,7 +193,8 @@ trading-bot/
 # TODO [LOW]: Integrate data fetching from IBKR
 
 # IBKR
-# TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
+# BUG [HIGH]: I might be trading wrong contract because of the 60days cutoff, it needs to be completely rewritten to always trade the next contract
+# TODO [HIGH]: Handle near delivery cases where I still hold a position close to the Close-Out date
 
 # Tests
 # TODO [LOW]: Add e2e tests
