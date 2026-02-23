@@ -38,15 +38,22 @@ class TestParseSymbol:
 
         mock_logger.error.assert_called_once()
 
-    def test_invalid_symbols_raise_value_error_and_log_error(self, monkeypatch):
-        """Test ValueError raised and error logged for symbols with no leading letters."""
+    def test_numeric_only_symbol_raises_value_error_and_logs_error(self, monkeypatch):
+        """Test ValueError raised and error logged for a symbol starting with digits."""
         mock_logger = MagicMock()
         monkeypatch.setattr("app.utils.generic_utils.logger", mock_logger)
 
         with pytest.raises(ValueError, match="Invalid symbol format: 123"):
             parse_symbol("123")
 
+        mock_logger.error.assert_called_once()
+
+    def test_special_chars_only_symbol_raises_value_error_and_logs_error(self, monkeypatch):
+        """Test ValueError raised and error logged for a symbol containing only special characters."""
+        mock_logger = MagicMock()
+        monkeypatch.setattr("app.utils.generic_utils.logger", mock_logger)
+
         with pytest.raises(ValueError, match="Invalid symbol format: !@#"):
             parse_symbol("!@#")
 
-        assert mock_logger.error.call_count == 2
+        mock_logger.error.assert_called_once()
