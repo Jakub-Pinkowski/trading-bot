@@ -182,15 +182,15 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [HIGH]: Find a way to fetch the full data without the gaps for 15m and lower intervals
-# TODO [MEDIUM]: Remove tv+compatible property from the futures_config
-# TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
+# TODO [MEDIUM]: Remove tv_compatible property from the futures_config
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
+# TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
 # TODO [MEDIUM]: Implement out-of-sample data testing
 # TODO [MEDIUM]: Backtest intervals within a timeframe separately. For example split the time into 4 sections
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Add new strategies
+# TODO [LOW]: Integrate data fetching from IBKR
 
 # IBKR
 # TODO [LOW]: Handle near delivery cases where I still hold a position close to the Close-Out date
