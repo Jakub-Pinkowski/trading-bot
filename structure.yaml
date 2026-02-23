@@ -16,7 +16,6 @@ trading-bot/
 │   │   │   ├── formatters.py                     # CSV formatting helpers
 │   │   │   └── strategy_analyzer.py              # Main StrategyAnalyzer class
 │   │   ├── cache/                                # Caching system for backtesting
-│   │   │   ├── __init__.py
 │   │   │   ├── cache_base.py                     # Base cache class
 │   │   │   ├── dataframe_cache.py                # Dataframe caching
 │   │   │   └── indicators_cache.py               # Indicator caching
@@ -75,34 +74,27 @@ trading-bot/
 │   │   ├── BACKTESTING_ARCHITECTURE.md           # Architecture documentation
 │   │   ├── BACKTESTING_EXAMPLES.md               # Usage examples
 │   │   └── BACKTESTING_USER_GUIDE.md             # User guide
+│   ├── ibkr/
+│   │   ├── __init__.py
+│   │   ├── connection.py                         # IBKR API connection and heartbeat scheduler
+│   │   ├── contracts.py                          # Contract fetching, selection, and caching
+│   │   ├── ibkr_service.py                       # IBKR logic coordinator
+│   │   └── orders.py                             # Order placement and position management
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   └── webhook.py                            # Webhooks from the TradingView
-│   ├── ibkr/
-│   │   ├── ibkr/
-│   │   │   ├── __init__.py
-│   │   │   ├── connection.py                     # IBKR API connections
-│   │   │   ├── contracts.py                      # Contracts handling
-│   │   │   └── orders.py                         # Order execution
-│   │   ├── __init__.py
-│   │   └── ibkr_service.py                       # IBKR logic coordinator
+│   │   └── webhook.py                            # Webhook route for TradingView alerts
 │   ├── utils/
 │   │   ├── analysis_utils/
 │   │   │   ├── __init__.py
 │   │   │   ├── data_cleaning_utils.py            # Data cleaning utilities
 │   │   │   ├── data_fetching_utils.py            # Data fetching utilities
 │   │   │   └── analysis_utils.py                 # General calculation utilities
-│   │   ├── ibkr_utils/
-│   │   │   ├── __init__.py
-│   │   │   ├── contracts_utils.py                # Contracts utilities
-│   │   │   └── orders_utils.py                   # Orders utilities
-│   │   ├── routes_utils/
-│   │   │   └── webhook_utils.py                  # Webhook utilities
 │   │   ├── __init__.py
-│   │   ├── api_utils.py                          # General API utilities
-│   │   ├── file_utils.py                         # File utilities
-│   │   ├── generic_utils.py                      # Generic utilities
-│   │   └── logger.py                             # Logger setup
+│   │   ├── api_utils.py                          # IBKR REST API request helpers
+│   │   ├── file_utils.py                         # JSON/CSV/Parquet file I/O
+│   │   ├── generic_utils.py                      # General utilities (symbol parsing)
+│   │   ├── logger.py                             # Logger setup
+│   │   └── math_utils.py                         # Safe math helpers (divide, average, percentage)
 │   └── __init__.py
 ├── clientportal/                                 # IBKR login gateway
 ├── data/
@@ -140,13 +132,27 @@ trading-bot/
 │   ├── strategies/                               # Strategies
 │   └── tv_indicators/                            # TradingView indicators
 ├── tests/
-│   ├── analysis/                                 # Analysis tests
-│   ├── backtesting/                              # Backtesting tests
+│   ├── analysis/                                 # Analysis tests (deprecated module, pending rewrite)
+│   ├── backtesting/
+│   │   ├── analysis/                             # Strategy analyzer tests
+│   │   ├── cache/                                # Cache tests
+│   │   ├── fetching/                             # Data fetcher tests
+│   │   ├── fixtures/                             # Shared fixtures: mock OHLCV data, strategy instances, assertions
+│   │   ├── indicators/                           # Indicator tests
+│   │   ├── integration/                          # Integration tests
+│   │   ├── metrics/                              # Metrics tests
+│   │   ├── strategies/                           # Strategy tests
+│   │   │   └── base/                             # Base strategy component tests
+│   │   ├── testing/                              # Mass testing framework tests
+│   │   │   └── utils/                            # Testing utility tests
+│   │   └── validators/                           # Validator tests
 │   ├── e2e/                                      # End-to-end tests
 │   ├── futures_config/                           # Futures config tests
-│   ├── routes/                                   # Routes tests
-│   ├── ibkr/                                 # Services tests
-│   └── utils/                                    # Utils tests
+│   ├── ibkr/                                     # IBKR integration tests
+│   ├── routes/                                   # Route handler tests
+│   ├── utils/                                    # Utility module tests
+│   │   └── analysis_utils/                       # Analysis utility tests (deprecated, pending rewrite)
+│   └── conftest.py                               # Top-level: pytest_plugins registration for backtesting fixtures
 ├── .env                                          # Configuration secrets
 ├── .github/                                      # GitHub configuration
 │   ├── copilot-instructions.md                   # GitHub Copilot instructions
@@ -154,6 +160,7 @@ trading-bot/
 │   └── prompts/                                  # Documentation and summaries
 ├── .gitignore                                    # Files to ignore
 ├── analyze_strategies.py                         # Analyze strategies
+├── CLAUDE.md                                     # Claude Code guidance
 ├── config.py                                     # App configuration
 ├── fetch_data.py                                 # Fetch TradingView historical data
 ├── mass_backtest.py                              # Run mass backtesting
