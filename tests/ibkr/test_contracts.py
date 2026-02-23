@@ -284,3 +284,79 @@ class TestGetContractId:
         mock_save_file.assert_called_once()
         mock_logger_contracts.error.assert_called_once()
         mock_logger_contracts.warning.assert_not_called()
+
+
+class TestGetContractIdSymbolMapping:
+    """Test TV→IBKR symbol translation is applied throughout get_contract_id."""
+
+    def test_cache_lookup_uses_ibkr_symbol(
+        self,
+        mock_load_file,
+        mock_parse_symbol,
+        mock_map_tv_to_ibkr,
+        mock_fetch_contract,
+        mock_get_closest_contract,
+    ):
+        """Test cache is keyed by IBKR symbol, not the original TV symbol."""
+        mock_parse_symbol.return_value = "XC"
+        mock_map_tv_to_ibkr.return_value = "YC"
+        mock_load_file.return_value = {"YC": [{"conid": "999", "expiry": "20251215"}]}
+        mock_get_closest_contract.return_value = {"conid": "999", "expiry": "20251215"}
+
+        result = get_contract_id("XC1!")
+
+        assert result == "999"
+        mock_map_tv_to_ibkr.assert_called_once_with("XC")
+        mock_get_closest_contract.assert_called_once_with(
+            [{"conid": "999", "expiry": "20251215"}], MIN_DAYS_UNTIL_EXPIRY
+        )
+        # Cache hit — no API call needed
+        mock_fetch_contract.assert_not_called()
+
+    def test_fetch_and_cache_write_use_ibkr_symbol(
+        self,
+        mock_load_file,
+        mock_save_file,
+        mock_parse_symbol,
+        mock_map_tv_to_ibkr,
+        mock_fetch_contract,
+        mock_get_closest_contract,
+    ):
+        """Test fetch_contract and cache write both use the IBKR symbol on cache miss."""
+        mock_parse_symbol.return_value = "XC"
+        mock_map_tv_to_ibkr.return_value = "YC"
+        mock_load_file.return_value = {}
+        mock_fetch_contract.return_value = [{"conid": "999", "expiry": "20251215"}]
+        mock_get_closest_contract.return_value = {"conid": "999", "expiry": "20251215"}
+
+        result = get_contract_id("XC1!")
+
+        assert result == "999"
+        mock_fetch_contract.assert_called_once_with("YC")
+        mock_save_file.assert_called_once_with(
+            {"YC": [{"conid": "999", "expiry": "20251215"}]}, CONTRACTS_FILE_PATH
+        )
+
+    def test_no_mapping_needed_symbols_pass_through(
+        self,
+        mock_load_file,
+        mock_save_file,
+        mock_parse_symbol,
+        mock_map_tv_to_ibkr,
+        mock_fetch_contract,
+        mock_get_closest_contract,
+    ):
+        """Test symbols with no mapping are passed through unchanged."""
+        mock_parse_symbol.return_value = "ZS"
+        mock_map_tv_to_ibkr.return_value = "ZS"
+        mock_load_file.return_value = {}
+        mock_fetch_contract.return_value = [{"conid": "111", "expiry": "20251215"}]
+        mock_get_closest_contract.return_value = {"conid": "111", "expiry": "20251215"}
+
+        result = get_contract_id("ZS")
+
+        assert result == "111"
+        mock_fetch_contract.assert_called_once_with("ZS")
+        mock_save_file.assert_called_once_with(
+            {"ZS": [{"conid": "111", "expiry": "20251215"}]}, CONTRACTS_FILE_PATH
+        )

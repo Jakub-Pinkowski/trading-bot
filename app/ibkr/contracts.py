@@ -5,6 +5,7 @@ from app.utils.file_utils import load_file, save_file
 from app.utils.generic_utils import parse_symbol
 from app.utils.logger import get_logger
 from config import DATA_DIR
+from futures_config.symbol_mapping import map_tv_to_ibkr
 
 logger = get_logger('ibkr/contracts')
 
@@ -101,8 +102,9 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
             expiry requirement
     """
     parsed_symbol = parse_symbol(symbol)
+    ibkr_symbol = map_tv_to_ibkr(parsed_symbol)
     contracts_cache = load_file(CONTRACTS_FILE_PATH)
-    contract_list = contracts_cache.get(parsed_symbol)
+    contract_list = contracts_cache.get(ibkr_symbol)
 
     # Return from cache if the entry is valid
     if isinstance(contract_list, list):
@@ -110,20 +112,20 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
             closest_contract = get_closest_contract(contract_list, min_days_until_expiry)
             return closest_contract['conid']
         except ValueError as err:
-            logger.warning(f"Cache invalid for symbol '{parsed_symbol}': {err}")
+            logger.warning(f"Cache invalid for symbol '{ibkr_symbol}': {err}")
 
     # Cache miss or stale entry; fetch fresh data and update cache
-    fresh_contracts = fetch_contract(parsed_symbol)
+    fresh_contracts = fetch_contract(ibkr_symbol)
     if not fresh_contracts:
-        logger.error(f'No contracts found for symbol: {parsed_symbol}')
-        raise ValueError(f'No contracts found for symbol: {parsed_symbol}')
+        logger.error(f'No contracts found for symbol: {ibkr_symbol}')
+        raise ValueError(f'No contracts found for symbol: {ibkr_symbol}')
 
-    contracts_cache[parsed_symbol] = fresh_contracts
+    contracts_cache[ibkr_symbol] = fresh_contracts
     save_file(contracts_cache, CONTRACTS_FILE_PATH)
 
     try:
         closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)
         return closest_contract['conid']
     except ValueError as err:
-        logger.error(f"No valid contract found in fresh data for symbol '{parsed_symbol}': {err}")
+        logger.error(f"No valid contract found in fresh data for symbol '{ibkr_symbol}': {err}")
         raise

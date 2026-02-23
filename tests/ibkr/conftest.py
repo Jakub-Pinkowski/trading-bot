@@ -104,6 +104,14 @@ def mock_parse_symbol(monkeypatch):
 
 
 @pytest.fixture
+def mock_map_tv_to_ibkr(monkeypatch):
+    """Mock map_tv_to_ibkr dependency in contracts module."""
+    mock = MagicMock()
+    monkeypatch.setattr('app.ibkr.contracts.map_tv_to_ibkr', mock)
+    return mock
+
+
+@pytest.fixture
 def mock_fetch_contract(monkeypatch):
     """Mock fetch_contract dependency in contracts module."""
     mock = MagicMock()
