@@ -32,7 +32,7 @@ from app.backtesting import MassTester, create_strategy
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
 from app.backtesting.testing import runner as runner_module, orchestrator as orchestrator_module
-from app.utils.file_utils import save_to_parquet
+from app.backtesting.testing.reporting import save_to_parquet
 
 
 # ==================== Worker Helpers ====================

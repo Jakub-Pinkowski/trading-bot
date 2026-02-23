@@ -1,7 +1,9 @@
+import os
+
 import numpy as np
 import pandas as pd
+from filelock import FileLock, Timeout as FileLockTimeout
 
-from app.utils.file_utils import save_to_parquet
 from app.utils.logger import get_logger
 from config import DATA_DIR
 
@@ -13,6 +15,49 @@ BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Results Conversion & Saving ====================
+
+def save_to_parquet(data, file_path):
+    """Save data to a parquet file with deduplication and file locking."""
+    # Validate data type before acquiring a lock
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError('Data must be a Pandas DataFrame for parquet format.')
+
+    # Create a directory if needed
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Use an absolute path for lock to avoid conflicts
+    abs_file_path = os.path.abspath(file_path)
+    lock_path = f"{abs_file_path}.lock"
+
+    try:
+        with FileLock(lock_path, timeout=120):  # 2-minute timeout
+            # Load existing data if a file exists
+            if os.path.exists(file_path):
+                try:
+                    existing = pd.read_parquet(file_path)
+                except Exception as err:
+                    logger.error(f'Could not read existing parquet file: {err}')
+                    existing = None
+            else:
+                existing = None
+
+            # Concatenate and deduplicate
+            if existing is not None:
+                concat = pd.concat([existing, data], ignore_index=True)
+                deduped = concat.drop_duplicates()
+            else:
+                deduped = data
+
+            # Save deduped data
+            deduped.to_parquet(file_path, index=False)
+
+    except FileLockTimeout:
+        logger.error(f'Failed to acquire lock for {file_path} after 120s')
+        raise
+    except Exception as e:
+        logger.error(f'Error saving parquet file {file_path}: {e}')
+        raise
+
 
 def results_to_dataframe(results):
     """

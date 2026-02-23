@@ -1,12 +1,13 @@
 import os
 import time
 from datetime import datetime, timedelta
+from glob import glob
 
 import pandas as pd
 
 from app.utils.analysis_utils.data_fetching_utils import save_trades_data
 from app.utils.api_utils import api_get
-from app.utils.file_utils import load_data_from_json_files
+from app.utils.file_utils import load_file
 from app.utils.logger import get_logger
 from config import DATA_DIR
 
@@ -22,6 +23,57 @@ ALERTS_DIR = DATA_DIR / "alerts"
 IBKR_ALERTS_DIR = ALERTS_DIR / "ibkr_alerts"
 TV_ALERTS_DIR = ALERTS_DIR / "tv_alerts"
 TRADES_DIR = ALERTS_DIR / "trades"
+
+
+def json_to_dataframe(data, date_fields=None, datetime_format=None, orient='columns', index_name='timestamp'):
+    if not data:
+        return pd.DataFrame()
+
+    # Check data type to choose a conversion method appropriately
+    if isinstance(data, dict):
+        df = pd.DataFrame.from_dict(data, orient=orient).reset_index()
+        if orient == 'index' and 'index' in df.columns:
+            df.rename(columns={'index': index_name}, inplace=True)
+    elif isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        raise ValueError('Unsupported data format. Provide either dictionary or list.')
+
+    # Convert specified fields to datetime objects using a given format
+    if date_fields:
+        for field in date_fields:
+            df[field] = pd.to_datetime(df[field], format=datetime_format, errors='coerce')
+
+    return df
+
+
+def load_data_from_json_files(directory, file_prefix, date_fields, datetime_format, index_name):
+    # Retrieve a sorted list of all JSON files matching the pattern
+    file_pattern = os.path.join(directory, f'{file_prefix}_*.json')
+    files = sorted(glob(file_pattern))
+
+    data_frames = []
+    for file_path in files:
+        file_json = load_file(file_path)
+
+        # Convert the JSON content to a DataFrame
+        if file_json:
+            file_df = json_to_dataframe(
+                file_json,
+                date_fields=date_fields,
+                datetime_format=datetime_format,
+                orient='index',
+                index_name=index_name
+            )
+            data_frames.append(file_df)
+
+    if data_frames:
+        # Combine all DataFrames into a single DataFrame and sort by index
+        combined_df = pd.concat(data_frames).sort_index().reset_index(drop=True)
+        return combined_df
+    else:
+        # Return an empty DataFrame if no valid JSON files were found
+        return pd.DataFrame()
 
 
 def get_ibkr_alerts_data():

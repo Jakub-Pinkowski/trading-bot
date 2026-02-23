@@ -91,7 +91,7 @@ trading-bot/
 │   │   │   └── analysis_utils.py                 # General calculation utilities
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # IBKR REST API request helpers
-│   │   ├── file_utils.py                         # JSON/CSV/Parquet file I/O
+│   │   ├── file_utils.py                         # JSON file I/O (load_file, save_file)
 │   │   ├── generic_utils.py                      # General utilities (symbol parsing)
 │   │   ├── logger.py                             # Logger setup
 │   │   └── math_utils.py                         # Safe math helpers (divide, average, percentage)
