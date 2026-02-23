@@ -1,1 +1,11 @@
-# This file is intentionally left empty to make the directory a Python package
+"""
+Tests for technical indicator calculations.
+
+Tests cover:
+- RSI (Relative Strength Index)
+- EMA (Exponential Moving Average)
+- MACD (Moving Average Convergence Divergence)
+- Bollinger Bands
+- Ichimoku Cloud
+- ATR (Average True Range)
+"""
