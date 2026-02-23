@@ -4,7 +4,7 @@ Tests for Math Utils Module.
 Tests cover:
 - safe_divide: normal division, zero denominator with default and custom fallback
 - safe_average: list averages, empty list, custom count
-- calculate_percentage: normal percentages, zero total, rounding
+- calculate_percentage: normal percentages, negative value, zero total, rounding
 """
 from app.utils.math_utils import safe_divide, safe_average, calculate_percentage
 
@@ -59,6 +59,11 @@ class TestCalculatePercentage:
         assert calculate_percentage(25, 100) == 25.0
         assert calculate_percentage(1, 3) == 33.33
         assert calculate_percentage(1, 3, decimal_places=3) == 33.333
+
+    def test_negative_value_returns_negative_percentage(self):
+        """Test negative value produces a negative percentage."""
+        assert calculate_percentage(-25, 100) == -25.0
+        assert calculate_percentage(-1, 3) == -33.33
 
     def test_zero_total_returns_zero(self):
         """Test zero total returns 0 instead of raising ZeroDivisionError."""

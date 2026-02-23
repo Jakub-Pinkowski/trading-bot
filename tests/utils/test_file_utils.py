@@ -6,7 +6,7 @@ Tests cover:
 - JSON file saving with directory creation
 - JSON to DataFrame conversion: dict, list, empty, date fields, orient modes, unsupported formats
 - CSV saving: new file, append to existing, read error fallback, dict input, invalid type
-- JSON file batch loading and concatenation
+- JSON file batch loading, concatenation, and empty-file skipping
 - Parquet saving: new file, append, read error fallback, invalid type, lock timeout, general error, absolute path
 """
 import json
@@ -221,6 +221,27 @@ class TestLoadDataFromJsonFiles:
 
         assert isinstance(result, pd.DataFrame)
         assert result.empty
+
+    def test_skips_empty_json_files(self, monkeypatch):
+        """Test files that load as empty dicts are excluded from concatenation."""
+        mock_df = MagicMock()
+        mock_concat_result = MagicMock()
+        mock_concat_result.sort_index.return_value = mock_concat_result
+        mock_concat_result.reset_index.return_value = mock_concat_result
+
+        monkeypatch.setattr("app.utils.file_utils.glob", MagicMock(return_value=["empty.json", "valid.json"]))
+        monkeypatch.setattr(
+            "app.utils.file_utils.load_file",
+            MagicMock(side_effect=[{}, {"data": "value"}]),
+        )
+        mock_json_to_df = MagicMock(return_value=mock_df)
+        monkeypatch.setattr("app.utils.file_utils.json_to_dataframe", mock_json_to_df)
+        monkeypatch.setattr(pd, "concat", MagicMock(return_value=mock_concat_result))
+
+        load_data_from_json_files("test_dir", "prefix", ["date"], "YYYY-MM-DD", "timestamp")
+
+        # Empty file is skipped — json_to_dataframe only called once for the valid file
+        assert mock_json_to_df.call_count == 1
 
 
 class TestSaveToParquet:

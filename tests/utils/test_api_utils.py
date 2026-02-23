@@ -3,8 +3,8 @@ Tests for API Utils Module.
 
 Tests cover:
 - HTTP header construction
-- GET request: success and HTTP error
-- POST request: success and HTTP error
+- GET request: success, HTTP error, URL construction, SSL disabled
+- POST request: success, HTTP error, URL construction, SSL disabled
 """
 import pytest
 import requests
@@ -57,6 +57,23 @@ class TestApiGet:
         with pytest.raises(requests.HTTPError, match="404 Client Error"):
             api_get("/test-endpoint")
 
+    def test_constructs_url_from_base_url_and_disables_ssl(self, monkeypatch, mock_response_factory):
+        """Test api_get concatenates BASE_URL with endpoint and passes verify=False."""
+        captured = {}
+
+        def capturing_get(url, verify, headers):
+            captured["url"] = url
+            captured["verify"] = verify
+            return mock_response_factory()
+
+        monkeypatch.setattr("app.utils.api_utils.requests.get", capturing_get)
+        monkeypatch.setattr("app.utils.api_utils.BASE_URL", "https://api.example.com")
+
+        api_get("/test-endpoint")
+
+        assert captured["url"] == "https://api.example.com/test-endpoint"
+        assert captured["verify"] is False
+
 
 class TestApiPost:
     """Test POST request wrapper."""
@@ -85,3 +102,20 @@ class TestApiPost:
 
         with pytest.raises(requests.HTTPError, match="500 Server Error"):
             api_post("/test-endpoint", {"key": "value"})
+
+    def test_constructs_url_from_base_url_and_disables_ssl(self, monkeypatch, mock_response_factory):
+        """Test api_post concatenates BASE_URL with endpoint and passes verify=False."""
+        captured = {}
+
+        def capturing_post(url, json, verify, headers):
+            captured["url"] = url
+            captured["verify"] = verify
+            return mock_response_factory()
+
+        monkeypatch.setattr("app.utils.api_utils.requests.post", capturing_post)
+        monkeypatch.setattr("app.utils.api_utils.BASE_URL", "https://api.example.com")
+
+        api_post("/test-endpoint", {"key": "value"})
+
+        assert captured["url"] == "https://api.example.com/test-endpoint"
+        assert captured["verify"] is False
