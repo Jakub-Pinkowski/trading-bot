@@ -24,6 +24,11 @@ SYMBOL_GROUPS = {
     'Soybeans': ['ZS', 'XK', 'MZS'],  # Standard, Mini (XK), Micro Soybeans
     'Soybean_Oil': ['ZL', 'MZL'],  # Standard, Micro Soybean Oil
 
+    # --- Softs ---
+    'Sugar': ['SB'],
+    'Coffee': ['KC'],
+    'Cocoa': ['CC'],
+
     # --- Energy ---
     'Crude_Oil': ['CL', 'MCL'],  # Standard, Micro Crude Oil
     'Natural_Gas': ['NG', 'MNG'],  # Standard, Micro Natural Gas
@@ -32,16 +37,26 @@ SYMBOL_GROUPS = {
     'Gold': ['GC', 'MGC'],  # Standard, Micro Gold
     'Silver': ['SI', 'SIL'],  # Standard, Micro Silver (SIL maps to QI in IBKR)
     'Copper': ['HG', 'MHG'],  # Standard, Micro Copper
+    'Platinum': ['PL'],
 
     # --- Index ---
     'SP500': ['ES', 'MES'],  # E-mini, Micro E-mini S&P 500
     'NASDAQ': ['NQ', 'MNQ'],  # E-mini, Micro E-mini NASDAQ-100
     'Dow': ['YM', 'MYM'],  # E-mini, Micro E-mini Dow
     'Russell': ['RTY', 'M2K'],  # E-mini, Micro E-mini Russell 2000
+    'T_Bond': ['ZB'],
 
     # --- Crypto ---
     'Bitcoin': ['BTC', 'MBT'],  # Standard, Micro Bitcoin
     'Ethereum': ['ETH', 'MET'],  # Standard, Micro Ethereum
+
+    # --- Forex ---
+    'Euro': ['6E', 'M6E'],  # Standard, Micro Euro FX
+    'Japanese_Yen': ['6J'],
+    'British_Pound': ['6B', 'M6B'],  # Standard, Micro British Pound
+    'Australian_Dollar': ['6A', 'M6A'],  # Standard, Micro Australian Dollar
+    'Canadian_Dollar': ['6C'],
+    'Swiss_Franc': ['6S'],
 }
 
 # Reverse mapping: symbol -> group name
