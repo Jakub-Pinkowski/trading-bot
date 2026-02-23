@@ -1,9 +1,10 @@
-from unittest.mock import patch
+import os
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 
-from app.analysis.analysis_runner import run_analysis
+from app.analysis.analysis_runner import run_analysis, save_to_csv
 
 
 @pytest.fixture
@@ -351,3 +352,72 @@ def test_run_analysis_with_only_tv_alerts(
 
     # Verify save_to_csv was called twice (once for per-trade metrics, once for dataset metrics)
     assert mock_save_to_csv.call_count == 2
+
+
+# ==================== Test Classes ====================
+
+class TestSaveToCsv:
+    """Test CSV file saving and appending."""
+
+    def test_new_file_saves_dataframe(self, monkeypatch):
+        """Test new file path causes direct save without concatenation."""
+        sample_df = pd.DataFrame({"name": ["Item 1", "Item 2"], "value": [100, 200]})
+        mock_to_csv = MagicMock()
+
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        monkeypatch.setattr(pd.DataFrame, "to_csv", mock_to_csv)
+
+        save_to_csv(sample_df, "test_file.csv")
+
+        mock_to_csv.assert_called_once_with("test_file.csv", index=False)
+
+    def test_existing_file_appends_data(self, monkeypatch):
+        """Test existing file path reads, concatenates, deduplicates, then saves."""
+        sample_df = pd.DataFrame({"name": ["Item 1", "Item 2"], "value": [100, 200]})
+        existing_df = pd.DataFrame({"name": ["Item 3"], "value": [300]})
+        mock_to_csv = MagicMock()
+        mock_concat = MagicMock(return_value=pd.DataFrame())
+
+        monkeypatch.setattr(os.path, "exists", lambda path: True)
+        monkeypatch.setattr(pd, "read_csv", MagicMock(return_value=existing_df))
+        monkeypatch.setattr(pd.DataFrame, "to_csv", mock_to_csv)
+        monkeypatch.setattr(pd, "concat", mock_concat)
+
+        save_to_csv(sample_df, "test_file.csv")
+
+        mock_concat.assert_called_once()
+        mock_to_csv.assert_called_once()
+
+    def test_existing_file_read_error_logs_and_saves(self, monkeypatch):
+        """Test read error on existing file is logged and save still proceeds."""
+        sample_df = pd.DataFrame({"name": ["Item 1"], "value": [100]})
+        mock_logger = MagicMock()
+        mock_to_csv = MagicMock()
+
+        monkeypatch.setattr(os.path, "exists", lambda path: True)
+        monkeypatch.setattr(pd, "read_csv", MagicMock(side_effect=Exception("CSV read error")))
+        monkeypatch.setattr("app.analysis.analysis_runner.logger", mock_logger)
+        monkeypatch.setattr(pd.DataFrame, "to_csv", mock_to_csv)
+
+        save_to_csv(sample_df, "test_file.csv")
+
+        mock_logger.error.assert_called_once()
+        mock_to_csv.assert_called_once()
+
+    def test_dict_converted_and_saved(self, monkeypatch):
+        """Test dict input is converted to DataFrame and saved."""
+        mock_to_csv = MagicMock()
+
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        monkeypatch.setattr(pd.DataFrame, "to_csv", mock_to_csv)
+
+        save_to_csv({"key1": "value1", "key2": "value2"}, "test_file.csv")
+
+        assert mock_to_csv.called
+        _, kwargs = mock_to_csv.call_args
+        assert kwargs["index"] is False
+
+    def test_invalid_data_type_raises_value_error(self):
+        """Test ValueError raised for data that is neither DataFrame nor dict."""
+        with pytest.raises(ValueError, match="Data must be either a Pandas DataFrame or a dictionary"):
+            save_to_csv("invalid_data", "test_file.csv")

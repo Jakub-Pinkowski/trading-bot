@@ -1,5 +1,6 @@
+import os
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -8,7 +9,9 @@ from app.analysis.data_fetching import (
     get_ibkr_alerts_data,
     get_tv_alerts_data,
     get_trades_data,
-    fetch_trades_data
+    fetch_trades_data,
+    json_to_dataframe,
+    load_data_from_json_files,
 )
 
 
@@ -349,3 +352,124 @@ def test_fetch_trades_data_retry_success(mock_sleep, mock_api_get, sample_trades
     # Verify the mocks were called
     assert mock_api_get.call_count == 2
     mock_sleep.assert_called_once_with(0.1)
+
+
+# ==================== Test Classes ====================
+
+class TestJsonToDataframe:
+    """Test JSON to DataFrame conversion."""
+
+    def test_dict_columns_orient(self):
+        """Test dict input with default columns orient produces expected columns."""
+        data = {"item1": {"value": 1}, "item2": {"value": 2}}
+
+        result = json_to_dataframe(data)
+
+        assert isinstance(result, pd.DataFrame)
+        assert "item1" in result.columns
+        assert "item2" in result.columns
+
+    def test_list_of_dicts(self):
+        """Test list input produces DataFrame with expected columns and values."""
+        data = [{"name": "Item 1", "value": 100}, {"name": "Item 2", "value": 200}]
+
+        result = json_to_dataframe(data)
+
+        assert isinstance(result, pd.DataFrame)
+        assert result["name"].tolist() == ["Item 1", "Item 2"]
+        assert result["value"].tolist() == [100, 200]
+
+    def test_empty_dict_returns_empty_dataframe(self):
+        """Test empty dict input returns an empty DataFrame."""
+        result = json_to_dataframe({})
+
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+    def test_date_fields_converted_to_datetime(self):
+        """Test date_fields parameter converts string columns to datetime type."""
+        data = [
+            {"name": "Item 1", "date": "2023-01-01"},
+            {"name": "Item 2", "date": "2023-01-02"},
+        ]
+
+        result = json_to_dataframe(data, date_fields=["date"])
+
+        assert pd.api.types.is_datetime64_dtype(result["date"])
+
+    def test_unsupported_format_raises_value_error(self):
+        """Test ValueError raised for unsupported data types."""
+        with pytest.raises(ValueError, match="Unsupported data format"):
+            json_to_dataframe("unsupported_format")
+
+    def test_dict_with_index_orient_and_custom_index_name(self):
+        """Test index orient with a custom index name produces the expected column."""
+        data = {"item1": {"value": 1}, "item2": {"value": 2}}
+
+        result = json_to_dataframe(data, orient="index", index_name="custom_index")
+
+        assert isinstance(result, pd.DataFrame)
+        assert "custom_index" in result.columns
+        assert result["custom_index"].tolist() == ["item1", "item2"]
+
+
+class TestLoadDataFromJsonFiles:
+    """Test batch JSON file loading and DataFrame concatenation."""
+
+    def test_loads_and_combines_multiple_files(self, monkeypatch):
+        """Test multiple JSON files are loaded, converted, and concatenated."""
+        mock_df1 = MagicMock()
+        mock_df2 = MagicMock()
+        mock_concat_result = MagicMock()
+        mock_concat_result.sort_index.return_value = mock_concat_result
+        mock_concat_result.reset_index.return_value = mock_concat_result
+
+        mock_glob = MagicMock(return_value=["file1.json", "file2.json"])
+        monkeypatch.setattr("app.analysis.data_fetching.glob", mock_glob)
+        monkeypatch.setattr(
+            "app.analysis.data_fetching.load_file",
+            MagicMock(side_effect=[{"data1": "value1"}, {"data2": "value2"}]),
+        )
+        monkeypatch.setattr(
+            "app.analysis.data_fetching.json_to_dataframe",
+            MagicMock(side_effect=[mock_df1, mock_df2]),
+        )
+        monkeypatch.setattr(pd, "concat", MagicMock(return_value=mock_concat_result))
+
+        result = load_data_from_json_files("test_dir", "prefix", ["date"], "YYYY-MM-DD", "timestamp")
+
+        mock_glob.assert_called_once_with(os.path.join("test_dir", "prefix_*.json"))
+        assert result == mock_concat_result
+
+    def test_no_files_returns_empty_dataframe(self, monkeypatch):
+        """Test empty glob result returns an empty DataFrame."""
+        monkeypatch.setattr("app.analysis.data_fetching.glob", MagicMock(return_value=[]))
+
+        result = load_data_from_json_files("test_dir", "prefix", ["date"], "YYYY-MM-DD", "timestamp")
+
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+    def test_skips_empty_json_files(self, monkeypatch):
+        """Test files that load as empty dicts are excluded from concatenation."""
+        mock_df = MagicMock()
+        mock_concat_result = MagicMock()
+        mock_concat_result.sort_index.return_value = mock_concat_result
+        mock_concat_result.reset_index.return_value = mock_concat_result
+
+        monkeypatch.setattr(
+            "app.analysis.data_fetching.glob",
+            MagicMock(return_value=["empty.json", "valid.json"]),
+        )
+        monkeypatch.setattr(
+            "app.analysis.data_fetching.load_file",
+            MagicMock(side_effect=[{}, {"data": "value"}]),
+        )
+        mock_json_to_df = MagicMock(return_value=mock_df)
+        monkeypatch.setattr("app.analysis.data_fetching.json_to_dataframe", mock_json_to_df)
+        monkeypatch.setattr(pd, "concat", MagicMock(return_value=mock_concat_result))
+
+        load_data_from_json_files("test_dir", "prefix", ["date"], "YYYY-MM-DD", "timestamp")
+
+        # Empty file is skipped — json_to_dataframe only called once for the valid file
+        assert mock_json_to_df.call_count == 1
