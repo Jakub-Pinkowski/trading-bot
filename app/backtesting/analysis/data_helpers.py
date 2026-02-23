@@ -72,14 +72,11 @@ def filter_dataframe(
             )
 
         # Combine all filter conditions with AND logic
-        if filter_conditions:
-            combined_filter = filter_conditions[0]
-            for condition in filter_conditions[1:]:
-                combined_filter = combined_filter & condition
+        combined_filter = filter_conditions[0]
+        for condition in filter_conditions[1:]:
+            combined_filter = combined_filter & condition
 
-            valid_strategies = strategy_stats[combined_filter]['strategy'].tolist()
-        else:
-            valid_strategies = strategy_stats['strategy'].tolist()
+        valid_strategies = strategy_stats[combined_filter]['strategy'].tolist()
 
         filtered_df = df[df['strategy'].isin(valid_strategies)]
     else:
