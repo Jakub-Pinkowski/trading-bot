@@ -6,6 +6,8 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+# ==================== File I/O ====================
+
 def load_file(file_path):
     if not os.path.exists(file_path):
         return {}

@@ -3,6 +3,8 @@ from app.utils.logger import get_logger
 logger = get_logger('utils/math_utils')
 
 
+# ==================== Safe Math Operations ====================
+
 def safe_divide(numerator, denominator, default=0):
     """
     Safely divide two numbers, returning a default value if the denominator is zero.
