@@ -1,3 +1,4 @@
+# noinspection ALL
 """
 Futures Symbol Specifications.
 
