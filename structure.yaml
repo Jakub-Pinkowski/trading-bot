@@ -194,6 +194,7 @@ trading-bot/
 # IBKR
 # BUG [HIGH]: I might be trading wrong contract because of the 60days cutoff, it needs to be completely rewritten to always trade the next contract
 # TODO [HIGH]: Handle near delivery cases where I still hold a position close to the Close-Out date
+# TODO [MEDIUM]: Move contract switch dates into the contracts folder
 
 # Tests
 # TODO [LOW]: Add e2e tests
