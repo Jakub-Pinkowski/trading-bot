@@ -1,5 +1,5 @@
 """
-Tests for IBKR Service Module.
+Tests for IBKR Trading Module.
 
 Tests cover:
 - Normal order placement for buy and sell sides
@@ -10,7 +10,7 @@ Tests cover:
 """
 import pytest
 
-from app.ibkr.ibkr_service import process_trading_data
+from app.ibkr.trading import process_trading_data
 
 
 # ==================== Test Classes ====================
@@ -21,7 +21,7 @@ class TestProcessTradingData:
     # --- Successful Order Placement ---
 
     def test_normal_buy_places_order(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test buy order is placed and success is logged."""
         mock_get_contract_id.return_value = "123456"
@@ -33,11 +33,11 @@ class TestProcessTradingData:
         assert result == {"status": "order_placed", "order": {"id": "order123"}}
         mock_get_contract_id.assert_called_once_with("ZC")
         mock_place_order.assert_called_once_with("123456", "B")
-        mock_logger_ibkr_service.info.assert_any_call(f"Trading data received: {trading_data}")
-        mock_logger_ibkr_service.info.assert_any_call("Order placed: {'id': 'order123'}")
+        mock_logger_trading.info.assert_any_call(f"Trading data received: {trading_data}")
+        mock_logger_trading.info.assert_any_call("Order placed: {'id': 'order123'}")
 
     def test_normal_sell_places_order(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test sell order is placed and success is logged."""
         mock_get_contract_id.return_value = "123456"
@@ -50,7 +50,7 @@ class TestProcessTradingData:
         mock_place_order.assert_called_once_with("123456", "S")
 
     def test_missing_dummy_field_places_order(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test order is placed when dummy field is absent (defaults to live mode)."""
         mock_get_contract_id.return_value = "123456"
@@ -66,7 +66,7 @@ class TestProcessTradingData:
     # --- Dummy Mode ---
 
     def test_dummy_mode_skips_order(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test dummy=YES skips API call and order placement."""
         trading_data = {"dummy": "YES", "symbol": "ZC", "side": "B", "price": "4500.00"}
@@ -76,14 +76,14 @@ class TestProcessTradingData:
         assert result == {"status": "dummy_skip"}
         mock_get_contract_id.assert_not_called()
         mock_place_order.assert_not_called()
-        mock_logger_ibkr_service.info.assert_called_once_with(
+        mock_logger_trading.info.assert_called_once_with(
             f"Trading data received: {trading_data}"
         )
 
     # --- Validation Errors ---
 
     def test_missing_symbol_raises_value_error(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test ValueError raised before any API call when symbol is missing."""
         trading_data = {"dummy": "NO", "side": "B", "price": "4500.00"}
@@ -95,7 +95,7 @@ class TestProcessTradingData:
         mock_place_order.assert_not_called()
 
     def test_missing_side_raises_value_error(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test ValueError raised before any API call when side is missing."""
         trading_data = {"dummy": "NO", "symbol": "ZC", "price": "4500.00"}
@@ -109,7 +109,7 @@ class TestProcessTradingData:
     # --- Order Failure Handling ---
 
     def test_order_failure_returns_failed_status(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test order_failed status returned and error logged when place_order reports failure."""
         mock_get_contract_id.return_value = "123456"
@@ -122,12 +122,12 @@ class TestProcessTradingData:
             "status": "order_failed",
             "order": {"success": False, "error": "Insufficient funds", "details": {}},
         }
-        mock_logger_ibkr_service.error.assert_called_once()
+        mock_logger_trading.error.assert_called_once()
 
     # --- Exception Propagation ---
 
     def test_contract_id_exception_propagates(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test ValueError from get_contract_id propagates out of process_trading_data."""
         mock_get_contract_id.side_effect = ValueError("Test error")
@@ -140,7 +140,7 @@ class TestProcessTradingData:
         mock_place_order.assert_not_called()
 
     def test_place_order_exception_propagates(
-        self, mock_logger_ibkr_service, mock_place_order, mock_get_contract_id
+        self, mock_logger_trading, mock_place_order, mock_get_contract_id
     ):
         """Test exception from place_order propagates out of process_trading_data."""
         mock_get_contract_id.return_value = "123456"

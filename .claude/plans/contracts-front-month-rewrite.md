@@ -1,6 +1,6 @@
 # Plan: Contracts Front-Month Rewrite + Near-Delivery Rollover
 
-**Status:** Draft
+**Status:** In Progress
 **Priority:** HIGH
 **Date:** 2026-02-24
 
@@ -675,8 +675,9 @@ data/historical_data/
 **Flow 1 — Trading Signal**
 
 1. [ ] **Part 0** — Extend YAML with 2026 dates (prerequisite for everything)
-2. [ ] **Part 1** — Rewrite `contracts.py` + `test_contracts.py`; rename `test_ibkr_service.py` → `test_trading.py` +
-   update fixtures; update `conftest.py` trading + contracts sections
+2. [x] **Pre-step** — Rename `ibkr_service.py` → `trading.py`; update `webhook.py`, `conftest.py`, `__init__.py`; rename
+   `test_ibkr_service.py` → `test_trading.py` with updated fixtures
+3. [ ] **Part 1** — Rewrite `contracts.py` + `test_contracts.py`; update `conftest.py` contracts section
 
 **Flow 2 — Contract Rollover** (independent, can be done in parallel with Flow 1)
 
@@ -689,4 +690,4 @@ data/historical_data/
 
 **Final**
 
-7. [ ] Run full test suite: `python -m pytest tests/ibkr/ tests/routes/`
+8. [ ] Run full test suite: `python -m pytest tests/ibkr/ tests/routes/`

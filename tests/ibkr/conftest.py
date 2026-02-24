@@ -9,29 +9,29 @@ from unittest.mock import MagicMock
 import pytest
 
 
-# ==================== IBKR Service Fixtures ====================
+# ==================== Trading Fixtures ====================
 
 @pytest.fixture
-def mock_logger_ibkr_service(monkeypatch):
-    """Mock logger for ibkr_service module."""
+def mock_logger_trading(monkeypatch):
+    """Mock logger for trading module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.ibkr_service.logger', mock)
+    monkeypatch.setattr('app.ibkr.trading.logger', mock)
     return mock
 
 
 @pytest.fixture
 def mock_get_contract_id(monkeypatch):
-    """Mock get_contract_id dependency in ibkr_service module."""
+    """Mock get_contract_id dependency in trading module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.ibkr_service.get_contract_id', mock)
+    monkeypatch.setattr('app.ibkr.trading.get_contract_id', mock)
     return mock
 
 
 @pytest.fixture
 def mock_place_order(monkeypatch):
-    """Mock place_order dependency in ibkr_service module."""
+    """Mock place_order dependency in trading module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.ibkr_service.place_order', mock)
+    monkeypatch.setattr('app.ibkr.trading.place_order', mock)
     return mock
 
 

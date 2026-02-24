@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from flask import Blueprint, abort, request
 
-from app.ibkr.ibkr_service import process_trading_data
+from app.ibkr.trading import process_trading_data
 from app.utils.file_utils import load_file, save_file
 from app.utils.logger import get_logger
 from config import ALLOWED_IPS, DATA_DIR

@@ -2,7 +2,7 @@ from app.ibkr.contracts import get_contract_id
 from app.ibkr.orders import place_order
 from app.utils.logger import get_logger
 
-logger = get_logger('ibkr/service')
+logger = get_logger('ibkr/trading')
 
 
 # ==================== Public API ====================
