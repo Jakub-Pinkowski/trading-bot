@@ -378,7 +378,29 @@ def check_and_rollover_position(symbol):
 
 ---
 
-## Part 4 — File Changes Summary
+## Part 4 — Updated Folder Structure
+
+```
+app/ibkr/
+├── connection.py       (unchanged)
+├── contracts.py        (rewritten — front-month selection via switch dates)
+├── ibkr_service.py     (+ handle_switch_warning)
+├── orders.py           (unchanged)
+└── rollover.py         (new — check_and_rollover_position)
+
+app/routes/
+└── webhook.py          (route renamed /webhook → /signal, new /rollover route)
+
+strategies/indicators/
+└── contract_switch_warning.pine   (new)
+
+data/historical_data/
+└── contract_switch_dates.yaml     (extended with 2026+ dates)
+```
+
+---
+
+## Part 5 — File Changes Summary
 
 **Flow 1 — Trading Signal**
 
@@ -405,7 +427,7 @@ def check_and_rollover_position(symbol):
 
 ---
 
-## Part 5 — Test Cases Required
+## Part 6 — Test Cases Required
 
 ### Flow 1 — Trading Signal
 
