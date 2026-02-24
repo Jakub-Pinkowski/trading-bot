@@ -66,7 +66,7 @@ Create `scripts/update_switch_dates.py` that:
 
 Delete the constant entirely. It is the root cause of the bug.
 
-### 1.2 Add switch-date loading
+### 1.2 Add constants and switch-date helpers
 
 ```python
 import yaml
@@ -92,9 +92,109 @@ def _get_next_switch_date(ibkr_symbol, switch_dates):
         ValueError: If the symbol has no switch dates in the YAML, or all
             known switch dates are in the past (YAML needs updating).
     """
+
+
+def _resolve_next_switch_date(ibkr_symbol):
+  """
+  Load switch dates and return the next upcoming switch date for ibkr_symbol.
+
+  Convenience wrapper — _load_switch_dates and _get_next_switch_date always
+  travel together; this collapses them into a single call.
+  """
+  switch_dates = _load_switch_dates()
+  return _get_next_switch_date(ibkr_symbol, switch_dates)
 ```
 
-### 1.3 Rewrite `_get_closest_contract` → `_get_front_month_contract`
+The following public wrapper is also added so callers outside `contracts.py` (specifically
+`rollover.py`) can get the next switch date without importing parsing utils:
+
+```python
+def get_next_switch_date(symbol):
+  """
+  Return the next upcoming switch date for a TradingView symbol.
+
+  Args:
+      symbol: TradingView symbol string (e.g. 'ZC1!').
+
+  Raises:
+      ValueError: If the symbol has no upcoming switch date in the YAML.
+  """
+  ibkr_symbol = map_tv_to_ibkr(parse_symbol(symbol))
+  return _resolve_next_switch_date(ibkr_symbol)
+```
+
+### 1.3 Add `_get_contracts`
+
+Extracts the file-first lookup pattern shared by both public functions. Conids are
+permanent once assigned by IBKR, so data in the contracts file is always valid — there
+is no expiry. The file is only written on first use per symbol (or if all stored contracts
+have expired and no qualifying one can be found, forcing a re-fetch).
+
+```python
+def _get_contracts(ibkr_symbol):
+  """
+  Return the contract list for ibkr_symbol, reading from the contracts file
+  and falling back to the IBKR API if the symbol is not yet stored.
+
+  Args:
+      ibkr_symbol: IBKR symbol string (e.g. 'ZC').
+
+  Returns:
+      List of contract dicts, each containing at least 'conid' and 'expirationDate'.
+
+  Raises:
+      ValueError: If no contracts are found for the symbol from the API.
+  """
+  stored = load_file(CONTRACTS_FILE_PATH)
+  contract_list = stored.get(ibkr_symbol)
+
+  if isinstance(contract_list, list):
+    return contract_list
+
+  fresh_contracts = _fetch_contract(ibkr_symbol)
+  if not fresh_contracts:
+    logger.error(f'No contracts found for symbol: {ibkr_symbol}')
+    raise ValueError(f'No contracts found for symbol: {ibkr_symbol}')
+
+  stored[ibkr_symbol] = fresh_contracts
+  save_file(stored, CONTRACTS_FILE_PATH)
+  return fresh_contracts
+```
+
+### 1.4 Add `_refresh_contracts`
+
+Extracts the identical fallback pattern shared by both public functions — fetch fresh from
+the API, update the contracts file, return the list. Both public functions' `except`
+blocks collapse to two lines.
+
+```python
+def _refresh_contracts(ibkr_symbol):
+  """
+  Fetch contracts fresh from the IBKR API, update the contracts file, and return the list.
+
+  Called when stored contracts have all expired and a fresh fetch is required.
+
+  Args:
+      ibkr_symbol: IBKR symbol string (e.g. 'ZC').
+
+  Returns:
+      List of fresh contract dicts.
+
+  Raises:
+      ValueError: If the API returns no contracts for the symbol.
+  """
+  fresh_contracts = _fetch_contract(ibkr_symbol)
+  if not fresh_contracts:
+    logger.error(f'No contracts found for symbol: {ibkr_symbol}')
+    raise ValueError(f'No contracts found for symbol: {ibkr_symbol}')
+
+  stored = load_file(CONTRACTS_FILE_PATH)
+  stored[ibkr_symbol] = fresh_contracts
+  save_file(stored, CONTRACTS_FILE_PATH)
+  return fresh_contracts
+```
+
+### 1.5 Rewrite `_get_closest_contract` → `_get_front_month_contract`
 
 Rename to make intent explicit. New signature:
 
@@ -121,37 +221,68 @@ If today >= next_switch_date:
 ```
 
 If no qualifying contract is found → raise `ValueError`.
-`_get_next_switch_date` always provides a date (raises if not found), so there is no
+`_resolve_next_switch_date` always provides a date (raises if not found), so there is no
 None branch.
 
-### 1.4 Update `get_contract_id`
+### 1.6 Add `get_contracts_for_rollover`
+
+Public function used exclusively by `rollover.py`. Both public functions now accept TV
+symbols consistently — symbol parsing stays inside `contracts.py`, `rollover.py` imports
+no utils for symbol handling. The sentinel `next_switch_date + timedelta(days=1)` lives
+here rather than leaking into `rollover.py`.
 
 ```python
-def get_contract_id(symbol):
-    parsed_symbol = parse_symbol(symbol)
-    ibkr_symbol = map_tv_to_ibkr(parsed_symbol)
-    switch_dates = _load_switch_dates()
-    next_switch_date = _get_next_switch_date(ibkr_symbol, switch_dates)
+def get_contracts_for_rollover(symbol):
+  """
+  Return the current and next front-month contracts for a rollover.
 
-    contracts_cache = load_file(CONTRACTS_FILE_PATH)
-    contract_list = contracts_cache.get(ibkr_symbol)
+  Conids are permanent once assigned, so the contracts file is always a valid
+  source of truth. Only falls back to the API if the symbol is not yet stored.
 
-    if isinstance(contract_list, list):
-        try:
-            contract = _get_front_month_contract(contract_list, next_switch_date)
-            return contract['conid']
-        except ValueError as err:
-            logger.warning(f"Cache invalid for '{ibkr_symbol}': {err}")
+  Args:
+      symbol: TradingView symbol string (e.g. 'ZC1!').
 
-    fresh_contracts = _fetch_contract(ibkr_symbol)
-    if not fresh_contracts:
-        logger.error(f'No contracts found for symbol: {ibkr_symbol}')
-        raise ValueError(f'No contracts found for symbol: {ibkr_symbol}')
+  Returns:
+      Tuple of (current_contract, next_contract) — each a contract dict with at
+      least 'conid' and 'expirationDate'.
 
-    contracts_cache[ibkr_symbol] = fresh_contracts
-    save_file(contracts_cache, CONTRACTS_FILE_PATH)
+  Raises:
+      ValueError: If the symbol has no upcoming switch date or no qualifying
+          contracts are found.
+  """
+  ibkr_symbol = map_tv_to_ibkr(parse_symbol(symbol))
+  next_switch_date = _resolve_next_switch_date(ibkr_symbol)
+  contracts = _get_contracts(ibkr_symbol)
 
-    contract = _get_front_month_contract(fresh_contracts, next_switch_date)
+  try:
+    current = _get_front_month_contract(contracts, next_switch_date)
+    new = _get_front_month_contract(contracts, next_switch_date + timedelta(days=1))
+    return current, new
+  except ValueError:
+    # All stored contracts have expired — fetch fresh and retry once
+    contracts = _refresh_contracts(ibkr_symbol)
+    current = _get_front_month_contract(contracts, next_switch_date)
+    new = _get_front_month_contract(contracts, next_switch_date + timedelta(days=1))
+    return current, new
+```
+
+### 1.7 Update `get_front_month_conid`
+
+Simplified to use the shared helpers. Both public functions now have the same shape.
+
+```python
+def get_front_month_conid(symbol):
+  ibkr_symbol = map_tv_to_ibkr(parse_symbol(symbol))
+  next_switch_date = _resolve_next_switch_date(ibkr_symbol)
+  contracts = _get_contracts(ibkr_symbol)
+
+  try:
+    contract = _get_front_month_contract(contracts, next_switch_date)
+    return contract['conid']
+  except ValueError:
+    # All stored contracts have expired — fetch fresh and retry once
+    contracts = _refresh_contracts(ibkr_symbol)
+    contract = _get_front_month_contract(contracts, next_switch_date)
     return contract['conid']
 ```
 
@@ -171,7 +302,7 @@ Flow 1 — Trading Signal
 strategy indicator (e.g. indicator_rsi.pine)
   → POST /trading  {"symbol": "ZC1!", "side": "B", ...}
   → process_trading_data(data)            [trading.py]
-  → get_contract_id(symbol)              [contracts.py]
+  → get_front_month_conid(symbol)              [contracts.py]
   → place_order(conid, side)             [orders.py]
 
 Flow 2 — Contract Rollover
@@ -180,8 +311,7 @@ contract_switch_warning.pine  (fires once per day during warning window)
   → POST /rollover  {"symbol": "ZC1!"}
   → process_rollover_data(data)           [rollover.py]
   → check_and_rollover_position(symbol)  [rollover.py]
-  → _fetch_contract(symbol)              [contracts.py — get full list for old+new]
-  → _get_front_month_contract(...)       [contracts.py — called twice: old, then new]
+  → get_contracts_for_rollover(symbol)       [contracts.py — returns (current, next) in one call]
   → _get_contract_position(conid)        [orders.py ← shared]
   → place_order(conid, side)             [orders.py ← shared]
 ```
@@ -193,7 +323,7 @@ contract_switch_warning.pine  (fires once per day during warning window)
 `process_trading_data` in `app/ibkr/trading.py` handles all trading signals.
 No rollover logic lives here.
 
-Part 1 (contracts.py rewrite) is the only change to this flow — `get_contract_id` now
+Part 1 (contracts.py rewrite) is the only change to this flow — `get_front_month_conid` now
 selects the correct front-month contract using switch dates instead of the 60-day filter.
 
 ---
@@ -296,7 +426,9 @@ REOPEN_ON_ROLLOVER = True  # True  → close old position and reopen on new cont
 # False → close old position only, do not reopen
 ```
 
-**`SWITCH_DATES_FILE_PATH`** is imported from `contracts.py` — defined once, shared.
+**Imports from `contracts.py`:** only `get_next_switch_date` and `get_contracts_for_rollover`
+— both public, both accept TV symbols. No private symbols, no parsing utils, no file paths
+imported into `rollover.py`.
 
 **`process_rollover_data`** — entry point called by `rollover_route` in `webhook.py`:
 
@@ -320,7 +452,8 @@ def process_rollover_data(data):
             {'status': 'error', ...}     — rollover attempt failed
 
     Raises:
-        ValueError: If 'symbol' is missing from data
+        ValueError: If 'symbol' is missing from data, or if the symbol has no
+            upcoming switch date in the YAML (propagated from check_and_rollover_position)
     """
 ```
 
@@ -338,25 +471,21 @@ def check_and_rollover_position(symbol):
 **Internal logic:**
 
 ```
-1. Parse symbol → ibkr_symbol
-2. Load switch dates, find next_switch_date
+1. next_switch_date = get_next_switch_date(symbol)
    (raises ValueError if symbol not in YAML or all dates exhausted)
-3. days_until_switch = (next_switch_date - today).days
-4. If days_until_switch > CLOSE_OUT_WARNING_DAYS:
+2. days_until_switch = (next_switch_date - today).days
+3. If days_until_switch > CLOSE_OUT_WARNING_DAYS:
    → return {'status': 'no_rollover_needed'}
 
 # Within the danger window
-5. Get fresh contracts via _fetch_contract(ibkr_symbol)
-   (fetch directly — need full list to identify both old and new contract)
-6. old_contract = _get_front_month_contract(contracts, next_switch_date)
-   today < next_switch_date is guaranteed here (we are in the warning window,
-   not yet past the switch) → this naturally returns the current front month
-7. current_position = _get_contract_position(old_contract['conid'])
+4. old_contract, new_contract = get_contracts_for_rollover(symbol)
+   (file-first lookup; sentinel logic encapsulated in contracts.py)
+5. current_position = _get_contract_position(old_contract['conid'])
 
-8. If current_position == 0:
+6. If current_position == 0:
    → Log warning, return {'status': 'warning', ...}
 
-9. If current_position != 0:
+7. If current_position != 0:
    → close_side = 'S' if current_position > 0 else 'B'
    → close_result = place_order(old_contract['conid'], close_side)
    → If close failed: log error, return {'status': 'error', ...}
@@ -364,19 +493,10 @@ def check_and_rollover_position(symbol):
    → If REOPEN_ON_ROLLOVER is False:
       → return {'status': 'closed', 'old_conid': ..., 'message': '...'}
 
-   → Advance next_switch_date to the one after, so today >= switch makes
-     _get_front_month_contract return the NEW front month
-   → new_contract = _get_front_month_contract(contracts, next_switch_date)
    → reopen_side = 'B' if current_position > 0 else 'S'
    → place_order(new_contract['conid'], reopen_side)
    → return {'status': 'rolled', 'old_conid': ..., 'new_conid': ..., 'side': reopen_side}
 ```
-
-**Note on step 9 new contract selection:** passing `next_switch_date` with today still <
-switch_date gives us the old front month again. To get the new one we need to simulate
-being past the switch — the cleanest way is to pass `next_switch_date - 1 day` as a
-sentinel cutoff. This is an implementation detail to resolve during coding; the plan marks
-it as a known decision point.
 
 ---
 
@@ -406,89 +526,136 @@ data/historical_data/
 
 **Flow 1 — Trading Signal**
 
-| File                                              | Change                                                                                                                                                                                               |
-|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `app/ibkr/contracts.py`                           | Remove `MIN_DAYS_UNTIL_EXPIRY`, add `MIN_BUFFER_DAYS`, add `_load_switch_dates`, add `_get_next_switch_date`, rename `_get_closest_contract` → `_get_front_month_contract`, update `get_contract_id` |
-| `data/historical_data/contract_switch_dates.yaml` | Extend with 2026+ dates (Part 0)                                                                                                                                                                     |
-| `tests/ibkr/test_contracts.py`                    | Rewrite tests for new function signatures; add switch-date fixture                                                                                                                                   |
-| `tests/ibkr/conftest.py`                          | Add `mock_load_switch_dates`, `mock_get_next_switch_date` fixtures                                                                                                                                   |
+| File                                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `app/ibkr/contracts.py`                           | Remove `MIN_DAYS_UNTIL_EXPIRY`; add `MIN_BUFFER_DAYS`, `SWITCH_DATES_FILE_PATH`; add private helpers `_load_switch_dates`, `_get_next_switch_date`, `_resolve_next_switch_date`, `_get_contracts`, `_refresh_contracts`; rename `_get_closest_contract` → `_get_front_month_contract`; add public `get_next_switch_date`, `get_contracts_for_rollover`; update `get_front_month_conid`                                                                                                                                                                             |
+| `data/historical_data/contract_switch_dates.yaml` | Extend with 2026+ dates (Part 0)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `tests/ibkr/test_ibkr_service.py`                 | Rename → `test_trading.py`; update import path; rename `mock_get_contract_id` → `mock_get_front_month_conid` throughout                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `tests/ibkr/test_contracts.py`                    | Full rewrite — see Part 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `tests/ibkr/conftest.py`                          | **Trading section:** rename `mock_logger_ibkr_service` → `mock_logger_trading` (path `app.ibkr.trading.logger`); rename `mock_get_contract_id` → `mock_get_front_month_conid` (path `app.ibkr.trading.get_front_month_conid`); update `mock_place_order` path to `app.ibkr.trading.place_order`. **Contracts section:** rename `mock_get_closest_contract` → `mock_get_front_month_contract` (path `app.ibkr.contracts._get_front_month_contract`); add `mock_load_switch_dates`, `mock_resolve_next_switch_date`, `mock_get_contracts`, `mock_refresh_contracts`. |
 
 **Flow 2 — Contract Rollover**
 
-| File                                                 | Change                                                                              |
-|------------------------------------------------------|-------------------------------------------------------------------------------------|
-| `strategies/indicators/contract_switch_warning.pine` | New file — daily switch warning indicator                                           |
-| `app/routes/webhook.py`                              | Rename existing `/webhook` route to `/trading`; add new `/rollover` route           |
-| `app/ibkr/trading.py`                                | No changes — trading signal flow only                                               |
-| `app/ibkr/rollover.py`                               | New file — `process_rollover_data`, `check_and_rollover_position`, constants        |
-| `tests/ibkr/test_rollover.py`                        | New file — tests for both `process_rollover_data` and `check_and_rollover_position` |
-| `tests/routes/test_webhook.py`                       | Update route path to `/trading`; add tests for `/rollover` route                    |
-| `tests/ibkr/conftest.py`                             | Add `mock_check_and_rollover_position`, `mock_process_rollover_data` fixtures       |
-| `tests/routes/conftest.py`                           | Add `mock_process_rollover_data` fixture                                            |
+| File                                                 | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `strategies/indicators/contract_switch_warning.pine` | New file — daily switch warning indicator                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `app/routes/webhook.py`                              | Rename existing `/webhook` route to `/trading`; add new `/rollover` route                                                                                                                                                                                                                                                                                                                                                                                  |
+| `app/ibkr/trading.py`                                | No changes — trading signal flow only                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `app/ibkr/rollover.py`                               | New file — `process_rollover_data`, `check_and_rollover_position`, constants                                                                                                                                                                                                                                                                                                                                                                               |
+| `tests/ibkr/test_rollover.py`                        | New file — see Part 6                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `tests/routes/test_webhook.py`                       | Rename `TestWebhookRoute` → `TestTradingRoute`; update all route paths `/webhook` → `/trading`; add `TestRolloverRoute`                                                                                                                                                                                                                                                                                                                                    |
+| `tests/ibkr/conftest.py`                             | **New Rollover section:** add `mock_get_next_switch_date` (path `app.ibkr.rollover.get_next_switch_date`), `mock_get_contracts_for_rollover` (path `app.ibkr.rollover.get_contracts_for_rollover`), `mock_place_order_rollover` (path `app.ibkr.rollover.place_order`), `mock_get_contract_position_rollover` (path `app.ibkr.rollover._get_contract_position`), `mock_check_and_rollover_position` (path `app.ibkr.rollover.check_and_rollover_position`) |
+| `tests/routes/conftest.py`                           | Add `mock_process_rollover_data` (path `app.routes.webhook.process_rollover_data`)                                                                                                                                                                                                                                                                                                                                                                         |
 
 ---
 
 ## Part 6 — Test Cases Required
 
-### Flow 1 — Trading Signal
+### `test_contracts.py` (full rewrite)
 
-#### `test_contracts.py` updates
+#### `TestFetchContract` (unchanged behaviour — keep existing tests)
 
-- `TestGetFrontMonthContract`:
-    - Before switch date → returns earliest contract
-    - After switch date → returns contract expiring after switch date
-    - All contracts too close to expiry → raises `ValueError`
-    - Contracts provided in reverse order → still returns correct front month
+- Success returns contract list for symbol
+- API error is caught, empty list returned
+- API error is logged
+- Empty API response returns empty list
 
-- `TestGetNextSwitchDate`:
-    - Symbol present in YAML with a future date → returns correct date
-    - Mini/micro symbol resolved via `_symbol_mappings` → returns parent symbol's date
-    - Symbol not in YAML → raises `ValueError`
-    - Symbol in YAML but all dates exhausted (past) → raises `ValueError`
+#### `TestGetNextSwitchDate` (new — tests `_get_next_switch_date` directly with a dict)
 
-- `TestGetContractId`:
-    - Update all existing tests to remove `min_days_until_expiry` parameter
-    - New: switch date is loaded and passed through to `_get_front_month_contract`
-    - New: cache hit uses switch date for validation
+- Symbol present, future date → returns correct date
+- Mini/micro symbol resolved via `_symbol_mappings` → returns parent symbol's date
+- Symbol not in YAML → raises `ValueError`
+- All dates in the past → raises `ValueError`
 
-### Flow 2 — Contract Rollover
+#### `TestGetContracts` (new)
 
-#### `test_rollover.py` (new)
+- Symbol present in file → returns stored list without calling API
+- Symbol not in file → fetches from API, saves to file, returns result
+- Symbol not in file, API returns empty → raises `ValueError`, logs error
 
-- `TestProcessRolloverData`:
-    - Missing symbol → raises `ValueError`
-    - Far from switch → returns `{'status': 'no_rollover_needed'}`
-    - Delegates to `check_and_rollover_position` and passes result through
-    - Exception from `check_and_rollover_position` propagates
+#### `TestRefreshContracts` (new)
 
-- `TestCheckAndRolloverPosition`:
-    - Far from switch date → returns `{'status': 'no_rollover_needed'}`
-    - Near switch date, no position → returns `{'status': 'warning'}`
-    - Near switch date, long position, `REOPEN_ON_ROLLOVER=True` → closes and reopens on new contract
-    - Near switch date, short position, `REOPEN_ON_ROLLOVER=True` → closes and reopens on new contract
-    - Near switch date, long position, `REOPEN_ON_ROLLOVER=False` → closes only, returns `{'status': 'closed'}`
-    - Near switch date, short position, `REOPEN_ON_ROLLOVER=False` → closes only, returns `{'status': 'closed'}`
-    - Rollover close fails → returns `{'status': 'error'}`
-    - Symbol not in YAML → raises `ValueError` (propagated from `_get_next_switch_date`)
+- API returns contracts → saves to file, returns list
+- API returns empty → raises `ValueError`, logs error
 
-#### `test_webhook.py` additions
+#### `TestGetFrontMonthContract` (rename from `TestGetClosestContract`)
 
-- POST to `/trading` → calls `process_trading_data`, not `process_rollover_data`
-- POST to `/rollover` → calls `process_rollover_data`, not `process_trading_data`
-- Both routes save alert to file
-- Both routes return 200 even when the handler raises an exception
+- Before switch date → returns earliest contract after `MIN_BUFFER_DAYS` cutoff
+- After switch date → returns first contract expiring after switch date
+- Exactly on switch date → follows the "after" branch
+- All contracts within buffer → raises `ValueError`
+- Contracts provided in reverse order → still returns correct front month
+
+#### `TestGetFrontMonthConid` (rename + update from `TestGetContractId`)
+
+- Returns conid from stored contracts via `_get_contracts` + `_get_front_month_contract`
+- Stored contracts expired (ValueError) → calls `_refresh_contracts`, retries, returns conid
+- `_refresh_contracts` raises → propagates
+- File lookup uses IBKR symbol (not TV symbol)
+- Fetch uses IBKR symbol
+
+#### `TestGetContractsForRollover` (new)
+
+- Returns `(current, next)` tuple; next contract has later expiry than current
+- Stored contracts expired → calls `_refresh_contracts`, retries, returns both contracts
+- `_resolve_next_switch_date` raises → propagates
+
+#### `TestGetNextSwitchDatePublic` (new — tests public `get_next_switch_date`)
+
+- Parses TV symbol, maps to IBKR, delegates to `_resolve_next_switch_date`
+- `ValueError` from `_resolve_next_switch_date` propagates
+
+---
+
+### `test_trading.py` (rename from `test_ibkr_service.py` — update fixtures only)
+
+- All existing test cases kept; only fixture name changes:
+  `mock_get_contract_id` → `mock_get_front_month_conid` throughout
+- `mock_logger_ibkr_service` → `mock_logger_trading`
+
+---
+
+### `test_rollover.py` (new)
+
+#### `TestProcessRolloverData`
+
+- Missing `symbol` key → raises `ValueError`
+- Delegates to `check_and_rollover_position` with the symbol from payload
+- Returns result from `check_and_rollover_position` unchanged
+- `ValueError` from `check_and_rollover_position` propagates
+
+#### `TestCheckAndRolloverPosition`
+
+- Days until switch > `CLOSE_OUT_WARNING_DAYS` → returns `{'status': 'no_rollover_needed'}`
+- Within warning window, position is 0 → logs warning, returns `{'status': 'warning'}`
+- Long position, `REOPEN_ON_ROLLOVER=True` → closes with SELL, reopens with BUY, returns `{'status': 'rolled'}`
+- Short position, `REOPEN_ON_ROLLOVER=True` → closes with BUY, reopens with SELL, returns `{'status': 'rolled'}`
+- Long position, `REOPEN_ON_ROLLOVER=False` → closes only, returns `{'status': 'closed'}`
+- Short position, `REOPEN_ON_ROLLOVER=False` → closes only, returns `{'status': 'closed'}`
+- Close order returns `success: False` → logs error, returns `{'status': 'error'}`
+- `get_next_switch_date` raises `ValueError` (symbol not in YAML) → propagates
+
+---
+
+### `test_webhook.py` (updates)
+
+#### `TestTradingRoute` (rename from `TestWebhookRoute` — update route path only)
+
+- All existing tests kept; route path updated `/webhook` → `/trading`
+
+#### `TestRolloverRoute` (new)
+
+- Valid POST → calls `process_rollover_data`, not `process_trading_data`
+- Alert saved alongside trading alerts (calls `save_alert_data_to_file`)
+- Unallowed IP → 403
+- Non-JSON content type → 400
+- Processing error still returns 200
 
 ---
 
 ## Open Questions
 
-1. **How to select the new contract in `check_and_rollover_position` step 9?**
-   Calling `_get_front_month_contract(contracts, next_switch_date)` when today < switch_date
-   returns the old front month again. The cleanest resolution identified so far: pass
-   `next_switch_date - 1 day` as a cutoff sentinel so the function sees today >= switch_date
-   and returns the next contract. Confirm this during implementation.
-
-2. **Should rollover be opt-in per symbol?**
+1. **Should rollover be opt-in per symbol?**
    Not initially — apply to all symbols. Can be restricted later if some symbols should never
    auto-rollover (e.g., cash-settled indices where expiry risk is different).
 
@@ -508,13 +675,14 @@ data/historical_data/
 **Flow 1 — Trading Signal**
 
 1. [ ] **Part 0** — Extend YAML with 2026 dates (prerequisite for everything)
-2. [ ] **Part 1** — Rewrite `contracts.py` + `test_contracts.py`
+2. [ ] **Part 1** — Rewrite `contracts.py` + `test_contracts.py`; rename `test_ibkr_service.py` → `test_trading.py` +
+   update fixtures; update `conftest.py` trading + contracts sections
 
 **Flow 2 — Contract Rollover** (independent, can be done in parallel with Flow 1)
 
-3. [ ] **Part 3.4** — Create `rollover.py` + `test_rollover.py`
-4. [ ] **Part 3.3** — Implement `process_rollover_data` + `check_and_rollover_position` in `rollover.py` +
-   `test_rollover.py`
+3. [ ] **Part 3.3** — Create `rollover.py`: implement `process_rollover_data` + `check_and_rollover_position` +
+   constants
+4. [ ] **Part 3.3** — Create `test_rollover.py`
 5. [ ] **Part 3.2** — Update `webhook.py` routing + `test_webhook.py`
 6. [ ] **Part 3.1** — Create `contract_switch_warning.pine`; add to each symbol chart in TradingView; configure daily 1D
    alert with webhook URL
