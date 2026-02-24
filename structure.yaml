@@ -182,6 +182,8 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# TODO [HIGH]: Check whether I use adjusted or not adjusted data from TradingView
+# BUG [HIGH]: Fix contract switch dates
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
 # TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
 # TODO [MEDIUM]: Implement out-of-sample data testing
