@@ -10,9 +10,9 @@ QUANTITY_TO_TRADE = 1  # Default number of contracts per order
 MAX_SUPPRESS_RETRIES = 3  # Maximum attempts to suppress IBKR confirmation dialogs before giving up
 
 
-# ==================== Cache Management ====================
+# ==================== Helper Functions ====================
 
-def invalidate_cache():
+def _invalidate_cache():
     """
     Invalidate the IBKR portfolio position cache to force fresh data on the next fetch.
 
@@ -27,9 +27,7 @@ def invalidate_cache():
         raise
 
 
-# ==================== Position Management ====================
-
-def get_contract_position(conid):
+def _get_contract_position(conid):
     """
     Get the current open position quantity for a given contract.
 
@@ -47,7 +45,7 @@ def get_contract_position(conid):
             - 0 if no position is held or on API error
     """
     # Invalidate server-side position cache to ensure fresh data
-    invalidate_cache()
+    _invalidate_cache()
 
     try:
         positions = api_get(f'portfolio/{ACCOUNT_ID}/positions')
@@ -63,9 +61,7 @@ def get_contract_position(conid):
         return 0
 
 
-# ==================== Message Handling ====================
-
-def suppress_messages(message_ids):
+def _suppress_messages(message_ids):
     """
     Suppress IBKR confirmation dialogs that would otherwise block order submission.
 
@@ -104,7 +100,7 @@ def place_order(conid, side):
     Raises:
         ValueError: If side is not 'B' or 'S'
     """
-    contract_position = get_contract_position(conid)
+    contract_position = _get_contract_position(conid)
 
     # Existing position same as incoming signal; no action needed
     if (contract_position > 0 and side == 'B') or (contract_position < 0 and side == 'S'):
@@ -136,7 +132,7 @@ def place_order(conid, side):
             if isinstance(order_response, list) and 'messageIds' in order_response[0]:
                 message_ids = order_response[0].get('messageIds', [])
                 if message_ids:
-                    suppress_messages(message_ids)
+                    _suppress_messages(message_ids)
                     continue  # Retry after suppression
             break  # No suppression needed, exit loop
         else:

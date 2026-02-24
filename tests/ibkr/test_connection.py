@@ -8,7 +8,7 @@ Tests cover:
 """
 from unittest.mock import MagicMock
 
-from app.ibkr.connection import tickle_ibkr_api, start_ibkr_scheduler
+from app.ibkr.connection import _tickle_ibkr_api, start_ibkr_scheduler
 
 
 # ==================== Test Classes ====================
@@ -20,7 +20,7 @@ class TestTickleIbkrApi:
         """Test successful tickle logs the API response."""
         mock_api_post_connection.return_value = {"success": True}
 
-        tickle_ibkr_api()
+        _tickle_ibkr_api()
 
         mock_api_post_connection.assert_called_once_with("tickle", {})
         mock_logger_connection.info.assert_called_once_with(
@@ -31,7 +31,7 @@ class TestTickleIbkrApi:
         """Test no-session response logs an error."""
         mock_api_post_connection.return_value = {"error": "no session"}
 
-        tickle_ibkr_api()
+        _tickle_ibkr_api()
 
         mock_api_post_connection.assert_called_once_with("tickle", {})
         mock_logger_connection.error.assert_called_once()
@@ -47,7 +47,7 @@ class TestTickleIbkrApi:
             }
         }
 
-        tickle_ibkr_api()
+        _tickle_ibkr_api()
 
         mock_api_post_connection.assert_called_once_with("tickle", {})
         mock_logger_connection.error.assert_called_once()
@@ -63,7 +63,7 @@ class TestTickleIbkrApi:
             }
         }
 
-        tickle_ibkr_api()
+        _tickle_ibkr_api()
 
         mock_api_post_connection.assert_called_once_with("tickle", {})
         mock_logger_connection.error.assert_called_once()
@@ -72,7 +72,7 @@ class TestTickleIbkrApi:
         """Test unexpected exception is caught and logged with the exception message."""
         mock_api_post_connection.side_effect = Exception("Test error")
 
-        tickle_ibkr_api()
+        _tickle_ibkr_api()
 
         mock_api_post_connection.assert_called_once_with("tickle", {})
         mock_logger_connection.error.assert_called_once_with(

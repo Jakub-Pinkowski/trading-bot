@@ -10,9 +10,9 @@ scheduler = BackgroundScheduler()
 logger = get_logger('ibkr/connection')
 
 
-# ==================== Heartbeat ====================
+# ==================== Helper Functions ====================
 
-def tickle_ibkr_api():
+def _tickle_ibkr_api():
     """
     Send a heartbeat request to keep the IBKR session alive.
 
@@ -49,7 +49,7 @@ def tickle_ibkr_api():
 def start_ibkr_scheduler():
     """ Start the IBKR connection heartbeat scheduler."""
     # Send a heartbeat every 60 seconds to keep the IBKR session alive
-    scheduler.add_job(tickle_ibkr_api, 'interval', seconds=60, coalesce=True, max_instances=5)
+    scheduler.add_job(_tickle_ibkr_api, 'interval', seconds=60, coalesce=True, max_instances=5)
 
     # Log a warning whenever a scheduled job is missed
     def on_job_missed(event):

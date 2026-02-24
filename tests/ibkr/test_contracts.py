@@ -12,8 +12,8 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.ibkr.contracts import (
-    fetch_contract,
-    get_closest_contract,
+    _fetch_contract,
+    _get_closest_contract,
     get_contract_id,
     CONTRACTS_FILE_PATH,
     MIN_DAYS_UNTIL_EXPIRY,
@@ -29,7 +29,7 @@ class TestFetchContract:
         """Test successful fetch returns contract list for the symbol."""
         mock_api_get_contracts.return_value = {"ZC": [{"conid": "123456", "expirationDate": "20231215"}]}
 
-        result = fetch_contract("ZC")
+        result = _fetch_contract("ZC")
 
         assert result == [{"conid": "123456", "expirationDate": "20231215"}]
         mock_api_get_contracts.assert_called_once_with("/trsrv/futures?symbols=ZC")
@@ -38,7 +38,7 @@ class TestFetchContract:
         """Test API error is caught and empty list returned."""
         mock_api_get_contracts.side_effect = Exception("API error")
 
-        result = fetch_contract("ZC")
+        result = _fetch_contract("ZC")
 
         assert result == []
         mock_api_get_contracts.assert_called_once_with("/trsrv/futures?symbols=ZC")
@@ -47,7 +47,7 @@ class TestFetchContract:
         """Test API error is logged before returning empty list."""
         mock_api_get_contracts.side_effect = Exception("API error")
 
-        fetch_contract("ZC")
+        _fetch_contract("ZC")
 
         mock_logger_contracts.error.assert_called_once()
 
@@ -55,7 +55,7 @@ class TestFetchContract:
         """Test empty API response returns empty list."""
         mock_api_get_contracts.return_value = {}
 
-        result = fetch_contract("ZC")
+        result = _fetch_contract("ZC")
 
         assert result == []
         mock_api_get_contracts.assert_called_once_with("/trsrv/futures?symbols=ZC")
@@ -75,7 +75,7 @@ class TestGetClosestContract:
             {"conid": "789012", "expirationDate": later.strftime("%Y%m%d")},
         ]
 
-        result = get_closest_contract(contracts)
+        result = _get_closest_contract(contracts)
 
         # Earlier expiration contract should be selected
         assert result["conid"] == "123456"
@@ -88,12 +88,12 @@ class TestGetClosestContract:
         contracts = [{"conid": "123456", "expirationDate": past_date.strftime("%Y%m%d")}]
 
         with pytest.raises(ValueError, match="No valid contracts available for expiry cutoff"):
-            get_closest_contract(contracts)
+            _get_closest_contract(contracts)
 
     def test_empty_list_raises_value_error(self):
         """Test ValueError raised when contract list is empty."""
         with pytest.raises(ValueError, match="No valid contracts available for expiry cutoff"):
-            get_closest_contract([])
+            _get_closest_contract([])
 
     def test_custom_min_days_filters_near_contracts(self):
         """Test custom min_days_until_expiry excludes contracts expiring too soon."""
@@ -107,7 +107,7 @@ class TestGetClosestContract:
         ]
 
         # min_days=15 should exclude the near contract and return the far one
-        result = get_closest_contract(contracts, min_days_until_expiry=15)
+        result = _get_closest_contract(contracts, min_days_until_expiry=15)
 
         assert result["conid"] == "789012"
 
@@ -123,7 +123,7 @@ class TestGetClosestContract:
             {"conid": "123456", "expirationDate": earlier.strftime("%Y%m%d")},
         ]
 
-        result = get_closest_contract(contracts)
+        result = _get_closest_contract(contracts)
 
         assert result["conid"] == "123456"
 

@@ -11,10 +11,10 @@ Tests cover:
 import pytest
 
 from app.ibkr.orders import (
-    get_contract_position,
-    invalidate_cache,
+    _get_contract_position,
+    _invalidate_cache,
     place_order,
-    suppress_messages,
+    _suppress_messages,
     MAX_SUPPRESS_RETRIES,
     QUANTITY_TO_TRADE,
 )
@@ -28,7 +28,7 @@ class TestInvalidateCache:
 
     def test_calls_correct_api_endpoint(self, mock_api_post_orders):
         """Test cache invalidation calls the portfolio invalidate endpoint."""
-        invalidate_cache()
+        _invalidate_cache()
 
         mock_api_post_orders.assert_called_once_with(
             f"portfolio/{ACCOUNT_ID}/positions/invalidate", {}
@@ -39,7 +39,7 @@ class TestInvalidateCache:
         mock_api_post_orders.side_effect = Exception("API error")
 
         with pytest.raises(Exception, match="API error"):
-            invalidate_cache()
+            _invalidate_cache()
 
         mock_api_post_orders.assert_called_once()
 
@@ -54,7 +54,7 @@ class TestGetContractPosition:
             {"conid": "789012", "position": -3},
         ]
 
-        result = get_contract_position("123456")
+        result = _get_contract_position("123456")
 
         assert result == 5
         mock_invalidate_cache.assert_called_once()
@@ -64,7 +64,7 @@ class TestGetContractPosition:
         """Test zero returned when the contract is not in the portfolio."""
         mock_api_get_orders.return_value = [{"conid": "789012", "position": -3}]
 
-        result = get_contract_position("123456")
+        result = _get_contract_position("123456")
 
         assert result == 0
         mock_invalidate_cache.assert_called_once()
@@ -73,7 +73,7 @@ class TestGetContractPosition:
         """Test zero returned gracefully when API raises an exception."""
         mock_api_get_orders.side_effect = Exception("API error")
 
-        result = get_contract_position("123456")
+        result = _get_contract_position("123456")
 
         assert result == 0
         mock_invalidate_cache.assert_called_once()
@@ -83,7 +83,7 @@ class TestGetContractPosition:
         mock_invalidate_cache.side_effect = Exception("Cache invalidation error")
 
         with pytest.raises(Exception, match="Cache invalidation error"):
-            get_contract_position("123456")
+            _get_contract_position("123456")
 
 
 class TestSuppressMessages:
@@ -93,7 +93,7 @@ class TestSuppressMessages:
         """Test suppress_messages calls the suppress endpoint with the provided IDs."""
         mock_api_post_orders.return_value = {"success": True}
 
-        suppress_messages(["1", "2"])
+        _suppress_messages(["1", "2"])
 
         mock_api_post_orders.assert_called_once_with(
             "iserver/questions/suppress", {"messageIds": ["1", "2"]}
@@ -104,7 +104,7 @@ class TestSuppressMessages:
         mock_api_post_orders.side_effect = Exception("API error")
 
         # Should not raise
-        suppress_messages(["1", "2"])
+        _suppress_messages(["1", "2"])
 
         mock_api_post_orders.assert_called_once()
 

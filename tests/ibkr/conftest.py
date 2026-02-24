@@ -115,7 +115,7 @@ def mock_map_tv_to_ibkr(monkeypatch):
 def mock_fetch_contract(monkeypatch):
     """Mock fetch_contract dependency in contracts module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts.fetch_contract', mock)
+    monkeypatch.setattr('app.ibkr.contracts._fetch_contract', mock)
     return mock
 
 
@@ -123,7 +123,7 @@ def mock_fetch_contract(monkeypatch):
 def mock_get_closest_contract(monkeypatch):
     """Mock get_closest_contract dependency in contracts module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts.get_closest_contract', mock)
+    monkeypatch.setattr('app.ibkr.contracts._get_closest_contract', mock)
     return mock
 
 
@@ -157,7 +157,7 @@ def mock_api_get_orders(monkeypatch):
 def mock_get_contract_position(monkeypatch):
     """Mock get_contract_position dependency in orders module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.orders.get_contract_position', mock)
+    monkeypatch.setattr('app.ibkr.orders._get_contract_position', mock)
     return mock
 
 
@@ -165,7 +165,7 @@ def mock_get_contract_position(monkeypatch):
 def mock_suppress_messages(monkeypatch):
     """Mock suppress_messages dependency in orders module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.orders.suppress_messages', mock)
+    monkeypatch.setattr('app.ibkr.orders._suppress_messages', mock)
     return mock
 
 
@@ -173,5 +173,5 @@ def mock_suppress_messages(monkeypatch):
 def mock_invalidate_cache(monkeypatch):
     """Mock invalidate_cache dependency in orders module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.orders.invalidate_cache', mock)
+    monkeypatch.setattr('app.ibkr.orders._invalidate_cache', mock)
     return mock

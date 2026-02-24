@@ -18,9 +18,9 @@ MIN_DAYS_UNTIL_EXPIRY = 60  # Minimum days before expiration for a contract to b
 CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
 
 
-# ==================== API ====================
+# ==================== Helper Functions ====================
 
-def fetch_contract(parsed_symbol):
+def _fetch_contract(parsed_symbol):
     """
     Fetch contract data from the IBKR API for a given symbol.
 
@@ -39,9 +39,7 @@ def fetch_contract(parsed_symbol):
         return []
 
 
-# ==================== Contract Selection ====================
-
-def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
+def _get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     """
     Select the nearest valid contract that is not close to expiration.
 
@@ -79,7 +77,7 @@ def get_closest_contract(contracts, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY)
     return valid_contracts[0][1]
 
 
-# ==================== Cache Management ====================
+# ==================== Public API ====================
 
 def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     """
@@ -109,13 +107,13 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     # Return from cache if the entry is valid
     if isinstance(contract_list, list):
         try:
-            closest_contract = get_closest_contract(contract_list, min_days_until_expiry)
+            closest_contract = _get_closest_contract(contract_list, min_days_until_expiry)
             return closest_contract['conid']
         except ValueError as err:
             logger.warning(f"Cache invalid for symbol '{ibkr_symbol}': {err}")
 
     # Cache miss or stale entry; fetch fresh data and update cache
-    fresh_contracts = fetch_contract(ibkr_symbol)
+    fresh_contracts = _fetch_contract(ibkr_symbol)
     if not fresh_contracts:
         logger.error(f'No contracts found for symbol: {ibkr_symbol}')
         raise ValueError(f'No contracts found for symbol: {ibkr_symbol}')
@@ -124,7 +122,7 @@ def get_contract_id(symbol, min_days_until_expiry=MIN_DAYS_UNTIL_EXPIRY):
     save_file(contracts_cache, CONTRACTS_FILE_PATH)
 
     try:
-        closest_contract = get_closest_contract(fresh_contracts, min_days_until_expiry)
+        closest_contract = _get_closest_contract(fresh_contracts, min_days_until_expiry)
         return closest_contract['conid']
     except ValueError as err:
         logger.error(f"No valid contract found in fresh data for symbol '{ibkr_symbol}': {err}")
