@@ -185,9 +185,7 @@ trading-bot/
 # TODO [HIGH]: Check whether I use adjusted or not adjusted data from TradingView
 # BUG [HIGH]: Fix contract switch dates
 # TODO [MEDIUM]: Fill in all the missing data for all the symbols in the futures_config folder
-# TODO [MEDIUM]: Implement segment testing for below 15m intervals to bypass the date gaps
-# TODO [MEDIUM]: Implement out-of-sample data testing
-# TODO [MEDIUM]: Backtest intervals within a timeframe separately. For example split the time into 4 sections
+# TODO [MEDIUM]: Implement segmentation and out-of-sample data testing
 # TODO [MEDIUM]: Merge historical_data_coverage with historical_data_gaps
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
