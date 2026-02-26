@@ -184,6 +184,7 @@ trading-bot/
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [HIGH]: Check whether I use adjusted or not adjusted data from TradingView
 # BUG [HIGH]: Fix contract switch dates
+# TODO [HIGH]: Backtesting should handle switch dates happening on the exact time
 # TODO [MEDIUM]: Implement segmentation and out-of-sample data testing
 # TODO [MEDIUM]: Merge historical_data_coverage with historical_data_gaps
 # TODO [MEDIUM]: Remove DEFAULT_TICK_SIZE
