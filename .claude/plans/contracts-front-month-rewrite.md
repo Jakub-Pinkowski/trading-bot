@@ -91,7 +91,7 @@ Logs resolved conid at INFO level: `Resolved front-month conid for {symbol}: {co
 
 ## Part 3 — Flow 2: Contract Rollover
 
-### 3.1 Pine Script — `strategies/indicators/contract_switch_warning.pine` [ ]
+### 3.1 Pine Script — `tv_scripts/indicators/contract_switch_warning.pine` [ ]
 
 One universal script covering all traded symbols. Fires a daily alert (1D bar close) during
 the warning window before each switch date.
@@ -212,7 +212,7 @@ app/ibkr/
 app/routes/
 └── webhook.py          ✅ /webhook → /trading, /rollover added
 
-strategies/indicators/
+tv_scripts/indicators/
 └── contract_switch_warning.pine   [ ] new
 
 data/historical_data/

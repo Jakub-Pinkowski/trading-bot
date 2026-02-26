@@ -114,11 +114,11 @@ trading-bot/
 │   │   ├── cache/                                # Cache storage for backtesting
 │   │   ├── csv_results/                          # CSV results from backtesting
 │   │   └── mass_test_results_all.parquet         # Mass backtesting results
-│   ├── contracts/                                # Contracts ids
+│   ├── contracts/                                # Contracts ids and switch dates
+│   │   └── contract_switch_dates.yaml            # Contract switch dates
 │   └── historical_data/                          # Historical data from TradingView
 │   │   ├── 1!/                                   # Front month
-│   │   ├── 2!/                                   # Next month
-│   │   └── contract_switch_dates.yaml            # Configuration for contract switch dates
+│   │   └── 2!/                                   # Next month
 ├── futures_config/                               # Futures symbols configuration and utilities
 │   ├── __init__.py
 │   ├── categories.py                             # Category definitions for futures symbols
@@ -130,11 +130,11 @@ trading-bot/
 │   ├── debug.log                                 # Debug logs
 │   ├── error.log                                 # Error logs
 │   └── info.log                                  # Info logs
-├── strategies/
-│   ├── indicators/                               # Indicators
-│   ├── indicators_testing/                       # Testing indicators
-│   ├── strategies/                               # Strategies
-│   └── tv_indicators/                            # TradingView indicators
+├── tv_scripts/                                   # TradingView Pine Scripts
+│   ├── indicators/                               # Pine Script indicators
+│   ├── tv_strategies/                            # Pine Script strategies
+│   ├── contract_switch_warning.pine              # Contract switch alert
+│   └── webhook_test.pine                         # Webhook connectivity test
 ├── tests/
 │   ├── analysis/                                 # Analysis tests (deprecated module, pending rewrite)
 │   │   └── analysis_utils/                       # Analysis utility tests
@@ -197,9 +197,6 @@ trading-bot/
 # TODO [LOW]: Add Binance handling
 
 # IBKR
-# BUG [HIGH]: I might be trading wrong contract because of the 60days cutoff, it needs to be completely rewritten to always trade the next contract
-# TODO [HIGH]: Handle near delivery cases where I still hold a position close to the Close-Out date
-# TODO [MEDIUM]: Move contract switch dates into the contracts folder
 
 # Tests
 # TODO [LOW]: Add e2e tests
