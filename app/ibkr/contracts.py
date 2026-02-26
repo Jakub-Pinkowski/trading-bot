@@ -15,7 +15,7 @@ logger = get_logger('ibkr/contracts')
 
 MIN_BUFFER_DAYS = 5  # Minimum days before expiry to still trade a contract
 CONTRACTS_FILE_PATH = DATA_DIR / "contracts" / "contracts.json"
-SWITCH_DATES_FILE_PATH = DATA_DIR / "historical_data" / "contract_switch_dates.yaml"
+SWITCH_DATES_FILE_PATH = DATA_DIR / "contracts" / "contract_switch_dates.yaml"
 
 
 # ==================== Pure Functions ====================
