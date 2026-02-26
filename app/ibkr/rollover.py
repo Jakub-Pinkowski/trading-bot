@@ -23,7 +23,7 @@ def process_rollover_data(data):
     """
     Handle a rollover alert from TradingView.
 
-    Validates the payload and delegates to check_and_rollover_position.
+    Validates the payload and delegates to _check_and_rollover_position.
 
     Args:
         data: Dict from the /rollover webhook payload. Expected keys:
@@ -51,6 +51,8 @@ def process_rollover_data(data):
     result = _check_and_rollover_position(symbol)
     return result
 
+
+# ==================== Implementation ====================
 
 def _check_and_rollover_position(symbol):
     """

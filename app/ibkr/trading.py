@@ -24,6 +24,7 @@ def process_trading_data(trading_data):
         Dict with a 'status' key indicating the outcome:
             - {'status': 'dummy_skip'} if the signal was a dummy
             - {'status': 'order_placed', 'order': <api_response>} on success
+            - {'status': 'order_failed', 'order': <api_response>} if the order was rejected
 
     Raises:
         ValueError: If 'symbol' or 'side' is missing from trading_data
