@@ -204,3 +204,6 @@ trading-bot/
 # Recurring
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.23]
 # TODO [LOW]: Update contract switch dates [last update in 2025.05]
+
+# General
+# TODO [HIGH]: Update automatic Claude Code Review to run only on command
