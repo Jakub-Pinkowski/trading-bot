@@ -1,4 +1,4 @@
-from app.ibkr.contracts import get_contract_id
+from app.ibkr.contracts import ContractResolver
 from app.ibkr.orders import place_order
 from app.utils.logger import get_logger
 
@@ -43,8 +43,8 @@ def process_trading_data(trading_data):
     if dummy == 'YES':
         return {'status': 'dummy_skip'}
 
-    contract_id = get_contract_id(symbol)
-    order = place_order(contract_id, side)
+    conid = ContractResolver(symbol).get_front_month_conid()
+    order = place_order(conid, side)
 
     # Return order details on failure
     if isinstance(order, dict) and order.get('success') is False:

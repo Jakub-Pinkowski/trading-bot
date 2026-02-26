@@ -2,7 +2,7 @@
 Shared fixtures for IBKR integration tests.
 
 Provides monkeypatched mocks for all IBKR module dependencies,
-organized by module: ibkr_service, connection, contracts, and orders.
+organized by module: trading, connection, contracts, orders, and rollover.
 """
 from unittest.mock import MagicMock
 
@@ -20,11 +20,13 @@ def mock_logger_trading(monkeypatch):
 
 
 @pytest.fixture
-def mock_get_contract_id(monkeypatch):
-    """Mock get_contract_id dependency in trading module."""
-    mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.trading.get_contract_id', mock)
-    return mock
+def mock_contract_resolver(monkeypatch):
+    """Mock ContractResolver in trading module, returning a controllable instance."""
+    mock_instance = MagicMock()
+    mock_class = MagicMock(return_value=mock_instance)
+    monkeypatch.setattr('app.ibkr.trading.ContractResolver', mock_class)
+    mock_instance._class = mock_class
+    return mock_instance
 
 
 @pytest.fixture
@@ -96,34 +98,12 @@ def mock_save_file(monkeypatch):
 
 
 @pytest.fixture
-def mock_parse_symbol(monkeypatch):
-    """Mock parse_symbol dependency in contracts module."""
+def mock_yaml_load(monkeypatch):
+    """Mock builtins.open + yaml.safe_load so _load_next_switch_date never touches disk."""
+    from unittest.mock import mock_open
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts.parse_symbol', mock)
-    return mock
-
-
-@pytest.fixture
-def mock_map_tv_to_ibkr(monkeypatch):
-    """Mock map_tv_to_ibkr dependency in contracts module."""
-    mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts.map_tv_to_ibkr', mock)
-    return mock
-
-
-@pytest.fixture
-def mock_fetch_contract(monkeypatch):
-    """Mock fetch_contract dependency in contracts module."""
-    mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts._fetch_contract', mock)
-    return mock
-
-
-@pytest.fixture
-def mock_get_closest_contract(monkeypatch):
-    """Mock get_closest_contract dependency in contracts module."""
-    mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.contracts._get_closest_contract', mock)
+    monkeypatch.setattr('builtins.open', mock_open())
+    monkeypatch.setattr('app.ibkr.contracts.yaml.safe_load', mock)
     return mock
 
 
@@ -174,4 +154,48 @@ def mock_invalidate_cache(monkeypatch):
     """Mock invalidate_cache dependency in orders module."""
     mock = MagicMock()
     monkeypatch.setattr('app.ibkr.orders._invalidate_cache', mock)
+    return mock
+
+
+# ==================== Rollover Fixtures ====================
+
+@pytest.fixture
+def mock_logger_rollover(monkeypatch):
+    """Mock logger for rollover module."""
+    mock = MagicMock()
+    monkeypatch.setattr('app.ibkr.rollover.logger', mock)
+    return mock
+
+
+@pytest.fixture
+def mock_contract_resolver_rollover(monkeypatch):
+    """Mock ContractResolver in rollover module, returning a controllable instance."""
+    mock_instance = MagicMock()
+    mock_class = MagicMock(return_value=mock_instance)
+    monkeypatch.setattr('app.ibkr.rollover.ContractResolver', mock_class)
+    mock_instance._class = mock_class
+    return mock_instance
+
+
+@pytest.fixture
+def mock_place_order_rollover(monkeypatch):
+    """Mock place_order dependency in rollover module."""
+    mock = MagicMock()
+    monkeypatch.setattr('app.ibkr.rollover.place_order', mock)
+    return mock
+
+
+@pytest.fixture
+def mock_get_contract_position_rollover(monkeypatch):
+    """Mock _get_contract_position dependency in rollover module."""
+    mock = MagicMock()
+    monkeypatch.setattr('app.ibkr.rollover._get_contract_position', mock)
+    return mock
+
+
+@pytest.fixture
+def mock_check_and_rollover_position(monkeypatch):
+    """Mock check_and_rollover_position in rollover module."""
+    mock = MagicMock()
+    monkeypatch.setattr('app.ibkr.rollover.check_and_rollover_position', mock)
     return mock
