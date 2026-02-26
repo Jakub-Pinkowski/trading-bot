@@ -191,7 +191,7 @@ trading-bot/
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Add new strategies
-# TODO [LOW]: Integrate data fetching from IBKR
+# TODO [LOW]: Integrate data fetching from IBKR to stop relying on TradingView
 
 # Binance
 # TODO [LOW]: Add Binance handling
