@@ -195,7 +195,7 @@ def mock_get_contract_position_rollover(monkeypatch):
 
 @pytest.fixture
 def mock_check_and_rollover_position(monkeypatch):
-    """Mock check_and_rollover_position in rollover module."""
+    """Mock _check_and_rollover_position in rollover module."""
     mock = MagicMock()
-    monkeypatch.setattr('app.ibkr.rollover.check_and_rollover_position', mock)
+    monkeypatch.setattr('app.ibkr.rollover._check_and_rollover_position', mock)
     return mock

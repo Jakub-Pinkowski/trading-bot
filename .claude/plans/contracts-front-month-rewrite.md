@@ -21,20 +21,20 @@ Flow 1 — Trading Signal
 ───────────────────────
 TradingView strategy alert
   → POST /trading  {"symbol": "ZC1!", "side": "B", ...}
-  → process_trading_data(data)                         [trading.py]
-  → ContractResolver(symbol).get_front_month_conid()   [contracts.py]
-  → place_order(conid, side)                           [orders.py]
+  → process_trading_data(data)                          [trading.py]
+  → ContractResolver(symbol).get_front_month_conid()    [contracts.py]
+  → place_order(conid, side)                            [orders.py]
 
 Flow 2 — Contract Rollover
 ──────────────────────────
 contract_switch_warning.pine  (fires once per day during warning window)
   → POST /rollover  {"symbol": "ZC1!"}
-  → process_rollover_data(data)                        [rollover.py]
-  → check_and_rollover_position(symbol)                [rollover.py]
-  → ContractResolver(symbol).next_switch_date          [contracts.py]
-  → ContractResolver(symbol).get_rollover_pair()       [contracts.py]
-  → _get_contract_position(conid)                      [orders.py]
-  → place_order(conid, side)                           [orders.py]
+  → process_rollover_data(data)                         [rollover.py]
+  → _check_and_rollover_position(symbol)                [rollover.py]
+  → ContractResolver(symbol).next_switch_date           [contracts.py]
+  → ContractResolver(symbol).get_rollover_pair()        [contracts.py]
+  → _get_contract_position(conid)                       [orders.py]
+  → place_order(conid, side)                            [orders.py]
 ```
 
 ---
@@ -85,11 +85,11 @@ Rewritten as a `ContractResolver` class with lazy-loading cached properties.
 ## Part 2 — Flow 1: Trading Signal [DONE]
 
 `trading.py` updated to use `ContractResolver(symbol).get_front_month_conid()`.
-No other changes to this flow.
+Logs resolved conid at INFO level: `Resolved front-month conid for {symbol}: {conid}`.
 
 ---
 
-## Part 3 — Flow 2: Contract Rollover [PENDING]
+## Part 3 — Flow 2: Contract Rollover
 
 ### 3.1 Pine Script — `strategies/indicators/contract_switch_warning.pine` [ ]
 
@@ -140,63 +140,37 @@ alertcondition(approachingSwitch,
 
 **Maintenance:** When `contract_switch_dates.yaml` is extended, update this script in parallel.
 
-### 3.2 Routes — `app/routes/webhook.py` [ ]
+### 3.2 Routes — `app/routes/webhook.py` [DONE]
 
-Rename existing `/webhook` route to `/trading`. Add `/rollover` route:
+- Renamed `/webhook` → `/trading`
+- Added `/rollover` route
+- Extracted IP + Content-Type validation into `@webhook_blueprint.before_request`
+- Both routes call `save_alert_data_to_file` before dispatching
 
-```python
-from app.ibkr.trading import process_trading_data
-from app.ibkr.rollover import process_rollover_data
-
-
-@webhook_blueprint.route('/trading', methods=['POST'])
-def trading_route():
-    ...
-    process_trading_data(data)
-    return '', 200
-
-
-@webhook_blueprint.route('/rollover', methods=['POST'])
-def rollover_route():
-    ...
-    process_rollover_data(data)
-    return '', 200
-```
-
-Both routes call `save_alert_data_to_file` — rollover alerts saved alongside trading alerts.
-
-### 3.3 Rollover logic — `app/ibkr/rollover.py` [ ]
+### 3.3 Rollover logic — `app/ibkr/rollover.py` [DONE]
 
 ```python
-from app.ibkr.contracts import ContractResolver
-from app.ibkr.orders import place_order, _get_contract_position
-
-# Keep CLOSE_OUT_WARNING_DAYS in sync with warningDays in contract_switch_warning.pine
-CLOSE_OUT_WARNING_DAYS = 1
-
-REOPEN_ON_ROLLOVER = True  # True  → close old position and reopen on new contract
-# False → close old position only, do not reopen
+CLOSE_OUT_WARNING_DAYS = 1   # Keep in sync with warningDays in contract_switch_warning.pine
+REOPEN_ON_ROLLOVER = False   # True  → close old position and reopen on new contract
+                             # False → close old position only, do not reopen
 ```
 
-**`process_rollover_data(data)`** — entry point called by `rollover_route`:
+**`process_rollover_data(data)`** — public entry point called by `rollover_route`.
 
-```
-Validates 'symbol' key is present (raises ValueError if missing).
-Delegates to check_and_rollover_position(symbol).
-Returns result dict unchanged.
-```
-
-**`check_and_rollover_position(symbol)`** — core logic:
+**`_check_and_rollover_position(symbol)`** — private core logic:
 
 ```
 resolver = ContractResolver(symbol)
 days_until_switch = (resolver.next_switch_date - today).days
 
 If days_until_switch > CLOSE_OUT_WARNING_DAYS:
+    → log info "No rollover needed for {symbol}: N day(s) until switch"
     → return {'status': 'no_rollover_needed'}
 
 # Within the warning window
 current_contract, new_contract = resolver.get_rollover_pair()
+→ log info "Rollover pair for {symbol}: {conid} (expiry) → {conid} (expiry)"
+
 current_position = _get_contract_position(current_contract['conid'])
 
 If current_position == 0:
@@ -214,8 +188,13 @@ If REOPEN_ON_ROLLOVER is False:
     → return {'status': 'closed', 'old_conid': ..., 'new_conid': ...}
 
 reopen_side = 'B' if current_position > 0 else 'S'
-place_order(new_contract['conid'], reopen_side)
-return {'status': 'rolled', 'old_conid': ..., 'new_conid': ..., 'side': reopen_side}
+reopen_result = place_order(new_contract['conid'], reopen_side)
+
+If reopen failed (success: False):
+    → log error
+    → return {'status': 'reopen_failed', 'old_conid': ..., 'new_conid': ..., 'order': reopen_result}
+
+→ return {'status': 'rolled', 'old_conid': ..., 'new_conid': ..., 'side': reopen_side}
 ```
 
 ---
@@ -228,10 +207,10 @@ app/ibkr/
 ├── contracts.py        ✅ rewritten — ContractResolver class
 ├── trading.py          ✅ renamed from ibkr_service.py
 ├── orders.py           (unchanged)
-└── rollover.py         [ ] new
+└── rollover.py         ✅ new
 
 app/routes/
-└── webhook.py          [ ] /webhook → /trading, add /rollover
+└── webhook.py          ✅ /webhook → /trading, /rollover added
 
 strategies/indicators/
 └── contract_switch_warning.pine   [ ] new
@@ -242,27 +221,27 @@ data/historical_data/
 
 ---
 
-## Part 5 — Tests
+## Part 5 — Tests [DONE]
 
-### `test_contracts.py` [DONE]
+### `test_contracts.py` ✅
 
 Full rewrite complete. 100% coverage. All 80 IBKR tests passing.
 
-### `test_trading.py` [DONE]
+### `test_trading.py` ✅
 
 Updated to use `mock_contract_resolver` fixture.
 
-### `test_rollover.py` [ ] (new)
+### `test_rollover.py` ✅
+
+13 tests, 100% coverage.
 
 #### `TestProcessRolloverData`
-
 - Missing `symbol` raises `ValueError`
-- Delegates to `check_and_rollover_position` with symbol from payload
+- Delegates to `_check_and_rollover_position` with symbol from payload
 - Returns result unchanged
-- `ValueError` from `check_and_rollover_position` propagates
+- `ValueError` from `_check_and_rollover_position` propagates
 
 #### `TestCheckAndRolloverPosition`
-
 - `days_until_switch > CLOSE_OUT_WARNING_DAYS` → `{'status': 'no_rollover_needed'}`
 - Within window, position is 0 → `{'status': 'warning', 'days_until_switch': N}`
 - Long position, `REOPEN_ON_ROLLOVER=True` → closes SELL, reopens BUY, `{'status': 'rolled'}`
@@ -270,33 +249,31 @@ Updated to use `mock_contract_resolver` fixture.
 - Long position, `REOPEN_ON_ROLLOVER=False` → closes only, `{'status': 'closed'}`
 - Short position, `REOPEN_ON_ROLLOVER=False` → closes only, `{'status': 'closed'}`
 - Close order returns `success: False` → `{'status': 'error'}`
+- Close succeeds but reopen fails → `{'status': 'reopen_failed'}`
 - `ContractResolver.next_switch_date` raises `ValueError` → propagates
 
-### `test_webhook.py` [ ] (updates)
+### `test_webhook.py` ✅
 
-#### `TestTradingRoute` (rename from `TestWebhookRoute`)
-- All existing tests kept; route path updated `/webhook` → `/trading`
+- `TestRequestValidation` — IP allowlist + Content-Type (blueprint-level, tested once)
+- `TestTradingRoute` — renamed from `TestWebhookRoute`; route path updated `/webhook` → `/trading`
+- `TestRolloverRoute` — dispatch, separation from trading, alert saved, error → 200
 
-#### `TestRolloverRoute` (new)
-- Valid POST → calls `process_rollover_data`, not `process_trading_data`
-- Alert saved to daily file
-- Unallowed IP → 403
-- Non-JSON → 400
-- Processing error still returns 200
+### `conftest.py` ✅
 
-### `conftest.py` [ ] (updates)
+`tests/ibkr/conftest.py` — Rollover section added:
 
-**New Rollover section in `tests/ibkr/conftest.py`:**
+- `mock_logger_rollover`, `mock_contract_resolver_rollover`, `mock_place_order_rollover`
+- `mock_get_contract_position_rollover`, `mock_check_and_rollover_position`
 
-- `mock_logger_rollover` — `app.ibkr.rollover.logger`
-- `mock_contract_resolver_rollover` — patches `ContractResolver` in rollover module
-- `mock_place_order_rollover` — `app.ibkr.rollover.place_order`
-- `mock_get_contract_position_rollover` — `app.ibkr.rollover._get_contract_position`
-- `mock_check_and_rollover_position` — `app.ibkr.rollover.check_and_rollover_position`
+`tests/routes/conftest.py` — added `mock_process_rollover_data`
 
-**`tests/routes/conftest.py`:**
+---
 
-- Add `mock_process_rollover_data` — `app.routes.webhook.process_rollover_data`
+## Smoke Tests [DONE]
+
+Live server tests against `http://127.0.0.1:5002` documented in
+`scripts/smoke_trading_route_results.md`. 9 scenarios covering both routes verified.
+INFO logs confirmed in `logs/info.log` — conid resolution and rollover pair visible per request.
 
 ---
 
@@ -305,6 +282,7 @@ Updated to use `mock_contract_resolver` fixture.
 - `CLOSE_OUT_WARNING_DAYS` (rollover.py) and `warningDays` (Pine script) **must stay in sync** — both are 1.
 - `contract_switch_dates.yaml` and `contract_switch_warning.pine` **must stay in sync** — when adding new dates to the
   YAML, add the same dates to the Pine script.
+- INFO logs go to `logs/info.log` (not terminal). Console shows WARNING and above only.
 
 ---
 
@@ -320,10 +298,12 @@ Updated to use `mock_contract_resolver` fixture.
 
 **Flow 2 — Contract Rollover**
 
-- [ ] **Part 3.3** — Create `rollover.py` + `test_rollover.py`
-- [ ] **Part 3.2** — Update `webhook.py` routing + `test_webhook.py` + `tests/routes/conftest.py`
+- [x] **Part 3.3** — Create `rollover.py` + `test_rollover.py`
+- [x] **Part 3.2** — Update `webhook.py` routing + `test_webhook.py` + `tests/routes/conftest.py`
 - [ ] **Part 3.1** — Create `contract_switch_warning.pine`; add to each symbol chart; configure 1D daily alert
 
 **Final**
 
-- [ ] Run full test suite: `python -m pytest tests/ibkr/ tests/routes/`
+- [x] Run full test suite: `python -m pytest tests/ibkr/ tests/routes/`
+- [x] Smoke tests with live server (IBKR not running) — all 9 scenarios passed
+- [ ] Smoke tests with IBKR running — verify real order placement on correct conids

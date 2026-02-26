@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from flask import Blueprint, abort, request
 
+from app.ibkr.rollover import process_rollover_data
 from app.ibkr.trading import process_trading_data
 from app.utils.file_utils import load_file, save_file
 from app.utils.logger import get_logger
@@ -44,14 +45,16 @@ def save_alert_data_to_file(data, alerts_dir, timezone='Europe/Berlin'):
 
 # ==================== Routes ====================
 
-@webhook_blueprint.route('/webhook', methods=['POST'])
-def webhook_route():
-    # Validate source
+@webhook_blueprint.before_request
+def _validate_request():
     if request.remote_addr not in ALLOWED_IPS:
         abort(403)
     if not request.is_json:
         abort(400, description='Unsupported Content-Type')
 
+
+@webhook_blueprint.route('/trading', methods=['POST'])
+def trading_route():
     data = request.get_json()
     save_alert_data_to_file(data, IBKR_ALERTS_DIR)
 
@@ -59,6 +62,20 @@ def webhook_route():
     try:
         process_trading_data(data)
     except Exception as err:
-        logger.exception('Error processing webhook data %s: %s', data, err)
+        logger.exception('Error processing trading data %s: %s', data, err)
+
+    return '', 200
+
+
+@webhook_blueprint.route('/rollover', methods=['POST'])
+def rollover_route():
+    data = request.get_json()
+    save_alert_data_to_file(data, IBKR_ALERTS_DIR)
+
+    # Always return 200 — TradingView retries any non-200, causing duplicate orders
+    try:
+        process_rollover_data(data)
+    except Exception as err:
+        logger.exception('Error processing rollover data %s: %s', data, err)
 
     return '', 200

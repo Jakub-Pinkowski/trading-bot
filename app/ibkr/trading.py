@@ -44,6 +44,7 @@ def process_trading_data(trading_data):
         return {'status': 'dummy_skip'}
 
     conid = ContractResolver(symbol).get_front_month_conid()
+    logger.info(f'Resolved front-month conid for {symbol}: {conid}')
     order = place_order(conid, side)
 
     # Return order details on failure
