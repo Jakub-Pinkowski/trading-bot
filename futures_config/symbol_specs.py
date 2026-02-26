@@ -9,12 +9,10 @@ TradingView symbols are used as the primary identifiers.
 Format: symbol: {
     'category': str,
     'exchange': str,
-    'multiplier': int/float | None,
-    'tick_size': float | None,
-    'margin': float | None,
+    'multiplier': int/float,
+    'tick_size': float,
+    'margin': float,
 }
-
-Note: None indicates that a contract specification value is intentionally unspecified or not yet configured.
 
 Organization:
 - Order: Grains, Softs, Energy, Metals, Crypto, Index, Forex
