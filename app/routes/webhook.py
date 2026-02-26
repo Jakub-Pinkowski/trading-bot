@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import requests as req_lib
 from flask import Blueprint, abort, request
 
 from app.ibkr.rollover import process_rollover_data
@@ -61,6 +62,8 @@ def trading_route():
     # Always return 200 — TradingView retries any non-200, causing duplicate orders
     try:
         process_trading_data(data)
+    except req_lib.exceptions.ConnectionError:
+        logger.error('IBKR gateway unreachable — trading data not processed: %s', data)
     except Exception as err:
         logger.exception('Error processing trading data %s: %s', data, err)
 
@@ -75,6 +78,8 @@ def rollover_route():
     # Always return 200 — TradingView retries any non-200, causing duplicate orders
     try:
         process_rollover_data(data)
+    except req_lib.exceptions.ConnectionError:
+        logger.error('IBKR gateway unreachable — rollover data not processed: %s', data)
     except Exception as err:
         logger.exception('Error processing rollover data %s: %s', data, err)
 
