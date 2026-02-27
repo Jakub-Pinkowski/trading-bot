@@ -83,15 +83,12 @@ trading-bot/
 │   │   ├── __init__.py
 │   │   ├── connection.py                         # IBKR API connection and heartbeat scheduler
 │   │   ├── contracts.py                          # Contract fetching, selection, and caching
-│   │   ├── ibkr_service.py                       # IBKR logic coordinator
-│   │   └── orders.py                             # Order placement and position management
+│   │   ├── orders.py                             # Order placement and position management
+│   │   ├── rollover.py                           # Contract rollover logic
+│   │   └── trading.py                            # Webhook trading logic coordinator
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   └── webhook.py                            # Webhook route for TradingView alerts
-│   │   ├── connection.py                         # IBKR API connections
-│   │   ├── contracts.py                          # Contracts handling
-│   │   ├── ibkr_service.py                       # IBKR logic coordinator
-│   │   └── orders.py                             # Order execution
+│   │   └── webhook.py                            # Webhook routes for TradingView alerts (/trading, /rollover)
 │   ├── utils/
 │   │   ├── __init__.py
 │   │   ├── api_utils.py                          # IBKR REST API request helpers
@@ -156,11 +153,14 @@ trading-bot/
 │   ├── routes/                                   # Route handler tests
 │   ├── utils/                                    # Utility module tests
 │   └── conftest.py                               # Top-level: pytest_plugins registration for backtesting fixtures
-│   ├── routes/                                   # Routes tests
-│   ├── ibkr/                                     # IBKR tests
-│   └── utils/                                    # Utils tests
+├── .claude/                                      # Claude Code configuration
+│   ├── plans/                                    # Analysis and implementation plans
+│   └── settings.local.json                       # Local Claude Code settings
 ├── .env                                          # Configuration secrets
 ├── .github/                                      # GitHub configuration
+│   ├── workflows/                                # GitHub Actions workflows
+│   │   ├── claude-code-review.yml                # Automated code review workflow
+│   │   └── claude.yml                            # Claude integration workflow
 │   ├── copilot-instructions.md                   # GitHub Copilot instructions
 │   ├── dependabot.yml                            # Dependency updates configuration
 │   └── prompts/                                  # Documentation and summaries

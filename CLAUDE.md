@@ -48,8 +48,9 @@ python analyze_strategies.py
 
 ### Three Operational Modes
 
-1. **Real-time Trading** (`run.py`): Flask server receives TradingView webhook alerts at `/webhook`, validates source
-   IPs, and executes orders through IBKR API. Connection maintained with 60-second heartbeat via APScheduler.
+1. **Real-time Trading** (`run.py`): Flask server receives TradingView webhook alerts at `/trading` and `/rollover`,
+   validates source IPs, and executes orders through IBKR API. Connection maintained with 60-second heartbeat via
+   APScheduler.
 
 2. **Backtesting** (`mass_backtest.py`): `MassTester` orchestrates parallel strategy evaluation using
    `ProcessPoolExecutor`. Signals are detected at bar close and executed at next bar open (queued execution) to prevent
@@ -87,10 +88,24 @@ Single source of truth for 50+ futures contracts across 7 categories (Grains, So
 Forex). Contains symbol specs (multiplier, tick size, margin), TradingView-to-IBKR symbol mapping, and correlation
 groups.
 
+### Routes (`app/routes/`)
+
+- `webhook.py`: Flask Blueprint (`webhook_blueprint`) with two routes: `POST /trading` (order execution) and
+  `POST /rollover` (contract rollover). A shared `before_request` hook validates source IP and JSON content type.
+  Alerts are persisted to `data/alerts/ibkr_alerts/` as daily JSON files (dummy signals skipped). Always returns 200
+  to prevent TradingView retry duplicates.
+
 ### Services (`app/ibkr/`)
 
-IBKR API integration: connection management, contract handling, and order execution. Coordinated by `ibkr_service.py`.
-TODO: rewrite using classes.
+IBKR API integration split across five files:
+
+- `connection.py`: APScheduler setup; `_tickle_ibkr_api()` heartbeat keeps the session alive
+- `contracts.py`: `ContractResolver` — front-month contract ID lookup with `MIN_BUFFER_DAYS` expiry guard and
+  mini/micro symbol mapping
+- `orders.py`: `place_order()` — position-aware order placement with message suppression retry loop
+- `trading.py`: `process_trading_data()` — parses webhook payload and dispatches to `place_order()`
+- `rollover.py`: `process_rollover_data()` — closes the front-month position and optionally reopens on the next
+  contract; logs critical if reopen fails after a successful close
 
 ### Utilities (`app/utils/`)
 
@@ -99,6 +114,20 @@ TODO: rewrite using classes.
 - `generic_utils.py`: Symbol parsing
 - `logger.py`: Shared logger setup (skips file handlers during pytest)
 - `math_utils.py`: Zero-safe math helpers (`safe_divide`, `safe_average`, `calculate_percentage`)
+
+### Configuration (`config.py`)
+
+Top-level config loaded from `.env` via `python-dotenv`. Provides `DEBUG`, `PORT`, `BASE_URL`, `ACCOUNT_ID`,
+`ALLOWED_IPS` (TradingView + local IPs), and `DATA_DIR` / `BASE_DIR` paths.
+
+### TradingView Scripts (`tv_scripts/`)
+
+Pine Script files for TradingView. Not part of the Python runtime — used for signal generation and testing.
+
+- `indicators/`: Five indicator scripts (RSI, EMA, MACD, Bollinger Bands, Ichimoku)
+- `tv_strategies/`: Two strategy scripts (RSI, ATR+EMA+RSI)
+- `contract_switch_warning.pine`: Alerts when a contract is near its switch date
+- `webhook_test.pine`: Test script for validating webhook delivery
 
 ### Data Storage (`data/`)
 
@@ -137,3 +166,4 @@ for module-level names.
 - `filelock`: Multi-process cache synchronization
 - `pyarrow`: Parquet serialization for backtest results
 - `APScheduler`: IBKR connection heartbeat
+- `python-dotenv`: Environment variable loading from `.env`
