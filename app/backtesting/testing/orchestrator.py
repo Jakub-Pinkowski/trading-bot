@@ -164,11 +164,12 @@ def _get_switch_dates_for_symbols(symbols, switch_dates_dict):
     for symbol in symbols:
         # Check if the symbol has direct switch dates
         if symbol in switch_dates_dict:
-            switch_dates = switch_dates_dict[symbol]
+            # YAML keys with no values parse as None, not []
+            switch_dates = switch_dates_dict[symbol] or []
         # Check if the symbol is a mini/micro that maps to a main symbol
         elif '_symbol_mappings' in switch_dates_dict and symbol in switch_dates_dict['_symbol_mappings']:
             main_symbol = switch_dates_dict['_symbol_mappings'][symbol]
-            switch_dates = switch_dates_dict.get(main_symbol, [])
+            switch_dates = switch_dates_dict.get(main_symbol) or []
         else:
             switch_dates = []
 

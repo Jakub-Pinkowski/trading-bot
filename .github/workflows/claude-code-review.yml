@@ -1,23 +1,19 @@
 name: Claude Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+  issue_comment:
+    types: [ created ]
+
+
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
+    # Only run when:
+    # 1) the comment is on a PR (not a plain issue)
+    # 2) the comment explicitly asks for it via a trigger phrase
+    if: >
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/claude-review')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,10 +22,11 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (PR head)
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Run Claude Code Review
         id: claude-review

@@ -1,14 +1,15 @@
 """
-Tests for the webhook route handler.
+Tests for the webhook route handlers.
 
 Tests cover:
 - Alert data persistence to daily JSON files
 - Appending to existing daily alert files
 - Dummy signal filtering
 - IP allowlist enforcement
-- JSON content type validation
+- JSON content type and body validation
 - Order processing dispatch
 - Exception handling to preserve 200 response for TradingView
+- Rollover alert dispatch via /rollover route
 """
 from unittest.mock import MagicMock
 
@@ -76,8 +77,8 @@ class TestSaveAlertDataToFile:
 
         load_path = mock_load_file_webhook.call_args[0][0]
         save_path = mock_save_file_webhook.call_args[0][1]
-        assert "alerts_2023-05-01.json" in load_path
-        assert "alerts_2023-05-01.json" in save_path
+        assert "alerts_2023-05-01.json" in str(load_path)
+        assert "alerts_2023-05-01.json" in str(save_path)
 
     def test_skips_dummy_yes_alerts(self, mock_load_file_webhook, mock_save_file_webhook):
         """Test dummy=YES alerts are not persisted."""
@@ -106,15 +107,54 @@ class TestSaveAlertDataToFile:
         mock_save_file_webhook.assert_called_once()
 
 
-class TestWebhookRoute:
-    """Test webhook HTTP endpoint."""
+class TestRequestValidation:
+    """Test blueprint-level IP and content-type validation (applies to all routes)."""
+
+    def test_unallowed_ip_returns_403(self, client):
+        """Test request from a non-allowlisted IP is rejected with 403."""
+        response = client.post(
+            '/trading',
+            json={"data": "valid"},
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '10.10.10.10'},
+        )
+
+        assert response.status_code == 403
+
+    def test_non_json_content_type_returns_400(self, client):
+        """Test request with non-JSON content type is rejected with 400."""
+        response = client.post(
+            '/trading',
+            data="some data",
+            headers={'Content-Type': 'text/plain'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        assert response.status_code == 400
+        assert b'Unsupported Content-Type' in response.data
+
+    def test_malformed_json_body_returns_400(self, client):
+        """Test request with JSON content type but unparseable body is rejected with 400."""
+        response = client.post(
+            '/trading',
+            data=b'{not valid json',
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        assert response.status_code == 400
+        assert b'not valid JSON' in response.data
+
+
+class TestTradingRoute:
+    """Test /trading HTTP endpoint."""
 
     def test_valid_request_returns_200(
         self, mock_save_alert_to_file, mock_process_trading_data, client
     ):
         """Test valid JSON from an allowed IP is processed and returns 200."""
         response = client.post(
-            '/webhook',
+            '/trading',
             json={"data": "valid"},
             headers={'Content-Type': 'application/json'},
             environ_base={'REMOTE_ADDR': '127.0.0.1'},
@@ -130,7 +170,7 @@ class TestWebhookRoute:
         data = {"symbol": "ZS", "side": "B"}
 
         client.post(
-            '/webhook',
+            '/trading',
             json=data,
             headers={'Content-Type': 'application/json'},
             environ_base={'REMOTE_ADDR': '127.0.0.1'},
@@ -151,7 +191,7 @@ class TestWebhookRoute:
         data = {"dummy": "YES", "symbol": "ZS", "side": "B"}
 
         response = client.post(
-            '/webhook',
+            '/trading',
             json=data,
             headers={'Content-Type': 'application/json'},
             environ_base={'REMOTE_ADDR': '127.0.0.1'},
@@ -160,32 +200,9 @@ class TestWebhookRoute:
         mock_process_trading_data.assert_called_once_with(data)
         assert response.status_code == 200
 
-    def test_unallowed_ip_returns_403(self, client):
-        """Test request from a non-allowlisted IP is rejected with 403."""
-        response = client.post(
-            '/webhook',
-            json={"data": "valid"},
-            headers={'Content-Type': 'application/json'},
-            environ_base={'REMOTE_ADDR': '10.10.10.10'},
-        )
-
-        assert response.status_code == 403
-
-    def test_non_json_content_type_returns_400(self, client):
-        """Test request with non-JSON content type is rejected with 400."""
-        response = client.post(
-            '/webhook',
-            data="some data",
-            headers={'Content-Type': 'text/plain'},
-            environ_base={'REMOTE_ADDR': '127.0.0.1'},
-        )
-
-        assert response.status_code == 400
-        assert b'Unsupported Content-Type' in response.data
-
     def test_get_method_not_allowed(self, client):
-        """Test GET request to webhook endpoint returns 405 Method Not Allowed."""
-        response = client.get('/webhook')
+        """Test GET request to /trading endpoint returns 405 Method Not Allowed."""
+        response = client.get('/trading')
 
         assert response.status_code == 405
 
@@ -200,11 +217,77 @@ class TestWebhookRoute:
         mock_process_trading_data.side_effect = Exception('Internal processing error')
 
         response = client.post(
-            '/webhook',
+            '/trading',
             json={"data": "valid"},
             headers={'Content-Type': 'application/json'},
             environ_base={'REMOTE_ADDR': '127.0.0.1'},
         )
 
         mock_process_trading_data.assert_called_once_with({"data": "valid"})
+        assert response.status_code == 200
+
+
+class TestRolloverRoute:
+    """Test /rollover HTTP endpoint."""
+
+    def test_valid_request_calls_process_rollover_data(
+        self, mock_save_alert_to_file, mock_process_rollover_data, client
+    ):
+        """Test valid JSON from an allowed IP is dispatched to process_rollover_data."""
+        data = {"symbol": "ZC1!"}
+
+        response = client.post(
+            '/rollover',
+            json=data,
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_process_rollover_data.assert_called_once_with(data)
+        assert response.status_code == 200
+
+    def test_rollover_does_not_call_process_trading_data(
+        self, mock_save_alert_to_file, mock_process_rollover_data, mock_process_trading_data, client
+    ):
+        """Test /rollover dispatches only to process_rollover_data, not process_trading_data."""
+        client.post(
+            '/rollover',
+            json={"symbol": "ZC1!"},
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_process_rollover_data.assert_called_once()
+        mock_process_trading_data.assert_not_called()
+
+    def test_alert_saved_with_request_data(
+        self, mock_save_alert_to_file, mock_process_rollover_data, client
+    ):
+        """Test alert persistence is called with the parsed request payload."""
+        data = {"symbol": "ZC1!"}
+
+        client.post(
+            '/rollover',
+            json=data,
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_save_alert_to_file.assert_called_once()
+        assert mock_save_alert_to_file.call_args[0][0] == data
+
+    def test_processing_error_still_returns_200(
+        self, mock_save_alert_to_file, mock_process_rollover_data, client
+    ):
+        """Test processing exception is caught and 200 is still returned."""
+        mock_process_rollover_data.side_effect = Exception('Rollover processing error')
+
+        response = client.post(
+            '/rollover',
+            json={"symbol": "ZC1!"},
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        mock_process_rollover_data.assert_called_once()
         assert response.status_code == 200

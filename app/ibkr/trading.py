@@ -1,8 +1,8 @@
-from app.ibkr.contracts import get_contract_id
+from app.ibkr.contracts import ContractResolver
 from app.ibkr.orders import place_order
 from app.utils.logger import get_logger
 
-logger = get_logger('ibkr/service')
+logger = get_logger('ibkr/trading')
 
 
 # ==================== Public API ====================
@@ -24,6 +24,7 @@ def process_trading_data(trading_data):
         Dict with a 'status' key indicating the outcome:
             - {'status': 'dummy_skip'} if the signal was a dummy
             - {'status': 'order_placed', 'order': <api_response>} on success
+            - {'status': 'order_failed', 'order': <api_response>} if the order was rejected
 
     Raises:
         ValueError: If 'symbol' or 'side' is missing from trading_data
@@ -43,8 +44,9 @@ def process_trading_data(trading_data):
     if dummy == 'YES':
         return {'status': 'dummy_skip'}
 
-    contract_id = get_contract_id(symbol)
-    order = place_order(contract_id, side)
+    conid = ContractResolver(symbol).get_front_month_conid()
+    logger.info(f'Resolved front-month conid for {symbol}: {conid}')
+    order = place_order(conid, side)
 
     # Return order details on failure
     if isinstance(order, dict) and order.get('success') is False:

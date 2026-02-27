@@ -4,7 +4,7 @@ Tests for Helper Functions Module.
 Tests cover:
 - get_exchange_for_symbol function
 - get_category_for_symbol function
-- get_tick_size function with fallback behavior
+- get_tick_size function
 - get_contract_multiplier function
 - get_margin_requirement function
 - Error handling for unknown symbols
@@ -21,7 +21,6 @@ from futures_config.helpers import (
     get_contract_multiplier,
     get_margin_requirement,
 )
-from futures_config.symbol_specs import DEFAULT_TICK_SIZE
 
 
 class TestGetExchangeForSymbol:
@@ -115,28 +114,10 @@ class TestGetTickSize:
         """Test tick size retrieval for various symbols."""
         assert get_tick_size(symbol) == expected_tick_size
 
-    def test_unknown_symbol_returns_default(self):
-        """Test that unknown symbol returns DEFAULT_TICK_SIZE."""
-        result = get_tick_size('UNKNOWN')
-        assert result == DEFAULT_TICK_SIZE
-
-    def test_symbol_with_none_tick_size_returns_default(self):
-        """Test that symbol with None tick_size returns default."""
-        # Find a symbol with None tick_size (if any)
-        from futures_config.symbol_specs import SYMBOL_SPECS
-        symbols_with_none = [
-            s for s, spec in SYMBOL_SPECS.items()
-            if spec['tick_size'] is None
-        ]
-
-        if symbols_with_none:
-            symbol = symbols_with_none[0]
-            result = get_tick_size(symbol)
-            assert result == DEFAULT_TICK_SIZE
-
-    def test_default_tick_size_value(self):
-        """Test that DEFAULT_TICK_SIZE has expected value."""
-        assert DEFAULT_TICK_SIZE == 0.01
+    def test_unknown_symbol_raises(self):
+        """Test that unknown symbol raises ValueError."""
+        with pytest.raises(ValueError, match='Unknown symbol'):
+            get_tick_size('UNKNOWN')
 
 
 class TestGetContractMultiplier:
@@ -275,9 +256,9 @@ class TestIntegrationScenarios:
         known_tick_size = get_tick_size('ZS')
         assert known_tick_size == 0.25
 
-        # Unknown symbol falls back to default
-        unknown_tick_size = get_tick_size('UNKNOWN_SYMBOL')
-        assert unknown_tick_size == DEFAULT_TICK_SIZE
+        # Unknown symbol raises
+        with pytest.raises(ValueError):
+            get_tick_size('UNKNOWN_SYMBOL')
 
     def test_calculate_contract_value(self):
         """Test calculating contract value using helper functions."""

@@ -41,7 +41,6 @@ class TestPackageImports:
         """Test that all expected exports are available."""
         expected_exports = [
             'SYMBOL_SPECS',
-            'DEFAULT_TICK_SIZE',
             'TV_TO_IBKR_MAPPING',
             'IBKR_TO_TV_MAPPING',
             'map_tv_to_ibkr',

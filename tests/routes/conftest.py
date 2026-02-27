@@ -39,6 +39,14 @@ def mock_process_trading_data(monkeypatch):
 
 
 @pytest.fixture
+def mock_process_rollover_data(monkeypatch):
+    """Mock process_rollover_data dependency in webhook module."""
+    mock = MagicMock()
+    monkeypatch.setattr("app.routes.webhook.process_rollover_data", mock)
+    return mock
+
+
+@pytest.fixture
 def mock_load_file_webhook(monkeypatch):
     """Mock load_file dependency in webhook module."""
     mock = MagicMock()

@@ -12,7 +12,7 @@ logger = get_logger('backtesting/testing/mass_tester')
 # ==================== Module Paths ====================
 
 HISTORICAL_DATA_DIR = DATA_DIR / "historical_data"
-SWITCH_DATES_FILE_PATH = HISTORICAL_DATA_DIR / "contract_switch_dates.yaml"
+SWITCH_DATES_FILE_PATH = DATA_DIR / "contracts" / "contract_switch_dates.yaml"
 
 
 # ==================== MassTester Class ====================

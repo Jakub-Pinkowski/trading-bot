@@ -12,7 +12,7 @@ All tests use actual futures symbols from the configuration.
 """
 import pytest
 
-from futures_config.symbol_specs import SYMBOL_SPECS, DEFAULT_TICK_SIZE
+from futures_config.symbol_specs import SYMBOL_SPECS
 
 
 class TestSymbolSpecsStructure:
@@ -203,25 +203,6 @@ class TestSpecificSymbols:
         assert xc['multiplier'] == 1000
         assert xc['tick_size'] == 0.125
 
-
-class TestDefaultTickSize:
-    """Test DEFAULT_TICK_SIZE constant."""
-
-    def test_default_tick_size_exists(self):
-        """Test that DEFAULT_TICK_SIZE is defined."""
-        assert DEFAULT_TICK_SIZE is not None
-
-    def test_default_tick_size_is_numeric(self):
-        """Test that DEFAULT_TICK_SIZE is numeric."""
-        assert isinstance(DEFAULT_TICK_SIZE, (int, float))
-
-    def test_default_tick_size_is_positive(self):
-        """Test that DEFAULT_TICK_SIZE is positive."""
-        assert DEFAULT_TICK_SIZE > 0
-
-    def test_default_tick_size_value(self):
-        """Test that DEFAULT_TICK_SIZE has expected value."""
-        assert DEFAULT_TICK_SIZE == 0.01
 
 
 class TestDataCompleteness:

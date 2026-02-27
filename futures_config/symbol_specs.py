@@ -9,20 +9,15 @@ TradingView symbols are used as the primary identifiers.
 Format: symbol: {
     'category': str,
     'exchange': str,
-    'multiplier': int/float | None,
-    'tick_size': float | None,
-    'margin': float | None,
+    'multiplier': int/float,
+    'tick_size': float,
+    'margin': float,
 }
-
-Note: None indicates that a contract specification value is intentionally unspecified or not yet configured.
 
 Organization:
 - Order: Grains, Softs, Energy, Metals, Crypto, Index, Forex
 - Within each category: Normal, Mini, Micro
 """
-
-# Default tick size used as fallback when the symbol is unknown or tick_size is None
-DEFAULT_TICK_SIZE = 0.01
 
 SYMBOL_SPECS = {
     # ==================== Grains ====================
@@ -77,8 +72,8 @@ SYMBOL_SPECS = {
     # ==================== Crypto ====================
 
     # --- Normal ---
-    'BTC': {'category': 'Crypto', 'exchange': 'CME', 'multiplier': None, 'tick_size': 5.00, 'margin': 157483.39},   # Bitcoin
-    'ETH': {'category': 'Crypto', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.50, 'margin': 90450.05},    # Ethereum
+    'BTC': {'category': 'Crypto', 'exchange': 'CME', 'multiplier': 5, 'tick_size': 5.00, 'margin': 157483.39},   # Bitcoin
+    'ETH': {'category': 'Crypto', 'exchange': 'CME', 'multiplier': 50, 'tick_size': 0.50, 'margin': 90450.05},    # Ethereum
 
     # --- Micro ---
     'MET': {'category': 'Crypto', 'exchange': 'CME', 'multiplier': 0.1, 'tick_size': 0.50, 'margin': 180.90},       # Micro Ethereum
@@ -102,15 +97,15 @@ SYMBOL_SPECS = {
     # ==================== Forex ====================
 
     # --- Normal ---
-    '6E': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.00005, 'margin': 3435.30},    # Euro FX
-    '6J': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.0000005, 'margin': 3789.01},  # Japanese Yen
-    '6B': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.0001, 'margin': 2520.64},     # British Pound
-    '6A': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.00005, 'margin': 2344.58},    # Australian Dollar
-    '6C': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.00005, 'margin': 1555.28},    # Canadian Dollar
-    '6S': {'category': 'Forex', 'exchange': 'CME', 'multiplier': None, 'tick_size': 0.00005, 'margin': 5762.84},    # Swiss Franc
+    '6E': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 125000, 'tick_size': 0.00005, 'margin': 3435.30},    # Euro FX
+    '6J': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 12500000, 'tick_size': 0.0000005, 'margin': 3789.01},  # Japanese Yen
+    '6B': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 62500, 'tick_size': 0.0001, 'margin': 2520.64},     # British Pound
+    '6A': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 100000, 'tick_size': 0.00005, 'margin': 2344.58},    # Australian Dollar
+    '6C': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 100000, 'tick_size': 0.00005, 'margin': 1555.28},    # Canadian Dollar
+    '6S': {'category': 'Forex', 'exchange': 'CME', 'multiplier': 125000, 'tick_size': 0.00005, 'margin': 5762.84},    # Swiss Franc
 
     # --- Micro ---
-    'M6E': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': None, 'tick_size': None, 'margin': 343.53},  # Micro Euro FX
-    'M6A': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': None, 'tick_size': None, 'margin': 234.458}, # Micro Australian Dollar
-    'M6B': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': None, 'tick_size': None, 'margin': 252.064}, # Micro British Pound
+    'M6E': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': 12500, 'tick_size': 0.000005, 'margin': 343.53},  # Micro Euro FX
+    'M6A': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': 10000, 'tick_size': 0.000005, 'margin': 234.458}, # Micro Australian Dollar
+    'M6B': {'category': 'Forex', 'exchange': 'CME_MINI', 'multiplier': 6250, 'tick_size': 0.00001, 'margin': 252.064}, # Micro British Pound
 }

@@ -5,7 +5,7 @@ Provides utility functions for querying symbol specifications,
 retrieving contract details, and validating symbols.
 """
 
-from futures_config.symbol_specs import SYMBOL_SPECS, DEFAULT_TICK_SIZE
+from futures_config.symbol_specs import SYMBOL_SPECS
 
 
 def get_exchange_for_symbol(symbol):
@@ -60,31 +60,22 @@ def get_tick_size(symbol):
     """
     Get the tick size for a given symbol.
 
-    Returns the configured tick size for known symbols. If the symbol is
-    unknown or its tick_size is not configured (None), this function
-    falls back to DEFAULT_TICK_SIZE as a defensive default, so callers
-    that rely on a numeric tick size can continue to operate. Callers that
-    need to distinguish unknown symbols should validate with
-    get_exchange_for_symbol() or check SYMBOL_SPECS directly before
-    calling this helper.
-
     Args:
         symbol: Futures symbol (e.g., 'ZS', 'CL', 'GC')
 
     Returns:
-        Tick size as float. Returns DEFAULT_TICK_SIZE when the symbol is
-        unknown or when no tick_size is configured in SYMBOL_SPECS
+        Tick size as float.
+
+    Raises:
+        ValueError: If the symbol is not in SYMBOL_SPECS.
 
     Example:
         get_tick_size('ZS')
         0.25
-        get_tick_size('UNKNOWN') # Falls back to default
-        0.01
     """
-    if symbol in SYMBOL_SPECS and SYMBOL_SPECS[symbol]['tick_size'] is not None:
-        return SYMBOL_SPECS[symbol]['tick_size']
-    # Fallback to DEFAULT_TICK_SIZE for unknown symbols or unset tick sizes
-    return DEFAULT_TICK_SIZE
+    if symbol not in SYMBOL_SPECS:
+        raise ValueError(f'Unknown symbol: {symbol}')
+    return SYMBOL_SPECS[symbol]['tick_size']
 
 
 def get_contract_multiplier(symbol):
@@ -133,4 +124,3 @@ def get_margin_requirement(symbol):
     if symbol not in SYMBOL_SPECS:
         raise ValueError(f'Unknown symbol: {symbol}')
     return SYMBOL_SPECS[symbol]['margin']
-
