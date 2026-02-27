@@ -257,6 +257,9 @@ class DataFetcher:
 
         try:
             # Fetch data from TradingView
+            # NOTE: tvDatafeed hardcodes adjustment="splits" in its resolve_symbol call,
+            # so all fetched data is back-adjusted (roll-adjusted) at each contract rollover.
+            # Price levels are synthetic, but point-based P&L in backtesting remains accurate.
             data = self.tv_client.get_hist(
                 symbol=full_symbol,
                 exchange=self.exchange,
