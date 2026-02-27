@@ -12,7 +12,7 @@ Tests cover:
 
 All tests use realistic trade scenarios with actual futures symbols.
 
-Note: This file uses shared fixtures from conftest.py:
+This file uses shared fixtures from conftest.py:
 - trade_factory: For creating individual trades
 - trades_factory: For creating trade sequences
 - symbol_test_data: For symbol reference data

@@ -12,7 +12,7 @@ Tests cover:
 
 All tests use realistic trade data with proper metric calculations.
 
-Note: This file uses shared fixtures from conftest.py:
+This file uses shared fixtures from conftest.py:
 - trade_factory: For creating individual trades
 - trades_factory: For creating trade sequences
 """

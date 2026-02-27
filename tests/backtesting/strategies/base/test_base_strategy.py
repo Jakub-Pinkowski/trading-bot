@@ -338,7 +338,7 @@ class TestHelperFunctions:
 
         # ==================== Multi-Price Indicators ====================
         # Use pre-computed hashes for high, low, close
-        # Note: ATR takes DataFrame, not individual series
+        # ATR takes DataFrame, not individual series
 
         atr = calculate_atr(
             sample_ohlcv_data,
@@ -904,7 +904,7 @@ class TestStateReset:
         strategy.run(sample_ohlcv_data.copy(), [])
 
         # Check state is clean after run
-        # Note: queued_signal is reset during _extract_trades
+        # queued_signal is reset during _extract_trades
         assert strategy.prev_row is not None  # Updated during iteration
 
         # Second run should start fresh

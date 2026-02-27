@@ -399,7 +399,7 @@ def assert_valid_trades(trades_list):
             f"Trade {i} has invalid exit_price: {trade['exit_price']}"
 
         # Check times are valid and ordered
-        # Note: Contract switch trades may have entry_time == exit_time
+        # Contract switch trades may have entry_time == exit_time
         # (position closed at switch point on same bar)
         if trade.get('switch', False):
             assert trade['entry_time'] <= trade['exit_time'], \

@@ -23,8 +23,6 @@ from app.backtesting.analysis.strategy_analyzer import StrategyAnalyzer, _aggreg
 
 
 # ==================== Fixtures ====================
-# Note: Core fixtures (base_strategy_results, real_results_file) are in conftest.py
-
 @pytest.fixture
 def analyzer_with_data(base_strategy_results, monkeypatch):
     """
@@ -397,8 +395,7 @@ class TestGetTopStrategiesMetrics:
             aggregate=False
         )
 
-        # Results should be sorted (higher drawdown first due to descending sort)
-        # Note: This might seem counterintuitive, but the method always sorts descending
+        # Results should be sorted (higher drawdown first due to descending sort)g
         assert result['maximum_drawdown_percentage'].is_monotonic_decreasing
 
 
