@@ -639,16 +639,11 @@ class TestEdgeCases:
         assert pm.trailing_stop == pytest.approx(pm.entry_price, abs=0.01)
 
     def test_symbol_not_in_tick_sizes(self, sample_timestamp):
-        """Test position manager with unknown symbol (uses default tick size)."""
+        """Test position manager with unknown symbol raises ValueError."""
         pm = PositionManager(slippage_ticks=1, symbol='UNKNOWN', trailing=None)
-        base_price = 100.0
 
-        pm.open_position(1, sample_timestamp, base_price)
-
-        # Should use default tick size
-        from futures_config import DEFAULT_TICK_SIZE
-        expected = base_price + (1 * DEFAULT_TICK_SIZE)
-        assert pm.entry_price == pytest.approx(expected, abs=0.01)
+        with pytest.raises(ValueError, match='Unknown symbol'):
+            pm.open_position(1, sample_timestamp, 100.0)
 
 
 class TestPositionManagerIntegration:

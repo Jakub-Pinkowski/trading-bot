@@ -183,7 +183,9 @@ class ContractResolver:
         Load and cache last and next switch dates if not already done.
 
         Uses _next_switch_date is None as the "not yet loaded" sentinel since
-        _load_switch_context always sets it to a datetime on success.
+        _load_switch_context always sets it to a datetime on success and raises
+        on failure (never returns None). A failed load leaves _next_switch_date
+        as None, so the next property access retries the file read automatically.
         """
         if self._next_switch_date is None:
             self._last_switch_date, self._next_switch_date = self._load_switch_context()

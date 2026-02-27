@@ -77,8 +77,8 @@ class TestSaveAlertDataToFile:
 
         load_path = mock_load_file_webhook.call_args[0][0]
         save_path = mock_save_file_webhook.call_args[0][1]
-        assert "alerts_2023-05-01.json" in load_path
-        assert "alerts_2023-05-01.json" in save_path
+        assert "alerts_2023-05-01.json" in str(load_path)
+        assert "alerts_2023-05-01.json" in str(save_path)
 
     def test_skips_dummy_yes_alerts(self, mock_load_file_webhook, mock_save_file_webhook):
         """Test dummy=YES alerts are not persisted."""

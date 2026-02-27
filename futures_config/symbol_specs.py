@@ -19,9 +19,6 @@ Organization:
 - Within each category: Normal, Mini, Micro
 """
 
-# Default tick size used as fallback when the symbol is unknown or tick_size is None
-DEFAULT_TICK_SIZE = 0.01
-
 SYMBOL_SPECS = {
     # ==================== Grains ====================
 

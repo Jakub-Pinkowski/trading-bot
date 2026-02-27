@@ -1,5 +1,5 @@
-import os
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests as req_lib
@@ -32,7 +32,7 @@ def save_alert_data_to_file(data, alerts_dir, timezone='Europe/Berlin'):
 
     # Preparing the daily file path
     daily_file_name = f'alerts_{current_dt.strftime("%Y-%m-%d")}.json'
-    daily_file_path = os.path.join(alerts_dir, daily_file_name)
+    daily_file_path = Path(alerts_dir) / daily_file_name
 
     # Load existing data if the file already exists
     alerts_data = load_file(daily_file_path)

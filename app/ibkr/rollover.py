@@ -11,10 +11,9 @@ logger = get_logger('ibkr/rollover')
 # Keep CLOSE_OUT_WARNING_DAYS in sync with warningDays in contract_switch_warning.pine
 CLOSE_OUT_WARNING_DAYS = 1
 
-REOPEN_ON_ROLLOVER = False  # True  → close old position and reopen on new contract
-
-
 # False → close old position only, do not reopen
+# True  → close old position and reopen on new contract
+REOPEN_ON_ROLLOVER = False
 
 
 # ==================== Public API ====================

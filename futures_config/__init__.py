@@ -43,12 +43,11 @@ from futures_config.symbol_mapping import (
     map_ibkr_to_tv,
 )
 # Import symbol specifications
-from futures_config.symbol_specs import SYMBOL_SPECS, DEFAULT_TICK_SIZE
+from futures_config.symbol_specs import SYMBOL_SPECS
 
 __all__ = [
     # Symbol specifications
     'SYMBOL_SPECS',
-    'DEFAULT_TICK_SIZE',
 
     # Symbol mapping
     'TV_TO_IBKR_MAPPING',
