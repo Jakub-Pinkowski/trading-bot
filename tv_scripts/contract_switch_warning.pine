@@ -1,0 +1,77 @@
+//@version=6
+indicator("Contract Switch Warning", overlay=true)
+
+// === CONFIGURATION ===
+
+warningDays = input.int(1, title="Warning Days Before Switch",
+     tooltip="Must match CLOSE_OUT_WARNING_DAYS in app/ibkr/rollover.py")
+
+// === SYMBOL RESOLUTION ===
+
+// Map mini/micro grain symbols to their standard equivalent.
+// Matches _symbol_mappings in data/historical_data/contract_switch_dates.yaml.
+resolvedRoot = switch syminfo.root
+    "MZC" => "ZC"
+    "MZW" => "ZW"
+    "MZS" => "ZS"
+    "MZL" => "ZL"
+    "XC"  => "ZC"
+    "XW"  => "ZW"
+    "XK"  => "ZS"
+    => syminfo.root
+
+// === SWITCH DATES ===
+
+// Keep in sync with data/historical_data/contract_switch_dates.yaml.
+switchDates = switch resolvedRoot
+
+    "ZC" => array.from(
+        timestamp("2026-02-27 01:00:00"), timestamp("2026-04-30 01:00:00"),
+        timestamp("2026-06-29 01:00:00"), timestamp("2026-08-28 01:00:00"),
+        timestamp("2026-11-30 01:00:00"))
+
+    "ZW" => array.from(
+        timestamp("2026-02-13 01:00:00"), timestamp("2026-04-17 01:00:00"),
+        timestamp("2026-06-16 01:00:00"), timestamp("2026-11-16 01:00:00"),
+        timestamp("2027-02-12 01:00:00"))
+
+    "ZS" => array.from(
+        timestamp("2026-02-13 01:00:00"), timestamp("2026-04-17 01:00:00"),
+        timestamp("2026-06-16 01:00:00"), timestamp("2026-10-19 01:00:00"),
+        timestamp("2026-12-17 01:00:00"),
+        timestamp("2027-02-17 01:00:00"), timestamp("2027-04-19 01:00:00"),
+        timestamp("2027-06-16 01:00:00"))
+
+    "ZL" => array.from(
+        timestamp("2026-02-19 01:00:00"), timestamp("2026-04-22 01:00:00"),
+        timestamp("2026-06-18 01:00:00"), timestamp("2026-11-19 01:00:00"),
+        timestamp("2026-12-21 01:00:00"),
+        timestamp("2027-02-18 01:00:00"), timestamp("2027-04-22 01:00:00"),
+        timestamp("2027-06-21 01:00:00"))
+
+    => array.new_int(0)  // Unknown symbol — warning never fires
+
+// === WARNING LOGIC ===
+
+approachingSwitch = false
+for i = 0 to array.size(switchDates) - 1
+    switchTs  = array.get(switchDates, i)
+    daysUntil = (switchTs - time) / 86400000
+    if daysUntil >= 0 and daysUntil <= warningDays
+        approachingSwitch := true
+        break
+
+// === VISUALS ===
+
+bgcolor(approachingSwitch ? color.new(color.orange, 80) : na,
+     title="Switch Warning Background")
+
+plotshape(approachingSwitch, title="Switch Warning",
+     location=location.top, style=shape.triangledown,
+     color=color.orange, size=size.small)
+
+// === ALERT ===
+
+alertcondition(approachingSwitch,
+     title="Contract Switch Warning",
+     message='{"symbol": "{{ticker}}"}')
