@@ -182,7 +182,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [HIGH]: Populate contract switch dates
 # TODO [MEDIUM]: Implement segmentation and out-of-sample data testing
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
