@@ -44,7 +44,7 @@ def make_resolver_with_switch_dates(ibkr_symbol='ZC', last=None, next_=None):
     """Return a ContractResolver with switch dates pre-loaded."""
     resolver = make_resolver(ibkr_symbol)
     resolver._last_switch_date = last
-    resolver._next_switch_date = next_ or (datetime.today() + timedelta(days=30))
+    resolver._next_switch_date = next_ if next_ is not None else (datetime.today() + timedelta(days=30))
     return resolver
 
 
@@ -355,6 +355,27 @@ class TestEnsureLoaded:
         with pytest.raises(ValueError, match='API down'):
             resolver._ensure_loaded()
 
+    def test_propagates_when_second_select_fails_after_successful_fetch(self, monkeypatch):
+        """ValueError from second _select_front_month propagates when fresh contracts are
+        fetched successfully but still yield no valid front-month (e.g. all within buffer)."""
+        resolver = make_resolver_with_switch_dates()
+        fresh = [{'conid': 'new', 'expirationDate': '20261215'}]
+        mock_store = MagicMock()
+
+        monkeypatch.setattr(resolver, '_load_contracts', MagicMock(return_value=[]))
+        monkeypatch.setattr(resolver, '_fetch_contracts', MagicMock(return_value=fresh))
+        monkeypatch.setattr(resolver, '_store_contracts', mock_store)
+        monkeypatch.setattr(
+            'app.ibkr.contracts._select_front_month',
+            MagicMock(side_effect=ValueError('all within buffer')),
+        )
+
+        with pytest.raises(ValueError, match='all within buffer'):
+            resolver._ensure_loaded()
+
+        # Contracts are stored even when selection fails, preserving the fresh data
+        mock_store.assert_called_once_with(fresh)
+
 
 class TestLoadSwitchContext:
     """Test _load_switch_context: reads YAML, returns (last_switch_date, next_switch_date)."""
@@ -411,6 +432,14 @@ class TestLoadSwitchContext:
         last, next_ = resolver._load_switch_context()
 
         assert next_ == near_future
+
+    def test_raises_informative_error_when_yaml_file_missing(self, monkeypatch):
+        """FileNotFoundError from a missing YAML is re-raised as a clear ValueError."""
+        monkeypatch.setattr('builtins.open', MagicMock(side_effect=FileNotFoundError))
+        resolver = make_resolver('ZC')
+
+        with pytest.raises(ValueError, match='Switch dates file not found'):
+            resolver._load_switch_context()
 
     def test_raises_when_symbol_not_in_yaml(self, mock_yaml_load):
         """ValueError raised when no switch dates exist for the symbol."""

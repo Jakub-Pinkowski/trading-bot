@@ -6,7 +6,7 @@ Tests cover:
 - Appending to existing daily alert files
 - Dummy signal filtering
 - IP allowlist enforcement
-- JSON content type validation
+- JSON content type and body validation
 - Order processing dispatch
 - Exception handling to preserve 200 response for TradingView
 - Rollover alert dispatch via /rollover route
@@ -132,6 +132,18 @@ class TestRequestValidation:
 
         assert response.status_code == 400
         assert b'Unsupported Content-Type' in response.data
+
+    def test_malformed_json_body_returns_400(self, client):
+        """Test request with JSON content type but unparseable body is rejected with 400."""
+        response = client.post(
+            '/trading',
+            data=b'{not valid json',
+            headers={'Content-Type': 'application/json'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'},
+        )
+
+        assert response.status_code == 400
+        assert b'not valid JSON' in response.data
 
 
 class TestTradingRoute:

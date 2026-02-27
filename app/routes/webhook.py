@@ -52,6 +52,8 @@ def _validate_request():
         abort(403)
     if not request.is_json:
         abort(400, description='Unsupported Content-Type')
+    if request.get_json(silent=True) is None:
+        abort(400, description='Request body is empty or not valid JSON')
 
 
 @webhook_blueprint.route('/trading', methods=['POST'])

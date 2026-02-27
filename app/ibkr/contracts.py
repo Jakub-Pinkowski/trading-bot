@@ -201,11 +201,15 @@ class ContractResolver:
             None if no switch has occurred yet (today is before all known switch dates).
 
         Raises:
-            ValueError: If the symbol has no switch dates in the YAML, or all
-                known switch dates are in the past (YAML needs updating).
+            ValueError: If the YAML file is missing, the symbol has no switch
+                dates in the YAML, or all known switch dates are in the past
+                (YAML needs updating).
         """
-        with open(SWITCH_DATES_FILE_PATH, 'r') as f:
-            switch_dates = yaml.safe_load(f)
+        try:
+            with open(SWITCH_DATES_FILE_PATH, 'r') as f:
+                switch_dates = yaml.safe_load(f)
+        except FileNotFoundError:
+            raise ValueError(f'Switch dates file not found: {SWITCH_DATES_FILE_PATH}')
 
         symbol_mappings = switch_dates.get('_symbol_mappings', {})
         resolved_symbol = symbol_mappings.get(self.ibkr_symbol, self.ibkr_symbol)
