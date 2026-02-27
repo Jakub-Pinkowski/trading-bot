@@ -14,9 +14,9 @@ for category in CATEGORIES_TO_TEST:
 
 # Common parameters shared across all strategy tests
 COMMON_PARAMS = dict(
-    rollovers=[False],
-    trailing_stops=[None, 1, 2, 3],
-    slippage_ticks_list=[3]
+    rollovers=[False, True],
+    trailing_stops=[None, 0.5, 1, 1.5, 2, 2.5, 3],
+    slippage_ticks_list=[2, 3]
 )
 
 
@@ -54,12 +54,12 @@ def main():
     # )
 
     # MACD identifies changes in momentum, direction, and strength
-    # tester.add_macd_tests(
-    #     fast_periods=[8, 10, 12, 14, 16],
-    #     slow_periods=[22, 26, 30, 34, 38],
-    #     signal_periods=[7, 9, 11, 13, 15],
-    #     **COMMON_PARAMS
-    # )
+    tester.add_macd_tests(
+        fast_periods=[8, 10, 12, 14, 16],
+        slow_periods=[22, 26, 30, 34, 38],
+        signal_periods=[7, 9, 11, 13, 15],
+        **COMMON_PARAMS
+    )
 
     # RSI is a momentum oscillator that measures the speed and change of price movements
     tester.add_rsi_tests(

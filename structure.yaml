@@ -183,6 +183,7 @@ trading-bot/
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [MEDIUM]: Implement segmentation and out-of-sample data testing
+# TODO [MEDIUM]: Update tests running reporting once per 1000 tests instead of 100 tests
 # TODO [MEDIUM]: Run extensive backtesting
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
 # TODO [LOW]: Add new strategies
