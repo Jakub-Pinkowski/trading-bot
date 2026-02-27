@@ -143,10 +143,12 @@ class BaseStrategy:
 
     # ==================== Public API ====================
 
-    def run(self, df, switch_dates):
+    def run(self, df, switch_dates, symbol=None):
         """
         Run the strategy.
         """
+        if symbol is not None:
+            self.position_manager.symbol = symbol
         df = self.add_indicators(df)
         df = self.generate_signals(df)
         trades = self._extract_trades(df, switch_dates)

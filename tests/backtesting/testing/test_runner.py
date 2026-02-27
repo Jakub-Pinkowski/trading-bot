@@ -323,7 +323,7 @@ class TestCacheStatistics:
             mock_df_cache.misses = 3
 
             # Simulate cache activity during test (increment counters)
-            def run_with_cache_activity(*args):
+            def run_with_cache_activity(*args, **kwargs):
                 mock_ind_cache.hits += 3
                 mock_ind_cache.misses += 1
                 mock_df_cache.hits += 2
@@ -666,4 +666,4 @@ class TestRunnerIntegration:
             assert result['symbol'] == symbol
             assert result['interval'] == interval
             assert result['strategy'] == strategy_name
-            strategy_instance.run.assert_called_once_with(mock_df, switch_dates)
+            strategy_instance.run.assert_called_once_with(mock_df, switch_dates, symbol=symbol)
