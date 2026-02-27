@@ -106,7 +106,7 @@ ANALYSES = [
         'aggregate': True,
         'interval': None,
         'weighted': True,
-        'min_slippage_ticks': 3,
+        'min_slippage_ticks': 2,
         'min_symbol_count': 3,
         'one_per_group': True
     },
@@ -118,7 +118,7 @@ ANALYSES = [
         'aggregate': True,
         'interval': '4h',
         'weighted': True,
-        'min_slippage_ticks': 3,
+        'min_slippage_ticks': 2,
         'min_symbol_count': 3,
         'one_per_group': True
     },
@@ -129,7 +129,7 @@ ANALYSES = [
         'limit': 30,
         'aggregate': True,
         'weighted': False,
-        'min_slippage_ticks': 3,
+        'min_slippage_ticks': 2,
         'min_symbol_count': 2,
         'one_per_group': True
     },
