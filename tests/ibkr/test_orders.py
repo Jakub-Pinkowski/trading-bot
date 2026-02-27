@@ -69,13 +69,13 @@ class TestGetContractPosition:
         assert result == 0
         mock_invalidate_cache.assert_called_once()
 
-    def test_returns_zero_on_api_error(self, mock_api_get_orders, mock_invalidate_cache):
-        """Test zero returned gracefully when API raises an exception."""
+    def test_returns_none_on_api_error(self, mock_api_get_orders, mock_invalidate_cache):
+        """Test None returned on API error so callers can distinguish failure from a flat position."""
         mock_api_get_orders.side_effect = Exception("API error")
 
         result = _get_contract_position("123456")
 
-        assert result == 0
+        assert result is None
         mock_invalidate_cache.assert_called_once()
 
     def test_propagates_invalidate_cache_error(self, mock_invalidate_cache):
@@ -99,12 +99,12 @@ class TestSuppressMessages:
             "iserver/questions/suppress", {"messageIds": ["1", "2"]}
         )
 
-    def test_api_error_is_swallowed(self, mock_api_post_orders):
-        """Test API errors during suppression do not propagate."""
+    def test_api_error_propagates(self, mock_api_post_orders):
+        """Test API errors during suppression propagate so the caller knows suppression failed."""
         mock_api_post_orders.side_effect = Exception("API error")
 
-        # Should not raise
-        _suppress_messages(["1", "2"])
+        with pytest.raises(Exception, match="API error"):
+            _suppress_messages(["1", "2"])
 
         mock_api_post_orders.assert_called_once()
 
@@ -138,6 +138,20 @@ class TestPlaceOrder:
         order_details = mock_api_post_orders.call_args[0][1]
         assert order_details["orders"][0]["side"] == "SELL"
         assert order_details["orders"][0]["quantity"] == QUANTITY_TO_TRADE
+
+    # --- Position Check Failure ---
+
+    def test_position_check_failure_returns_error(
+        self, mock_logger_orders, mock_get_contract_position
+    ):
+        """Test error returned immediately when position check returns None (API failure)."""
+        mock_get_contract_position.return_value = None
+
+        result = place_order("123456", "B")
+
+        assert result == {'success': False, 'error': 'Position check failed: cannot determine current position'}
+        mock_get_contract_position.assert_called_once_with("123456")
+        mock_logger_orders.error.assert_called_once()
 
     # --- Already In Desired Position ---
 

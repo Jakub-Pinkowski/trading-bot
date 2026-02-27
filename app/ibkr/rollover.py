@@ -90,6 +90,12 @@ def _check_and_rollover_position(symbol):
     )
     current_position = _get_contract_position(current_contract['conid'])
 
+    if current_position is None:
+        logger.error(
+            f'Cannot proceed with rollover for {symbol}: position check failed for conid {current_contract["conid"]}'
+        )
+        return {'status': 'error', 'message': 'Position check failed: cannot determine current position'}
+
     if current_position == 0:
         logger.warning(
             f'No open position on {resolver.ibkr_symbol} conid {current_contract["conid"]} '
@@ -117,6 +123,10 @@ def _check_and_rollover_position(symbol):
     reopen_result = place_order(new_contract['conid'], reopen_side)
 
     if isinstance(reopen_result, dict) and reopen_result.get('success') is False:
+        logger.critical(
+            f'Partial rollover for {resolver.ibkr_symbol}: position closed on {current_contract["conid"]} '
+            f'but reopen on {new_contract["conid"]} failed — manual intervention required'
+        )
         logger.error(f'Failed to reopen position on {new_contract["conid"]}: {reopen_result}')
         return {'status': 'reopen_failed', 'old_conid': current_contract['conid'], 'new_conid': new_contract['conid'],
                 'order': reopen_result}

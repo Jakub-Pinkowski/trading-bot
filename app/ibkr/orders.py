@@ -42,7 +42,8 @@ def _get_contract_position(conid):
         Integer position quantity:
             - Positive value for a long position
             - Negative value for a short position
-            - 0 if no position is held or on API error
+            - 0 if no position is held
+            - None on API error (caller must treat this as unknown, not flat)
     """
     # Invalidate server-side position cache to ensure fresh data
     _invalidate_cache()
@@ -58,7 +59,7 @@ def _get_contract_position(conid):
 
     except Exception as err:
         logger.error(f'Error fetching contract position: {err}')
-        return 0
+        return None
 
 
 def _suppress_messages(message_ids):
@@ -67,6 +68,10 @@ def _suppress_messages(message_ids):
 
     Args:
         message_ids: List of message ID strings to suppress (e.g. ['msg1', 'msg2'])
+
+    Raises:
+        Exception: Propagates any API error so the caller knows suppression failed
+            and can abort rather than retrying into the same uncleared dialog.
     """
     try:
         suppression_response = api_post('iserver/questions/suppress', {'messageIds': message_ids})
@@ -74,6 +79,7 @@ def _suppress_messages(message_ids):
 
     except Exception as err:
         logger.error(f'Error suppressing messages: {err}')
+        raise
 
 
 # ==================== Order Placement ====================
@@ -101,6 +107,10 @@ def place_order(conid, side):
         ValueError: If side is not 'B' or 'S'
     """
     contract_position = _get_contract_position(conid)
+
+    if contract_position is None:
+        logger.error(f'Position check failed for {conid}: API error, cannot determine current position')
+        return {'success': False, 'error': 'Position check failed: cannot determine current position'}
 
     # Existing position same as incoming signal; no action needed
     if (contract_position > 0 and side == 'B') or (contract_position < 0 and side == 'S'):
