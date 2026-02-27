@@ -1,23 +1,25 @@
-# PyCharm specific files
-.idea/
-__pycache__/
-
-# Prompts
-.github/prompts/
-
 # macOS
 .DS_Store
+
+# Python
+__pycache__/
+.coverage
 
 # Virtual environments
 .venv/
 *.env
 
-# Client portal
-clientportal/
+# IDE
+.idea/
 
 # Data
 /data
 
 # Logs
 logs/
-.coverage
+
+# Client portal
+clientportal/
+
+# Prompts
+.github/prompts/
