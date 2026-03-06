@@ -233,6 +233,25 @@ class TestCheckAndRolloverPosition:
             'order': {'success': False, 'error': 'Insufficient funds', 'details': {}},
         }
         assert mock_place_order_rollover.call_count == 2
+        mock_logger_rollover.critical.assert_called_once()
+        mock_logger_rollover.error.assert_called_once()
+
+    # --- Position Check Failure ---
+
+    def test_position_check_failure_returns_error(
+        self, mock_logger_rollover, mock_contract_resolver_rollover,
+        mock_place_order_rollover, mock_get_contract_position_rollover
+    ):
+        """Test error returned and no order placed when position check fails (API error)."""
+        mock_contract_resolver_rollover.next_switch_date = datetime.today() + timedelta(hours=12)
+        mock_contract_resolver_rollover.ibkr_symbol = 'ZC'
+        mock_contract_resolver_rollover.get_rollover_pair.return_value = _make_contracts()
+        mock_get_contract_position_rollover.return_value = None
+
+        result = _check_and_rollover_position('ZC1!')
+
+        assert result['status'] == 'error'
+        mock_place_order_rollover.assert_not_called()
         mock_logger_rollover.error.assert_called_once()
 
     # --- Exception Propagation ---

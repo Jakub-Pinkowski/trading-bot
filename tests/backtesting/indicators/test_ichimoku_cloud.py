@@ -139,7 +139,6 @@ class TestIchimokuBasicLogic:
         assert senkou_a.iloc[:displacement].isna().all(), \
             "Senkou Span A should have NaN for first displacement periods"
 
-        # Note: with 80 bars and senkou_b_period=52, we need 52+displacement=78 bars for valid senkou_b
         # So with only 75 bars, senkou_b will be mostly NaN. This is expected behavior.
         # Just verify structure is correct
         assert len(senkou_a) == len(high), "Senkou A length should match input"

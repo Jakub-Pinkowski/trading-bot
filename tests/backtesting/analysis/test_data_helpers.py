@@ -29,7 +29,6 @@ from app.backtesting.analysis.data_helpers import (
 
 
 # ==================== Fixtures ====================
-# Note: Core fixtures (filtering_strategy_data) are in conftest.py
 
 @pytest.fixture
 def weighted_calculation_data():

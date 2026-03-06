@@ -29,7 +29,6 @@ from app.backtesting.analysis.formatters import (
 
 
 # ==================== Fixtures ====================
-# Note: Core fixtures (formatting_strategy_data) are in conftest.py
 
 @pytest.fixture
 def aggregated_strategy_results():

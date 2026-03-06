@@ -1,0 +1,7 @@
+//@version=6
+indicator("Webhook Test", overlay=true)
+
+// Fires on every bar close — use on a 1-minute chart to test quickly
+alertcondition(true,
+     title="Webhook Test",
+     message='{"symbol": "{{ticker}}", "test": true}')

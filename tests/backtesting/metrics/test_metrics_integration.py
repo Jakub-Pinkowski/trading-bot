@@ -233,7 +233,6 @@ class TestMetricsIntegration:
         del incomplete_trade['duration_hours']
 
         # Summary metrics should handle this gracefully
-        # Note: This tests defensive programming
         trades = [complete_trade, incomplete_trade]
 
         # This may raise an error or handle it - depends on implementation

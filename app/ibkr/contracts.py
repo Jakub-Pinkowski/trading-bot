@@ -211,6 +211,8 @@ class ContractResolver:
         except FileNotFoundError:
             raise ValueError(f'Switch dates file not found: {SWITCH_DATES_FILE_PATH}')
 
+        # Mini/micro symbols (e.g. MES, MNQ) share switch dates with their full-size
+        # equivalents (e.g. ES, NQ) via the _symbol_mappings key in the YAML
         symbol_mappings = switch_dates.get('_symbol_mappings', {})
         resolved_symbol = symbol_mappings.get(self.ibkr_symbol, self.ibkr_symbol)
 

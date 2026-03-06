@@ -78,7 +78,7 @@ def run_single_test(test_params):
     if verbose:
         print(f'\nRunning strategy: {strategy_name} for {symbol} {interval} {tested_month}', flush=True)
 
-    trades_list = strategy_instance.run(df, switch_dates)
+    trades_list = strategy_instance.run(df, switch_dates, symbol=symbol)
 
     trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
 
