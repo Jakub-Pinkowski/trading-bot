@@ -33,8 +33,50 @@ python analyze_strategies.py              # Analyze strategy results
 - **Section headers**: `# ==================== Section Name ====================`
 - **Subsection headers**: `# --- Subsection Name ---`
 - **Inline comments**: `# Explanation here` (sentence case, no period, placed above code)
-- **Docstrings**: Structured with `Args:`, `Returns:`, `Raises:` sections
+- **Docstrings**: Structured with `Args:`, `Returns:`, `Raises:` sections; type info in docstrings only, not in function
+  signatures
 - **No backward compatibility shims** when deleting or updating fields
+
+### Imports
+
+Order: stdlib → third-party → app modules → config/futures_config. Absolute imports only (`from app.backtesting...`). No
+relative imports. No wildcard imports.
+
+### Naming
+
+- Private methods/functions: `_` prefix
+- Datetime variables: `*_time` suffix (not `*_dt`)
+- OHLCV columns: `price_open`, `price_high`, `price_low`, `price_close` (avoid shadowing builtins)
+- Constants: `ALL_CAPS`, defined at module level under `# ==================== Constants ====================`
+
+### Class Structure
+
+Use section headers inside classes to separate concerns:
+
+```python
+# ==================== Initialization ====================
+# ==================== Public Methods ====================
+# ==================== Private Methods ====================
+```
+
+### Logging
+
+Use `get_logger('module/path')` with a path matching the module location (e.g., `'backtesting/testing/runner'`,
+`'ibkr/orders'`).
+
+Log levels:
+
+- `info`: normal operational events
+- `warning`: degraded conditions (too few rows, lock timeout)
+- `error`: failures with context (symbol, filepath, conid)
+- `exception`: unexpected errors with full stack trace
+- `debug`: low-level details (cache hits/misses, expirations)
+
+### Error Handling
+
+- External API/IO errors: catch, log with context, re-raise with `raise ... from err`
+- Known API failures: return `{'success': False, 'message': '...'}` — never silently swallow
+- Return `None` to signal an API error (distinct from `0` meaning "not found")
 
 ## Tests
 
