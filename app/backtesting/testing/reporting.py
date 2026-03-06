@@ -12,6 +12,7 @@ logger = get_logger('backtesting/testing/reporting')
 # ==================== Module Paths ====================
 
 BACKTESTING_DIR = DATA_DIR / "backtesting"
+SHARDS_DIR = BACKTESTING_DIR / "shards"
 
 
 # ==================== Results Conversion & Saving ====================
@@ -228,3 +229,88 @@ def save_results(results):
             print('No results to save.')
     except Exception as error:
         logger.error(f'Failed to save results: {error}')
+
+
+def save_shard(results, shard_index):
+    """
+    Write intermediate results to a numbered shard file.
+
+    Appends only — no reading or deduplication. Each call writes a self-contained
+    parquet file. Call merge_shards() at the end of a run to combine all shards
+    into the final output.
+
+    Args:
+        results: List of result dictionaries from run_single_test()
+        shard_index: Integer used to name the shard file
+            (e.g., 3 -> shard_0003.parquet)
+
+    Returns:
+        Path to the written shard file, or None if results produced an empty DataFrame
+    """
+    results_df = results_to_dataframe(results)
+    if results_df.empty:
+        return None
+
+    os.makedirs(SHARDS_DIR, exist_ok=True)
+    shard_path = SHARDS_DIR / f"shard_{shard_index:04d}.parquet"
+    results_df.to_parquet(shard_path, index=False)
+    print(f'Shard {shard_index:04d} saved ({len(results_df)} rows)')
+    return shard_path
+
+
+def merge_shards(shard_paths):
+    """
+    Merge all shard files into the final parquet file with deduplication.
+
+    Reads every shard, concatenates with any existing final results file,
+    deduplicates, writes the final output, and removes the shard files.
+
+    Args:
+        shard_paths: List of Path objects pointing to shard files to merge
+
+    Returns:
+        None. Saves to: {BACKTESTING_DIR}/mass_test_results_all.parquet
+    """
+    if not shard_paths:
+        logger.warning('No shards to merge.')
+        return
+
+    final_path = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
+
+    dfs = []
+    for path in shard_paths:
+        try:
+            dfs.append(pd.read_parquet(path))
+        except Exception as err:
+            logger.error(f'Could not read shard {path}: {err}')
+
+    if not dfs:
+        logger.error('All shards failed to read; skipping merge.')
+        return
+
+    combined = pd.concat(dfs, ignore_index=True)
+
+    # Merge with existing final file if present
+    if os.path.exists(final_path):
+        try:
+            existing = pd.read_parquet(final_path)
+            combined = pd.concat([existing, combined], ignore_index=True)
+        except Exception as err:
+            logger.error(f'Could not read existing results file: {err}')
+
+    deduped = combined.drop_duplicates()
+    deduped.to_parquet(final_path, index=False)
+    print(f'Results merged and saved to {final_path} ({len(deduped)} rows)')
+
+    # Clean up shard files
+    for path in shard_paths:
+        try:
+            os.remove(path)
+        except Exception as err:
+            logger.warning(f'Could not remove shard {path}: {err}')
+
+    # Remove shards directory if now empty
+    try:
+        SHARDS_DIR.rmdir()
+    except Exception:
+        pass

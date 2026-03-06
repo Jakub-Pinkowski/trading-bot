@@ -111,14 +111,16 @@ class TestRunTests:
             assert result == []
 
     def test_run_tests_saves_results_when_results_exist(self, mock_tester):
-        """Test that results are saved when tests complete."""
+        """Test that results are merged into the final parquet when tests complete."""
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
                 patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_results') as mock_save, \
+                patch('app.backtesting.testing.orchestrator.save_shard') as mock_shard, \
+                patch('app.backtesting.testing.orchestrator.merge_shards') as mock_merge, \
                 patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
                 patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
             mock_load.return_value = (pd.DataFrame(), set())
+            mock_shard.return_value = '/tmp/shard_0000.parquet'
 
             # Mock a future that returns a result
             mock_future = MagicMock()
@@ -127,8 +129,8 @@ class TestRunTests:
 
             run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
-            # Verify save_results was called
-            assert mock_save.called
+            # Verify merge_shards was called to finalize the output
+            assert mock_merge.called
 
 
 # ==================== Switch Dates Mapping Tests ====================
@@ -579,7 +581,8 @@ class TestOrchestratorIntegration:
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
                 patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_results') as mock_save, \
+                patch('app.backtesting.testing.orchestrator.save_shard'), \
+                patch('app.backtesting.testing.orchestrator.merge_shards'), \
                 patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
             mock_load.return_value = (pd.DataFrame(), set())
 
@@ -669,7 +672,7 @@ class TestOrchestratorIntegration:
                 assert isinstance(result, list)
 
     def test_orchestration_saves_intermediate_results_every_1000_tests(self):
-        """Test that intermediate results are saved every 1000 completed tests."""
+        """Test that intermediate results are written to a shard every 1000 completed tests."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
         tester.tested_months = ['1!']
@@ -681,9 +684,11 @@ class TestOrchestratorIntegration:
         with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
                 patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_results') as mock_save, \
+                patch('app.backtesting.testing.orchestrator.save_shard') as mock_shard, \
+                patch('app.backtesting.testing.orchestrator.merge_shards'), \
                 patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
             mock_load.return_value = (pd.DataFrame(), set())
+            mock_shard.return_value = '/tmp/shard_0000.parquet'
 
             # Create 1000 futures that return results
             futures = []
@@ -701,8 +706,8 @@ class TestOrchestratorIntegration:
 
                 run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-                # Should call save_results for intermediate save at 1000 tests
-                assert mock_save.call_count >= 1
+                # Should call save_shard for the intermediate save at 1000 tests
+                assert mock_shard.call_count >= 1
 
     def test_orchestration_cache_save_exception_handling(self):
         """Test that cache save exceptions are handled gracefully."""
@@ -717,6 +722,8 @@ class TestOrchestratorIntegration:
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
                 patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
+                patch('app.backtesting.testing.orchestrator.save_shard'), \
+                patch('app.backtesting.testing.orchestrator.merge_shards'), \
                 patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
             mock_load.return_value = (pd.DataFrame(), set())
 

@@ -6,7 +6,7 @@ import pandas as pd
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.backtesting.testing.reporting import save_results
+from app.backtesting.testing.reporting import save_shard, merge_shards
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.utils.logger import get_logger
@@ -116,7 +116,7 @@ def run_tests(
 
     # --- Parallel Execution ---
 
-    _execute_tests_in_parallel(
+    shard_paths = _execute_tests_in_parallel(
         tester,
         test_combinations,
         max_workers
@@ -132,8 +132,13 @@ def run_tests(
 
     # --- Save Results ---
 
+    # Save any remaining results as a final shard, then merge all shards
     if tester.results:
-        save_results(tester.results)
+        shard_path = save_shard(tester.results, len(shard_paths))
+        if shard_path:
+            shard_paths.append(shard_path)
+
+    merge_shards(shard_paths)
 
     # --- Final Reporting ---
 
@@ -245,6 +250,8 @@ def _prepare_test_combinations(
 
 def _execute_tests_in_parallel(tester, test_combinations, max_workers):
     """Run tests in parallel using ProcessPoolExecutor."""
+    shard_paths = []
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_test = {executor.submit(run_single_test, test_params): test_params for test_params in
                           test_combinations}
@@ -273,9 +280,11 @@ def _execute_tests_in_parallel(tester, test_combinations, max_workers):
                 # Periodic cleanup
                 gc.collect()
 
-                # Save intermediate results and clear memory
+                # Write intermediate results to a shard file and clear memory
                 if completed_tests % 1000 == 0 and tester.results:
-                    save_results(tester.results)
+                    shard_path = save_shard(tester.results, len(shard_paths))
+                    if shard_path:
+                        shard_paths.append(shard_path)
                     tester.results.clear()
 
             # Handle worker exceptions gracefully to prevent crashing the entire mass testing run
@@ -301,6 +310,8 @@ def _execute_tests_in_parallel(tester, test_combinations, max_workers):
         if failed_tests > 0:
             logger.warning(f'Mass testing completed with {failed_tests} failed test(s) out of {total_tests} total tests')
             print(f'Warning: {failed_tests} test(s) failed during execution. Check logs for details.')
+
+    return shard_paths
 
 
 # --- Cache Statistics ---

@@ -9,6 +9,8 @@ Tests cover:
 - Invalid value handling (NaN, inf)
 - Empty results handling
 - save_results function
+- save_shard function
+- merge_shards function
 - File saving integration
 - Error handling
 """
@@ -19,7 +21,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.backtesting.testing.reporting import results_to_dataframe, save_results, save_to_parquet
+from app.backtesting.testing.reporting import (
+    merge_shards,
+    results_to_dataframe,
+    save_results,
+    save_shard,
+    save_to_parquet,
+)
 
 
 @pytest.fixture
@@ -699,3 +707,181 @@ class TestSaveToParquet:
         save_to_parquet(sample_dataframe, "relative/path/test_file.parquet")
 
         mock_filelock.assert_called_once_with("/absolute/path/test_file.parquet.lock", timeout=120)
+
+
+# ==================== Save Shard Tests ====================
+
+class TestSaveShard:
+    """Test save_shard function."""
+
+    def test_writes_shard_file_without_reading_existing(self, monkeypatch, sample_test_results):
+        """Test that save_shard writes directly without reading any existing file."""
+        mock_makedirs = MagicMock()
+        mock_to_parquet = MagicMock()
+        mock_read_parquet = MagicMock()
+
+        monkeypatch.setattr(os, "makedirs", mock_makedirs)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+        monkeypatch.setattr(pd, "read_parquet", mock_read_parquet)
+
+        save_shard(sample_test_results, shard_index=0)
+
+        mock_to_parquet.assert_called_once()
+        mock_read_parquet.assert_not_called()
+
+    def test_shard_filename_uses_zero_padded_index(self, monkeypatch, sample_test_results):
+        """Test shard file is named with 4-digit zero-padded index."""
+        mock_to_parquet = MagicMock()
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+
+        result = save_shard(sample_test_results, shard_index=3)
+
+        assert result is not None
+        assert 'shard_0003.parquet' in str(result)
+
+    def test_returns_none_for_empty_results(self, monkeypatch):
+        """Test None returned when results produce an empty DataFrame."""
+        monkeypatch.setattr(os, "makedirs", MagicMock())
+        mock_to_parquet = MagicMock()
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+
+        result = save_shard([], shard_index=0)
+
+        assert result is None
+        mock_to_parquet.assert_not_called()
+
+    def test_creates_shards_directory(self, monkeypatch, sample_test_results):
+        """Test that the shards directory is created if it does not exist."""
+        mock_makedirs = MagicMock()
+        monkeypatch.setattr(os, "makedirs", mock_makedirs)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", MagicMock())
+
+        save_shard(sample_test_results, shard_index=0)
+
+        mock_makedirs.assert_called_once()
+        assert mock_makedirs.call_args[1].get('exist_ok') is True
+
+
+# ==================== Merge Shards Tests ====================
+
+class TestMergeShards:
+    """Test merge_shards function."""
+
+    def test_merges_all_shards_into_final_file(self, monkeypatch, tmp_path):
+        """Test that all shard DataFrames are concatenated and written to the final file."""
+        shard1 = pd.DataFrame({'month': ['1!'], 'symbol': ['ZS']})
+        shard2 = pd.DataFrame({'month': ['2!'], 'symbol': ['CL']})
+
+        mock_read = MagicMock(side_effect=[shard1, shard2])
+        mock_to_parquet = MagicMock()
+        mock_remove = MagicMock()
+
+        monkeypatch.setattr(pd, "read_parquet", mock_read)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+        monkeypatch.setattr(os, "remove", mock_remove)
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+
+        shard_paths = [tmp_path / 'shard_0000.parquet', tmp_path / 'shard_0001.parquet']
+        merge_shards(shard_paths)
+
+        assert mock_read.call_count == 2
+        mock_to_parquet.assert_called_once()
+
+    def test_merges_with_existing_final_file(self, monkeypatch, tmp_path):
+        """Test that existing final parquet is merged with shards before writing."""
+        existing = pd.DataFrame({'month': ['1!'], 'symbol': ['ZS']})
+        shard = pd.DataFrame({'month': ['2!'], 'symbol': ['CL']})
+
+        written = []
+
+        read_count = {'n': 0}
+
+        def mock_read(path):
+            read_count['n'] += 1
+            return shard if read_count['n'] == 1 else existing
+
+        def capture_write(self_df, path, **kwargs):
+            written.append(self_df.copy())
+
+        monkeypatch.setattr(pd, "read_parquet", mock_read)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", capture_write)
+        monkeypatch.setattr(os, "remove", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: True)
+
+        merge_shards([tmp_path / 'shard_0000.parquet'])
+
+        assert len(written) == 1
+        assert len(written[0]) == 2
+
+    def test_deduplicates_on_merge(self, monkeypatch, tmp_path):
+        """Test that duplicate rows are removed in the final output."""
+        row = {'month': '1!', 'symbol': 'ZS'}
+        shard1 = pd.DataFrame([row])
+        shard2 = pd.DataFrame([row])  # identical duplicate
+
+        written = []
+
+        def capture_write(self_df, path, **kwargs):
+            written.append(self_df.copy())
+
+        monkeypatch.setattr(pd, "read_parquet", MagicMock(side_effect=[shard1, shard2]))
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", capture_write)
+        monkeypatch.setattr(os, "remove", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+
+        merge_shards([tmp_path / 'shard_0000.parquet', tmp_path / 'shard_0001.parquet'])
+
+        assert len(written) == 1
+        assert len(written[0]) == 1
+
+    def test_removes_shard_files_after_merge(self, monkeypatch, tmp_path):
+        """Test that shard files are deleted after a successful merge."""
+        shard = pd.DataFrame({'month': ['1!'], 'symbol': ['ZS']})
+        mock_remove = MagicMock()
+
+        monkeypatch.setattr(pd, "read_parquet", MagicMock(return_value=shard))
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", MagicMock())
+        monkeypatch.setattr(os, "remove", mock_remove)
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+
+        shard_paths = [tmp_path / 'shard_0000.parquet', tmp_path / 'shard_0001.parquet']
+        merge_shards(shard_paths)
+
+        assert mock_remove.call_count == 2
+
+    def test_no_op_when_shard_paths_empty(self, monkeypatch):
+        """Test that nothing is written when shard_paths is empty."""
+        mock_to_parquet = MagicMock()
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", mock_to_parquet)
+
+        merge_shards([])
+
+        mock_to_parquet.assert_not_called()
+
+    def test_skips_unreadable_shards_and_merges_rest(self, monkeypatch, tmp_path):
+        """Test that a shard read error is logged and the remaining shards are still merged."""
+        good_shard = pd.DataFrame({'month': ['2!'], 'symbol': ['CL']})
+        written = []
+
+        read_count = {'n': 0}
+
+        def mock_read(path):
+            read_count['n'] += 1
+            if read_count['n'] == 1:
+                raise Exception("Corrupt shard")
+            return good_shard
+
+        def capture_write(self_df, path, **kwargs):
+            written.append(self_df.copy())
+
+        monkeypatch.setattr(pd, "read_parquet", mock_read)
+        monkeypatch.setattr(pd.DataFrame, "to_parquet", capture_write)
+        monkeypatch.setattr(os, "remove", MagicMock())
+        monkeypatch.setattr(os.path, "exists", lambda path: False)
+
+        merge_shards([tmp_path / 'bad.parquet', tmp_path / 'good.parquet'])
+
+        # Good shard still written
+        assert len(written) == 1
+        assert len(written[0]) == 1
