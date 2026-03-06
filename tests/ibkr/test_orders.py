@@ -78,12 +78,13 @@ class TestGetContractPosition:
         assert result is None
         mock_invalidate_cache.assert_called_once()
 
-    def test_propagates_invalidate_cache_error(self, mock_invalidate_cache):
-        """Test cache invalidation errors propagate to callers."""
+    def test_returns_none_on_invalidate_cache_error(self, mock_invalidate_cache):
+        """Test cache invalidation errors return None so callers block on stale data rather than raising."""
         mock_invalidate_cache.side_effect = Exception("Cache invalidation error")
 
-        with pytest.raises(Exception, match="Cache invalidation error"):
-            _get_contract_position("123456")
+        result = _get_contract_position("123456")
+
+        assert result is None
 
 
 class TestSuppressMessages:

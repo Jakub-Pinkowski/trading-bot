@@ -46,7 +46,10 @@ def _get_contract_position(conid):
             - None on API error (caller must treat this as unknown, not flat)
     """
     # Invalidate server-side position cache to ensure fresh data
-    _invalidate_cache()
+    try:
+        _invalidate_cache()
+    except Exception:
+        return None  # Already logged in _invalidate_cache
 
     try:
         positions = api_get(f'portfolio/{ACCOUNT_ID}/positions')

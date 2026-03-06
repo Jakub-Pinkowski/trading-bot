@@ -395,7 +395,7 @@ class TestGetTopStrategiesMetrics:
             aggregate=False
         )
 
-        # Results should be sorted (higher drawdown first due to descending sort)g
+        # Results should be sorted (higher drawdown first due to descending sort)
         assert result['maximum_drawdown_percentage'].is_monotonic_decreasing
 
 
