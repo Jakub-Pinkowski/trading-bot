@@ -95,44 +95,40 @@ Optional Parameters (not shown in examples below):
 
 # ==================== Configuration ====================
 
+# Common parameters shared across all analyses
+COMMON_ANALYSIS_PARAMS = {
+    'min_avg_trades_per_combination': 10,
+    'limit': 30,
+    'min_slippage_ticks': 3,
+    'min_symbol_count': 3,
+    'one_per_group': True,
+    'aggregate': True
+}
+
 # List of analyses to run
 # Add, remove, or modify analyses as needed
 ANALYSES = [
     {
-        'name': 'Best Profit Factor (4h, weighted)',
+        **COMMON_ANALYSIS_PARAMS,
+        'name': 'Best Profit Factor (all intervals, weighted)',
         'metric': 'profit_factor',
-        'min_avg_trades_per_combination': 20,
-        'limit': 30,
-        'aggregate': True,
         'interval': None,
-        'weighted': True,
-        'min_slippage_ticks': 2,
-        'min_symbol_count': 3,
-        'one_per_group': True
-    },
-    {
-        'name': 'Best Average Return (4h, weighted)',
-        'metric': 'average_trade_return_percentage_of_contract',
-        'min_avg_trades_per_combination': 10,
-        'limit': 30,
-        'aggregate': True,
-        'interval': '4h',
-        'weighted': True,
-        'min_slippage_ticks': 2,
-        'min_symbol_count': 3,
-        'one_per_group': True
-    },
-    {
-        'name': 'Best Sharpe Ratio (all intervals, simple)',
-        'metric': 'sharpe_ratio',
-        'min_avg_trades_per_combination': 15,
-        'limit': 30,
-        'aggregate': True,
         'weighted': False,
-        'min_slippage_ticks': 2,
-        'min_symbol_count': 2,
-        'one_per_group': True
     },
+    # {
+    #     **COMMON_ANALYSIS_PARAMS,
+    #     'name': 'Best Average Return (all intervals, weighted)',
+    #     'metric': 'average_trade_return_percentage_of_contract',
+    #     'interval': None,
+    #     'weighted': False,
+    # },
+    # {
+    #     **COMMON_ANALYSIS_PARAMS,
+    #     'name': 'Best Sharpe Ratio (all intervals, simple)',
+    #     'metric': 'sharpe_ratio',
+    #     'interval': None,
+    #     'weighted': False,
+    # },
 ]
 
 
