@@ -107,14 +107,25 @@ class TestBasicTradeStatistics:
 
         assert result['total_trades'] == 5
 
-    def test_average_trade_duration(self, trades_factory):
-        """Test average trade duration calculation."""
-        mixed_trades = trades_factory.mixed(win_count=1, loss_count=1)
-        metrics = SummaryMetrics(mixed_trades)
-        result = metrics.calculate_all_metrics()
+    def test_average_trade_duration_bars(self, trade_factory):
+        """Test average_trade_duration_bars uses the duration_bars field when present."""
+        trade1 = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.0)
+        trade1['duration_bars'] = 4.0  # 4h trade on a 1h interval = 4 bars
+        trade2 = trade_factory('ZS', 1200.0, 1190.0, duration_hours=4.0)
+        trade2['duration_bars'] = 8.0  # same wall-clock hours on a 30m interval = 8 bars
 
-        # Both trades are 4 hours
-        assert result['average_trade_duration_hours'] == 4.0
+        result = SummaryMetrics([trade1, trade2]).calculate_all_metrics()
+
+        assert result['average_trade_duration_bars'] == 6.0
+
+    def test_average_trade_duration_bars_defaults_to_zero_when_missing(self, trade_factory):
+        """Test average_trade_duration_bars is 0 when duration_bars is not set on trades."""
+        trade = trade_factory('ZS', 1200.0, 1210.0)
+        # duration_bars not set — simulates trades that bypassed runner.py
+
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        assert result['average_trade_duration_bars'] == 0.0
 
 
 class TestReturnMetrics:
@@ -404,14 +415,14 @@ class TestValueAtRisk:
     """Test Value at Risk (VaR) calculations."""
 
     def test_var_with_sufficient_trades(self, trades_factory):
-        """Test VaR with enough trades."""
-        all_losing = trades_factory.all_losing(count=5)
+        """Test VaR with enough trades (MIN_RETURNS_FOR_VAR = 30)."""
+        all_losing = trades_factory.all_losing(count=30)
         metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
-        # Should calculate VaR
+        # Should calculate VaR with sufficient trades
         assert 'value_at_risk' in result
-        assert result['value_at_risk'] >= 0
+        assert result['value_at_risk'] > 0
 
     def test_var_insufficient_trades(self, trade_factory):
         """Test VaR with insufficient trades."""
@@ -426,20 +437,20 @@ class TestValueAtRisk:
 
     def test_var_with_skewed_distribution(self, trades_factory):
         """Test VaR with negatively skewed return distribution (many small wins, few big losses)."""
-        # Create skewed distribution: 7 small wins, 3 big losses
+        # Create skewed distribution: 25 small wins, 5 big losses (total >= 30 for MIN_RETURNS_FOR_VAR)
         trades = []
 
         # Small wins
-        for i in range(7):
+        for i in range(25):
             trades.append(trades_factory.trade_factory('ZS', 1200.0, 1202.0,
-                                                       entry_time=datetime(2024, 1, 10 + i, 10, 0),
-                                                       exit_time=datetime(2024, 1, 10 + i, 14, 0)))
+                                                       entry_time=datetime(2024, 1, 1, 10, 0) + timedelta(days=i),
+                                                       exit_time=datetime(2024, 1, 1, 14, 0) + timedelta(days=i)))
 
         # Big losses
-        for i in range(3):
+        for i in range(5):
             trades.append(trades_factory.trade_factory('ZS', 1200.0, 1170.0 - i * 5,
-                                                       entry_time=datetime(2024, 1, 17 + i, 10, 0),
-                                                       exit_time=datetime(2024, 1, 17 + i, 14, 0)))
+                                                       entry_time=datetime(2024, 3, 1, 10, 0) + timedelta(days=i),
+                                                       exit_time=datetime(2024, 3, 1, 14, 0) + timedelta(days=i)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -449,15 +460,8 @@ class TestValueAtRisk:
 
     def test_var_with_fat_tails(self, trades_factory):
         """Test VaR with fat-tailed distribution (more extreme events than normal distribution)."""
-        # Create distribution with extreme outliers
-        price_specs = [
-            (1200.0, 1205.0),  # Small win
-            (1205.0, 1210.0),  # Small win
-            (1210.0, 1215.0),  # Small win
-            (1215.0, 1220.0),  # Small win
-            (1220.0, 1225.0),  # Small win
-            (1225.0, 1150.0),  # Extreme loss (fat tail)
-        ]
+        # Create distribution with extreme outliers — need >= 30 trades for MIN_RETURNS_FOR_VAR
+        price_specs = [(1200.0, 1205.0)] * 29 + [(1200.0, 1150.0)]  # 29 small wins + 1 extreme loss
 
         trades = trades_factory.create_sequence(price_specs, symbol='ZS')
 
@@ -468,20 +472,17 @@ class TestValueAtRisk:
         assert result['value_at_risk'] > 0
 
     def test_var_with_extreme_losses(self, trades_factory):
-        """Test VaR calculation with several extreme losses."""
-        # Create scenario with multiple extreme losses
+        """Test VaR calculation with several extreme losses (>= 30 trades for MIN_RETURNS_FOR_VAR)."""
+        # Create scenario with multiple extreme losses: 25 normal trades + 5 extreme losses
         trades = []
-        for i in range(10):
-            if i < 5:
-                # Normal trades
-                trades.append(trades_factory.trade_factory('ZS', 1200.0, 1205.0,
-                                                           entry_time=datetime(2024, 1, 10 + i, 10, 0),
-                                                           exit_time=datetime(2024, 1, 10 + i, 14, 0)))
-            else:
-                # Extreme losses
-                trades.append(trades_factory.trade_factory('ZS', 1200.0, 1150.0 - (i - 5) * 10,
-                                                           entry_time=datetime(2024, 1, 10 + i, 10, 0),
-                                                           exit_time=datetime(2024, 1, 10 + i, 14, 0)))
+        for i in range(25):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1205.0,
+                                                       entry_time=datetime(2024, 1, 1, 10, 0) + timedelta(days=i),
+                                                       exit_time=datetime(2024, 1, 1, 14, 0) + timedelta(days=i)))
+        for i in range(5):
+            trades.append(trades_factory.trade_factory('ZS', 1200.0, 1150.0 - i * 10,
+                                                       entry_time=datetime(2024, 3, 1, 10, 0) + timedelta(days=i),
+                                                       exit_time=datetime(2024, 3, 1, 14, 0) + timedelta(days=i)))
 
         metrics = SummaryMetrics(trades)
         result = metrics.calculate_all_metrics()
@@ -511,13 +512,13 @@ class TestValueAtRisk:
     # Expected Shortfall (CVaR) tests
 
     def test_expected_shortfall_with_sufficient_trades(self, trades_factory):
-        """Test Expected Shortfall with enough trades."""
-        all_losing = trades_factory.all_losing(count=5)
+        """Test Expected Shortfall with enough trades (MIN_RETURNS_FOR_VAR = 30)."""
+        all_losing = trades_factory.all_losing(count=30)
         metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
         assert 'expected_shortfall' in result
-        assert result['expected_shortfall'] >= 0
+        assert result['expected_shortfall'] > 0
 
     def test_expected_shortfall_insufficient_trades(self, trade_factory):
         """Test Expected Shortfall with insufficient trades."""
@@ -530,7 +531,7 @@ class TestValueAtRisk:
 
     def test_expected_shortfall_greater_than_var(self, trades_factory):
         """Test Expected Shortfall is typically >= VaR."""
-        all_losing = trades_factory.all_losing(count=5)
+        all_losing = trades_factory.all_losing(count=30)
         metrics = SummaryMetrics(all_losing)
         result = metrics.calculate_all_metrics()
 
@@ -567,11 +568,12 @@ class TestEdgeCases:
         assert metrics._calculate_sharpe_ratio() == 0
 
         # 2. Test Sortino ratio with zero downside deviation using a mock
+        # Patch safe_divide to return 0 when denominator is 0
         losing_trade = trade_factory('ZS', 1210.0, 1200.0)
         losing_metrics = SummaryMetrics([losing_trade])
 
-        with patch('app.backtesting.metrics.summary_metrics.safe_average', return_value=0.0):
-            # When safe_average returns 0, downside_deviation becomes 0, hitting the defensive check
+        with patch('app.backtesting.metrics.summary_metrics.safe_divide', return_value=0.0):
+            # When safe_divide is forced to return 0, the defensive path is hit
             assert losing_metrics._calculate_sortino_ratio() == 0
 
     def test_none_trades(self):
@@ -674,7 +676,7 @@ class TestConstants:
 
     def test_min_returns_for_var(self):
         """Test MIN_RETURNS_FOR_VAR constant."""
-        assert MIN_RETURNS_FOR_VAR == 5
+        assert MIN_RETURNS_FOR_VAR == 30
 
     def test_risk_free_rate(self):
         """Test RISK_FREE_RATE constant."""

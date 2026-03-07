@@ -12,7 +12,7 @@ Tests cover:
 - Edge cases (no trades, insufficient data)
 - Verbose output behavior
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
 import pandas as pd
@@ -478,6 +478,41 @@ class TestMetricsCalculation:
 
             # Should be called twice (once for each trade)
             assert mock_calc.call_count == 2
+
+    def test_duration_bars_attached_to_trades(self):
+        """Test that duration_bars is computed and attached to each trade before SummaryMetrics."""
+        test_params = (
+            '1!', 'ZS', '4h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+        )
+
+        mock_df = pd.DataFrame({
+            'open': [100], 'high': [102], 'low': [99], 'close': [101], 'volume': [1000]
+        })
+
+        mock_trade = {
+            'entry_time': datetime(2024, 1, 1, 0, 0),
+            'exit_time': datetime(2024, 1, 1, 8, 0),
+            'entry_price': 100.0,
+            'exit_price': 105.0,
+            'side': 'long'
+        }
+
+        with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=mock_df), \
+                patch('app.backtesting.testing.runner.validate_dataframe', return_value=True), \
+                patch('app.backtesting.testing.runner.calculate_trade_metrics') as mock_calc, \
+                patch('app.backtesting.testing.runner.SummaryMetrics') as mock_summary, \
+                patch('app.backtesting.testing.runner.indicator_cache'), \
+                patch('app.backtesting.testing.runner.dataframe_cache'):
+            test_params[4].run.return_value = [mock_trade]
+            # duration=8h, interval=4h → duration_bars should be 2.0
+            mock_calc.return_value = {**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=8)}
+            mock_summary.return_value.calculate_all_metrics.return_value = {'total_trades': 1}
+
+            run_single_test(test_params)
+
+            trades_arg = mock_summary.call_args[0][0]
+            assert 'duration_bars' in trades_arg[0]
+            assert trades_arg[0]['duration_bars'] == 2.0
 
     def test_summary_metrics_receives_trades_with_metrics(self):
         """Test that SummaryMetrics receives trades with calculated metrics."""

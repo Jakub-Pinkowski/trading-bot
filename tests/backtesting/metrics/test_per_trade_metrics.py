@@ -49,7 +49,6 @@ class TestTradeMetricsCalculation:
 
         # Duration calculated correctly
         assert metrics['duration'] == timedelta(hours=4.5)
-        assert metrics['duration_hours'] == 4.5
 
         # Commission applied
         assert metrics['commission'] == COMMISSION_PER_TRADE
@@ -77,9 +76,6 @@ class TestTradeMetricsCalculation:
         assert metrics['side'] == 'short'
         assert metrics['entry_price'] == 75.50
         assert metrics['exit_price'] == 74.80
-
-        # Duration calculated
-        assert metrics['duration_hours'] == 6.25
 
         # PnL calculated correctly for short
         # CL: (75.50 - 74.80) * 1000 = $700
@@ -211,26 +207,18 @@ class TestTradeDurationCalculations:
         assert isinstance(metrics['duration'], timedelta)
         assert metrics['duration'] == timedelta(hours=4.5)
 
-    def test_duration_hours_float(self, trade_factory):
-        """Test duration_hours is float with 2 decimal places."""
-        metrics = trade_factory('CL', 75.50, 74.80, side='short', duration_hours=6.25)
-
-        assert isinstance(metrics['duration_hours'], float)
-        assert metrics['duration_hours'] == 6.25
-
     def test_very_short_duration(self, trade_factory):
         """Test trade with very short duration (minutes)."""
         metrics = trade_factory('ZS', 1200.0, 1205.0, duration_hours=0.25)
 
         assert metrics['duration'] == timedelta(minutes=15)
-        assert metrics['duration_hours'] == 0.25
 
     def test_very_long_duration(self, trade_factory):
         """Test trade with very long duration (days)."""
         expected_hours = (5 * 24) + 4.5  # 5 days + 4.5 hours
         metrics = trade_factory('CL', 75.0, 78.0, duration_hours=expected_hours)
 
-        assert metrics['duration_hours'] == expected_hours
+        assert metrics['duration'] == timedelta(hours=expected_hours)
 
 
 class TestMarginRequirementCalculations:
@@ -425,7 +413,6 @@ class TestEdgeCases:
         metrics = trade_factory('ZS', 1200.0, 1205.0, duration_hours=0.0)
 
         assert metrics['duration'] == timedelta(0)
-        assert metrics['duration_hours'] == 0.0
 
 
 class TestTradeDataPreservation:
@@ -465,7 +452,7 @@ class TestTradeDataPreservation:
 
         # Additional fields that should be present
         additional_fields = [
-            'duration', 'duration_hours', 'return_percentage_of_margin',
+            'duration', 'return_percentage_of_margin',
             'return_percentage_of_contract', 'net_pnl', 'margin_requirement',
             'commission'
         ]
@@ -591,28 +578,6 @@ class TestPrintTradeMetrics:
 
         assert 'TRADE METRICS' in output
         assert 'N/A' in output  # Missing fields show as N/A
-
-    def test_print_trade_with_duration_hours_only(self, capsys):
-        """Test print function when only duration_hours is present (no duration timedelta)."""
-        trade_with_duration_hours = {
-            'entry_time': datetime(2024, 1, 15, 10, 0),
-            'exit_time': datetime(2024, 1, 15, 14, 0),
-            'duration_hours': 4.5,  # Only duration_hours, no duration
-            'side': 'long',
-            'entry_price': 1200.0,
-            'exit_price': 1210.0,
-            'return_percentage_of_contract': 2.5
-        }
-
-        print_trade_metrics(trade_with_duration_hours)
-
-        captured = capsys.readouterr()
-        output = captured.out
-
-        # Verify duration_hours is displayed
-        assert 'Duration:' in output
-        assert '4.50' in output or '4.5' in output
-        assert 'hours' in output
 
 
 class TestErrorHandling:

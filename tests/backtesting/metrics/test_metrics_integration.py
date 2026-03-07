@@ -72,17 +72,21 @@ class TestMetricsIntegration:
             'net_pnl',
             'return_percentage_of_contract',
             'return_percentage_of_margin',
-            'duration_hours'
+            'duration'
         ]
         for trade in trades:
             for field in required_fields:
                 assert field in trade, f"Missing field: {field}"
 
+        # Simulate what runner.py does: attach duration_bars based on interval (e.g. 1h → 1 bar per hour)
+        for trade in trades:
+            trade['duration_bars'] = trade['duration'].total_seconds() / 3600  # assuming 1h interval
+
         # Verify summary metrics use these fields
         summary = SummaryMetrics(trades)
         result = summary.calculate_all_metrics()
 
-        assert result['average_trade_duration_hours'] == 4.0
+        assert result['average_trade_duration_bars'] == 4.0
         assert 'total_return_percentage_of_contract' in result
         assert 'average_trade_return_percentage_of_contract' in result
 
@@ -146,7 +150,7 @@ class TestMetricsIntegration:
         # Verify all trades have required fields
         for trade in trades:
             assert 'return_percentage_of_contract' in trade
-            assert 'duration_hours' in trade
+            assert 'duration' in trade
             assert isinstance(trade['net_pnl'], (int, float))
 
         # Calculate summary
@@ -169,7 +173,6 @@ class TestMetricsIntegration:
         # Check per-trade metric types
         for trade in trades:
             assert isinstance(trade['net_pnl'], float)
-            assert isinstance(trade['duration_hours'], float)
             assert isinstance(trade['return_percentage_of_contract'], float)
             assert isinstance(trade['return_percentage_of_margin'], float)
 
@@ -230,7 +233,7 @@ class TestMetricsIntegration:
 
         # Remove a field to simulate incomplete data
         incomplete_trade = complete_trade.copy()
-        del incomplete_trade['duration_hours']
+        del incomplete_trade['duration']
 
         # Summary metrics should handle this gracefully
         trades = [complete_trade, incomplete_trade]

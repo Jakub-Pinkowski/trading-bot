@@ -50,7 +50,7 @@ class TestResultsToDataFrame:
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': 60.0,
-                    'average_trade_duration_hours': 4.5,
+                    'average_trade_duration_bars': 4.5,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -90,7 +90,7 @@ class TestResultsToDataFrame:
                 'metrics': {
                     'total_trades': 10,
                     'win_rate': 60.0,
-                    'average_trade_duration_hours': 4.5,
+                    'average_trade_duration_bars': 4.5,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -113,7 +113,7 @@ class TestResultsToDataFrame:
 
         expected_columns = [
             'month', 'symbol', 'interval', 'strategy',
-            'total_trades', 'win_rate', 'average_trade_duration_hours',
+            'total_trades', 'win_rate', 'average_trade_duration_bars',
             'total_wins_percentage_of_contract', 'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract', 'average_trade_return_percentage_of_contract',
             'average_win_percentage_of_contract', 'average_loss_percentage_of_contract',
@@ -130,7 +130,7 @@ class TestResultsToDataFrame:
         results = [
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
+                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_bars': 4.5,
                             'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                             'total_return_percentage_of_contract': 50.0,
                             'average_trade_return_percentage_of_contract': 5.0,
@@ -141,7 +141,7 @@ class TestResultsToDataFrame:
             },
             {
                 'month': '2!', 'symbol': 'CL', 'interval': '15m', 'strategy': 'EMA_9_21',
-                'metrics': {'total_trades': 15, 'win_rate': 55.0, 'average_trade_duration_hours': 3.0,
+                'metrics': {'total_trades': 15, 'win_rate': 55.0, 'average_trade_duration_bars': 3.0,
                             'total_wins_percentage_of_contract': 120.0, 'total_losses_percentage_of_contract': 60.0,
                             'total_return_percentage_of_contract': 60.0,
                             'average_trade_return_percentage_of_contract': 4.0,
@@ -256,7 +256,7 @@ class TestInvalidValueHandling:
                     'win_rate': np.nan,  # NaN value
                     'profit_factor': 2.0,
                     'sharpe_ratio': 1.5,
-                    'average_trade_duration_hours': 4.0,
+                    'average_trade_duration_bars': 4.0,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -290,7 +290,7 @@ class TestInvalidValueHandling:
                     'win_rate': 60.0,
                     'profit_factor': np.inf,  # Infinity
                     'sharpe_ratio': 1.5,
-                    'average_trade_duration_hours': 4.0,
+                    'average_trade_duration_bars': 4.0,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -324,7 +324,7 @@ class TestInvalidValueHandling:
                     'win_rate': "invalid",  # String instead of number
                     'profit_factor': 2.0,
                     'sharpe_ratio': 1.5,
-                    'average_trade_duration_hours': 4.0,
+                    'average_trade_duration_bars': 4.0,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -359,7 +359,7 @@ class TestInvalidValueHandling:
                     'profit_factor': np.inf,
                     'sharpe_ratio': "invalid",
                     'sortino_ratio': 2.0,
-                    'average_trade_duration_hours': 4.0,
+                    'average_trade_duration_bars': 4.0,
                     'total_wins_percentage_of_contract': 100.0,
                     'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0,
@@ -396,7 +396,7 @@ class TestDataFrameStructure:
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
                 'metrics': {
-                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
+                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_bars': 4.5,
                     'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0, 'average_trade_return_percentage_of_contract': 5.0,
                     'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
@@ -421,7 +421,7 @@ class TestDataFrameStructure:
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
                 'metrics': {
-                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
+                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_bars': 4.5,
                     'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0, 'average_trade_return_percentage_of_contract': 5.0,
                     'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
@@ -445,7 +445,7 @@ class TestDataFrameStructure:
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
                 'metrics': {
-                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
+                    'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_bars': 4.5,
                     'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                     'total_return_percentage_of_contract': 50.0, 'average_trade_return_percentage_of_contract': 5.0,
                     'average_win_percentage_of_contract': 10.0, 'average_loss_percentage_of_contract': -5.0,
@@ -473,7 +473,7 @@ class TestReportingIntegration:
         results = [
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
-                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_hours': 4.5,
+                'metrics': {'total_trades': 10, 'win_rate': 60.0, 'average_trade_duration_bars': 4.5,
                             'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                             'total_return_percentage_of_contract': 50.0,
                             'average_trade_return_percentage_of_contract': 5.0,
@@ -484,7 +484,7 @@ class TestReportingIntegration:
             },
             {
                 'month': '2!', 'symbol': 'CL', 'interval': '15m', 'strategy': 'EMA_9_21',
-                'metrics': {'total_trades': 15, 'win_rate': 55.0, 'average_trade_duration_hours': 3.0,
+                'metrics': {'total_trades': 15, 'win_rate': 55.0, 'average_trade_duration_bars': 3.0,
                             'total_wins_percentage_of_contract': 120.0, 'total_losses_percentage_of_contract': 60.0,
                             'total_return_percentage_of_contract': 60.0,
                             'average_trade_return_percentage_of_contract': 4.0,
@@ -510,7 +510,7 @@ class TestReportingIntegration:
                 'symbol': ['ZS', 'CL', 'GC'][i % 3],
                 'interval': ['15m', '1h', '4h'][i % 3],
                 'strategy': f'Strategy_{i}',
-                'metrics': {'total_trades': i, 'win_rate': 50.0 + i % 50, 'average_trade_duration_hours': 4.0,
+                'metrics': {'total_trades': i, 'win_rate': 50.0 + i % 50, 'average_trade_duration_bars': 4.0,
                             'total_wins_percentage_of_contract': 100.0, 'total_losses_percentage_of_contract': 50.0,
                             'total_return_percentage_of_contract': 50.0,
                             'average_trade_return_percentage_of_contract': 5.0,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -8,6 +8,21 @@ from app.backtesting.testing.utils.dataframe_validators import validate_datafram
 from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/testing/runner')
+
+# ==================== Constants ====================
+
+# Maps interval strings to their duration in hours
+INTERVAL_HOURS = {
+    '1m': 1 / 60,
+    '5m': 5 / 60,
+    '15m': 0.25,
+    '30m': 0.5,
+    '1h': 1.0,
+    '2h': 2.0,
+    '4h': 4.0,
+    '1d': 24.0,
+    '1w': 168.0,
+}
 
 
 # ==================== Single Test Execution ====================
@@ -81,6 +96,13 @@ def run_single_test(test_params):
     trades_list = strategy_instance.run(df, switch_dates, symbol=symbol)
 
     trades_with_metrics_list = [calculate_trade_metrics(trade, symbol) for trade in trades_list]
+
+    # Attach duration_bars to each trade so SummaryMetrics can produce interval-normalised averages
+    interval_hours = INTERVAL_HOURS.get(interval, 1.0)
+    for trade in trades_with_metrics_list:
+        trade['duration_bars'] = round(
+            trade.get('duration', timedelta(0)).total_seconds() / 3600 / interval_hours, 2
+        )
 
     if trades_with_metrics_list:
         metrics = SummaryMetrics(trades_with_metrics_list)

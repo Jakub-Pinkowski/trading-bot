@@ -132,7 +132,7 @@ def sample_test_result():
         'metrics': {
             'total_trades': 10,
             'win_rate': 60.0,
-            'average_trade_duration_hours': 4.5,
+            'average_trade_duration_bars': 4.5,
             'total_wins_percentage_of_contract': 100.0,
             'total_losses_percentage_of_contract': 50.0,
             'total_return_percentage_of_contract': 50.0,

@@ -9,7 +9,7 @@ logger = get_logger('backtesting/summary_metrics')
 
 # Metrics Calculation Constants
 MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
-MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
+MIN_RETURNS_FOR_VAR = 30  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
 
 # Risk and Performance Metrics Constants
 RISK_FREE_RATE = 0.0  # Default risk-free rate for Sharpe and Sortino ratios
@@ -51,14 +51,14 @@ class SummaryMetrics:
         win_rate = self.win_rate
         win_count = self.win_count
         loss_count = self.loss_count
-        average_duration_hours = safe_average(self.durations, self.total_trades)
+        average_duration_bars = safe_average(self.duration_bars)
         total_wins_percentage_of_contract = sum(trade['return_percentage_of_contract'] for trade in self.winning_trades)
         total_losses_percentage_of_contract = sum(
             trade['return_percentage_of_contract'] for trade in self.losing_trades)
 
         # --- Return Metrics ---  (contract-based)
         total_return_percentage_of_contract = self.total_return_contract
-        average_trade_return_percentage_of_contract = safe_average([self.total_return_contract], self.total_trades)
+        average_trade_return_percentage_of_contract = safe_average(self.returns)
         average_win_percentage_of_contract = self._calculate_average_win_percentage_of_contract()
         average_loss_percentage_of_contract = self._calculate_average_loss_percentage_of_contract()
         profit_factor = self._calculate_profit_factor()
@@ -78,7 +78,7 @@ class SummaryMetrics:
             'winning_trades': win_count,
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
-            'average_trade_duration_hours': round(average_duration_hours, 2),
+            'average_trade_duration_bars': round(average_duration_bars, 2),
             'total_wins_percentage_of_contract': round(total_wins_percentage_of_contract, 2),
             'total_losses_percentage_of_contract': round(total_losses_percentage_of_contract, 2),
 
@@ -127,7 +127,7 @@ class SummaryMetrics:
 
         # Cache commonly used lists
         self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
-        self.durations = [trade.get('duration_hours', 0) for trade in self.trades]
+        self.duration_bars = [trade.get('duration_bars', 0) for trade in self.trades]
 
     def _calculate_win_loss_trades(self):
         """Calculate winning and losing trades based on contract returns."""
@@ -207,7 +207,7 @@ class SummaryMetrics:
         average_return = safe_average(self.returns)
 
         # Calculate standard deviation
-        std_dev = np.std(self.returns, ddof=0)
+        std_dev = np.std(self.returns, ddof=1)
 
         if std_dev == 0:
             return 0
@@ -227,7 +227,9 @@ class SummaryMetrics:
         if not negative_returns:
             return INFINITY_REPLACEMENT
 
-        downside_variance = safe_average([r ** 2 for r in negative_returns])
+        # Divide by N (all trades), not len(negative_returns), per the standard Sortino formula
+        n = len(self.returns)
+        downside_variance = sum(r ** 2 for r in negative_returns) / n
         downside_deviation = downside_variance ** 0.5
 
         if downside_deviation == 0:

@@ -46,7 +46,6 @@ def calculate_trade_metrics(trade, symbol):
         Dictionary with calculated metrics:
         - entry_time, exit_time, entry_price, exit_price, side: Original trade data
         - duration: Timedelta object of trade duration
-        - duration_hours: Trade duration in hours (float)
         - return_percentage_of_margin: Return as % of estimated margin (risk-adjusted)
         - return_percentage_of_contract: Return as % of contract value (leverage-aware)
         - net_pnl: Net profit/loss in dollars after commission
@@ -77,7 +76,6 @@ def calculate_trade_metrics(trade, symbol):
 
     # Calculate trade duration
     trade_duration = trade['exit_time'] - trade['entry_time']
-    trade_duration_hours = round(trade_duration.total_seconds() / 3600, 2)
 
     # Apply fixed commission per trade
     total_commission = COMMISSION_PER_TRADE
@@ -114,7 +112,6 @@ def calculate_trade_metrics(trade, symbol):
 
         # Trade details
         'duration': trade_duration,
-        'duration_hours': trade_duration_hours,
 
         # Normalized metrics (percentages)
         'return_percentage_of_margin': return_percentage_of_margin,
@@ -137,7 +134,7 @@ def print_trade_metrics(trade):
 
     Args:
         trade: Dictionary with trade metrics from calculate_trade_metrics().
-              Expected keys: entry_time, exit_time, duration, duration_hours,
+              Expected keys: entry_time, exit_time, duration,
               entry_price, exit_price, side, return_percentage_of_margin,
               return_percentage_of_contract
 
@@ -168,10 +165,9 @@ def print_trade_metrics(trade):
     print(f"Exit Time: {trade.get('exit_time', 'N/A')}")
 
     # Print duration if available
-    if 'duration' in trade and 'duration_hours' in trade:
-        print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
-    elif 'duration_hours' in trade:
-        print(f"Duration: {trade['duration_hours']:.2f} hours")
+    if 'duration' in trade:
+        duration_hours = round(trade['duration'].total_seconds() / 3600, 2)
+        print(f"Duration: {trade['duration']} ({duration_hours:.2f} hours)")
 
     print(f"Side: {trade.get('side', 'N/A')}")
     print(f"Entry Price: {trade.get('entry_price', 'N/A')}")

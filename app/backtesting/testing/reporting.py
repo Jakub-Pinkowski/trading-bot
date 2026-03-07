@@ -79,7 +79,7 @@ def results_to_dataframe(results):
     Returns:
         DataFrame with standardized columns including
         - Basic identifiers: month, symbol, interval, strategy
-        - Trade statistics: total_trades, win_rate, average_trade_duration_hours
+        - Trade statistics: total_trades, win_rate, average_trade_duration_bars
         - Return metrics: profit_factor, average/total returns (percentage of contract)
         - Risk metrics: maximum_drawdown, sharpe_ratio, sortino_ratio, calmar_ratio,
                        value_at_risk, expected_shortfall, ulcer_index
@@ -99,7 +99,7 @@ def results_to_dataframe(results):
         'strategy',
         'total_trades',
         'win_rate',
-        'average_trade_duration_hours',
+        'average_trade_duration_bars',
 
         # --- Return Metrics --- (contract-based)
         'total_wins_percentage_of_contract',

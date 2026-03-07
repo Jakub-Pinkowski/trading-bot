@@ -117,7 +117,7 @@ def _aggregate_strategies(
             'average_win_percentage_of_contract'] = _group_mean_or_nan('average_win_percentage_of_contract')
         metrics_dict['average_loss_percentage_of_contract'] = _group_mean_or_nan(
             'average_loss_percentage_of_contract')
-        metrics_dict['average_trade_duration_hours'] = _group_mean_or_nan('average_trade_duration_hours')
+        metrics_dict['average_trade_duration_bars'] = _group_mean_or_nan('average_trade_duration_bars')
 
         # Calculate profit factor percentage from aggregated wins and losses if available
         if 'total_wins_percentage_of_contract' in filtered_df.columns and 'total_losses_percentage_of_contract' in filtered_df.columns:
@@ -166,7 +166,7 @@ def _aggregate_strategies(
 
         metrics_dict.update({
             'win_rate': _safe_group_mean('win_rate'),
-            'average_trade_duration_hours': _safe_group_mean('average_trade_duration_hours'),
+            'average_trade_duration_bars': _safe_group_mean('average_trade_duration_bars'),
 
             # Return metrics (contract-based)
             'total_return_percentage_of_contract': grouped[

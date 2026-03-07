@@ -667,7 +667,7 @@ class TestEdgeCases:
         df = df.drop(columns=[
             'average_win_percentage_of_contract',
             'average_loss_percentage_of_contract',
-            'average_trade_duration_hours',
+            'average_trade_duration_bars',
             'sharpe_ratio',
             'sortino_ratio',
             'calmar_ratio',
@@ -710,8 +710,8 @@ class TestEdgeCases:
 
         # Should return results with NaN for missing columns
         assert len(result_simple) > 0
-        assert 'average_trade_duration_hours' in result_simple.columns
-        assert result_simple['average_trade_duration_hours'].isna().all()
+        assert 'average_trade_duration_bars' in result_simple.columns
+        assert result_simple['average_trade_duration_bars'].isna().all()
 
     def test_aggregate_strategies_raises_for_none_df(self):
         """Test _aggregate_strategies raises ValueError when df is None (lines 69-70)."""
@@ -1022,7 +1022,7 @@ class TestOnePerGroupFiltering:
             'value_at_risk': [5] * 6,
             'expected_shortfall': [7] * 6,
             'ulcer_index': [3] * 6,
-            'average_trade_duration_hours': [12] * 6,
+            'average_trade_duration_bars': [12] * 6,
         }
         test_df = pd.DataFrame(data)
 
@@ -1105,7 +1105,7 @@ class TestOnePerGroupFiltering:
             'value_at_risk': [5] * 10,
             'expected_shortfall': [7] * 10,
             'ulcer_index': [3] * 10,
-            'average_trade_duration_hours': [12] * 10,
+            'average_trade_duration_bars': [12] * 10,
         }
         test_df = pd.DataFrame(data)
 
