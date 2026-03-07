@@ -671,8 +671,8 @@ class TestOrchestratorIntegration:
         # Should call save_shard for the intermediate save at 1000 tests
         assert mock_shard.call_count >= 1
 
-    def test_orchestration_cache_save_exception_handling(self, monkeypatch):
-        """Test that cache save exceptions are handled gracefully."""
+    def test_orchestration_indicator_cache_save_raises(self, monkeypatch):
+        """Test that an indicator cache save failure propagates as RuntimeError."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
         tester.tested_months = ['1!']
@@ -682,7 +682,7 @@ class TestOrchestratorIntegration:
         tester.results = []
 
         mock_ind = MagicMock()
-        mock_ind.save_cache.side_effect = Exception("Cache save failed")
+        mock_ind.save_cache.side_effect = Exception('Cache save failed')
 
         mock_future = MagicMock()
         mock_future.result.return_value = {'test': 'result'}
@@ -700,7 +700,37 @@ class TestOrchestratorIntegration:
         monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
         monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=[mock_future]))
 
-        # Should not raise, should handle exception gracefully
-        result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        with pytest.raises(RuntimeError, match='Failed to save indicator cache after test completion'):
+            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-        assert isinstance(result, list)
+    def test_orchestration_dataframe_cache_save_raises(self, monkeypatch):
+        """Test that a dataframe cache save failure propagates as RuntimeError."""
+        tester = MagicMock()
+        tester.strategies = [('RSI_14_30_70', MagicMock())]
+        tester.tested_months = ['1!']
+        tester.symbols = ['ZS']
+        tester.intervals = ['1h']
+        tester.switch_dates_dict = {'ZS': []}
+        tester.results = []
+
+        mock_df_cache = MagicMock()
+        mock_df_cache.save_cache.side_effect = Exception('Dataframe cache save failed')
+
+        mock_future = MagicMock()
+        mock_future.result.return_value = {'test': 'result'}
+
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.submit.return_value = mock_future
+        mock_executor = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df_cache)
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'save_shard', MagicMock())
+        monkeypatch.setattr(orch_module, 'merge_shards', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=[mock_future]))
+
+        with pytest.raises(RuntimeError, match='Failed to save dataframe cache after test completion'):
+            run_tests(tester, verbose=False, max_workers=1, skip_existing=False)

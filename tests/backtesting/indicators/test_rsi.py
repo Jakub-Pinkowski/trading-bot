@@ -495,3 +495,29 @@ class TestRSIPracticalUsage:
         # Should detect some crossovers in real data
         assert crosses_above_30.sum() > 0, "Should detect RSI crossing above 30"
         assert crosses_below_70.sum() > 0, "Should detect RSI crossing below 70"
+
+
+# ==================== Hash Series Utility Tests ====================
+
+class TestHashSeries:
+    """Test hash_series utility function."""
+
+    def test_hash_series_falls_back_for_arrow_backed_arrays(self):
+        """Test that hash_series handles Arrow-backed arrays that lack tobytes()."""
+
+        # Simulate a Series-like object whose .values raises AttributeError on .tobytes(),
+        # matching the behaviour of Arrow-backed arrays in pandas 3.0+.
+        class _ArrowLikeValues:
+            def tobytes(self):
+                raise AttributeError('Arrow arrays do not have tobytes()')
+
+        class _ArrowLikeSeries:
+            values = _ArrowLikeValues()
+
+            def __iter__(self):
+                return iter([1.0, 2.0, 3.0])
+
+        # Should not raise; the fallback converts via np.array(series, dtype=object)
+        result = hash_series(_ArrowLikeSeries())
+        assert isinstance(result, str)
+        assert len(result) == 32  # MD5 hex digest length

@@ -390,10 +390,15 @@ def _save_caches():
     """Save indicator and dataframe caches."""
     try:
         indicator_cache.save_cache()
+    except Exception as err:
+        logger.error(f'Failed to save indicator cache after test completion: {err}')
+        raise RuntimeError('Failed to save indicator cache after test completion') from err
 
+    try:
         dataframe_cache.save_cache()
-    except Exception as e:
-        logger.error(f"Failed to save caches after test completion: {e}")
+    except Exception as err:
+        logger.error(f'Failed to save dataframe cache after test completion: {err}')
+        raise RuntimeError('Failed to save dataframe cache after test completion') from err
 
 
 # --- Execution Summary ---
