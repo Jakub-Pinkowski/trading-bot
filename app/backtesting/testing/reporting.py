@@ -240,7 +240,7 @@ def merge_shards(shard_paths):
         logger.warning('No shards to merge.')
         return
 
-    final_path = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
+    final_path = BACKTESTING_DIR / 'mass_test_results_all.parquet'
 
     dfs = []
     failed_paths = []
@@ -284,5 +284,5 @@ def merge_shards(shard_paths):
     # Remove shards directory if now empty
     try:
         SHARDS_DIR.rmdir()
-    except Exception:
-        pass
+    except Exception as err:
+        logger.debug(f'Could not remove shards directory (may not be empty): {err}')
