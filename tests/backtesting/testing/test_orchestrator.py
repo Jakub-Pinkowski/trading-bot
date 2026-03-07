@@ -454,32 +454,15 @@ class TestReportCacheStatistics:
     """Test cache statistics reporting."""
 
     def test_report_cache_statistics_with_results(self, capsys):
-        """Test cache statistics reporting with test results."""
-        results = [
-            {
-                'cache_stats': {
-                    'ind_hits': 100,
-                    'ind_misses': 10,
-                    'df_hits': 50,
-                    'df_misses': 5
-                }
-            },
-            {
-                'cache_stats': {
-                    'ind_hits': 150,
-                    'ind_misses': 15,
-                    'df_hits': 75,
-                    'df_misses': 8
-                }
-            }
-        ]
+        """Test cache statistics reporting with aggregated stats."""
+        cache_stats = {'ind_hits': 250, 'ind_misses': 25, 'df_hits': 125, 'df_misses': 13}
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
             mock_ind.size.return_value = 500
             mock_df.size.return_value = 100
 
-            _report_cache_statistics(results)
+            _report_cache_statistics(cache_stats)
 
             captured = capsys.readouterr()
 
@@ -487,21 +470,21 @@ class TestReportCacheStatistics:
             assert 'CACHE PERFORMANCE STATISTICS' in captured.out
             assert 'Indicator Cache:' in captured.out
             assert 'DataFrame Cache:' in captured.out
-            assert 'Hits: 250' in captured.out  # 100+150
-            assert 'Misses: 25' in captured.out  # 10+15
-            assert 'Hits: 125' in captured.out  # 50+75
-            assert 'Misses: 13' in captured.out  # 5+8
+            assert 'Hits: 250' in captured.out
+            assert 'Misses: 25' in captured.out
+            assert 'Hits: 125' in captured.out
+            assert 'Misses: 13' in captured.out
 
     def test_report_cache_statistics_with_empty_results(self, capsys):
-        """Test cache statistics reporting with no results."""
-        results = []
+        """Test cache statistics reporting with zero stats."""
+        cache_stats = {'ind_hits': 0, 'ind_misses': 0, 'df_hits': 0, 'df_misses': 0}
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
             mock_ind.size.return_value = 0
             mock_df.size.return_value = 0
 
-            _report_cache_statistics(results)
+            _report_cache_statistics(cache_stats)
 
             captured = capsys.readouterr()
 
@@ -511,23 +494,14 @@ class TestReportCacheStatistics:
 
     def test_report_cache_statistics_calculates_hit_rate_correctly(self, capsys):
         """Test that hit rate percentage is calculated correctly."""
-        results = [
-            {
-                'cache_stats': {
-                    'ind_hits': 80,
-                    'ind_misses': 20,
-                    'df_hits': 90,
-                    'df_misses': 10
-                }
-            }
-        ]
+        cache_stats = {'ind_hits': 80, 'ind_misses': 20, 'df_hits': 90, 'df_misses': 10}
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
             mock_ind.size.return_value = 100
             mock_df.size.return_value = 50
 
-            _report_cache_statistics(results)
+            _report_cache_statistics(cache_stats)
 
             captured = capsys.readouterr()
 
@@ -535,30 +509,19 @@ class TestReportCacheStatistics:
             assert 'Hit rate: 80.00%' in captured.out
             assert 'Hit rate: 90.00%' in captured.out
 
-    def test_report_cache_statistics_handles_missing_cache_stats(self, capsys):
-        """Test that results without cache_stats are handled gracefully."""
-        results = [
-            {'other': 'data'},  # No cache_stats
-            {
-                'cache_stats': {
-                    'ind_hits': 10,
-                    'ind_misses': 5,
-                    'df_hits': 8,
-                    'df_misses': 2
-                }
-            }
-        ]
+    def test_report_cache_statistics_reports_given_stats(self, capsys):
+        """Test that the function reports the stats it receives."""
+        cache_stats = {'ind_hits': 10, 'ind_misses': 5, 'df_hits': 8, 'df_misses': 2}
 
         with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
                 patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
             mock_ind.size.return_value = 50
             mock_df.size.return_value = 20
 
-            _report_cache_statistics(results)
+            _report_cache_statistics(cache_stats)
 
             captured = capsys.readouterr()
 
-            # Should only count the result with cache_stats
             assert 'Hits: 10' in captured.out
             assert 'Misses: 5' in captured.out
 

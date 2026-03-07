@@ -116,7 +116,7 @@ def run_tests(
 
     # --- Parallel Execution ---
 
-    shard_paths = _execute_tests_in_parallel(
+    shard_paths, cache_stats = _execute_tests_in_parallel(
         tester,
         test_combinations,
         max_workers
@@ -124,7 +124,7 @@ def run_tests(
 
     # --- Cache Statistics Reporting ---
 
-    _report_cache_statistics(tester.results)
+    _report_cache_statistics(cache_stats)
 
     # --- Save Caches ---
 
@@ -251,6 +251,7 @@ def _prepare_test_combinations(
 def _execute_tests_in_parallel(tester, test_combinations, max_workers):
     """Run tests in parallel using ProcessPoolExecutor."""
     shard_paths = []
+    cumulative_cache_stats = {'ind_hits': 0, 'ind_misses': 0, 'df_hits': 0, 'df_misses': 0}
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_test = {executor.submit(run_single_test, test_params): test_params for test_params in
@@ -304,6 +305,12 @@ def _execute_tests_in_parallel(tester, test_combinations, max_workers):
                 continue
 
             if result:
+                # Accumulate cache stats before results may be cleared at shard boundaries
+                if 'cache_stats' in result:
+                    cumulative_cache_stats['ind_hits'] += result['cache_stats']['ind_hits']
+                    cumulative_cache_stats['ind_misses'] += result['cache_stats']['ind_misses']
+                    cumulative_cache_stats['df_hits'] += result['cache_stats']['df_hits']
+                    cumulative_cache_stats['df_misses'] += result['cache_stats']['df_misses']
                 tester.results.append(result)
 
         # Report failed tests summary
@@ -311,25 +318,17 @@ def _execute_tests_in_parallel(tester, test_combinations, max_workers):
             logger.warning(f'Mass testing completed with {failed_tests} failed test(s) out of {total_tests} total tests')
             print(f'Warning: {failed_tests} test(s) failed during execution. Check logs for details.')
 
-    return shard_paths
+    return shard_paths, cumulative_cache_stats
 
 
 # --- Cache Statistics ---
 
-def _report_cache_statistics(results):
-    """Aggregate and report cache statistics from all test results."""
-    # Aggregate cache statistics from all test results
-    total_ind_hits = 0
-    total_ind_misses = 0
-    total_df_hits = 0
-    total_df_misses = 0
-
-    for result in results:
-        if 'cache_stats' in result:
-            total_ind_hits += result['cache_stats']['ind_hits']
-            total_ind_misses += result['cache_stats']['ind_misses']
-            total_df_hits += result['cache_stats']['df_hits']
-            total_df_misses += result['cache_stats']['df_misses']
+def _report_cache_statistics(cache_stats):
+    """Report cache statistics aggregated across all test results."""
+    total_ind_hits = cache_stats['ind_hits']
+    total_ind_misses = cache_stats['ind_misses']
+    total_df_hits = cache_stats['df_hits']
+    total_df_misses = cache_stats['df_misses']
 
     # Calculate aggregated statistics
     ind_total = total_ind_hits + total_ind_misses

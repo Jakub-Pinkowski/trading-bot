@@ -182,7 +182,6 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# BUG [LOW]: Cache reporting is completely wrong, only reporting the last batch
 # TODO [HIGH]: Do an extensive manual testing whether it works as per TradingView's indicators
 # TODO [MEDIUM]: Improve the performance
 # TODO [MEDIUM]: Some metrics make no sense considering different intervals, for example average duration
