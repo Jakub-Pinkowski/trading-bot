@@ -15,11 +15,13 @@ Tests cover:
 - Result aggregation and saving
 - Integration scenarios
 """
-from unittest.mock import patch, MagicMock
+import concurrent.futures
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+import app.backtesting.testing.orchestrator as orch_module
 from app.backtesting.testing.orchestrator import (
     run_tests,
     _get_switch_dates_for_symbols,
@@ -58,23 +60,23 @@ class TestRunTests:
         mocks['indicator_cache'].reset_stats.assert_called_once()
         mocks['dataframe_cache'].reset_stats.assert_called_once()
 
-    def test_run_tests_loads_existing_results_when_skip_existing_true(self, mock_tester):
+    def test_run_tests_loads_existing_results_when_skip_existing_true(self, mock_tester, monkeypatch):
         """Test that existing results are loaded when skip_existing is True."""
         existing_df = pd.DataFrame({'test': [1, 2, 3]})
         existing_set = {('1!', 'ZS', '1h', 'RSI_14_30_70')}
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (existing_df, existing_set)
-            mock_as_completed.return_value = []
+        mock_load = MagicMock(return_value=(existing_df, existing_set))
+        mock_as_completed = MagicMock(return_value=[])
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', mock_load)
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'as_completed', mock_as_completed)
 
-            run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
+        run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
 
-            # Verify load_existing_results was called
-            mock_load.assert_called_once()
+        # Verify load_existing_results was called
+        mock_load.assert_called_once()
 
     def test_run_tests_skips_loading_existing_when_skip_existing_false(
         self,
@@ -96,41 +98,38 @@ class TestRunTests:
         # Verify results were cleared
         assert mock_tester.results == []
 
-    def test_run_tests_returns_empty_list_when_all_tests_skipped(self, mock_tester):
+    def test_run_tests_returns_empty_list_when_all_tests_skipped(self, mock_tester, monkeypatch):
         """Test that empty list is returned when all tests are already run."""
-        # Mock existing results to skip all tests
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.check_test_exists') as mock_check:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_check.return_value = True  # All tests exist
+        mock_check = MagicMock(return_value=True)
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'check_test_exists', mock_check)
 
-            result = run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
+        result = run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=True)
 
-            assert result == []
+        assert result == []
 
-    def test_run_tests_saves_results_when_results_exist(self, mock_tester):
+    def test_run_tests_saves_results_when_results_exist(self, mock_tester, monkeypatch):
         """Test that results are merged into the final parquet when tests complete."""
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_shard') as mock_shard, \
-                patch('app.backtesting.testing.orchestrator.merge_shards') as mock_merge, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_shard.return_value = '/tmp/shard_0000.parquet'
+        mock_shard = MagicMock(return_value='/tmp/shard_0000.parquet')
+        mock_merge = MagicMock()
+        mock_future = MagicMock()
+        mock_future.result.return_value = {'test': 'result'}
+        mock_as_completed = MagicMock(return_value=[mock_future])
 
-            # Mock a future that returns a result
-            mock_future = MagicMock()
-            mock_future.result.return_value = {'test': 'result'}
-            mock_as_completed.return_value = [mock_future]
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'save_shard', mock_shard)
+        monkeypatch.setattr(orch_module, 'merge_shards', mock_merge)
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'as_completed', mock_as_completed)
 
-            run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
+        run_tests(mock_tester, verbose=False, max_workers=1, skip_existing=False)
 
-            # Verify merge_shards was called to finalize the output
-            assert mock_merge.called
+        # Verify merge_shards was called to finalize the output
+        assert mock_merge.called
 
 
 # ==================== Switch Dates Mapping Tests ====================
@@ -354,7 +353,7 @@ class TestPrepareTestCombinations:
         assert 'Preparing: Month=1!, Symbol=ZS, Interval=1h' in captured.out
         assert 'Preparing: Month=1!, Symbol=CL, Interval=1h' in captured.out
 
-    def test_prepare_test_combinations_verbose_prints_skip_message(self, capsys):
+    def test_prepare_test_combinations_verbose_prints_skip_message(self, capsys, monkeypatch):
         """Test that verbose mode prints skip message when test is skipped."""
         all_combinations = [
             ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
@@ -362,21 +361,20 @@ class TestPrepareTestCombinations:
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': []}
 
-        with patch('app.backtesting.testing.orchestrator.check_test_exists') as mock_check:
-            mock_check.return_value = True
+        monkeypatch.setattr(orch_module, 'check_test_exists', MagicMock(return_value=True))
 
-            _prepare_test_combinations(
-                all_combinations,
-                existing_data,
-                skip_existing=True,
-                verbose=True,
-                switch_dates_by_symbol=switch_dates_by_symbol
-            )
+        _prepare_test_combinations(
+            all_combinations,
+            existing_data,
+            skip_existing=True,
+            verbose=True,
+            switch_dates_by_symbol=switch_dates_by_symbol
+        )
 
-            captured = capsys.readouterr()
-            assert 'Skipping already run test: Month=1!, Symbol=ZS, Interval=1h, Strategy=RSI_14_30_70' in captured.out
+        captured = capsys.readouterr()
+        assert 'Skipping already run test: Month=1!, Symbol=ZS, Interval=1h, Strategy=RSI_14_30_70' in captured.out
 
-    def test_prepare_test_combinations_with_filtering(self):
+    def test_prepare_test_combinations_with_filtering(self, monkeypatch):
         """Test preparing combinations with filtering (skip_existing=True)."""
         all_combinations = [
             ('1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock()),
@@ -385,21 +383,20 @@ class TestPrepareTestCombinations:
         existing_data = (pd.DataFrame(), set())
         switch_dates_by_symbol = {'ZS': []}
 
-        with patch('app.backtesting.testing.orchestrator.check_test_exists') as mock_check:
-            # First test exists, second doesn't
-            mock_check.side_effect = [True, False]
+        mock_check = MagicMock(side_effect=[True, False])
+        monkeypatch.setattr(orch_module, 'check_test_exists', mock_check)
 
-            test_combos, skipped = _prepare_test_combinations(
-                all_combinations,
-                existing_data,
-                skip_existing=True,
-                verbose=False,
-                switch_dates_by_symbol=switch_dates_by_symbol
-            )
+        test_combos, skipped = _prepare_test_combinations(
+            all_combinations,
+            existing_data,
+            skip_existing=True,
+            verbose=False,
+            switch_dates_by_symbol=switch_dates_by_symbol
+        )
 
-            # Should skip 1, include 1
-            assert len(test_combos) == 1
-            assert skipped == 1
+        # Should skip 1, include 1
+        assert len(test_combos) == 1
+        assert skipped == 1
 
     def test_prepare_test_combinations_adds_required_parameters(self):
         """Test that preparation adds required parameters to combinations."""
@@ -453,77 +450,85 @@ class TestPrepareTestCombinations:
 class TestReportCacheStatistics:
     """Test cache statistics reporting."""
 
-    def test_report_cache_statistics_with_results(self, capsys):
+    def test_report_cache_statistics_with_results(self, capsys, monkeypatch):
         """Test cache statistics reporting with aggregated stats."""
         cache_stats = {'ind_hits': 250, 'ind_misses': 25, 'df_hits': 125, 'df_misses': 13}
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
-            mock_ind.size.return_value = 500
-            mock_df.size.return_value = 100
+        mock_ind = MagicMock()
+        mock_df = MagicMock()
+        mock_ind.size.return_value = 500
+        mock_df.size.return_value = 100
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
 
-            _report_cache_statistics(cache_stats)
+        _report_cache_statistics(cache_stats)
 
-            captured = capsys.readouterr()
+        captured = capsys.readouterr()
 
-            # Verify output contains expected information
-            assert 'CACHE PERFORMANCE STATISTICS' in captured.out
-            assert 'Indicator Cache:' in captured.out
-            assert 'DataFrame Cache:' in captured.out
-            assert 'Hits: 250' in captured.out
-            assert 'Misses: 25' in captured.out
-            assert 'Hits: 125' in captured.out
-            assert 'Misses: 13' in captured.out
+        # Verify output contains expected information
+        assert 'CACHE PERFORMANCE STATISTICS' in captured.out
+        assert 'Indicator Cache:' in captured.out
+        assert 'DataFrame Cache:' in captured.out
+        assert 'Hits: 250' in captured.out
+        assert 'Misses: 25' in captured.out
+        assert 'Hits: 125' in captured.out
+        assert 'Misses: 13' in captured.out
 
-    def test_report_cache_statistics_with_empty_results(self, capsys):
+    def test_report_cache_statistics_with_empty_results(self, capsys, monkeypatch):
         """Test cache statistics reporting with zero stats."""
         cache_stats = {'ind_hits': 0, 'ind_misses': 0, 'df_hits': 0, 'df_misses': 0}
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
-            mock_ind.size.return_value = 0
-            mock_df.size.return_value = 0
+        mock_ind = MagicMock()
+        mock_df = MagicMock()
+        mock_ind.size.return_value = 0
+        mock_df.size.return_value = 0
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
 
-            _report_cache_statistics(cache_stats)
+        _report_cache_statistics(cache_stats)
 
-            captured = capsys.readouterr()
+        captured = capsys.readouterr()
 
-            # Should still print headers but with zero stats
-            assert 'CACHE PERFORMANCE STATISTICS' in captured.out
-            assert 'Hit rate: 0.00%' in captured.out
+        # Should still print headers but with zero stats
+        assert 'CACHE PERFORMANCE STATISTICS' in captured.out
+        assert 'Hit rate: 0.00%' in captured.out
 
-    def test_report_cache_statistics_calculates_hit_rate_correctly(self, capsys):
+    def test_report_cache_statistics_calculates_hit_rate_correctly(self, capsys, monkeypatch):
         """Test that hit rate percentage is calculated correctly."""
         cache_stats = {'ind_hits': 80, 'ind_misses': 20, 'df_hits': 90, 'df_misses': 10}
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
-            mock_ind.size.return_value = 100
-            mock_df.size.return_value = 50
+        mock_ind = MagicMock()
+        mock_df = MagicMock()
+        mock_ind.size.return_value = 100
+        mock_df.size.return_value = 50
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
 
-            _report_cache_statistics(cache_stats)
+        _report_cache_statistics(cache_stats)
 
-            captured = capsys.readouterr()
+        captured = capsys.readouterr()
 
-            # 80/(80+20) = 80%, 90/(90+10) = 90%
-            assert 'Hit rate: 80.00%' in captured.out
-            assert 'Hit rate: 90.00%' in captured.out
+        # 80/(80+20) = 80%, 90/(90+10) = 90%
+        assert 'Hit rate: 80.00%' in captured.out
+        assert 'Hit rate: 90.00%' in captured.out
 
-    def test_report_cache_statistics_reports_given_stats(self, capsys):
+    def test_report_cache_statistics_reports_given_stats(self, capsys, monkeypatch):
         """Test that the function reports the stats it receives."""
         cache_stats = {'ind_hits': 10, 'ind_misses': 5, 'df_hits': 8, 'df_misses': 2}
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df:
-            mock_ind.size.return_value = 50
-            mock_df.size.return_value = 20
+        mock_ind = MagicMock()
+        mock_df = MagicMock()
+        mock_ind.size.return_value = 50
+        mock_df.size.return_value = 20
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
 
-            _report_cache_statistics(cache_stats)
+        _report_cache_statistics(cache_stats)
 
-            captured = capsys.readouterr()
+        captured = capsys.readouterr()
 
-            assert 'Hits: 10' in captured.out
-            assert 'Misses: 5' in captured.out
+        assert 'Hits: 10' in captured.out
+        assert 'Misses: 5' in captured.out
 
 
 # ==================== Integration Tests ====================
@@ -531,7 +536,7 @@ class TestReportCacheStatistics:
 class TestOrchestratorIntegration:
     """Test orchestrator integration scenarios."""
 
-    def test_complete_orchestration_workflow(self):
+    def test_complete_orchestration_workflow(self, monkeypatch):
         """Test complete workflow from start to finish."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
@@ -541,40 +546,41 @@ class TestOrchestratorIntegration:
         tester.switch_dates_dict = {'ZS': ['2024-01-01']}
         tester.results = []
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_shard'), \
-                patch('app.backtesting.testing.orchestrator.merge_shards'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
-            mock_load.return_value = (pd.DataFrame(), set())
+        mock_ind = MagicMock()
+        mock_df = MagicMock()
+        mock_executor = MagicMock()
 
-            # Mock executor behavior
-            mock_future = MagicMock()
-            mock_future.result.return_value = {
-                'month': '1!',
-                'symbol': 'ZS',
-                'interval': '1h',
-                'strategy': 'RSI_14_30_70',
-                'metrics': {'profit_factor': 1.5}
-            }
+        mock_future = MagicMock()
+        mock_future.result.return_value = {
+            'month': '1!',
+            'symbol': 'ZS',
+            'interval': '1h',
+            'strategy': 'RSI_14_30_70',
+            'metrics': {'profit_factor': 1.5}
+        }
 
-            mock_executor_instance = MagicMock()
-            mock_executor_instance.submit.return_value = mock_future
-            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.submit.return_value = mock_future
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
 
-            # Manually set up futures.as_completed behavior
-            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-                mock_as_completed.return_value = [mock_future]
+        mock_as_completed = MagicMock(return_value=[mock_future])
 
-                results = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'save_shard', MagicMock())
+        monkeypatch.setattr(orch_module, 'merge_shards', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        monkeypatch.setattr(concurrent.futures, 'as_completed', mock_as_completed)
 
-                # Verify workflow steps
-                assert mock_ind.reset_stats.called
-                assert mock_df.reset_stats.called
-                assert isinstance(results, list)
+        results = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-    def test_orchestration_with_multiple_strategies(self):
+        # Verify workflow steps
+        assert mock_ind.reset_stats.called
+        assert mock_df.reset_stats.called
+        assert isinstance(results, list)
+
+    def test_orchestration_with_multiple_strategies(self, monkeypatch):
         """Test orchestration with multiple strategies and combinations."""
         tester = MagicMock()
         tester.strategies = [
@@ -588,21 +594,19 @@ class TestOrchestratorIntegration:
         tester.switch_dates_dict = {'ZS': [], 'CL': []}
         tester.results = []
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_as_completed.return_value = []
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=[]))
 
-            # Should generate 2*2*2*3 = 24 combinations
-            run_tests(tester, verbose=False, max_workers=2, skip_existing=False)
+        # Should generate 2*2*2*3 = 24 combinations
+        run_tests(tester, verbose=False, max_workers=2, skip_existing=False)
 
-            # Verify all combinations were considered
-            assert tester.results is not None
+        # Verify all combinations were considered
+        assert tester.results is not None
 
-    def test_orchestration_error_handling(self):
+    def test_orchestration_error_handling(self, monkeypatch):
         """Test that orchestration handles worker errors gracefully."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
@@ -612,29 +616,26 @@ class TestOrchestratorIntegration:
         tester.switch_dates_dict = {'ZS': []}
         tester.results = []
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
-            mock_load.return_value = (pd.DataFrame(), set())
+        mock_future = MagicMock()
+        mock_future.result.side_effect = Exception("Worker error")
 
-            # Mock executor to raise exception
-            mock_future = MagicMock()
-            mock_future.result.side_effect = Exception("Worker error")
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.submit.return_value = mock_future
+        mock_executor = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
 
-            mock_executor_instance = MagicMock()
-            mock_executor_instance.submit.return_value = mock_future
-            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=[mock_future]))
 
-            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-                mock_as_completed.return_value = [mock_future]
+        # Should not raise, should handle gracefully
+        result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-                # Should not raise, should handle gracefully
-                result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        assert isinstance(result, list)
 
-                assert isinstance(result, list)
-
-    def test_orchestration_saves_intermediate_results_every_1000_tests(self):
+    def test_orchestration_saves_intermediate_results_every_1000_tests(self, monkeypatch):
         """Test that intermediate results are written to a shard every 1000 completed tests."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
@@ -644,35 +645,33 @@ class TestOrchestratorIntegration:
         tester.switch_dates_dict = {'ZS': []}
         tester.results = []
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache'), \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache'), \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_shard') as mock_shard, \
-                patch('app.backtesting.testing.orchestrator.merge_shards'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
-            mock_load.return_value = (pd.DataFrame(), set())
-            mock_shard.return_value = '/tmp/shard_0000.parquet'
+        futures = []
+        for i in range(1000):
+            mock_future = MagicMock()
+            mock_future.result.return_value = {'test': f'result_{i}'}
+            futures.append(mock_future)
 
-            # Create 1000 futures that return results
-            futures = []
-            for i in range(1000):
-                mock_future = MagicMock()
-                mock_future.result.return_value = {'test': f'result_{i}'}
-                futures.append(mock_future)
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.submit.side_effect = futures
+        mock_executor = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
 
-            mock_executor_instance = MagicMock()
-            mock_executor_instance.submit.side_effect = futures
-            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        mock_shard = MagicMock(return_value='/tmp/shard_0000.parquet')
 
-            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-                mock_as_completed.return_value = futures
+        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'save_shard', mock_shard)
+        monkeypatch.setattr(orch_module, 'merge_shards', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=futures))
 
-                run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-                # Should call save_shard for the intermediate save at 1000 tests
-                assert mock_shard.call_count >= 1
+        # Should call save_shard for the intermediate save at 1000 tests
+        assert mock_shard.call_count >= 1
 
-    def test_orchestration_cache_save_exception_handling(self):
+    def test_orchestration_cache_save_exception_handling(self, monkeypatch):
         """Test that cache save exceptions are handled gracefully."""
         tester = MagicMock()
         tester.strategies = [('RSI_14_30_70', MagicMock())]
@@ -682,28 +681,26 @@ class TestOrchestratorIntegration:
         tester.switch_dates_dict = {'ZS': []}
         tester.results = []
 
-        with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-                patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
-                patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-                patch('app.backtesting.testing.orchestrator.save_shard'), \
-                patch('app.backtesting.testing.orchestrator.merge_shards'), \
-                patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor:
-            mock_load.return_value = (pd.DataFrame(), set())
+        mock_ind = MagicMock()
+        mock_ind.save_cache.side_effect = Exception("Cache save failed")
 
-            # Make cache save raise exception
-            mock_ind.save_cache.side_effect = Exception("Cache save failed")
+        mock_future = MagicMock()
+        mock_future.result.return_value = {'test': 'result'}
 
-            mock_future = MagicMock()
-            mock_future.result.return_value = {'test': 'result'}
+        mock_executor_instance = MagicMock()
+        mock_executor_instance.submit.return_value = mock_future
+        mock_executor = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
 
-            mock_executor_instance = MagicMock()
-            mock_executor_instance.submit.return_value = mock_future
-            mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
+        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
+        monkeypatch.setattr(orch_module, 'save_shard', MagicMock())
+        monkeypatch.setattr(orch_module, 'merge_shards', MagicMock())
+        monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=[mock_future]))
 
-            with patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-                mock_as_completed.return_value = [mock_future]
+        # Should not raise, should handle exception gracefully
+        result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
 
-                # Should not raise, should handle exception gracefully
-                result = run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
-
-                assert isinstance(result, list)
+        assert isinstance(result, list)
