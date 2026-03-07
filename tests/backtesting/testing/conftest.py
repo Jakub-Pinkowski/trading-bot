@@ -88,6 +88,7 @@ def mock_orchestrator_environment(monkeypatch):
             mocks = mock_orchestrator_environment
             # mocks['indicator_cache'], mocks['load_existing_results'], etc.
     """
+    import concurrent.futures as cf
     import app.backtesting.testing.orchestrator as orch_module
 
     mock_ind = MagicMock()
@@ -102,8 +103,8 @@ def mock_orchestrator_environment(monkeypatch):
     monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
     monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
     monkeypatch.setattr(orch_module, 'load_existing_results', mock_load)
-    monkeypatch.setattr(orch_module.concurrent.futures, 'ProcessPoolExecutor', mock_executor)
-    monkeypatch.setattr(orch_module.concurrent.futures, 'as_completed', mock_as_completed)
+    monkeypatch.setattr(cf, 'ProcessPoolExecutor', mock_executor)
+    monkeypatch.setattr(cf, 'as_completed', mock_as_completed)
 
     return {
         'indicator_cache': mock_ind,
@@ -163,32 +164,6 @@ def sample_test_results(sample_test_result):
         List containing one test result
     """
     return [sample_test_result]
-
-
-@pytest.fixture
-def mock_reporting_dependencies(monkeypatch):
-    """
-    Mock reporting module dependencies.
-
-    Returns:
-        Dict with all mocked components:
-        - results_to_dataframe
-        - save_to_parquet
-
-    Usage:
-        def test_something(mock_reporting_dependencies):
-            mocks = mock_reporting_dependencies
-            merge_shards(shard_paths)
-            assert mocks['save_to_parquet'].called
-    """
-    mock_to_df = MagicMock(return_value=pd.DataFrame({'test': [1]}))
-    mock_save = MagicMock()
-    monkeypatch.setattr('app.backtesting.testing.reporting.results_to_dataframe', mock_to_df)
-    monkeypatch.setattr('app.backtesting.testing.reporting.save_to_parquet', mock_save)
-    return {
-        'results_to_dataframe': mock_to_df,
-        'save_to_parquet': mock_save
-    }
 
 
 # ==================== Validator Fixtures ====================

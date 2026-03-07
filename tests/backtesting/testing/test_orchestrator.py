@@ -24,6 +24,7 @@ import pytest
 import app.backtesting.testing.orchestrator as orch_module
 from app.backtesting.testing.orchestrator import (
     run_tests,
+    _execute_tests_in_parallel,
     _get_switch_dates_for_symbols,
     _generate_all_combinations,
     _prepare_test_combinations,
@@ -638,13 +639,15 @@ class TestOrchestratorIntegration:
     def test_orchestration_saves_intermediate_results_every_1000_tests(self, monkeypatch):
         """Test that intermediate results are written to a shard every 1000 completed tests."""
         tester = MagicMock()
-        tester.strategies = [('RSI_14_30_70', MagicMock())]
-        tester.tested_months = ['1!']
-        tester.symbols = ['ZS']
-        tester.intervals = ['1h']
-        tester.switch_dates_dict = {'ZS': []}
         tester.results = []
 
+        # 1000 test combinations — each gets its own submitted future
+        test_combinations = [
+            ('1!', 'ZS', '1h', f'Strategy_{i}', MagicMock(), False, [], '/data/ZS_1h.parquet')
+            for i in range(1000)
+        ]
+
+        # One future per combination, each returning a result dict
         futures = []
         for i in range(1000):
             mock_future = MagicMock()
@@ -658,17 +661,15 @@ class TestOrchestratorIntegration:
 
         mock_shard = MagicMock(return_value='/tmp/shard_0000.parquet')
 
-        monkeypatch.setattr(orch_module, 'indicator_cache', MagicMock())
-        monkeypatch.setattr(orch_module, 'dataframe_cache', MagicMock())
-        monkeypatch.setattr(orch_module, 'load_existing_results', MagicMock(return_value=(pd.DataFrame(), set())))
-        monkeypatch.setattr(orch_module, 'save_shard', mock_shard)
-        monkeypatch.setattr(orch_module, 'merge_shards', MagicMock())
         monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+        # as_completed returns the same futures that submit produced, so future_to_test
+        # contains all 1000 entries and the loop correctly tracks each one
         monkeypatch.setattr(concurrent.futures, 'as_completed', MagicMock(return_value=futures))
+        monkeypatch.setattr(orch_module, 'save_shard', mock_shard)
 
-        run_tests(tester, verbose=False, max_workers=1, skip_existing=False)
+        _execute_tests_in_parallel(tester, test_combinations, max_workers=1)
 
-        # Should call save_shard for the intermediate save at 1000 tests
+        # save_shard must be called at least once (at the 1000-test boundary)
         assert mock_shard.call_count >= 1
 
     def test_orchestration_indicator_cache_save_raises(self, monkeypatch):
