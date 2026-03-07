@@ -6,7 +6,7 @@ import pandas as pd
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache
 from app.backtesting.cache.indicators_cache import indicator_cache
-from app.backtesting.testing.reporting import save_results
+from app.backtesting.testing.reporting import save_shard, merge_shards
 from app.backtesting.testing.runner import run_single_test
 from app.backtesting.testing.utils.test_preparation import load_existing_results, check_test_exists
 from app.utils.logger import get_logger
@@ -116,7 +116,7 @@ def run_tests(
 
     # --- Parallel Execution ---
 
-    _execute_tests_in_parallel(
+    shard_paths, cache_stats = _execute_tests_in_parallel(
         tester,
         test_combinations,
         max_workers
@@ -124,7 +124,7 @@ def run_tests(
 
     # --- Cache Statistics Reporting ---
 
-    _report_cache_statistics(tester.results)
+    _report_cache_statistics(cache_stats)
 
     # --- Save Caches ---
 
@@ -132,8 +132,13 @@ def run_tests(
 
     # --- Save Results ---
 
+    # Save any remaining results as a final shard, then merge all shards
     if tester.results:
-        save_results(tester.results)
+        shard_path = save_shard(tester.results, len(shard_paths))
+        if shard_path:
+            shard_paths.append(shard_path)
+
+    merge_shards(shard_paths)
 
     # --- Final Reporting ---
 
@@ -243,82 +248,118 @@ def _prepare_test_combinations(
 
 # --- Parallel Execution ---
 
+def _group_into_chunks(test_combinations):
+    """
+    Group test combinations by (tested_month, symbol, interval).
+
+    Ensures all strategy variants for a given symbol/interval pair are submitted
+    to the executor together. Workers process one group at a time, so each
+    (symbol, interval) DataFrame and its indicators are loaded once and reused
+    across all strategy variants in the group before the next group starts.
+
+    Args:
+        test_combinations: Flat list of test parameter tuples, ordered by
+                           (tested_month, symbol, interval, strategy)
+
+    Returns:
+        List of chunks, where each chunk is a list of test combinations sharing
+        the same (tested_month, symbol, interval)
+    """
+    chunks = {}
+    for combo in test_combinations:
+        key = (combo[0], combo[1], combo[2])  # tested_month, symbol, interval
+        if key not in chunks:
+            chunks[key] = []
+        chunks[key].append(combo)
+    return list(chunks.values())
+
+
 def _execute_tests_in_parallel(tester, test_combinations, max_workers):
-    """Run tests in parallel using ProcessPoolExecutor."""
+    """Run tests in parallel using ProcessPoolExecutor, one (symbol, interval) chunk at a time."""
+    shard_paths = []
+    cumulative_cache_stats = {'ind_hits': 0, 'ind_misses': 0, 'df_hits': 0, 'df_misses': 0}
+
+    chunks = _group_into_chunks(test_combinations)
+
+    total_tests = len(test_combinations)
+    completed_tests = 0
+    failed_tests = 0
+    batch_start_time = time.time()
+    overall_start_time = time.time()
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_test = {executor.submit(run_single_test, test_params): test_params for test_params in
-                          test_combinations}
+        # Process one (month, symbol, interval) chunk at a time so workers loading
+        # the same data file reuse their in-process DataFrame and indicator caches
+        for chunk in chunks:
+            future_to_test = {executor.submit(run_single_test, test_params): test_params
+                              for test_params in chunk}
 
-        total_tests = len(test_combinations)
-        completed_tests = 0
-        failed_tests = 0
-        batch_start_time = time.time()
-        overall_start_time = time.time()
+            for future in concurrent.futures.as_completed(future_to_test):
+                completed_tests += 1
+                if completed_tests % 100 == 0 or completed_tests == total_tests:
+                    current_time = time.time()
+                    batch_elapsed_time = current_time - batch_start_time
+                    total_elapsed_time = current_time - overall_start_time
+                    avg_time_per_100_tests = total_elapsed_time / completed_tests * 100
 
-        for future in concurrent.futures.as_completed(future_to_test):
-            completed_tests += 1
-            if completed_tests % 100 == 0 or completed_tests == total_tests:
-                current_time = time.time()
-                batch_elapsed_time = current_time - batch_start_time
-                total_elapsed_time = current_time - overall_start_time
-                avg_time_per_100_tests = total_elapsed_time / completed_tests * 100
+                    print(f'Progress: {completed_tests}/{total_tests} tests completed '
+                          f'({(completed_tests / total_tests * 100):.1f}%) - '
+                          f'Batch: {batch_elapsed_time:.2f}s - '
+                          f'Total: {total_elapsed_time:.2f}s - '
+                          f'Avg: {avg_time_per_100_tests:.2f}s/100tests')
+                    batch_start_time = current_time
 
-                print(f'Progress: {completed_tests}/{total_tests} tests completed '
-                      f'({(completed_tests / total_tests * 100):.1f}%) - '
-                      f'Batch: {batch_elapsed_time:.2f}s - '
-                      f'Total: {total_elapsed_time:.2f}s - '
-                      f'Avg: {avg_time_per_100_tests:.2f}s/100tests')
-                batch_start_time = current_time
+                    # Periodic cleanup
+                    gc.collect()
 
-                # Periodic cleanup
-                gc.collect()
+                    # Write intermediate results to a shard file and clear memory
+                    if completed_tests % 1000 == 0 and tester.results:
+                        shard_path = save_shard(tester.results, len(shard_paths))
+                        if shard_path:
+                            shard_paths.append(shard_path)
+                        tester.results.clear()
 
-                # Save intermediate results and clear memory
-                if completed_tests % 1000 == 0 and tester.results:
-                    save_results(tester.results)
-                    tester.results.clear()
+                # Handle worker exceptions gracefully to prevent crashing the entire mass testing run
+                try:
+                    result = future.result()
+                except Exception:
+                    # Get test details for logging
+                    test_params = future_to_test[future]
+                    tested_month, symbol, interval, strategy_name = test_params[:4]
 
-            # Handle worker exceptions gracefully to prevent crashing the entire mass testing run
-            try:
-                result = future.result()
-            except Exception:
-                # Get test details for logging
-                test_params = future_to_test[future]
-                tested_month, symbol, interval, strategy_name = test_params[:4]
+                    # Log the exception with a full traceback
+                    logger.exception(
+                        f'Worker exception during test execution: '
+                        f'Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}'
+                    )
+                    failed_tests += 1
+                    continue
 
-                # Log the exception with a full traceback
-                logger.exception(
-                    f'Worker exception during test execution: '
-                    f'Month={tested_month}, Symbol={symbol}, Interval={interval}, Strategy={strategy_name}'
-                )
-                failed_tests += 1
-                continue
+                if result:
+                    # Accumulate cache stats before results may be cleared at shard boundaries
+                    if 'cache_stats' in result:
+                        cumulative_cache_stats['ind_hits'] += result['cache_stats']['ind_hits']
+                        cumulative_cache_stats['ind_misses'] += result['cache_stats']['ind_misses']
+                        cumulative_cache_stats['df_hits'] += result['cache_stats']['df_hits']
+                        cumulative_cache_stats['df_misses'] += result['cache_stats']['df_misses']
+                    tester.results.append(result)
 
-            if result:
-                tester.results.append(result)
+    # Report failed tests summary
+    if failed_tests > 0:
+        logger.warning(f'Mass testing completed with {failed_tests} failed test(s) out of {total_tests} total tests')
+        print(f'Warning: {failed_tests} test(s) failed during execution. Check logs for details.')
 
-        # Report failed tests summary
-        if failed_tests > 0:
-            logger.warning(f'Mass testing completed with {failed_tests} failed test(s) out of {total_tests} total tests')
-            print(f'Warning: {failed_tests} test(s) failed during execution. Check logs for details.')
+    return shard_paths, cumulative_cache_stats
 
 
 # --- Cache Statistics ---
 
-def _report_cache_statistics(results):
-    """Aggregate and report cache statistics from all test results."""
-    # Aggregate cache statistics from all test results
-    total_ind_hits = 0
-    total_ind_misses = 0
-    total_df_hits = 0
-    total_df_misses = 0
-
-    for result in results:
-        if 'cache_stats' in result:
-            total_ind_hits += result['cache_stats']['ind_hits']
-            total_ind_misses += result['cache_stats']['ind_misses']
-            total_df_hits += result['cache_stats']['df_hits']
-            total_df_misses += result['cache_stats']['df_misses']
+def _report_cache_statistics(cache_stats):
+    """Report cache statistics aggregated across all test results."""
+    total_ind_hits = cache_stats['ind_hits']
+    total_ind_misses = cache_stats['ind_misses']
+    total_df_hits = cache_stats['df_hits']
+    total_df_misses = cache_stats['df_misses']
 
     # Calculate aggregated statistics
     ind_total = total_ind_hits + total_ind_misses
@@ -351,10 +392,15 @@ def _save_caches():
     """Save indicator and dataframe caches."""
     try:
         indicator_cache.save_cache()
+    except Exception as err:
+        logger.error(f'Failed to save indicator cache after test completion: {err}')
+        raise RuntimeError('Failed to save indicator cache after test completion') from err
 
+    try:
         dataframe_cache.save_cache()
-    except Exception as e:
-        logger.error(f"Failed to save caches after test completion: {e}")
+    except Exception as err:
+        logger.error(f'Failed to save dataframe cache after test completion: {err}')
+        raise RuntimeError('Failed to save dataframe cache after test completion') from err
 
 
 # --- Execution Summary ---

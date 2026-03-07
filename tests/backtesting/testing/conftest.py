@@ -4,23 +4,25 @@ Shared fixtures for testing module tests.
 Provides common fixtures for MassTester, orchestrator, runner, and reporting tests.
 Eliminates ~200 lines of duplicated mock setup code across test files.
 """
-from unittest.mock import patch, MagicMock
+import concurrent.futures
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+import app.backtesting.testing.orchestrator as orch_module
 from app.backtesting.testing.mass_tester import MassTester
 
 
 # ==================== MassTester Fixtures ====================
 
 @pytest.fixture
-def mock_strategy_factory():
+def mock_strategy_factory(monkeypatch):
     """
     Mock strategy factory for testing strategy addition without real creation.
 
-    Yields:
-        Tuple of (mock_create, mock_get_name) context managers
+    Returns:
+        Tuple of (mock_create, mock_get_name)
 
     Usage:
         def test_something(mock_strategy_factory):
@@ -28,11 +30,11 @@ def mock_strategy_factory():
             tester.add_rsi_tests([14], [30], [70], [True], [None], [1])
             assert mock_create.call_count == 1
     """
-    with patch('app.backtesting.testing.mass_tester.create_strategy') as mock_create, \
-            patch('app.backtesting.testing.mass_tester.get_strategy_name') as mock_get_name:
-        mock_create.return_value = MagicMock()
-        mock_get_name.return_value = "Test_Strategy"
-        yield (mock_create, mock_get_name)
+    mock_create = MagicMock(return_value=MagicMock())
+    mock_get_name = MagicMock(return_value="Test_Strategy")
+    monkeypatch.setattr('app.backtesting.testing.mass_tester.create_strategy', mock_create)
+    monkeypatch.setattr('app.backtesting.testing.mass_tester.get_strategy_name', mock_get_name)
+    return (mock_create, mock_get_name)
 
 
 @pytest.fixture
@@ -71,11 +73,11 @@ def mock_tester():
 # ==================== Orchestrator Fixtures ====================
 
 @pytest.fixture
-def mock_orchestrator_environment():
+def mock_orchestrator_environment(monkeypatch):
     """
     Mock all orchestrator dependencies in one fixture.
 
-    Yields:
+    Returns:
         Dict with all mocked components:
         - indicator_cache
         - dataframe_cache
@@ -88,23 +90,28 @@ def mock_orchestrator_environment():
             mocks = mock_orchestrator_environment
             # mocks['indicator_cache'], mocks['load_existing_results'], etc.
     """
-    with patch('app.backtesting.testing.orchestrator.indicator_cache') as mock_ind, \
-            patch('app.backtesting.testing.orchestrator.dataframe_cache') as mock_df, \
-            patch('app.backtesting.testing.orchestrator.load_existing_results') as mock_load, \
-            patch('app.backtesting.testing.orchestrator.concurrent.futures.ProcessPoolExecutor') as mock_executor, \
-            patch('app.backtesting.testing.orchestrator.concurrent.futures.as_completed') as mock_as_completed:
-        mock_load.return_value = (pd.DataFrame(), set())
-        mock_as_completed.return_value = []
-        mock_ind.reset_stats = MagicMock()
-        mock_df.reset_stats = MagicMock()
+    mock_ind = MagicMock()
+    mock_df = MagicMock()
+    mock_load = MagicMock(return_value=(pd.DataFrame(), set()))
+    mock_executor = MagicMock()
+    mock_as_completed = MagicMock(return_value=[])
 
-        yield {
-            'indicator_cache': mock_ind,
-            'dataframe_cache': mock_df,
-            'load_existing_results': mock_load,
-            'executor': mock_executor,
-            'as_completed': mock_as_completed
-        }
+    mock_ind.reset_stats = MagicMock()
+    mock_df.reset_stats = MagicMock()
+
+    monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
+    monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
+    monkeypatch.setattr(orch_module, 'load_existing_results', mock_load)
+    monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+    monkeypatch.setattr(concurrent.futures, 'as_completed', mock_as_completed)
+
+    return {
+        'indicator_cache': mock_ind,
+        'dataframe_cache': mock_df,
+        'load_existing_results': mock_load,
+        'executor': mock_executor,
+        'as_completed': mock_as_completed
+    }
 
 
 # ==================== Reporting Fixtures ====================
@@ -156,32 +163,6 @@ def sample_test_results(sample_test_result):
         List containing one test result
     """
     return [sample_test_result]
-
-
-@pytest.fixture
-def mock_reporting_dependencies():
-    """
-    Mock reporting module dependencies.
-
-    Yields:
-        Dict with all mocked components:
-        - results_to_dataframe
-        - save_to_parquet
-
-    Usage:
-        def test_something(mock_reporting_dependencies):
-            mocks = mock_reporting_dependencies
-            save_results(results)
-            assert mocks['save_to_parquet'].called
-    """
-    with patch('app.backtesting.testing.reporting.results_to_dataframe') as mock_to_df, \
-            patch('app.backtesting.testing.reporting.save_to_parquet') as mock_save:
-        mock_to_df.return_value = pd.DataFrame({'test': [1]})
-
-        yield {
-            'results_to_dataframe': mock_to_df,
-            'save_to_parquet': mock_save
-        }
 
 
 # ==================== Validator Fixtures ====================
