@@ -182,19 +182,18 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
-# TODO [HIGH]: Do an extensive testing whether it works as per TradingView
-# TODO [MEDIUM]: Implement segmentation and out-of-sample data testing
-# TODO [MEDIUM]: Update tests running reporting once per 1000 tests instead of 100 tests
-# TODO [MEDIUM]: Cache reporting is completely wrong, only reporting the last batch
+# BUG [LOW]: Cache reporting is completely wrong, only reporting the last batch
+# TODO [HIGH]: Do an extensive manual testing whether it works as per TradingView's indicators
 # TODO [MEDIUM]: Improve the performance
 # TODO [MEDIUM]: Some metrics make no sense considering different intervals, for example average duration
-# TODO [MEDIUM]: Run extensive backtesting
+# TODO [MEDIUM]: Update tests running reporting once per 1000 tests instead of 100 tests
+# TODO [MEDIUM]: Add new strategies
+# TODO [LOW]: Implement segmentation and out-of-sample data testing
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
-# TODO [LOW]: Add new strategies
 # TODO [LOW]: Integrate data fetching from IBKR to stop relying on TradingView
 
 # Binance
-# TODO [LOW]: Add Binance handling
+# TODO [MEDIUM]: Add Binance handling
 
 # IBKR
 
@@ -204,6 +203,6 @@ trading-bot/
 
 # Recurring
 # TODO [LOW]: Download new historic data on a monthly basis [last update on 2026.02.23]
-# TODO [LOW]: Update contract switch dates [last update on 2026.03.02]
+# TODO [LOW]: Update contract switch dates [last update on 2026.02.22]
 
 # General
