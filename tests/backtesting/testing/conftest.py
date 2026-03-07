@@ -4,11 +4,13 @@ Shared fixtures for testing module tests.
 Provides common fixtures for MassTester, orchestrator, runner, and reporting tests.
 Eliminates ~200 lines of duplicated mock setup code across test files.
 """
+import concurrent.futures
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+import app.backtesting.testing.orchestrator as orch_module
 from app.backtesting.testing.mass_tester import MassTester
 
 
@@ -88,9 +90,6 @@ def mock_orchestrator_environment(monkeypatch):
             mocks = mock_orchestrator_environment
             # mocks['indicator_cache'], mocks['load_existing_results'], etc.
     """
-    import concurrent.futures as cf
-    import app.backtesting.testing.orchestrator as orch_module
-
     mock_ind = MagicMock()
     mock_df = MagicMock()
     mock_load = MagicMock(return_value=(pd.DataFrame(), set()))
@@ -103,8 +102,8 @@ def mock_orchestrator_environment(monkeypatch):
     monkeypatch.setattr(orch_module, 'indicator_cache', mock_ind)
     monkeypatch.setattr(orch_module, 'dataframe_cache', mock_df)
     monkeypatch.setattr(orch_module, 'load_existing_results', mock_load)
-    monkeypatch.setattr(cf, 'ProcessPoolExecutor', mock_executor)
-    monkeypatch.setattr(cf, 'as_completed', mock_as_completed)
+    monkeypatch.setattr(concurrent.futures, 'ProcessPoolExecutor', mock_executor)
+    monkeypatch.setattr(concurrent.futures, 'as_completed', mock_as_completed)
 
     return {
         'indicator_cache': mock_ind,

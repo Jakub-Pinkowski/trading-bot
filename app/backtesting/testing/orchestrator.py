@@ -288,6 +288,8 @@ def _execute_tests_in_parallel(tester, test_combinations, max_workers):
     overall_start_time = time.time()
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Process one (month, symbol, interval) chunk at a time so workers loading
+        # the same data file reuse their in-process DataFrame and indicator caches
         for chunk in chunks:
             future_to_test = {executor.submit(run_single_test, test_params): test_params
                               for test_params in chunk}
