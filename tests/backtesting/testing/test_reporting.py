@@ -8,7 +8,6 @@ Tests cover:
 - Missing metrics handling
 - Invalid value handling (NaN, inf)
 - Empty results handling
-- save_results function
 - save_shard function
 - merge_shards function
 - File saving integration
@@ -25,7 +24,6 @@ import app.backtesting.testing.reporting as reporting_module
 from app.backtesting.testing.reporting import (
     merge_shards,
     results_to_dataframe,
-    save_results,
     save_shard,
     save_to_parquet,
 )
@@ -465,69 +463,13 @@ class TestDataFrameStructure:
             assert pd.api.types.is_string_dtype(df[col]) or df[col].dtype == object
 
 
-# ==================== Save Results Tests ====================
-
-class TestSaveResults:
-    """Test save_results function."""
-
-    def test_save_results_calls_results_to_dataframe(self, sample_test_results, mock_reporting_dependencies):
-        """Test that save_results calls results_to_dataframe."""
-        mocks = mock_reporting_dependencies
-
-        save_results(sample_test_results)
-
-        # Verify results_to_dataframe was called
-        mocks['results_to_dataframe'].assert_called_once_with(sample_test_results)
-
-    def test_save_results_calls_save_to_parquet(self, sample_test_results, mock_reporting_dependencies):
-        """Test that save_results calls save_to_parquet."""
-        mocks = mock_reporting_dependencies
-
-        save_results(sample_test_results)
-
-        # Verify save_to_parquet was called with DataFrame
-        mocks['save_to_parquet'].assert_called_once()
-        assert isinstance(mocks['save_to_parquet'].call_args[0][0], pd.DataFrame)
-
-    def test_save_results_with_empty_dataframe(self, capsys, mock_reporting_dependencies):
-        """Test that empty DataFrame doesn't trigger save."""
-        results = []
-        mocks = mock_reporting_dependencies
-        mocks['results_to_dataframe'].return_value = pd.DataFrame()
-
-        save_results(results)
-
-        # save_to_parquet should not be called
-        mocks['save_to_parquet'].assert_not_called()
-
-        captured = capsys.readouterr()
-        assert 'No results to save' in captured.out
-
-    def test_save_results_error_handling(self, monkeypatch, sample_test_results):
-        """Test that errors during save are caught and logged."""
-        monkeypatch.setattr(reporting_module, 'results_to_dataframe', MagicMock(side_effect=Exception('Test error')))
-
-        # Should not raise, should handle gracefully
-        save_results(sample_test_results)
-
-    def test_save_results_uses_correct_filepath(self, sample_test_results, mock_reporting_dependencies):
-        """Test that save_results uses correct file path."""
-        mocks = mock_reporting_dependencies
-
-        save_results(sample_test_results)
-
-        # Verify correct filepath used
-        filepath = mocks['save_to_parquet'].call_args[0][1]
-        assert 'mass_test_results_all.parquet' in filepath
-
-
 # ==================== Integration Tests ====================
 
 class TestReportingIntegration:
     """Test reporting integration scenarios."""
 
-    def test_complete_workflow(self, monkeypatch):
-        """Test complete workflow from results to saved file."""
+    def test_complete_workflow(self):
+        """Test complete workflow from results to DataFrame."""
         results = [
             {
                 'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'RSI_14_30_70',
@@ -553,18 +495,10 @@ class TestReportingIntegration:
             }
         ]
 
-        # Convert to DataFrame
         df = results_to_dataframe(results)
 
-        # Verify DataFrame structure
         assert len(df) == 2
         assert all(col in df.columns for col in ['month', 'symbol', 'interval', 'strategy'])
-
-        # Mock save operation
-        mock_save = MagicMock()
-        monkeypatch.setattr(reporting_module, 'save_to_parquet', mock_save)
-        save_results(results)
-        assert mock_save.called
 
     def test_large_results_batch(self):
         """Test handling of large batch of results."""
@@ -861,31 +795,66 @@ class TestMergeShards:
         mock_to_parquet.assert_not_called()
 
     def test_skips_unreadable_shards_and_merges_rest(self, monkeypatch, tmp_path):
-        """Test that a shard read error is logged and the remaining shards are still merged."""
+        """Test that a corrupt shard is excluded from merge and only readable shards are removed."""
         good_shard = pd.DataFrame({'month': ['2!'], 'symbol': ['CL']})
+        bad_path = tmp_path / 'bad.parquet'
+        good_path = tmp_path / 'good.parquet'
         written = []
+        removed = []
 
         read_count = {'n': 0}
 
         def mock_read(path):
             read_count['n'] += 1
             if read_count['n'] == 1:
-                raise Exception("Corrupt shard")
+                raise Exception('Corrupt shard')
             return good_shard
 
         def capture_write(self_df, path, **kwargs):
             written.append(self_df.copy())
 
-        monkeypatch.setattr(pd, "read_parquet", mock_read)
-        monkeypatch.setattr(pd.DataFrame, "to_parquet", capture_write)
-        monkeypatch.setattr(os, "remove", MagicMock())
-        monkeypatch.setattr(os.path, "exists", lambda path: False)
+        def capture_remove(path):
+            removed.append(path)
 
-        merge_shards([tmp_path / 'bad.parquet', tmp_path / 'good.parquet'])
+        monkeypatch.setattr(pd, 'read_parquet', mock_read)
+        monkeypatch.setattr(pd.DataFrame, 'to_parquet', capture_write)
+        monkeypatch.setattr(os, 'remove', capture_remove)
+        monkeypatch.setattr(os.path, 'exists', lambda path: False)
 
-        # Good shard still written
+        merge_shards([bad_path, good_path])
+
+        # Good shard written, corrupt shard excluded
         assert len(written) == 1
         assert len(written[0]) == 1
+        # Only the readable shard is removed; corrupt shard left on disk
+        assert good_path in removed
+        assert bad_path not in removed
+
+    def test_logs_warning_for_corrupt_shard_left_on_disk(self, monkeypatch, tmp_path):
+        """Test that corrupt shards not removed are explicitly logged as a warning."""
+        good_shard = pd.DataFrame({'month': ['1!'], 'symbol': ['ZS']})
+        bad_path = tmp_path / 'bad.parquet'
+        good_path = tmp_path / 'good.parquet'
+        mock_logger = MagicMock()
+
+        read_count = {'n': 0}
+
+        def mock_read(path):
+            read_count['n'] += 1
+            if read_count['n'] == 1:
+                raise Exception('Corrupt shard')
+            return good_shard
+
+        monkeypatch.setattr(pd, 'read_parquet', mock_read)
+        monkeypatch.setattr(pd.DataFrame, 'to_parquet', MagicMock())
+        monkeypatch.setattr(os, 'remove', MagicMock())
+        monkeypatch.setattr(os.path, 'exists', lambda path: False)
+        monkeypatch.setattr(reporting_module, 'logger', mock_logger)
+
+        merge_shards([bad_path, good_path])
+
+        warning_messages = [str(call) for call in mock_logger.warning.call_args_list]
+        assert any(str(bad_path) in msg for msg in warning_messages)
 
     def test_logs_error_and_returns_when_all_shards_unreadable(self, monkeypatch, tmp_path):
         """Test that merge returns early and logs when all shards fail to read."""

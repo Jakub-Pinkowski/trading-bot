@@ -178,7 +178,7 @@ def mock_reporting_dependencies(monkeypatch):
     Usage:
         def test_something(mock_reporting_dependencies):
             mocks = mock_reporting_dependencies
-            save_results(results)
+            merge_shards(shard_paths)
             assert mocks['save_to_parquet'].called
     """
     mock_to_df = MagicMock(return_value=pd.DataFrame({'test': [1]}))

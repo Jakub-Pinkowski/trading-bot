@@ -196,41 +196,6 @@ def results_to_dataframe(results):
     return pd.DataFrame(data)
 
 
-def save_results(results):
-    """
-    Save test results to a parquet file for persistent storage and analysis.
-
-    Converts result dictionaries to DataFrame and saves to a single aggregated
-    parquet file. Uses file locking to prevent conflicts during concurrent writes.
-    Automatically appends to existing results while maintaining unique entries.
-
-    Args:
-        results: List of result dictionaries from run_single_test(). Each dict should
-                contain month, symbol, interval, strategy, and metrics fields
-
-    Returns:
-        None. Prints success/failure messages to the console.
-        Saves to: {BACKTESTING_DIR}/mass_test_results_all.parquet
-
-    Side Effects:
-        - Creates or appends to a parquet file on disk
-        - Logs errors if save operation fails
-        - Prints status messages to stdout
-    """
-    try:
-        # Convert results to DataFrame
-        results_df = results_to_dataframe(results)
-        if not results_df.empty:
-            # Save all results to one big parquet file with unique entries
-            parquet_filename = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
-            save_to_parquet(results_df, parquet_filename)
-            print(f'Results saved to {parquet_filename}')
-        else:
-            print('No results to save.')
-    except Exception as error:
-        logger.error(f'Failed to save results: {error}')
-
-
 def save_shard(results, shard_index):
     """
     Write intermediate results to a numbered shard file.
@@ -278,11 +243,13 @@ def merge_shards(shard_paths):
     final_path = f'{BACKTESTING_DIR}/mass_test_results_all.parquet'
 
     dfs = []
+    failed_paths = []
     for path in shard_paths:
         try:
             dfs.append(pd.read_parquet(path))
         except Exception as err:
             logger.error(f'Could not read shard {path}: {err}')
+            failed_paths.append(path)
 
     if not dfs:
         logger.error('All shards failed to read; skipping merge.')
@@ -302,12 +269,17 @@ def merge_shards(shard_paths):
     deduped.to_parquet(final_path, index=False)
     print(f'Results merged and saved to {final_path} ({len(deduped)} rows)')
 
-    # Clean up shard files
-    for path in shard_paths:
+    # Clean up successfully read shard files only
+    readable_paths = [p for p in shard_paths if p not in failed_paths]
+    for path in readable_paths:
         try:
             os.remove(path)
         except Exception as err:
             logger.warning(f'Could not remove shard {path}: {err}')
+
+    # Log corrupt shards left on disk for manual inspection
+    for path in failed_paths:
+        logger.warning(f'Corrupt shard left on disk for manual inspection: {path}')
 
     # Remove shards directory if now empty
     try:
