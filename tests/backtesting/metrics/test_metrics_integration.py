@@ -80,7 +80,7 @@ class TestMetricsIntegration:
 
         # Simulate what runner.py does: attach duration_bars based on interval (e.g. 1h → 1 bar per hour)
         for trade in trades:
-            trade['duration_bars'] = trade['duration'].total_seconds() / 3600  # assuming 1h interval
+            trade['duration_bars'] = trade['duration_hours']  # assuming 1h interval
 
         # Verify summary metrics use these fields
         summary = SummaryMetrics(trades)

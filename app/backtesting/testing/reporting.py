@@ -112,8 +112,11 @@ def results_to_dataframe(results):
         'average_trade_return_percentage_of_contract',
         'average_win_percentage_of_contract',
         'average_loss_percentage_of_contract',
+        'largest_win_percentage_of_contract',
+        'largest_loss_percentage_of_contract',
         'profit_factor',
         'expectancy_per_bar',
+        'return_skewness',
 
         # --- Risk Metrics ---
         'maximum_drawdown_percentage',

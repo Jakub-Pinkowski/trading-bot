@@ -118,7 +118,8 @@ class TestResultsToDataFrame:
             'total_wins_percentage_of_contract', 'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract', 'average_trade_return_percentage_of_contract',
             'average_win_percentage_of_contract', 'average_loss_percentage_of_contract',
-            'profit_factor', 'expectancy_per_bar',
+            'largest_win_percentage_of_contract', 'largest_loss_percentage_of_contract',
+            'profit_factor', 'expectancy_per_bar', 'return_skewness',
             'maximum_drawdown_percentage',
             'sharpe_ratio', 'sortino_ratio', 'calmar_ratio',
             'value_at_risk', 'expected_shortfall', 'ulcer_index', 'time_in_market_percentage'

@@ -68,8 +68,11 @@ class SummaryMetrics:
         average_trade_return_percentage_of_contract = safe_average(self.returns)
         average_win_percentage_of_contract = self._calculate_average_win_percentage_of_contract()
         average_loss_percentage_of_contract = self._calculate_average_loss_percentage_of_contract()
+        largest_win_percentage_of_contract = max(self.returns)
+        largest_loss_percentage_of_contract = min(self.returns)
         profit_factor = self._calculate_profit_factor()
         expectancy_per_bar = self._calculate_expectancy_per_bar()
+        return_skewness = self._calculate_return_skewness()
 
         # --- Risk Metrics ---
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
@@ -99,8 +102,11 @@ class SummaryMetrics:
             'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
             'average_win_percentage_of_contract': round(average_win_percentage_of_contract, 2),
             'average_loss_percentage_of_contract': round(average_loss_percentage_of_contract, 2),
+            'largest_win_percentage_of_contract': round(largest_win_percentage_of_contract, 2),
+            'largest_loss_percentage_of_contract': round(largest_loss_percentage_of_contract, 2),
             'profit_factor': round(profit_factor, 2),
             'expectancy_per_bar': round(expectancy_per_bar, 4),
+            'return_skewness': round(return_skewness, 2),
 
             # --- Risk Metrics ---
             'maximum_drawdown_percentage': round(maximum_drawdown_percentage, 2),
@@ -143,7 +149,7 @@ class SummaryMetrics:
         self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.duration_bars = [trade.get('duration_bars', 0) for trade in self.trades]
         self.total_duration_hours = sum(
-            trade['duration'].total_seconds() / 3600 for trade in self.trades if 'duration' in trade
+            trade['duration_hours'] for trade in self.trades if 'duration_hours' in trade
         )
 
     def _calculate_win_loss_trades(self):
@@ -354,6 +360,22 @@ class SummaryMetrics:
         # Calculate the average of the worst returns
         worst_returns = sorted_returns[:tail_count]
         return abs(safe_average(worst_returns))
+
+    def _calculate_return_skewness(self):
+        """Calculate the skewness of per-trade returns (Fisher-Pearson standardized moment).
+
+        Positive skew: occasional large wins with frequent small losses.
+        Negative skew: occasional large losses with frequent small wins — a hidden risk
+        not visible from win_rate or profit_factor alone.
+        Returns 0 when fewer than 3 trades exist or all returns are identical.
+        """
+        if len(self.returns) < 3:
+            return 0
+        std = np.std(self.returns, ddof=1)
+        if std < 1e-10:
+            return 0
+        mean = safe_average(self.returns)
+        return float(np.mean(((np.array(self.returns) - mean) / std) ** 3))
 
     def _calculate_ulcer_index(self):
         """Calculate Ulcer Index, a measure of downside risk that considers both depth and duration of drawdowns."""
