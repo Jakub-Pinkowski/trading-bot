@@ -146,13 +146,13 @@ class SummaryMetrics:
         self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.duration_bars = [trade.get('duration_bars', 0) for trade in self.trades]
         self.total_duration_hours = sum(
-            t['duration'].total_seconds() / 3600 for t in self.trades if 'duration' in t
+            trade['duration'].total_seconds() / 3600 for trade in self.trades if 'duration' in trade
         )
 
     def _calculate_win_loss_trades(self):
         """Calculate winning and losing trades based on contract returns."""
-        self.winning_trades = [t for t in self.trades if t['return_percentage_of_contract'] > 0]
-        self.losing_trades = [t for t in self.trades if t['return_percentage_of_contract'] <= 0]
+        self.winning_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] > 0]
+        self.losing_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] <= 0]
         self.win_count = len(self.winning_trades)
         self.loss_count = len(self.losing_trades)
         self.win_rate = (self.win_count / self.total_trades) * 100 if self.total_trades > 0 else 0
@@ -242,14 +242,15 @@ class SummaryMetrics:
         average_return = safe_average(self.returns)
 
         # Calculate downside deviation (returns below the risk-free rate)
-        negative_returns = [r - RISK_FREE_RATE for r in self.returns if r < RISK_FREE_RATE]
+        negative_returns = [return_value - RISK_FREE_RATE for return_value in self.returns if
+                            return_value < RISK_FREE_RATE]
 
         if not negative_returns:
             return INFINITY_REPLACEMENT
 
         # Divide by N (all trades), not len(negative_returns), per the standard Sortino formula
         n = len(self.returns)
-        downside_variance = sum(r ** 2 for r in negative_returns) / n
+        downside_variance = sum(return_value ** 2 for return_value in negative_returns) / n
         downside_deviation = downside_variance ** 0.5
 
         return safe_divide(average_return - RISK_FREE_RATE, downside_deviation)
@@ -296,8 +297,8 @@ class SummaryMetrics:
             return 0, 0
 
         max_wins = max_losses = cur_wins = cur_losses = 0
-        for r in self.returns:
-            if r > 0:
+        for return_value in self.returns:
+            if return_value > 0:
                 cur_wins += 1
                 cur_losses = 0
             else:
