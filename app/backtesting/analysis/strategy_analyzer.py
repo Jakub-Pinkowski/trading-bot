@@ -99,6 +99,9 @@ def _aggregate_weighted(filtered_df, grouped, total_trades, symbol_count):
         'max_consecutive_losses',
         'expectancy_per_bar',
         'average_trade_duration_bars',
+        'largest_win_percentage_of_contract',
+        'largest_loss_percentage_of_contract',
+        'return_skewness',
     ]
 
     for metric in risk_metrics:
@@ -168,6 +171,9 @@ def _aggregate_unweighted(filtered_df, grouped, total_trades, symbol_count):
         'expected_shortfall': _safe_group_mean('expected_shortfall'),
         'ulcer_index': _safe_group_mean('ulcer_index'),
         'time_in_market_percentage': _safe_group_mean('time_in_market_percentage'),
+        'largest_win_percentage_of_contract': _safe_group_mean('largest_win_percentage_of_contract'),
+        'largest_loss_percentage_of_contract': _safe_group_mean('largest_loss_percentage_of_contract'),
+        'return_skewness': _safe_group_mean('return_skewness'),
     }
 
 

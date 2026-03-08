@@ -70,7 +70,7 @@ class TestRunSingleTestSuccess:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'duration_hours': 4.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', mock_ind_cache)
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', mock_df_cache)
@@ -116,7 +116,7 @@ class TestRunSingleTestSuccess:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500, 'duration_hours': 24.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', mock_ind_cache)
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', mock_df_cache)
@@ -366,7 +366,7 @@ class TestCacheStatistics:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={'net_pnl': 500}))
+                            MagicMock(return_value={'net_pnl': 500, 'duration_hours': 24.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', mock_ind_cache)
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', mock_df_cache)
@@ -432,7 +432,7 @@ class TestVerboseOutput:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500, 'duration_hours': 24.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', MagicMock())
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', MagicMock())
@@ -467,7 +467,7 @@ class TestMetricsCalculation:
              'entry_price': 105, 'exit_price': 100, 'side': 'short'}
         ]
 
-        mock_calc = MagicMock(return_value={'net_pnl': 500})
+        mock_calc = MagicMock(return_value={'net_pnl': 500, 'duration_hours': 24.0})
         mock_summary = MagicMock()
         mock_summary.return_value.calculate_all_metrics.return_value = {}
 
@@ -508,7 +508,8 @@ class TestMetricsCalculation:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=8)}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=8),
+                                                    'duration_hours': 8.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', MagicMock())
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', MagicMock())
@@ -549,7 +550,8 @@ class TestMetricsCalculation:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=2)}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=2),
+                                                    'duration_hours': 2.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', MagicMock())
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', MagicMock())
@@ -581,7 +583,7 @@ class TestMetricsCalculation:
             'side': 'long'
         }
 
-        trade_with_metrics = {**mock_trade, 'net_pnl': 500, 'commission': 10}
+        trade_with_metrics = {**mock_trade, 'net_pnl': 500, 'commission': 10, 'duration_hours': 24.0}
         mock_summary = MagicMock()
         mock_summary.return_value.calculate_all_metrics.return_value = {'total_trades': 1}
 
@@ -702,7 +704,8 @@ class TestRunnerIntegration:
         monkeypatch.setattr('app.backtesting.testing.runner.get_cached_dataframe', MagicMock(return_value=mock_df))
         monkeypatch.setattr('app.backtesting.testing.runner.validate_dataframe', MagicMock(return_value=True))
         monkeypatch.setattr('app.backtesting.testing.runner.calculate_trade_metrics',
-                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'commission': 5.0}))
+                            MagicMock(return_value={**mock_trade, 'net_pnl': 500.0, 'commission': 5.0,
+                                                    'duration_hours': 4.0}))
         monkeypatch.setattr('app.backtesting.testing.runner.SummaryMetrics', mock_summary)
         monkeypatch.setattr('app.backtesting.testing.runner.indicator_cache', mock_ind_cache)
         monkeypatch.setattr('app.backtesting.testing.runner.dataframe_cache', mock_df_cache)

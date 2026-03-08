@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.backtesting.cache.dataframe_cache import dataframe_cache, get_cached_dataframe
 from app.backtesting.cache.indicators_cache import indicator_cache
@@ -100,9 +100,7 @@ def run_single_test(test_params):
     # Attach duration_bars to each trade so SummaryMetrics can produce interval-normalised averages
     interval_hours = INTERVAL_HOURS.get(interval, 1.0)
     for trade in trades_with_metrics_list:
-        trade['duration_bars'] = round(
-            trade.get('duration', timedelta(0)).total_seconds() / 3600 / interval_hours, 2
-        )
+        trade['duration_bars'] = round(trade['duration_hours'] / interval_hours, 2)
 
     # Compute total dataset hours for Calmar annualisation and time_in_market_percentage
     try:

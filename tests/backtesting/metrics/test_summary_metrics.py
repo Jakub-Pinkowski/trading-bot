@@ -954,3 +954,107 @@ class TestCalmarAnnualisation:
         result = SummaryMetrics(trades, dataset_total_hours=8760).calculate_all_metrics()
 
         assert result['calmar_ratio'] == INFINITY_REPLACEMENT
+
+
+class TestLargestWinLoss:
+    """Test largest_win and largest_loss percentage metrics."""
+
+    def test_largest_win_is_max_return(self, trade_factory):
+        """Test largest_win_percentage_of_contract is the single best trade return."""
+        win = trade_factory('ZS', 1200.0, 1250.0)  # large win
+        small_win = trade_factory('ZS', 1200.0, 1205.0)  # small win
+        loss = trade_factory('ZS', 1200.0, 1190.0)  # loss
+
+        result = SummaryMetrics([win, small_win, loss]).calculate_all_metrics()
+
+        assert result['largest_win_percentage_of_contract'] == pytest.approx(
+            max(
+                win['return_percentage_of_contract'],
+                small_win['return_percentage_of_contract'],
+                loss['return_percentage_of_contract'],
+            ),
+            abs=0.01
+        )
+
+    def test_largest_loss_is_min_return(self, trade_factory):
+        """Test largest_loss_percentage_of_contract is the single worst trade return."""
+        win = trade_factory('ZS', 1200.0, 1250.0)
+        big_loss = trade_factory('ZS', 1200.0, 1140.0)  # large loss
+        small_loss = trade_factory('ZS', 1200.0, 1195.0)  # small loss
+
+        result = SummaryMetrics([win, big_loss, small_loss]).calculate_all_metrics()
+
+        assert result['largest_loss_percentage_of_contract'] == pytest.approx(
+            min(
+                win['return_percentage_of_contract'],
+                big_loss['return_percentage_of_contract'],
+                small_loss['return_percentage_of_contract'],
+            ),
+            abs=0.01
+        )
+
+    def test_largest_win_equals_largest_loss_when_single_trade(self, trade_factory):
+        """Test largest_win and largest_loss are the same when only one trade exists."""
+        trade = trade_factory('ZS', 1200.0, 1220.0)
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        assert result['largest_win_percentage_of_contract'] == result['largest_loss_percentage_of_contract']
+
+    def test_largest_loss_is_negative_when_all_losses(self, trades_factory):
+        """Test largest_loss is negative when all trades are losing."""
+        all_losing = trades_factory.all_losing(count=3)
+        result = SummaryMetrics(all_losing).calculate_all_metrics()
+
+        assert result['largest_loss_percentage_of_contract'] < 0
+
+    def test_largest_win_rounded_to_two_decimals(self, trades_factory):
+        """Test largest_win is rounded to 2 decimal places."""
+        trades = trades_factory.mixed(win_count=3, loss_count=2)
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        value = result['largest_win_percentage_of_contract']
+        assert value == round(value, 2)
+
+
+class TestReturnSkewness:
+    """Test return_skewness calculation."""
+
+    def test_skewness_zero_for_fewer_than_three_trades(self, trades_factory):
+        """Test skewness returns 0 when fewer than 3 trades exist."""
+        two_trades = trades_factory.mixed(win_count=1, loss_count=1)
+        result = SummaryMetrics(two_trades).calculate_all_metrics()
+
+        assert result['return_skewness'] == 0.0
+
+    def test_skewness_zero_for_identical_returns(self, trade_factory):
+        """Test skewness returns 0 when all returns are identical (std = 0)."""
+        trades = [trade_factory('ZS', 1200.0, 1220.0) for _ in range(5)]
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['return_skewness'] == 0.0
+
+    def test_negative_skewness_for_single_large_loss(self, trade_factory):
+        """Test negative skew when one large loss dominates many small wins."""
+        # Four small wins and one big loss
+        wins = [trade_factory('ZS', 1200.0, 1205.0) for _ in range(4)]
+        big_loss = trade_factory('ZS', 1200.0, 1100.0)
+        result = SummaryMetrics(wins + [big_loss]).calculate_all_metrics()
+
+        assert result['return_skewness'] < 0
+
+    def test_positive_skewness_for_single_large_win(self, trade_factory):
+        """Test positive skew when one large win dominates many small losses."""
+        # Four small losses and one big win
+        losses = [trade_factory('ZS', 1200.0, 1195.0) for _ in range(4)]
+        big_win = trade_factory('ZS', 1200.0, 1350.0)
+        result = SummaryMetrics(losses + [big_win]).calculate_all_metrics()
+
+        assert result['return_skewness'] > 0
+
+    def test_skewness_rounded_to_two_decimals(self, trades_factory):
+        """Test return_skewness is rounded to 2 decimal places."""
+        trades = trades_factory.mixed(win_count=5, loss_count=3)
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        value = result['return_skewness']
+        assert value == round(value, 2)
