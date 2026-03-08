@@ -193,6 +193,11 @@ trading-bot/
 # Binance
 # TODO [MEDIUM]: Add Binance handling
 
+# Kalshi
+# TODO [MEDIUM]: Add Kalshi handling
+# TODO [MEDIUM]: Build live-data calculation of probabilities vs Kalhis's odds
+# TODO [MEDIUM]: End of period gamma decay heist
+
 # IBKR
 
 # Tests
