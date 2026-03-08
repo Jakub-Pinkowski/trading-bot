@@ -182,6 +182,7 @@ trading-bot/
 
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
+# NOTE: My historical_data is not adjusted for contract changes
 # TODO [HIGH]: Do an extensive manual testing whether it works as per TradingView's indicators
 # TODO [MEDIUM]: Add new strategies
 # TODO [LOW]: Implement segmentation and out-of-sample data testing
