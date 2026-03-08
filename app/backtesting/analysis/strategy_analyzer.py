@@ -102,12 +102,16 @@ def _aggregate_strategies(
         # Return metrics (contract-based)
         # total_return_all_symbols_pct_contract is the sum across all symbols — grows with symbol count
         # avg_return_per_symbol_pct_contract is symbol-count-neutral for cross-strategy comparison
-        metrics_dict['total_return_all_symbols_pct_contract'] = grouped['total_return_percentage_of_contract'].sum()
+        if 'total_return_percentage_of_contract' in filtered_df.columns:
+            _total_return_sum = grouped['total_return_percentage_of_contract'].sum()
+        else:
+            _total_return_sum = pd.Series(index=total_trades.index, data=float('nan'))
+        metrics_dict['total_return_all_symbols_pct_contract'] = _total_return_sum
         metrics_dict['avg_return_per_symbol_pct_contract'] = (
-                metrics_dict['total_return_all_symbols_pct_contract'] / symbol_count
+                _total_return_sum / symbol_count
         ).round(DECIMAL_PLACES)
         metrics_dict['average_trade_return_percentage_of_contract'] = calculate_average_trade_return(
-            metrics_dict['total_return_all_symbols_pct_contract'], metrics_dict['total_trades']
+            _total_return_sum, metrics_dict['total_trades']
         )
 
         # These metrics can be averaged as they are already normalized

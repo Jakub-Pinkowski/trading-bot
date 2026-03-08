@@ -153,12 +153,12 @@ def calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
     replacing infinity values with positive infinity.
 
     Args:
-        total_wins_percentage: Series or scalar of total winning percentage across all winning trades
-        total_losses_percentage: Series or scalar of total losing percentage across all losing trades.
+        total_wins_percentage: Series of total winning percentage across all winning trades
+        total_losses_percentage: Series of total losing percentage across all losing trades.
                                 If zero, the result will be infinity (perfectly profitable)
 
     Returns:
-        Series or scalar with profit ratios (absolute value), rounded to DECIMAL_PLACES.
+        Series with profit ratios (absolute value), rounded to DECIMAL_PLACES.
         Values > 1 indicate profitable strategies, < 1 indicate losing strategies.
         Infinity indicates no losses (all trades are profitable)
     """

@@ -1105,6 +1105,32 @@ class TestAggregationMetrics:
         assert result['total_return_all_symbols_pct_contract'].isna().all()
         assert result['avg_return_per_symbol_pct_contract'].isna().all()
 
+    def test_total_return_missing_column_in_weighted_aggregation_returns_nan(self, monkeypatch, base_strategy_results):
+        """Test NaN fallback when total_return_percentage_of_contract is missing in weighted branch."""
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        df = base_strategy_results.drop(columns=['total_return_percentage_of_contract'])
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        result = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        assert len(result) > 0
+        assert 'total_return_all_symbols_pct_contract' in result.columns
+        assert result['total_return_all_symbols_pct_contract'].isna().all()
+        assert result['avg_return_per_symbol_pct_contract'].isna().all()
+
 
 class TestOnePerGroupFiltering:
     """Test one_per_group filtering to avoid correlation bias."""
