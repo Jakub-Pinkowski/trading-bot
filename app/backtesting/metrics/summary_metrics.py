@@ -25,9 +25,17 @@ class SummaryMetrics:
 
     # ==================== Initialization ====================
 
-    def __init__(self, trades):
-        """Initialize with a list of trades and perform initial calculations."""
+    def __init__(self, trades, dataset_total_hours=None):
+        """Initialize with a list of trades and perform initial calculations.
+
+        Args:
+            trades: List of trade dicts from calculate_trade_metrics()
+            dataset_total_hours: Total hours spanned by the dataset used in the backtest.
+                                 Required for Calmar annualisation and time_in_market_percentage.
+                                 Pass None to fall back to non-annualised Calmar.
+        """
         self.trades = trades
+        self.dataset_total_hours = dataset_total_hours
         self.winning_trades = []
         self.losing_trades = []
         self.win_count = 0
@@ -55,13 +63,16 @@ class SummaryMetrics:
         total_wins_percentage_of_contract = sum(trade['return_percentage_of_contract'] for trade in self.winning_trades)
         total_losses_percentage_of_contract = sum(
             trade['return_percentage_of_contract'] for trade in self.losing_trades)
+        win_loss_ratio = self._calculate_win_loss_ratio()
+        max_consecutive_wins, max_consecutive_losses = self._calculate_consecutive_streaks()
 
-        # --- Return Metrics ---  (contract-based)
+        # --- Return Metrics --- (contract-based)
         total_return_percentage_of_contract = self.total_return_contract
         average_trade_return_percentage_of_contract = safe_average(self.returns)
         average_win_percentage_of_contract = self._calculate_average_win_percentage_of_contract()
         average_loss_percentage_of_contract = self._calculate_average_loss_percentage_of_contract()
         profit_factor = self._calculate_profit_factor()
+        expectancy_per_bar = self._calculate_expectancy_per_bar()
 
         # --- Risk Metrics ---
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
@@ -71,6 +82,7 @@ class SummaryMetrics:
         value_at_risk = self._calculate_value_at_risk()
         expected_shortfall = self._calculate_expected_shortfall()
         ulcer_index = self._calculate_ulcer_index()
+        time_in_market_percentage = self._calculate_time_in_market_percentage()
 
         return {
             # --- Basic Trade Statistics ---
@@ -79,15 +91,19 @@ class SummaryMetrics:
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
             'average_trade_duration_bars': round(average_duration_bars, 2),
+            'win_loss_ratio': round(win_loss_ratio, 2),
+            'max_consecutive_wins': max_consecutive_wins,
+            'max_consecutive_losses': max_consecutive_losses,
             'total_wins_percentage_of_contract': round(total_wins_percentage_of_contract, 2),
             'total_losses_percentage_of_contract': round(total_losses_percentage_of_contract, 2),
 
-            # --- Return Metrics ---
+            # --- Return Metrics (contract-based) ---
             'total_return_percentage_of_contract': round(total_return_percentage_of_contract, 2),
             'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
             'average_win_percentage_of_contract': round(average_win_percentage_of_contract, 2),
             'average_loss_percentage_of_contract': round(average_loss_percentage_of_contract, 2),
             'profit_factor': round(profit_factor, 2),
+            'expectancy_per_bar': round(expectancy_per_bar, 4),
 
             # --- Risk Metrics ---
             'maximum_drawdown_percentage': round(maximum_drawdown_percentage, 2),
@@ -97,6 +113,7 @@ class SummaryMetrics:
             'value_at_risk': round(value_at_risk, 2),
             'expected_shortfall': round(expected_shortfall, 2),
             'ulcer_index': round(ulcer_index, 2),
+            'time_in_market_percentage': round(time_in_market_percentage, 2),
         }
 
     # ==================== Private Methods ====================
@@ -128,6 +145,9 @@ class SummaryMetrics:
         # Cache commonly used lists
         self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
         self.duration_bars = [trade.get('duration_bars', 0) for trade in self.trades]
+        self.total_duration_hours = sum(
+            t['duration'].total_seconds() / 3600 for t in self.trades if 'duration' in t
+        )
 
     def _calculate_win_loss_trades(self):
         """Calculate winning and losing trades based on contract returns."""
@@ -232,20 +252,79 @@ class SummaryMetrics:
         downside_variance = sum(r ** 2 for r in negative_returns) / n
         downside_deviation = downside_variance ** 0.5
 
-        if downside_deviation == 0:
-            return 0
-
         return safe_divide(average_return - RISK_FREE_RATE, downside_deviation)
 
     def _calculate_calmar_ratio(self):
-        """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
+        """Calculate Calmar ratio: Annualised Return / Maximum Drawdown.
+
+        Annualises using dataset_total_hours when available. Falls back to cumulative
+        total return when dataset length is unknown, which is not comparable across
+        different dataset lengths but is better than nothing.
+        """
         if not self._has_trades():
             return 0
 
         if self.maximum_drawdown_percentage == 0:
             return INFINITY_REPLACEMENT
 
-        return safe_divide(self.total_return_contract, self.maximum_drawdown_percentage)
+        if self.dataset_total_hours and self.dataset_total_hours > 0:
+            annualisation_factor = 8760 / self.dataset_total_hours
+            annualised_return = self.total_return_contract * annualisation_factor
+        else:
+            annualised_return = self.total_return_contract
+
+        return safe_divide(annualised_return, self.maximum_drawdown_percentage)
+
+    def _calculate_win_loss_ratio(self):
+        """Calculate win/loss ratio: Average Win % / |Average Loss %|.
+
+        Complements win_rate — a high win rate with a low W/L ratio signals a marginal strategy.
+        """
+        avg_win = self._calculate_average_win_percentage_of_contract()
+        avg_loss = self._calculate_average_loss_percentage_of_contract()
+        if avg_loss == 0:
+            return INFINITY_REPLACEMENT
+        return abs(safe_divide(avg_win, avg_loss))
+
+    def _calculate_consecutive_streaks(self):
+        """Calculate the longest winning and losing streaks in the trade sequence.
+
+        Returns:
+            Tuple of (max_consecutive_wins, max_consecutive_losses)
+        """
+        if not self._has_trades():
+            return 0, 0
+
+        max_wins = max_losses = cur_wins = cur_losses = 0
+        for r in self.returns:
+            if r > 0:
+                cur_wins += 1
+                cur_losses = 0
+            else:
+                cur_losses += 1
+                cur_wins = 0
+            max_wins = max(max_wins, cur_wins)
+            max_losses = max(max_losses, cur_losses)
+        return max_wins, max_losses
+
+    def _calculate_expectancy_per_bar(self):
+        """Calculate return earned per bar held: Average Trade Return / Average Duration Bars.
+
+        Normalises for both trade size and time held. Cross-interval comparison is meaningful.
+        """
+        avg_bars = safe_average(self.duration_bars)
+        if avg_bars == 0:
+            return 0
+        return safe_divide(safe_average(self.returns), avg_bars)
+
+    def _calculate_time_in_market_percentage(self):
+        """Calculate percentage of dataset time spent holding a position.
+
+        Requires dataset_total_hours to be set. Returns 0 when not available.
+        """
+        if not self._has_trades() or not self.dataset_total_hours or self.dataset_total_hours <= 0:
+            return 0
+        return safe_divide(self.total_duration_hours, self.dataset_total_hours) * 100
 
     def _calculate_value_at_risk(self):
         """Returns the loss that won't be exceeded with the given confidence level."""

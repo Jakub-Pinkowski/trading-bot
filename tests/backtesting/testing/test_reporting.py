@@ -114,12 +114,14 @@ class TestResultsToDataFrame:
         expected_columns = [
             'month', 'symbol', 'interval', 'strategy',
             'total_trades', 'win_rate', 'average_trade_duration_bars',
+            'win_loss_ratio', 'max_consecutive_wins', 'max_consecutive_losses',
             'total_wins_percentage_of_contract', 'total_losses_percentage_of_contract',
             'total_return_percentage_of_contract', 'average_trade_return_percentage_of_contract',
             'average_win_percentage_of_contract', 'average_loss_percentage_of_contract',
-            'profit_factor', 'maximum_drawdown_percentage',
+            'profit_factor', 'expectancy_per_bar',
+            'maximum_drawdown_percentage',
             'sharpe_ratio', 'sortino_ratio', 'calmar_ratio',
-            'value_at_risk', 'expected_shortfall', 'ulcer_index'
+            'value_at_risk', 'expected_shortfall', 'ulcer_index', 'time_in_market_percentage'
         ]
 
         for col in expected_columns:

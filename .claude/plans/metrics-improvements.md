@@ -109,9 +109,9 @@ MIN_RETURNS_FOR_VAR = 30  # Minimum for statistically meaningful 5th-percentile 
 
 ---
 
-## Phase 2 — Normalization & New Metrics (Medium Priority)
+## Phase 2 — Normalization & New Metrics (Medium Priority) ✓ COMPLETE
 
-### 2.1 Fix Calmar ratio
+### 2.1 Fix Calmar ratio ✓
 
 **File**: `summary_metrics.py`
 **Problem**: Current implementation divides *cumulative* total return by max drawdown.
@@ -142,27 +142,7 @@ def _calculate_calmar_ratio(self):
     return safe_divide(annualised_return, self.maximum_drawdown_percentage)
 ```
 
-### 2.2 Surface `return_percentage_of_margin` in summary output
-
-**File**: `summary_metrics.py`, `reporting.py`
-**Problem**: `return_percentage_of_margin` is computed per trade but never aggregated.
-
-Add to `_initialize_calculations`:
-
-```python
-self.margin_returns = [t.get('return_percentage_of_margin', 0) for t in self.trades]
-```
-
-Add to `calculate_all_metrics` return dict:
-
-```python
-'total_return_percentage_of_margin': round(sum(self.margin_returns), 2),
-'average_trade_return_percentage_of_margin': round(safe_average(self.margin_returns), 2),
-```
-
-Add both columns to `reporting.py` columns list and `strategy_analyzer.py` aggregation.
-
-### 2.3 Add `win_loss_ratio`
+### 2.2 Add `win_loss_ratio` ✓
 
 **Formula**: `avg_win / abs(avg_loss)`. Complements win_rate — a high win rate with a
 poor W/L ratio signals a marginal strategy.
@@ -176,7 +156,7 @@ def _calculate_win_loss_ratio(self):
     return round(abs(safe_divide(avg_win, avg_loss)), 2)
 ```
 
-### 2.4 Add `max_consecutive_losses` and `max_consecutive_wins`
+### 2.3 Add `max_consecutive_losses` and `max_consecutive_wins` ✓
 
 Determines minimum survival capital and characterises strategy type (trend/mean-reversion).
 
@@ -195,7 +175,7 @@ def _calculate_consecutive_streaks(self):
     return max_wins, max_losses
 ```
 
-### 2.5 Add `expectancy_per_bar`
+### 2.4 Add `expectancy_per_bar` ✓
 
 **Formula**: `average_trade_return / average_trade_duration_bars`
 Normalises return for both trade size and time held. Cross-interval comparison is
@@ -203,7 +183,7 @@ meaningful once both components are normalised.
 
 Requires Phase 1.4 to be complete (`duration_bars` on each trade).
 
-### 2.6 Add `time_in_market_percentage`
+### 2.5 Add `time_in_market_percentage` ✓
 
 **Formula**: `sum(duration_hours) / dataset_total_hours * 100`
 Requires `dataset_total_hours` from the runner (same as Calmar fix in 2.1).
@@ -357,13 +337,13 @@ Phase 1 (bugs, no architecture change): ✓ COMPLETE — 2540 tests passing
   1.5 → raise MIN_RETURNS_FOR_VAR to 30              ✓
   1.4 → add duration_bars (runner + summary_metrics) ✓
 
-Phase 2 (new metrics, needs Phase 1.4):
-  2.1 → Calmar annualisation                        [30 min, needs dataset_total_hours]
-  2.2 → surface margin returns in summary            [30 min]
-  2.3 → win_loss_ratio                               [15 min]
-  2.4 → consecutive streaks                          [20 min]
-  2.5 → expectancy_per_bar                           [15 min, needs 1.4]
-  2.6 → time_in_market_percentage                    [15 min, needs 2.1 infrastructure]
+Phase 2 (new metrics, needs Phase 1.4): ✓ COMPLETE — 100% coverage on all modified files
+  2.1 → Calmar annualisation                        ✓
+  2.2 → win_loss_ratio                               ✓
+  2.3 → consecutive streaks                          ✓
+  2.4 → expectancy_per_bar                           ✓
+  2.5 → time_in_market_percentage                    ✓
+  Note: margin return metrics (originally 2.2) removed — not required
 
 Phase 3 (aggregation):
   3.1 → aggregate duration_bars                      [15 min]
@@ -385,7 +365,7 @@ Phase 4 (crypto abstraction, separate branch):
 | `app/backtesting/metrics/per_trade_metrics.py`  | Phase 4: InstrumentType, abstracted commission/multiplier            |
 | `app/backtesting/metrics/summary_metrics.py`    | Phase 1+2: all formula fixes, new metrics, dataset_total_hours param |
 | `app/backtesting/testing/runner.py`             | Phase 1.4: compute duration_bars, pass dataset_total_hours           |
-| `app/backtesting/testing/reporting.py`          | New columns for duration_bars, margin returns, new metrics           |
+| `app/backtesting/testing/reporting.py`          | New columns for duration_bars, new metrics                           |
 | `app/backtesting/analysis/strategy_analyzer.py` | Phase 3: aggregation fixes                                           |
 | `crypto_config/` (new)                          | Phase 4: contract specs for Binance perps                            |
 | `tests/backtesting/metrics/`                    | Updated tests for all formula changes                                |

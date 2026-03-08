@@ -79,10 +79,11 @@ def results_to_dataframe(results):
     Returns:
         DataFrame with standardized columns including
         - Basic identifiers: month, symbol, interval, strategy
-        - Trade statistics: total_trades, win_rate, average_trade_duration_bars
-        - Return metrics: profit_factor, average/total returns (percentage of contract)
+        - Trade statistics: total_trades, win_rate, average_trade_duration_bars,
+                          win_loss_ratio, max_consecutive_wins, max_consecutive_losses
+        - Return metrics (contract): profit_factor, expectancy_per_bar, average/total returns
         - Risk metrics: maximum_drawdown, sharpe_ratio, sortino_ratio, calmar_ratio,
-                       value_at_risk, expected_shortfall, ulcer_index
+                       value_at_risk, expected_shortfall, ulcer_index, time_in_market_percentage
         Returns empty DataFrame if results list is empty
     """
 
@@ -100,8 +101,11 @@ def results_to_dataframe(results):
         'total_trades',
         'win_rate',
         'average_trade_duration_bars',
+        'win_loss_ratio',
+        'max_consecutive_wins',
+        'max_consecutive_losses',
 
-        # --- Return Metrics --- (contract-based)
+        # --- Return Metrics (contract-based) ---
         'total_wins_percentage_of_contract',
         'total_losses_percentage_of_contract',
         'total_return_percentage_of_contract',
@@ -109,6 +113,7 @@ def results_to_dataframe(results):
         'average_win_percentage_of_contract',
         'average_loss_percentage_of_contract',
         'profit_factor',
+        'expectancy_per_bar',
 
         # --- Risk Metrics ---
         'maximum_drawdown_percentage',
@@ -117,7 +122,8 @@ def results_to_dataframe(results):
         'calmar_ratio',
         'value_at_risk',
         'expected_shortfall',
-        'ulcer_index'
+        'ulcer_index',
+        'time_in_market_percentage'
     ]
 
     # Pre-allocate arrays for each column

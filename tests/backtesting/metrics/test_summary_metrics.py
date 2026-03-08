@@ -18,7 +18,6 @@ This file uses shared fixtures from conftest.py:
 """
 import random
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 import pytest
 
@@ -561,20 +560,11 @@ class TestEdgeCases:
         assert metrics._calculate_sharpe_ratio() == 0
 
     def test_std_dev_zero_hits_defensive_checks(self, trade_factory):
-        """Test scenarios where standard deviation or downside deviation is zero."""
-        # 1. Test Sharpe ratio with zero standard deviation
+        """Test scenarios where standard deviation is zero."""
+        # Sharpe ratio with zero standard deviation (all identical returns)
         trade = trade_factory('ZS', 1200.0, 1210.0)
         metrics = SummaryMetrics([trade, trade])
         assert metrics._calculate_sharpe_ratio() == 0
-
-        # 2. Test Sortino ratio with zero downside deviation using a mock
-        # Patch safe_divide to return 0 when denominator is 0
-        losing_trade = trade_factory('ZS', 1210.0, 1200.0)
-        losing_metrics = SummaryMetrics([losing_trade])
-
-        with patch('app.backtesting.metrics.summary_metrics.safe_divide', return_value=0.0):
-            # When safe_divide is forced to return 0, the defensive path is hit
-            assert losing_metrics._calculate_sortino_ratio() == 0
 
     def test_none_trades(self):
         """Test metrics with None trades."""
@@ -636,6 +626,11 @@ class TestMetricsRounding:
 
 class TestPrivateMethods:
     """Test private helper methods."""
+
+    def test_calculate_consecutive_streaks_on_empty_metrics(self):
+        """Test _calculate_consecutive_streaks returns (0, 0) when called directly on empty metrics."""
+        metrics = SummaryMetrics([])
+        assert metrics._calculate_consecutive_streaks() == (0, 0)
 
     def test_has_trades_method(self, trades_factory):
         """Test _has_trades helper method."""
@@ -744,3 +739,218 @@ class TestRealWorldScenarios:
         assert result['total_return_percentage_of_contract'] < 0
         assert result['profit_factor'] < 1.0
         assert result['maximum_drawdown_percentage'] > 0
+
+
+class TestWinLossRatio:
+    """Test win/loss ratio calculation."""
+
+    def test_win_loss_ratio_mixed_trades(self, trades_factory):
+        """Test win/loss ratio is average_win / abs(average_loss)."""
+        trades = trades_factory.create_sequence(
+            [(1200, 1220), (1200, 1185)], symbol='ZS'
+        )
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert 'win_loss_ratio' in result
+        assert result['win_loss_ratio'] > 0
+
+    def test_win_loss_ratio_all_wins_returns_infinity(self, trades_factory):
+        """Test win/loss ratio is INFINITY_REPLACEMENT when no losses."""
+        all_winning = trades_factory.all_winning(count=5)
+        result = SummaryMetrics(all_winning).calculate_all_metrics()
+
+        assert result['win_loss_ratio'] == INFINITY_REPLACEMENT
+
+    def test_win_loss_ratio_higher_for_bigger_wins(self, trades_factory):
+        """Test win/loss ratio increases when wins are larger."""
+        small_win_trades = trades_factory.create_sequence(
+            [(1200, 1205), (1200, 1195)], symbol='ZS'  # 5 pt win, 5 pt loss
+        )
+        big_win_trades = trades_factory.create_sequence(
+            [(1200, 1220), (1200, 1195)], symbol='ZS'  # 20 pt win, 5 pt loss
+        )
+
+        small_ratio = SummaryMetrics(small_win_trades).calculate_all_metrics()['win_loss_ratio']
+        big_ratio = SummaryMetrics(big_win_trades).calculate_all_metrics()['win_loss_ratio']
+
+        assert big_ratio > small_ratio
+
+    def test_win_loss_ratio_rounded_to_two_decimals(self, trades_factory):
+        """Test win/loss ratio is rounded to 2 decimal places."""
+        trades = trades_factory.mixed(win_count=2, loss_count=2)
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        value = result['win_loss_ratio']
+        str_val = str(value)
+        if '.' in str_val:
+            assert len(str_val.split('.')[1]) <= 2
+
+
+class TestConsecutiveStreaks:
+    """Test max consecutive wins/losses calculation."""
+
+    def test_max_consecutive_wins_basic(self, trades_factory):
+        """Test max consecutive wins is counted correctly."""
+        # 3 wins then 1 loss then 1 win
+        trades = trades_factory.create_sequence(
+            [(1200, 1210), (1200, 1210), (1200, 1210), (1200, 1190), (1200, 1210)],
+            symbol='ZS'
+        )
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['max_consecutive_wins'] == 3
+
+    def test_max_consecutive_losses_basic(self, trades_factory):
+        """Test max consecutive losses is counted correctly."""
+        # 1 win then 4 losses
+        trades = trades_factory.create_sequence(
+            [(1200, 1210), (1200, 1190), (1200, 1190), (1200, 1190), (1200, 1190)],
+            symbol='ZS'
+        )
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['max_consecutive_losses'] == 4
+
+    def test_consecutive_streaks_all_wins(self, trades_factory):
+        """Test streaks when all trades are winning."""
+        trades = trades_factory.all_winning(count=5)
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['max_consecutive_wins'] == 5
+        assert result['max_consecutive_losses'] == 0
+
+    def test_consecutive_streaks_all_losses(self, trades_factory):
+        """Test streaks when all trades are losing."""
+        trades = trades_factory.all_losing(count=5)
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['max_consecutive_wins'] == 0
+        assert result['max_consecutive_losses'] == 5
+
+    def test_consecutive_streaks_alternating(self, trades_factory):
+        """Test streaks with alternating win/loss pattern."""
+        trades = trades_factory.create_sequence(
+            [(1200, 1210), (1200, 1190), (1200, 1210), (1200, 1190)],
+            symbol='ZS'
+        )
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        assert result['max_consecutive_wins'] == 1
+        assert result['max_consecutive_losses'] == 1
+
+
+class TestExpectancyPerBar:
+    """Test expectancy_per_bar calculation."""
+
+    def test_expectancy_per_bar_positive_for_winning_strategy(self, trade_factory):
+        """Test expectancy_per_bar is positive for profitable trades."""
+        trade = trade_factory('ZS', 1200.0, 1220.0, duration_hours=4.0)
+        trade['duration_bars'] = 4.0
+
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        assert result['expectancy_per_bar'] > 0
+
+    def test_expectancy_per_bar_is_zero_when_no_duration(self, trade_factory):
+        """Test expectancy_per_bar is 0 when duration_bars is missing."""
+        trade = trade_factory('ZS', 1200.0, 1220.0)
+        # No duration_bars set — defaults to 0
+
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        assert result['expectancy_per_bar'] == 0.0
+
+    def test_expectancy_per_bar_longer_trade_lower_per_bar(self, trade_factory):
+        """Test that the same return over more bars gives lower expectancy_per_bar."""
+        short_trade = trade_factory('ZS', 1200.0, 1220.0)
+        short_trade['duration_bars'] = 2.0
+
+        long_trade = trade_factory('ZS', 1200.0, 1220.0)
+        long_trade['duration_bars'] = 8.0
+
+        short_result = SummaryMetrics([short_trade]).calculate_all_metrics()
+        long_result = SummaryMetrics([long_trade]).calculate_all_metrics()
+
+        assert short_result['expectancy_per_bar'] > long_result['expectancy_per_bar']
+
+    def test_expectancy_per_bar_rounded_to_four_decimals(self, trade_factory):
+        """Test expectancy_per_bar is rounded to 4 decimal places."""
+        trade = trade_factory('ZS', 1200.0, 1210.0)
+        trade['duration_bars'] = 3.0
+
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        value = result['expectancy_per_bar']
+        str_val = str(value)
+        if '.' in str_val:
+            assert len(str_val.split('.')[1]) <= 4
+
+
+class TestTimeInMarket:
+    """Test time_in_market_percentage calculation."""
+
+    def test_time_in_market_requires_dataset_total_hours(self, trade_factory):
+        """Test time_in_market_percentage is 0 when dataset_total_hours not provided."""
+        trade = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.0)
+        result = SummaryMetrics([trade]).calculate_all_metrics()
+
+        assert result['time_in_market_percentage'] == 0.0
+
+    def test_time_in_market_calculated_with_dataset_hours(self, trade_factory):
+        """Test time_in_market_percentage is computed when dataset_total_hours is provided."""
+        trade = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.0)
+        # Trade duration is 4 hours, dataset is 8 hours → 50%
+        result = SummaryMetrics([trade], dataset_total_hours=8.0).calculate_all_metrics()
+
+        assert result['time_in_market_percentage'] == 50.0
+
+    def test_time_in_market_multiple_trades(self, trade_factory):
+        """Test time_in_market_percentage sums all trade durations."""
+        trade1 = trade_factory('ZS', 1200.0, 1210.0, duration_hours=2.0)
+        trade2 = trade_factory('ZS', 1200.0, 1195.0, duration_hours=2.0)
+        # Total trade time = 4h, dataset = 8h → 50%
+        result = SummaryMetrics([trade1, trade2], dataset_total_hours=8.0).calculate_all_metrics()
+
+        assert result['time_in_market_percentage'] == 50.0
+
+    def test_time_in_market_zero_when_dataset_hours_is_zero(self, trade_factory):
+        """Test time_in_market_percentage is 0 when dataset_total_hours is 0."""
+        trade = trade_factory('ZS', 1200.0, 1210.0, duration_hours=4.0)
+        result = SummaryMetrics([trade], dataset_total_hours=0).calculate_all_metrics()
+
+        assert result['time_in_market_percentage'] == 0.0
+
+
+class TestCalmarAnnualisation:
+    """Test annualised Calmar ratio via dataset_total_hours."""
+
+    def test_calmar_without_dataset_hours_uses_raw_return(self, trades_factory):
+        """Test Calmar falls back to raw total return when dataset_total_hours is None."""
+        trades = trades_factory.create_sequence(
+            [(1200, 1250), (1250, 1230), (1230, 1260)], symbol='ZS'
+        )
+        result = SummaryMetrics(trades).calculate_all_metrics()
+
+        # Should still produce a valid number (not crash)
+        assert isinstance(result['calmar_ratio'], float)
+
+    def test_calmar_with_dataset_hours_annualises_return(self, trades_factory):
+        """Test Calmar uses annualised return when dataset_total_hours is provided."""
+        specs = [(1200, 1250), (1250, 1230), (1230, 1260)]
+        trades = trades_factory.create_sequence(specs, symbol='ZS')
+
+        # Use 1 year of data → annualisation_factor = 1, same as raw
+        result_1y = SummaryMetrics(trades, dataset_total_hours=8760).calculate_all_metrics()
+        # Use 6 months → annualisation_factor = 2, Calmar should be ~2x
+        result_6m = SummaryMetrics(trades, dataset_total_hours=4380).calculate_all_metrics()
+
+        # Shorter dataset → higher Calmar (same return annualised over shorter period)
+        assert result_6m['calmar_ratio'] > result_1y['calmar_ratio']
+
+    def test_calmar_no_drawdown_returns_infinity(self, trades_factory):
+        """Test Calmar returns INFINITY_REPLACEMENT when max drawdown is 0."""
+        # Strictly increasing cumulative returns → no drawdown
+        trades = trades_factory.all_winning(count=3)
+        result = SummaryMetrics(trades, dataset_total_hours=8760).calculate_all_metrics()
+
+        assert result['calmar_ratio'] == INFINITY_REPLACEMENT

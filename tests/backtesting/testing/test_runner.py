@@ -514,6 +514,45 @@ class TestMetricsCalculation:
             assert 'duration_bars' in trades_arg[0]
             assert trades_arg[0]['duration_bars'] == 2.0
 
+    def test_dataset_total_hours_passed_to_summary_metrics(self):
+        """Test that dataset_total_hours is computed from df index and passed to SummaryMetrics."""
+        test_params = (
+            '1!', 'ZS', '1h', 'RSI_14_30_70', MagicMock(), False, [], '/path/to/data.parquet'
+        )
+
+        # DataFrame with a DatetimeIndex spanning exactly 10 hours
+        idx = pd.date_range('2024-01-01 00:00', periods=11, freq='1h')
+        mock_df = pd.DataFrame({
+            'open': [100] * 11, 'high': [102] * 11, 'low': [99] * 11,
+            'close': [101] * 11, 'volume': [1000] * 11
+        }, index=idx)
+
+        mock_trade = {
+            'entry_time': datetime(2024, 1, 1, 0, 0),
+            'exit_time': datetime(2024, 1, 1, 2, 0),
+            'entry_price': 100.0,
+            'exit_price': 105.0,
+            'side': 'long'
+        }
+
+        with patch('app.backtesting.testing.runner.get_cached_dataframe', return_value=mock_df), \
+                patch('app.backtesting.testing.runner.validate_dataframe', return_value=True), \
+                patch('app.backtesting.testing.runner.calculate_trade_metrics') as mock_calc, \
+                patch('app.backtesting.testing.runner.SummaryMetrics') as mock_summary, \
+                patch('app.backtesting.testing.runner.indicator_cache'), \
+                patch('app.backtesting.testing.runner.dataframe_cache'):
+            test_params[4].run.return_value = [mock_trade]
+            mock_calc.return_value = {**mock_trade, 'net_pnl': 500.0, 'duration': timedelta(hours=2)}
+            mock_summary.return_value.calculate_all_metrics.return_value = {'total_trades': 1}
+
+            run_single_test(test_params)
+
+            # Verify SummaryMetrics was called with dataset_total_hours=10.0
+            mock_summary.assert_called_once()
+            kwargs = mock_summary.call_args[1]
+            assert 'dataset_total_hours' in kwargs
+            assert kwargs['dataset_total_hours'] == 10.0
+
     def test_summary_metrics_receives_trades_with_metrics(self):
         """Test that SummaryMetrics receives trades with calculated metrics."""
         test_params = (

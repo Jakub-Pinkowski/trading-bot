@@ -104,8 +104,14 @@ def run_single_test(test_params):
             trade.get('duration', timedelta(0)).total_seconds() / 3600 / interval_hours, 2
         )
 
+    # Compute total dataset hours for Calmar annualisation and time_in_market_percentage
+    try:
+        dataset_total_hours = (df.index[-1] - df.index[0]).total_seconds() / 3600
+    except (AttributeError, TypeError, IndexError):
+        dataset_total_hours = None
+
     if trades_with_metrics_list:
-        metrics = SummaryMetrics(trades_with_metrics_list)
+        metrics = SummaryMetrics(trades_with_metrics_list, dataset_total_hours=dataset_total_hours)
         summary_metrics = metrics.calculate_all_metrics()
 
         # Calculate cache stats for this test

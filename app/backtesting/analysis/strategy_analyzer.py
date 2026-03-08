@@ -145,7 +145,13 @@ def _aggregate_strategies(
             'calmar_ratio',
             'value_at_risk',
             'expected_shortfall',
-            'ulcer_index'
+            'ulcer_index',
+            'time_in_market_percentage',
+            'win_loss_ratio',
+            'max_consecutive_wins',
+            'max_consecutive_losses',
+            'expectancy_per_bar',
+            'average_trade_duration_bars',
         ]
 
         for metric in risk_metrics:
@@ -167,6 +173,9 @@ def _aggregate_strategies(
         metrics_dict.update({
             'win_rate': _safe_group_mean('win_rate'),
             'average_trade_duration_bars': _safe_group_mean('average_trade_duration_bars'),
+            'win_loss_ratio': _safe_group_mean('win_loss_ratio'),
+            'max_consecutive_wins': _safe_group_mean('max_consecutive_wins'),
+            'max_consecutive_losses': _safe_group_mean('max_consecutive_losses'),
 
             # Return metrics (contract-based)
             'total_return_percentage_of_contract': grouped[
@@ -177,16 +186,18 @@ def _aggregate_strategies(
                 'average_trade_return_percentage_of_contract'),
             'average_win_percentage_of_contract': _safe_group_mean('average_win_percentage_of_contract'),
             'average_loss_percentage_of_contract': _safe_group_mean('average_loss_percentage_of_contract'),
+            'profit_factor': _safe_group_mean('profit_factor'),
+            'expectancy_per_bar': _safe_group_mean('expectancy_per_bar'),
 
             # Risk metrics
-            'profit_factor': _safe_group_mean('profit_factor'),
             'maximum_drawdown_percentage': _safe_group_mean('maximum_drawdown_percentage'),
             'sharpe_ratio': _safe_group_mean('sharpe_ratio'),
             'sortino_ratio': _safe_group_mean('sortino_ratio'),
             'calmar_ratio': _safe_group_mean('calmar_ratio'),
             'value_at_risk': _safe_group_mean('value_at_risk'),
             'expected_shortfall': _safe_group_mean('expected_shortfall'),
-            'ulcer_index': _safe_group_mean('ulcer_index')
+            'ulcer_index': _safe_group_mean('ulcer_index'),
+            'time_in_market_percentage': _safe_group_mean('time_in_market_percentage'),
         })
 
     aggregated_df = pd.DataFrame(metrics_dict).reset_index()
@@ -234,7 +245,7 @@ class StrategyAnalyzer:
 
         Args:
             metric: Metric to rank strategies by (e.g., 'profit_factor', 'win_rate',
-                   'average_trade_return_percentage_of_margin', 'sharpe_ratio')
+                   'average_trade_return_percentage_of_contract', 'sharpe_ratio')
             min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
                    to filter out strategies with insufficient data
             limit: Maximum number of top strategies to return
