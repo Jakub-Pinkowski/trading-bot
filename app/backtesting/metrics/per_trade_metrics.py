@@ -166,7 +166,7 @@ def print_trade_metrics(trade):
     print(f"Exit Time: {trade.get('exit_time', 'N/A')}")
 
     # Print duration if available
-    if 'duration_hours' in trade:
+    if 'duration' in trade:
         print(f"Duration: {trade['duration']} ({trade['duration_hours']:.2f} hours)")
 
     print(f"Side: {trade.get('side', 'N/A')}")

@@ -1013,9 +1013,7 @@ class TestLargestWinLoss:
         result = SummaryMetrics(trades).calculate_all_metrics()
 
         value = result['largest_win_percentage_of_contract']
-        str_val = str(value)
-        if '.' in str_val:
-            assert len(str_val.split('.')[1]) <= 2
+        assert value == round(value, 2)
 
 
 class TestReturnSkewness:
@@ -1059,6 +1057,4 @@ class TestReturnSkewness:
         result = SummaryMetrics(trades).calculate_all_metrics()
 
         value = result['return_skewness']
-        str_val = str(value)
-        if '.' in str_val:
-            assert len(str_val.split('.')[1]) <= 2
+        assert value == round(value, 2)
