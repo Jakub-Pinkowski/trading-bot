@@ -183,8 +183,6 @@ trading-bot/
 # Backtesting
 # NOTE: Profit estimation is not accurate due to changing margin requirements over time
 # TODO [HIGH]: Do an extensive manual testing whether it works as per TradingView's indicators
-# TODO [MEDIUM]: Some metrics make no sense considering different intervals, for example average duration
-# TODO [MEDIUM]: Update tests running reporting once per 1000 tests instead of 100 tests
 # TODO [MEDIUM]: Add new strategies
 # TODO [LOW]: Implement segmentation and out-of-sample data testing
 # TODO [LOW]: Add an automatic Github Action to run the fetching on a monthly basis
