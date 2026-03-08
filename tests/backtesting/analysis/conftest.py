@@ -43,7 +43,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 2.5, 'average_loss_percentage_of_contract': -1.5,
          'profit_factor': 3.0, 'maximum_drawdown_percentage': 10.0, 'sharpe_ratio': 2.5,
          'sortino_ratio': 3.0, 'calmar_ratio': 10.0, 'value_at_risk': 5.0,
-         'expected_shortfall': 7.0, 'ulcer_index': 3.0},
+         'expected_shortfall': 7.0, 'ulcer_index': 3.0,
+         'win_loss_ratio': 1.67, 'max_consecutive_wins': 8, 'max_consecutive_losses': 4,
+         'expectancy_per_bar': 0.22, 'time_in_market_percentage': 45.0},
 
         {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'TopStrategy',
          'total_trades': 80, 'win_rate': 60.0, 'average_trade_duration_bars': 4.0,
@@ -52,7 +54,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 2.5, 'average_loss_percentage_of_contract': -1.0,
          'profit_factor': 3.0, 'maximum_drawdown_percentage': 12.0, 'sharpe_ratio': 2.0,
          'sortino_ratio': 2.5, 'calmar_ratio': 6.67, 'value_at_risk': 6.0,
-         'expected_shortfall': 8.0, 'ulcer_index': 4.0},
+         'expected_shortfall': 8.0, 'ulcer_index': 4.0,
+         'win_loss_ratio': 2.5, 'max_consecutive_wins': 7, 'max_consecutive_losses': 5,
+         'expectancy_per_bar': 0.25, 'time_in_market_percentage': 40.0},
 
         {'month': '1!', 'symbol': 'ES', 'interval': '4h', 'strategy': 'TopStrategy',
          'total_trades': 50, 'win_rate': 70.0, 'average_trade_duration_bars': 8.0,
@@ -61,7 +65,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 3.0, 'average_loss_percentage_of_contract': -1.0,
          'profit_factor': 7.0, 'maximum_drawdown_percentage': 5.0, 'sharpe_ratio': 3.0,
          'sortino_ratio': 4.0, 'calmar_ratio': 18.0, 'value_at_risk': 3.0,
-         'expected_shortfall': 4.0, 'ulcer_index': 2.0},
+         'expected_shortfall': 4.0, 'ulcer_index': 2.0,
+         'win_loss_ratio': 3.0, 'max_consecutive_wins': 9, 'max_consecutive_losses': 3,
+         'expectancy_per_bar': 0.23, 'time_in_market_percentage': 64.0},
 
         # Medium-performing strategy
         {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'MediumStrategy',
@@ -71,7 +77,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 2.0, 'average_loss_percentage_of_contract': -1.2,
          'profit_factor': 2.0, 'maximum_drawdown_percentage': 15.0, 'sharpe_ratio': 1.5,
          'sortino_ratio': 2.0, 'calmar_ratio': 2.0, 'value_at_risk': 8.0,
-         'expected_shortfall': 10.0, 'ulcer_index': 6.0},
+         'expected_shortfall': 10.0, 'ulcer_index': 6.0,
+         'win_loss_ratio': 1.67, 'max_consecutive_wins': 6, 'max_consecutive_losses': 6,
+         'expectancy_per_bar': 0.1, 'time_in_market_percentage': 50.0},
 
         {'month': '1!', 'symbol': 'CL', 'interval': '4h', 'strategy': 'MediumStrategy',
          'total_trades': 40, 'win_rate': 50.0, 'average_trade_duration_bars': 6.0,
@@ -80,7 +88,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 2.0, 'average_loss_percentage_of_contract': -1.0,
          'profit_factor': 2.0, 'maximum_drawdown_percentage': 18.0, 'sharpe_ratio': 1.0,
          'sortino_ratio': 1.5, 'calmar_ratio': 1.11, 'value_at_risk': 10.0,
-         'expected_shortfall': 12.0, 'ulcer_index': 8.0},
+         'expected_shortfall': 12.0, 'ulcer_index': 8.0,
+         'win_loss_ratio': 2.0, 'max_consecutive_wins': 5, 'max_consecutive_losses': 7,
+         'expectancy_per_bar': 0.08, 'time_in_market_percentage': 60.0},
 
         # Low-performing strategy (should be filtered out with min trades)
         {'month': '1!', 'symbol': 'ZS', 'interval': '1d', 'strategy': 'LowTradeStrategy',
@@ -90,7 +100,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 5.0, 'average_loss_percentage_of_contract': -5.0,
          'profit_factor': 0.67, 'maximum_drawdown_percentage': 25.0, 'sharpe_ratio': -0.5,
          'sortino_ratio': -0.5, 'calmar_ratio': -0.2, 'value_at_risk': 15.0,
-         'expected_shortfall': 18.0, 'ulcer_index': 12.0},
+         'expected_shortfall': 18.0, 'ulcer_index': 12.0,
+         'win_loss_ratio': 1.0, 'max_consecutive_wins': 2, 'max_consecutive_losses': 3,
+         'expectancy_per_bar': -0.04, 'time_in_market_percentage': 96.0},
 
         # Single symbol strategy (for symbol count filtering)
         {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'SingleSymbolStrategy',
@@ -100,7 +112,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 1.8, 'average_loss_percentage_of_contract': -1.1,
          'profit_factor': 2.25, 'maximum_drawdown_percentage': 12.0, 'sharpe_ratio': 1.8,
          'sortino_ratio': 2.2, 'calmar_ratio': 4.17, 'value_at_risk': 7.0,
-         'expected_shortfall': 9.0, 'ulcer_index': 5.0},
+         'expected_shortfall': 9.0, 'ulcer_index': 5.0,
+         'win_loss_ratio': 1.64, 'max_consecutive_wins': 7, 'max_consecutive_losses': 5,
+         'expectancy_per_bar': 0.19, 'time_in_market_percentage': 30.0},
 
         # Strategy with different slippage (for slippage filtering tests)
         {'month': '1!', 'symbol': 'ZS', 'interval': '1h', 'strategy': 'HighSlippageStrategy(slippage_ticks=5.0)',
@@ -110,7 +124,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 1.4, 'average_loss_percentage_of_contract': -0.9,
          'profit_factor': 1.67, 'maximum_drawdown_percentage': 16.0, 'sharpe_ratio': 1.2,
          'sortino_ratio': 1.6, 'calmar_ratio': 1.25, 'value_at_risk': 9.0,
-         'expected_shortfall': 11.0, 'ulcer_index': 7.0},
+         'expected_shortfall': 11.0, 'ulcer_index': 7.0,
+         'win_loss_ratio': 1.56, 'max_consecutive_wins': 6, 'max_consecutive_losses': 6,
+         'expectancy_per_bar': 0.07, 'time_in_market_percentage': 40.0},
 
         {'month': '1!', 'symbol': 'CL', 'interval': '1h', 'strategy': 'HighSlippageStrategy(slippage_ticks=5.0)',
          'total_trades': 65, 'win_rate': 51.0, 'average_trade_duration_bars': 3.5,
@@ -119,7 +135,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 1.4, 'average_loss_percentage_of_contract': -0.9,
          'profit_factor': 1.61, 'maximum_drawdown_percentage': 17.0, 'sharpe_ratio': 1.1,
          'sortino_ratio': 1.5, 'calmar_ratio': 1.0, 'value_at_risk': 9.5,
-         'expected_shortfall': 11.5, 'ulcer_index': 7.5},
+         'expected_shortfall': 11.5, 'ulcer_index': 7.5,
+         'win_loss_ratio': 1.56, 'max_consecutive_wins': 6, 'max_consecutive_losses': 7,
+         'expectancy_per_bar': 0.07, 'time_in_market_percentage': 35.0},
 
         # Additional variations for comprehensive testing
         {'month': '1!', 'symbol': 'ES', 'interval': '1d', 'strategy': 'LongTermStrategy',
@@ -129,7 +147,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 4.0, 'average_loss_percentage_of_contract': -2.5,
          'profit_factor': 3.0, 'maximum_drawdown_percentage': 8.0, 'sharpe_ratio': 2.2,
          'sortino_ratio': 2.8, 'calmar_ratio': 5.0, 'value_at_risk': 5.0,
-         'expected_shortfall': 6.5, 'ulcer_index': 3.5},
+         'expected_shortfall': 6.5, 'ulcer_index': 3.5,
+         'win_loss_ratio': 1.6, 'max_consecutive_wins': 8, 'max_consecutive_losses': 4,
+         'expectancy_per_bar': 0.03, 'time_in_market_percentage': 96.0},
 
         {'month': '1!', 'symbol': 'CL', 'interval': '1d', 'strategy': 'LongTermStrategy',
          'total_trades': 30, 'win_rate': 60.0, 'average_trade_duration_bars': 40.0,
@@ -138,7 +158,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 3.5, 'average_loss_percentage_of_contract': -2.3,
          'profit_factor': 2.2, 'maximum_drawdown_percentage': 10.0, 'sharpe_ratio': 1.8,
          'sortino_ratio': 2.3, 'calmar_ratio': 3.0, 'value_at_risk': 6.0,
-         'expected_shortfall': 7.5, 'ulcer_index': 4.5},
+         'expected_shortfall': 7.5, 'ulcer_index': 4.5,
+         'win_loss_ratio': 1.52, 'max_consecutive_wins': 7, 'max_consecutive_losses': 5,
+         'expectancy_per_bar': 0.03, 'time_in_market_percentage': 80.0},
 
         {'month': '1!', 'symbol': 'ZS', 'interval': '4h', 'strategy': 'LongTermStrategy',
          'total_trades': 35, 'win_rate': 62.0, 'average_trade_duration_bars': 36.0,
@@ -147,7 +169,9 @@ def base_strategy_results():
          'average_win_percentage_of_contract': 3.7, 'average_loss_percentage_of_contract': -1.9,
          'profit_factor': 2.64, 'maximum_drawdown_percentage': 9.0, 'sharpe_ratio': 2.0,
          'sortino_ratio': 2.5, 'calmar_ratio': 4.0, 'value_at_risk': 5.5,
-         'expected_shortfall': 7.0, 'ulcer_index': 4.0},
+         'expected_shortfall': 7.0, 'ulcer_index': 4.0,
+         'win_loss_ratio': 1.95, 'max_consecutive_wins': 7, 'max_consecutive_losses': 4,
+         'expectancy_per_bar': 0.03, 'time_in_market_percentage': 72.0},
     ])
 
 

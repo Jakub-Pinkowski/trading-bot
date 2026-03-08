@@ -1,5 +1,6 @@
 import numpy as np
 
+from app.backtesting.analysis.constants import INFINITY_REPLACEMENT
 from app.utils.logger import get_logger
 from app.utils.math_utils import safe_average, safe_divide
 
@@ -14,10 +15,6 @@ MIN_RETURNS_FOR_VAR = 30  # Minimum returns needed for Value at Risk and Expecte
 # Risk and Performance Metrics Constants
 RISK_FREE_RATE = 0.0  # Default risk-free rate for Sharpe and Sortino ratios
 CONFIDENCE_LEVEL = 0.95  # Default confidence level for VaR and Expected Shortfall (95%)
-
-# Used when ratio calculations would result in infinity
-# Rationale: Large but finite number that won't break aggregations
-INFINITY_REPLACEMENT = 9999.99
 
 
 class SummaryMetrics:
@@ -152,6 +149,7 @@ class SummaryMetrics:
     def _calculate_win_loss_trades(self):
         """Calculate winning and losing trades based on contract returns."""
         self.winning_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] > 0]
+        # Break-even trades (0% return) are intentionally classified as losses
         self.losing_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] <= 0]
         self.win_count = len(self.winning_trades)
         self.loss_count = len(self.losing_trades)
