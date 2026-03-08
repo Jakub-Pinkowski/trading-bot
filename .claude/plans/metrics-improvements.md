@@ -190,40 +190,33 @@ Requires `dataset_total_hours` from the runner (same as Calmar fix in 2.1).
 
 ---
 
-## Phase 3 — Aggregation Fixes (Medium Priority)
+## Phase 3 — Aggregation Fixes (Medium Priority) ✓ COMPLETE
 
 **File**: `app/backtesting/analysis/strategy_analyzer.py`
 
-### 3.1 `average_trade_duration_bars` aggregation
+### 3.1 `average_trade_duration_bars` aggregation ✓
 
-Average `average_trade_duration_bars` (not hours) in `_aggregate_strategies`. Add it to
-both the `weighted` and non-weighted branches.
+Removed redundant `_group_mean_or_nan('average_trade_duration_bars')` assignment in the
+weighted branch (it was immediately overwritten by the `risk_metrics` loop). Now handled
+exclusively by the `risk_metrics` trade-weighted loop in both branches.
 
-### 3.2 `total_return_percentage_of_contract` in aggregation
+### 3.2 `total_return_percentage_of_contract` in aggregation ✓
 
-Currently **summed** across symbols. A strategy on 4 symbols gets 4× the return of the
-same strategy on 1 symbol. Options:
+Renamed to `total_return_all_symbols_pct_contract` (sum across all symbols, grows with
+symbol count). Added `avg_return_per_symbol_pct_contract = total / symbol_count` which
+is symbol-count-neutral. Applied to both weighted and non-weighted branches.
 
-- **Option A (recommended)**: Keep the sum but rename to
-  `total_return_all_symbols_pct_contract` so intent is explicit. Add a separate
-  `avg_return_per_symbol_pct_contract = total / symbol_count` which is symbol-count
-  neutral.
-- **Option B**: Replace sum with mean. Simpler but loses the "total capital deployed"
-  perspective.
+### 3.3 Sharpe/Sortino/Calmar aggregation ✓
 
-### 3.3 Sharpe/Sortino/Calmar aggregation
+Added `MIN_TRADES_FOR_RATIO = 30` to `constants.py`. Added `min_trades` parameter to
+`calculate_trade_weighted_average` in `data_helpers.py`. Applied in the weighted branch
+for Sharpe/Sortino/Calmar — runs below 30 trades are excluded from the weighted average.
+Added comments documenting the approximation limitation in both weighted and non-weighted
+branches.
 
-Current approach: trade-weighted average of per-run ratios. This is an approximation.
-Ideal: recalculate from the combined trade stream. This is architecturally complex today
-because the raw trade lists are not stored in the parquet output — only summary metrics
-are.
-
-**Pragmatic fix for now**: document the limitation in comments and keep trade-weighted
-averaging, but exclude any combinations below `MIN_TRADES_FOR_RATIO` (e.g., 30) from
-the weighted average to reduce noise.
-
-**Future option**: Store per-trade records in a separate parquet (or JSON sidecar) so
-ratios can be recomputed from scratch. Out of scope for this branch.
+**Limitation (documented in code)**: This is still an approximation — ideally ratios
+would be recomputed from the combined trade stream. Storing per-trade records in parquet
+to enable that is out of scope for this branch.
 
 ---
 
@@ -345,10 +338,10 @@ Phase 2 (new metrics, needs Phase 1.4): ✓ COMPLETE — 100% coverage on all mo
   2.5 → time_in_market_percentage                    ✓
   Note: margin return metrics (originally 2.2) removed — not required
 
-Phase 3 (aggregation):
-  3.1 → aggregate duration_bars                      [15 min]
-  3.2 → rename/fix total_return aggregation          [20 min]
-  3.3 → document Sharpe/Sortino/Calmar limitation    [10 min, comment only]
+Phase 3 (aggregation): ✓ COMPLETE — 178 tests passing, 100% coverage
+  3.1 → remove redundant duration_bars assignment    ✓
+  3.2 → rename/fix total_return aggregation          ✓
+  3.3 → MIN_TRADES_FOR_RATIO + comment               ✓
 
 Phase 4 (crypto abstraction, separate branch):
   4.1-4.3 → InstrumentType + abstracted helpers      [2h]

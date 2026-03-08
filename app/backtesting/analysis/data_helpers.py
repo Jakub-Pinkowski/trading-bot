@@ -5,6 +5,8 @@ This module contains helper functions for filtering DataFrames and calculating
 metrics for strategy analysis.
 """
 
+import pandas as pd
+
 from app.backtesting.analysis.constants import REQUIRED_COLUMNS, AGG_FUNCTIONS, DECIMAL_PLACES
 from app.utils.logger import get_logger
 
@@ -165,7 +167,7 @@ def calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
     ).replace([float('inf'), float('-inf')], float('inf')).round(DECIMAL_PLACES)
 
 
-def calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy):
+def calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy, min_trades=None):
     """
     Calculate a trade-weighted average for a given metric across multiple test results.
 
@@ -177,11 +179,24 @@ def calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_s
         filtered_df: DataFrame containing strategy results with the metric column and 'total_trades' column
         metric_name: Name of the column to calculate weighted average for (e.g., 'profit_factor', 'sharpe_ratio')
         total_trades_by_strategy: Series with total trade counts per strategy (from a group by sum)
+        min_trades: If set, only rows with total_trades >= min_trades are included in the weighted
+                    average. Strategies with no eligible rows receive NaN. Defaults to None (all rows included).
 
     Returns:
         Series with trade-weighted average values for each strategy, rounded to DECIMAL_PLACES.
-        Index is strategy names, values are weighted averages of the specified metric
+        Index is strategy names, values are weighted averages of the specified metric.
+        Returns NaN for strategies where all rows are below min_trades.
     """
+    if min_trades is not None:
+        eligible = filtered_df[filtered_df['total_trades'] >= min_trades]
+        if eligible.empty:
+            return pd.Series(index=total_trades_by_strategy.index, data=float('nan'))
+        eligible_totals = eligible.groupby(eligible['strategy'])['total_trades'].sum()
+        weighted_sum = (eligible[metric_name] * eligible['total_trades']).groupby(eligible['strategy']).sum()
+        result = (weighted_sum / eligible_totals).round(DECIMAL_PLACES)
+        # Reindex to the full strategy set so strategies with no eligible rows get NaN
+        return result.reindex(total_trades_by_strategy.index)
+
     weighted_sum = (filtered_df[metric_name] * filtered_df['total_trades']).groupby(
         filtered_df['strategy']).sum()
     return (weighted_sum / total_trades_by_strategy).round(DECIMAL_PLACES)

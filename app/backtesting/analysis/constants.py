@@ -10,6 +10,11 @@ Separated to avoid circular imports.
 DEFAULT_LIMIT = 30
 DECIMAL_PLACES = 2
 
+# Minimum per-run trade count required for a row to be included in the
+# trade-weighted average of ratio metrics (Sharpe, Sortino, Calmar).
+# Rows below this threshold are too noisy and skew the aggregate.
+MIN_TRADES_FOR_RATIO = 30
+
 # ==================== DataFrame Requirements ====================
 
 # Required columns that must be present in strategy results DataFrames
