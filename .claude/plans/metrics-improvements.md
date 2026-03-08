@@ -353,6 +353,14 @@ Phase 4 (crypto abstraction, separate branch):
   4.1-4.3 → InstrumentType + abstracted helpers      [2h]
   4.4     → crypto_config stub                       [1h]
   4.5     → update calculate_trade_metrics signature [30 min]
+
+Phase 5 (new metrics, pre-rerun candidates):
+  5.1 → largest_win_percentage_of_contract / largest_loss_percentage_of_contract
+        max/min of self.returns — detects outlier-driven strategies
+  5.2 → return_skewness
+        mean(((r - μ) / σ)³) over all returns — characterises distribution shape.
+        Negative skew = rare large losses behind frequent small wins (dangerous).
+        Pure numpy, no scipy dependency
 ```
 
 ---

@@ -113,7 +113,7 @@ ANALYSES = [
         'name': 'Best Profit Factor (all intervals, weighted)',
         'metric': 'profit_factor',
         'interval': None,
-        'weighted': False,
+        'weighted': True,
     },
     # {
     #     **COMMON_ANALYSIS_PARAMS,
