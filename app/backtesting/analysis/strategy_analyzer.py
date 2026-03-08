@@ -227,10 +227,6 @@ def _aggregate_strategies(
 
     aggregated_df = pd.DataFrame(metrics_dict).reset_index()
 
-    # Apply a minimum symbol count filter if specified
-    if min_symbol_count is not None:
-        aggregated_df = aggregated_df[aggregated_df['symbol_count'] >= min_symbol_count]
-
     return aggregated_df
 
 

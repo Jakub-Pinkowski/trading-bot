@@ -7,7 +7,7 @@ metrics for strategy analysis.
 
 import pandas as pd
 
-from app.backtesting.analysis.constants import REQUIRED_COLUMNS, AGG_FUNCTIONS, DECIMAL_PLACES
+from app.backtesting.analysis.constants import REQUIRED_COLUMNS, AGG_FUNCTIONS, DECIMAL_PLACES, INFINITY_REPLACEMENT
 from app.utils.logger import get_logger
 
 logger = get_logger('backtesting/analysis/helpers')
@@ -160,11 +160,11 @@ def calculate_profit_ratio(total_wins_percentage, total_losses_percentage):
     Returns:
         Series with profit ratios (absolute value), rounded to DECIMAL_PLACES.
         Values > 1 indicate profitable strategies, < 1 indicate losing strategies.
-        Infinity indicates no losses (all trades are profitable)
+        INFINITY_REPLACEMENT (9999.99) indicates no losses (all trades are profitable)
     """
     return abs(
         total_wins_percentage / total_losses_percentage
-    ).replace([float('inf'), float('-inf')], float('inf')).round(DECIMAL_PLACES)
+    ).replace([float('inf'), float('-inf')], INFINITY_REPLACEMENT).round(DECIMAL_PLACES)
 
 
 def calculate_trade_weighted_average(filtered_df, metric_name, total_trades_by_strategy, min_trades=None):

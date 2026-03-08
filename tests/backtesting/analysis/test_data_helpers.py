@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.backtesting.analysis.constants import DECIMAL_PLACES, REQUIRED_COLUMNS
+from app.backtesting.analysis.constants import DECIMAL_PLACES, INFINITY_REPLACEMENT, REQUIRED_COLUMNS
 from app.backtesting.analysis.data_helpers import (
     filter_dataframe,
     calculate_weighted_win_rate,
@@ -474,8 +474,8 @@ class TestProfitRatioCalculation:
 
         result = calculate_profit_ratio(wins, losses)
 
-        # Should return infinity
-        assert result.iloc[0] == float('inf')
+        # Should return INFINITY_REPLACEMENT (large finite number for safe aggregation)
+        assert result.iloc[0] == INFINITY_REPLACEMENT
 
     def test_profit_ratio_below_one(self):
         """Test profit ratio less than 1 (losing strategy)."""
@@ -509,14 +509,14 @@ class TestProfitRatioCalculation:
         assert result.iloc[0] == expected
 
     def test_profit_ratio_handles_infinity(self):
-        """Test that infinity values are properly handled."""
+        """Test that infinity values are replaced with INFINITY_REPLACEMENT."""
         wins = pd.Series([100.0, 200.0])
         losses = pd.Series([0.0, 50.0])
 
         result = calculate_profit_ratio(wins, losses)
 
-        # First should be inf, second should be 4.0
-        assert result.iloc[0] == float('inf')
+        # First should be INFINITY_REPLACEMENT, second should be 4.0
+        assert result.iloc[0] == INFINITY_REPLACEMENT
         assert result.iloc[1] == 4.0
 
 

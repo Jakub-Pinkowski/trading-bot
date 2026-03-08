@@ -335,11 +335,12 @@ class SummaryMetrics:
         # Sort returns in ascending order (worst to best)
         sorted_returns = sorted(self.returns)
 
-        # Find the index corresponding to the confidence level
-        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
+        # tail_count = number of observations in the (1-confidence) tail, minimum 1
+        # floor() ensures we don't overshoot the tail boundary (e.g. 0.05 * 30 = 1.5 → 1 tail return)
+        tail_count = max(1, int(np.floor((1 - CONFIDENCE_LEVEL) * len(sorted_returns))))
 
-        # Return the absolute value of the loss at that index
-        return abs(sorted_returns[max(0, index)])
+        # VaR is the least-bad return still inside the tail (the tail boundary)
+        return abs(sorted_returns[tail_count - 1])
 
     def _calculate_expected_shortfall(self):
         """Returns the average loss in the worst (1-confidence)% of cases."""
@@ -349,11 +350,11 @@ class SummaryMetrics:
         # Sort returns in ascending order (worst to best)
         sorted_returns = sorted(self.returns)
 
-        # Find the index corresponding to the confidence level
-        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
+        # tail_count matches VaR calculation so ES averages exactly the tail VaR is drawn from
+        tail_count = max(1, int(np.floor((1 - CONFIDENCE_LEVEL) * len(sorted_returns))))
 
         # Calculate the average of the worst returns
-        worst_returns = sorted_returns[:max(1, index + 1)]
+        worst_returns = sorted_returns[:tail_count]
         return abs(safe_average(worst_returns))
 
     def _calculate_ulcer_index(self):

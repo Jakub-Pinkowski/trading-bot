@@ -338,10 +338,16 @@ Phase 2 (new metrics, needs Phase 1.4): ✓ COMPLETE — 100% coverage on all mo
   2.5 → time_in_market_percentage                    ✓
   Note: margin return metrics (originally 2.2) removed — not required
 
-Phase 3 (aggregation): ✓ COMPLETE — 178 tests passing, 100% coverage
+Phase 3 (aggregation): ✓ COMPLETE — 2053 tests passing, 100% coverage
   3.1 → remove redundant duration_bars assignment    ✓
   3.2 → rename/fix total_return aggregation          ✓
   3.3 → MIN_TRADES_FOR_RATIO + comment               ✓
+
+Code quality fixes (pre-Phase 4 review):
+  → test_runner.py: replaced all with patch(...) with monkeypatch.setattr(...)  ✓
+  → VaR/ES tail boundary: tail_count = max(1, int(np.floor((1-CL)*N)))          ✓
+  → calculate_profit_ratio: now returns INFINITY_REPLACEMENT (9999.99) not inf  ✓
+  → double min_symbol_count filter: removed redundant post-aggregation filter    ✓
 
 Phase 4 (crypto abstraction, separate branch):
   4.1-4.3 → InstrumentType + abstracted helpers      [2h]

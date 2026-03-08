@@ -15,6 +15,10 @@ DECIMAL_PLACES = 2
 # Rows below this threshold are too noisy and skew the aggregate.
 MIN_TRADES_FOR_RATIO = 30
 
+# Used when ratio calculations would result in infinity (e.g. zero losses)
+# Rationale: Large but finite number that won't break aggregations
+INFINITY_REPLACEMENT = 9999.99
+
 # ==================== DataFrame Requirements ====================
 
 # Required columns that must be present in strategy results DataFrames
