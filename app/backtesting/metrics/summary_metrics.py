@@ -1,5 +1,6 @@
 import numpy as np
 
+from app.backtesting.analysis.constants import INFINITY_REPLACEMENT
 from app.utils.logger import get_logger
 from app.utils.math_utils import safe_average, safe_divide
 
@@ -9,15 +10,11 @@ logger = get_logger('backtesting/summary_metrics')
 
 # Metrics Calculation Constants
 MIN_RETURNS_FOR_SHARPE = 2  # Minimum returns needed to calculate the Sharpe ratio (need at least 2 for std dev)
-MIN_RETURNS_FOR_VAR = 5  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
+MIN_RETURNS_FOR_VAR = 30  # Minimum returns needed for Value at Risk and Expected Shortfall calculations
 
 # Risk and Performance Metrics Constants
 RISK_FREE_RATE = 0.0  # Default risk-free rate for Sharpe and Sortino ratios
 CONFIDENCE_LEVEL = 0.95  # Default confidence level for VaR and Expected Shortfall (95%)
-
-# Used when ratio calculations would result in infinity
-# Rationale: Large but finite number that won't break aggregations
-INFINITY_REPLACEMENT = 9999.99
 
 
 class SummaryMetrics:
@@ -25,9 +22,17 @@ class SummaryMetrics:
 
     # ==================== Initialization ====================
 
-    def __init__(self, trades):
-        """Initialize with a list of trades and perform initial calculations."""
+    def __init__(self, trades, dataset_total_hours=None):
+        """Initialize with a list of trades and perform initial calculations.
+
+        Args:
+            trades: List of trade dicts from calculate_trade_metrics()
+            dataset_total_hours: Total hours spanned by the dataset used in the backtest.
+                                 Required for Calmar annualisation and time_in_market_percentage.
+                                 Pass None to fall back to non-annualised Calmar.
+        """
         self.trades = trades
+        self.dataset_total_hours = dataset_total_hours
         self.winning_trades = []
         self.losing_trades = []
         self.win_count = 0
@@ -51,17 +56,20 @@ class SummaryMetrics:
         win_rate = self.win_rate
         win_count = self.win_count
         loss_count = self.loss_count
-        average_duration_hours = safe_average(self.durations, self.total_trades)
+        average_duration_bars = safe_average(self.duration_bars)
         total_wins_percentage_of_contract = sum(trade['return_percentage_of_contract'] for trade in self.winning_trades)
         total_losses_percentage_of_contract = sum(
             trade['return_percentage_of_contract'] for trade in self.losing_trades)
+        win_loss_ratio = self._calculate_win_loss_ratio()
+        max_consecutive_wins, max_consecutive_losses = self._calculate_consecutive_streaks()
 
-        # --- Return Metrics ---  (contract-based)
+        # --- Return Metrics --- (contract-based)
         total_return_percentage_of_contract = self.total_return_contract
-        average_trade_return_percentage_of_contract = safe_average([self.total_return_contract], self.total_trades)
+        average_trade_return_percentage_of_contract = safe_average(self.returns)
         average_win_percentage_of_contract = self._calculate_average_win_percentage_of_contract()
         average_loss_percentage_of_contract = self._calculate_average_loss_percentage_of_contract()
         profit_factor = self._calculate_profit_factor()
+        expectancy_per_bar = self._calculate_expectancy_per_bar()
 
         # --- Risk Metrics ---
         max_drawdown, maximum_drawdown_percentage = self.max_drawdown, self.maximum_drawdown_percentage
@@ -71,6 +79,7 @@ class SummaryMetrics:
         value_at_risk = self._calculate_value_at_risk()
         expected_shortfall = self._calculate_expected_shortfall()
         ulcer_index = self._calculate_ulcer_index()
+        time_in_market_percentage = self._calculate_time_in_market_percentage()
 
         return {
             # --- Basic Trade Statistics ---
@@ -78,16 +87,20 @@ class SummaryMetrics:
             'winning_trades': win_count,
             'losing_trades': loss_count,
             'win_rate': round(win_rate, 2),
-            'average_trade_duration_hours': round(average_duration_hours, 2),
+            'average_trade_duration_bars': round(average_duration_bars, 2),
+            'win_loss_ratio': round(win_loss_ratio, 2),
+            'max_consecutive_wins': max_consecutive_wins,
+            'max_consecutive_losses': max_consecutive_losses,
             'total_wins_percentage_of_contract': round(total_wins_percentage_of_contract, 2),
             'total_losses_percentage_of_contract': round(total_losses_percentage_of_contract, 2),
 
-            # --- Return Metrics ---
+            # --- Return Metrics (contract-based) ---
             'total_return_percentage_of_contract': round(total_return_percentage_of_contract, 2),
             'average_trade_return_percentage_of_contract': round(average_trade_return_percentage_of_contract, 2),
             'average_win_percentage_of_contract': round(average_win_percentage_of_contract, 2),
             'average_loss_percentage_of_contract': round(average_loss_percentage_of_contract, 2),
             'profit_factor': round(profit_factor, 2),
+            'expectancy_per_bar': round(expectancy_per_bar, 4),
 
             # --- Risk Metrics ---
             'maximum_drawdown_percentage': round(maximum_drawdown_percentage, 2),
@@ -97,6 +110,7 @@ class SummaryMetrics:
             'value_at_risk': round(value_at_risk, 2),
             'expected_shortfall': round(expected_shortfall, 2),
             'ulcer_index': round(ulcer_index, 2),
+            'time_in_market_percentage': round(time_in_market_percentage, 2),
         }
 
     # ==================== Private Methods ====================
@@ -127,12 +141,16 @@ class SummaryMetrics:
 
         # Cache commonly used lists
         self.returns = [trade['return_percentage_of_contract'] for trade in self.trades]
-        self.durations = [trade.get('duration_hours', 0) for trade in self.trades]
+        self.duration_bars = [trade.get('duration_bars', 0) for trade in self.trades]
+        self.total_duration_hours = sum(
+            trade['duration'].total_seconds() / 3600 for trade in self.trades if 'duration' in trade
+        )
 
     def _calculate_win_loss_trades(self):
         """Calculate winning and losing trades based on contract returns."""
-        self.winning_trades = [t for t in self.trades if t['return_percentage_of_contract'] > 0]
-        self.losing_trades = [t for t in self.trades if t['return_percentage_of_contract'] <= 0]
+        self.winning_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] > 0]
+        # Break-even trades (0% return) are intentionally classified as losses
+        self.losing_trades = [trade for trade in self.trades if trade['return_percentage_of_contract'] <= 0]
         self.win_count = len(self.winning_trades)
         self.loss_count = len(self.losing_trades)
         self.win_rate = (self.win_count / self.total_trades) * 100 if self.total_trades > 0 else 0
@@ -207,7 +225,7 @@ class SummaryMetrics:
         average_return = safe_average(self.returns)
 
         # Calculate standard deviation
-        std_dev = np.std(self.returns, ddof=0)
+        std_dev = np.std(self.returns, ddof=1)
 
         if std_dev == 0:
             return 0
@@ -222,28 +240,90 @@ class SummaryMetrics:
         average_return = safe_average(self.returns)
 
         # Calculate downside deviation (returns below the risk-free rate)
-        negative_returns = [r - RISK_FREE_RATE for r in self.returns if r < RISK_FREE_RATE]
+        negative_returns = [return_value - RISK_FREE_RATE for return_value in self.returns if
+                            return_value < RISK_FREE_RATE]
 
         if not negative_returns:
             return INFINITY_REPLACEMENT
 
-        downside_variance = safe_average([r ** 2 for r in negative_returns])
+        # Divide by N (all trades), not len(negative_returns), per the standard Sortino formula
+        n = len(self.returns)
+        downside_variance = sum(return_value ** 2 for return_value in negative_returns) / n
         downside_deviation = downside_variance ** 0.5
-
-        if downside_deviation == 0:
-            return 0
 
         return safe_divide(average_return - RISK_FREE_RATE, downside_deviation)
 
     def _calculate_calmar_ratio(self):
-        """Calculate Calmar ratio: Annualized Return / Maximum Drawdown."""
+        """Calculate Calmar ratio: Annualised Return / Maximum Drawdown.
+
+        Annualises using dataset_total_hours when available. Falls back to cumulative
+        total return when dataset length is unknown, which is not comparable across
+        different dataset lengths but is better than nothing.
+        """
         if not self._has_trades():
             return 0
 
         if self.maximum_drawdown_percentage == 0:
             return INFINITY_REPLACEMENT
 
-        return safe_divide(self.total_return_contract, self.maximum_drawdown_percentage)
+        if self.dataset_total_hours and self.dataset_total_hours > 0:
+            annualisation_factor = 8760 / self.dataset_total_hours
+            annualised_return = self.total_return_contract * annualisation_factor
+        else:
+            annualised_return = self.total_return_contract
+
+        return safe_divide(annualised_return, self.maximum_drawdown_percentage)
+
+    def _calculate_win_loss_ratio(self):
+        """Calculate win/loss ratio: Average Win % / |Average Loss %|.
+
+        Complements win_rate — a high win rate with a low W/L ratio signals a marginal strategy.
+        """
+        avg_win = self._calculate_average_win_percentage_of_contract()
+        avg_loss = self._calculate_average_loss_percentage_of_contract()
+        if avg_loss == 0:
+            return INFINITY_REPLACEMENT
+        return abs(safe_divide(avg_win, avg_loss))
+
+    def _calculate_consecutive_streaks(self):
+        """Calculate the longest winning and losing streaks in the trade sequence.
+
+        Returns:
+            Tuple of (max_consecutive_wins, max_consecutive_losses)
+        """
+        if not self._has_trades():
+            return 0, 0
+
+        max_wins = max_losses = cur_wins = cur_losses = 0
+        for return_value in self.returns:
+            if return_value > 0:
+                cur_wins += 1
+                cur_losses = 0
+            else:
+                cur_losses += 1
+                cur_wins = 0
+            max_wins = max(max_wins, cur_wins)
+            max_losses = max(max_losses, cur_losses)
+        return max_wins, max_losses
+
+    def _calculate_expectancy_per_bar(self):
+        """Calculate return earned per bar held: Average Trade Return / Average Duration Bars.
+
+        Normalises for both trade size and time held. Cross-interval comparison is meaningful.
+        """
+        avg_bars = safe_average(self.duration_bars)
+        if avg_bars == 0:
+            return 0
+        return safe_divide(safe_average(self.returns), avg_bars)
+
+    def _calculate_time_in_market_percentage(self):
+        """Calculate percentage of dataset time spent holding a position.
+
+        Requires dataset_total_hours to be set. Returns 0 when not available.
+        """
+        if not self._has_trades() or not self.dataset_total_hours or self.dataset_total_hours <= 0:
+            return 0
+        return safe_divide(self.total_duration_hours, self.dataset_total_hours) * 100
 
     def _calculate_value_at_risk(self):
         """Returns the loss that won't be exceeded with the given confidence level."""
@@ -253,11 +333,12 @@ class SummaryMetrics:
         # Sort returns in ascending order (worst to best)
         sorted_returns = sorted(self.returns)
 
-        # Find the index corresponding to the confidence level
-        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
+        # tail_count = number of observations in the (1-confidence) tail, minimum 1
+        # floor() ensures we don't overshoot the tail boundary (e.g. 0.05 * 30 = 1.5 → 1 tail return)
+        tail_count = max(1, int(np.floor((1 - CONFIDENCE_LEVEL) * len(sorted_returns))))
 
-        # Return the absolute value of the loss at that index
-        return abs(sorted_returns[max(0, index)])
+        # VaR is the least-bad return still inside the tail (the tail boundary)
+        return abs(sorted_returns[tail_count - 1])
 
     def _calculate_expected_shortfall(self):
         """Returns the average loss in the worst (1-confidence)% of cases."""
@@ -267,11 +348,11 @@ class SummaryMetrics:
         # Sort returns in ascending order (worst to best)
         sorted_returns = sorted(self.returns)
 
-        # Find the index corresponding to the confidence level
-        index = int((1 - CONFIDENCE_LEVEL) * len(sorted_returns))
+        # tail_count matches VaR calculation so ES averages exactly the tail VaR is drawn from
+        tail_count = max(1, int(np.floor((1 - CONFIDENCE_LEVEL) * len(sorted_returns))))
 
         # Calculate the average of the worst returns
-        worst_returns = sorted_returns[:max(1, index + 1)]
+        worst_returns = sorted_returns[:tail_count]
         return abs(safe_average(worst_returns))
 
     def _calculate_ulcer_index(self):

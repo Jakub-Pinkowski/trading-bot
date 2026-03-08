@@ -174,7 +174,7 @@ def _format_column_name(column_name):
         'total_return_percentage_of_contract': 'total_return_%',
         'average_loss_percentage_of_contract': 'avg_loss_%',
         'maximum_drawdown_percentage': 'max_drawdown_%',
-        'average_trade_duration_hours': 'avg_duration_h',
+        'average_trade_duration_bars': 'avg_duration_bars',
         'win_rate': 'win_rate_%',
         'max_consecutive_wins': 'max_cons_wins',
         'max_consecutive_losses': 'max_cons_losses',

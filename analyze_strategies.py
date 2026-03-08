@@ -34,7 +34,7 @@ Configuration Parameters:
         Trade Statistics:
             - 'win_rate'
             - 'total_trades'
-            - 'average_trade_duration_hours'
+            - 'average_trade_duration_bars'
             - 'max_consecutive_wins'
             - 'max_consecutive_losses'
     

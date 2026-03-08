@@ -667,7 +667,7 @@ class TestEdgeCases:
         df = df.drop(columns=[
             'average_win_percentage_of_contract',
             'average_loss_percentage_of_contract',
-            'average_trade_duration_hours',
+            'average_trade_duration_bars',
             'sharpe_ratio',
             'sortino_ratio',
             'calmar_ratio',
@@ -710,8 +710,8 @@ class TestEdgeCases:
 
         # Should return results with NaN for missing columns
         assert len(result_simple) > 0
-        assert 'average_trade_duration_hours' in result_simple.columns
-        assert result_simple['average_trade_duration_hours'].isna().all()
+        assert 'average_trade_duration_bars' in result_simple.columns
+        assert result_simple['average_trade_duration_bars'].isna().all()
 
     def test_aggregate_strategies_raises_for_none_df(self):
         """Test _aggregate_strategies raises ValueError when df is None (lines 69-70)."""
@@ -993,6 +993,144 @@ class TestAggregationMetrics:
 
         assert abs(top_strategy['avg_trades_per_combination'] - expected_avg) < 0.1
 
+    def test_weighted_aggregation_outputs_total_return_all_symbols_column(self, analyzer_with_data):
+        """Test that weighted aggregation outputs total_return_all_symbols_pct_contract."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        assert 'total_return_all_symbols_pct_contract' in result.columns
+        assert 'total_return_percentage_of_contract' not in result.columns
+
+    def test_simple_aggregation_outputs_total_return_all_symbols_column(self, analyzer_with_data):
+        """Test that simple aggregation outputs total_return_all_symbols_pct_contract."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=False
+        )
+
+        assert 'total_return_all_symbols_pct_contract' in result.columns
+        assert 'total_return_percentage_of_contract' not in result.columns
+
+    def test_weighted_aggregation_outputs_avg_return_per_symbol_column(self, analyzer_with_data):
+        """Test that weighted aggregation outputs avg_return_per_symbol_pct_contract."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        assert 'avg_return_per_symbol_pct_contract' in result.columns
+
+        # TopStrategy: total return = 100+80+90 = 270, symbol_count = 3 → avg = 90
+        top_strategy = result[result['strategy'] == 'TopStrategy'].iloc[0]
+        assert abs(top_strategy['avg_return_per_symbol_pct_contract'] - 90.0) < 0.1
+
+    def test_simple_aggregation_outputs_avg_return_per_symbol_column(self, analyzer_with_data):
+        """Test that simple aggregation outputs avg_return_per_symbol_pct_contract."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=False
+        )
+
+        assert 'avg_return_per_symbol_pct_contract' in result.columns
+
+    def test_weighted_ratio_metrics_exclude_low_trade_runs(self, analyzer_with_data):
+        """Test that Sharpe/Sortino/Calmar exclude runs with < MIN_TRADES_FOR_RATIO trades."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        # LowTradeStrategy has only 5 trades (< MIN_TRADES_FOR_RATIO=30),
+        # so its only row is excluded and the ratio metrics should be NaN
+        low_strategy = result[result['strategy'] == 'LowTradeStrategy'].iloc[0]
+        assert pd.isna(low_strategy['sharpe_ratio'])
+        assert pd.isna(low_strategy['sortino_ratio'])
+        assert pd.isna(low_strategy['calmar_ratio'])
+
+    def test_weighted_non_ratio_metrics_unaffected_by_min_trades(self, analyzer_with_data):
+        """Test that non-ratio metrics (e.g., maximum_drawdown_percentage) still use all rows."""
+        result = analyzer_with_data.get_top_strategies(
+            metric='total_trades',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        # LowTradeStrategy: maximum_drawdown_percentage uses all rows (no min_trades filter)
+        low_strategy = result[result['strategy'] == 'LowTradeStrategy'].iloc[0]
+        assert not pd.isna(low_strategy['maximum_drawdown_percentage'])
+        assert low_strategy['maximum_drawdown_percentage'] == 25.0
+
+    def test_total_return_missing_column_in_simple_aggregation_returns_nan(self, monkeypatch, base_strategy_results):
+        """Test NaN fallback when total_return_percentage_of_contract is missing in non-weighted branch."""
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        df = base_strategy_results.drop(columns=['total_return_percentage_of_contract'])
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        result = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=False
+        )
+
+        assert len(result) > 0
+        assert 'total_return_all_symbols_pct_contract' in result.columns
+        assert result['total_return_all_symbols_pct_contract'].isna().all()
+        assert result['avg_return_per_symbol_pct_contract'].isna().all()
+
+    def test_total_return_missing_column_in_weighted_aggregation_returns_nan(self, monkeypatch, base_strategy_results):
+        """Test NaN fallback when total_return_percentage_of_contract is missing in weighted branch."""
+        monkeypatch.setattr(StrategyAnalyzer, '_load_results', lambda _self, _file_path: None)
+
+        df = base_strategy_results.drop(columns=['total_return_percentage_of_contract'])
+        analyzer = StrategyAnalyzer()
+        analyzer.results_df = df
+
+        monkeypatch.setattr(
+            'app.backtesting.analysis.strategy_analyzer.StrategyAnalyzer._save_results_to_csv',
+            lambda self, metric, limit, df_to_save, aggregate, interval, symbol, weighted: None
+        )
+
+        result = analyzer.get_top_strategies(
+            metric='win_rate',
+            min_avg_trades_per_combination=0,
+            limit=None,
+            aggregate=True,
+            weighted=True
+        )
+
+        assert len(result) > 0
+        assert 'total_return_all_symbols_pct_contract' in result.columns
+        assert result['total_return_all_symbols_pct_contract'].isna().all()
+        assert result['avg_return_per_symbol_pct_contract'].isna().all()
+
 
 class TestOnePerGroupFiltering:
     """Test one_per_group filtering to avoid correlation bias."""
@@ -1022,7 +1160,7 @@ class TestOnePerGroupFiltering:
             'value_at_risk': [5] * 6,
             'expected_shortfall': [7] * 6,
             'ulcer_index': [3] * 6,
-            'average_trade_duration_hours': [12] * 6,
+            'average_trade_duration_bars': [12] * 6,
         }
         test_df = pd.DataFrame(data)
 
@@ -1105,7 +1243,7 @@ class TestOnePerGroupFiltering:
             'value_at_risk': [5] * 10,
             'expected_shortfall': [7] * 10,
             'ulcer_index': [3] * 10,
-            'average_trade_duration_hours': [12] * 10,
+            'average_trade_duration_bars': [12] * 10,
         }
         test_df = pd.DataFrame(data)
 

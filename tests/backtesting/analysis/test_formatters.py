@@ -427,7 +427,7 @@ class TestColumnNameFormatting:
         ('total_return_percentage_of_contract', 'Total Return %'),
         ('average_loss_percentage_of_contract', 'Avg Loss %'),
         ('maximum_drawdown_percentage', 'Max Drawdown %'),
-        ('average_trade_duration_hours', 'Avg Duration H'),
+        ('average_trade_duration_bars', 'Avg Duration Bars'),
         ('win_rate', 'Win Rate %'),
         ('sharpe_ratio', 'Sharpe'),
         ('sortino_ratio', 'Sortino'),

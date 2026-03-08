@@ -88,7 +88,6 @@ class TestCompleteStrategyPipeline:
             assert 'net_pnl' in trade_metrics
             assert 'return_percentage_of_contract' in trade_metrics
             assert 'return_percentage_of_margin' in trade_metrics
-            assert 'duration_hours' in trade_metrics
             assert isinstance(trade_metrics['net_pnl'], (int, float))
 
         # Calculate summary metrics

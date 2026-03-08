@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.backtesting.analysis.constants import DECIMAL_PLACES, REQUIRED_COLUMNS
+from app.backtesting.analysis.constants import DECIMAL_PLACES, INFINITY_REPLACEMENT, REQUIRED_COLUMNS
 from app.backtesting.analysis.data_helpers import (
     filter_dataframe,
     calculate_weighted_win_rate,
@@ -474,8 +474,8 @@ class TestProfitRatioCalculation:
 
         result = calculate_profit_ratio(wins, losses)
 
-        # Should return infinity
-        assert result.iloc[0] == float('inf')
+        # Should return INFINITY_REPLACEMENT (large finite number for safe aggregation)
+        assert result.iloc[0] == INFINITY_REPLACEMENT
 
     def test_profit_ratio_below_one(self):
         """Test profit ratio less than 1 (losing strategy)."""
@@ -509,14 +509,14 @@ class TestProfitRatioCalculation:
         assert result.iloc[0] == expected
 
     def test_profit_ratio_handles_infinity(self):
-        """Test that infinity values are properly handled."""
+        """Test that infinity values are replaced with INFINITY_REPLACEMENT."""
         wins = pd.Series([100.0, 200.0])
         losses = pd.Series([0.0, 50.0])
 
         result = calculate_profit_ratio(wins, losses)
 
-        # First should be inf, second should be 4.0
-        assert result.iloc[0] == float('inf')
+        # First should be INFINITY_REPLACEMENT, second should be 4.0
+        assert result.iloc[0] == INFINITY_REPLACEMENT
         assert result.iloc[1] == 4.0
 
 
@@ -609,6 +609,88 @@ class TestTradeWeightedAverage:
         # (2.555*100 + 2.444*100) / 200 = 2.4995
         expected = round(2.4995, DECIMAL_PLACES)
         assert result['A'] == expected
+
+    def test_trade_weighted_average_min_trades_filters_below_threshold(self):
+        """Test that min_trades excludes rows with fewer trades from the weighted average."""
+        df = pd.DataFrame([
+            {'strategy': 'A', 'total_trades': 100, 'sharpe_ratio': 3.0},
+            {'strategy': 'A', 'total_trades': 10, 'sharpe_ratio': 1.0},  # excluded (<30)
+            {'strategy': 'B', 'total_trades': 50, 'sharpe_ratio': 2.0},
+            {'strategy': 'B', 'total_trades': 5, 'sharpe_ratio': 0.5},  # excluded (<30)
+        ])
+
+        grouped = df.groupby('strategy')
+        total_trades = grouped['total_trades'].sum()
+
+        result = calculate_trade_weighted_average(df, 'sharpe_ratio', total_trades, min_trades=30)
+
+        # Only rows with total_trades >= 30 are included, each strategy has one eligible row
+        assert result['A'] == 3.0
+        assert result['B'] == 2.0
+
+    def test_trade_weighted_average_min_trades_partial_exclusion_weights_correctly(self):
+        """Test that weighted average uses only eligible rows' totals as denominator."""
+        df = pd.DataFrame([
+            {'strategy': 'A', 'total_trades': 100, 'sharpe_ratio': 4.0},
+            {'strategy': 'A', 'total_trades': 50, 'sharpe_ratio': 2.0},
+            {'strategy': 'A', 'total_trades': 10, 'sharpe_ratio': 0.0},  # excluded
+        ])
+
+        grouped = df.groupby('strategy')
+        total_trades = grouped['total_trades'].sum()
+
+        result = calculate_trade_weighted_average(df, 'sharpe_ratio', total_trades, min_trades=30)
+
+        # Only rows with 100 and 50 trades included: (4.0*100 + 2.0*50) / 150 = 500/150 = 3.33
+        assert abs(result['A'] - round(500 / 150, DECIMAL_PLACES)) < 0.01
+
+    def test_trade_weighted_average_min_trades_all_excluded_returns_nan(self):
+        """Test that NaN is returned when all rows are below min_trades threshold."""
+        df = pd.DataFrame([
+            {'strategy': 'A', 'total_trades': 5, 'sharpe_ratio': 2.5},
+            {'strategy': 'A', 'total_trades': 10, 'sharpe_ratio': 3.0},
+        ])
+
+        grouped = df.groupby('strategy')
+        total_trades = grouped['total_trades'].sum()
+
+        result = calculate_trade_weighted_average(df, 'sharpe_ratio', total_trades, min_trades=30)
+
+        assert pd.isna(result['A'])
+
+    def test_trade_weighted_average_min_trades_none_unchanged(self, weighted_calculation_data):
+        """Test that min_trades=None behaves identically to omitting the parameter."""
+        grouped = weighted_calculation_data.groupby('strategy')
+        total_trades = grouped['total_trades'].sum()
+
+        result_default = calculate_trade_weighted_average(
+            filtered_df=weighted_calculation_data,
+            metric_name='sharpe_ratio',
+            total_trades_by_strategy=total_trades
+        )
+        result_explicit_none = calculate_trade_weighted_average(
+            filtered_df=weighted_calculation_data,
+            metric_name='sharpe_ratio',
+            total_trades_by_strategy=total_trades,
+            min_trades=None
+        )
+
+        assert result_default.equals(result_explicit_none)
+
+    def test_trade_weighted_average_min_trades_some_strategies_nan(self):
+        """Test that strategies below min_trades get NaN while others get valid values."""
+        df = pd.DataFrame([
+            {'strategy': 'High', 'total_trades': 100, 'sharpe_ratio': 2.0},
+            {'strategy': 'Low', 'total_trades': 5, 'sharpe_ratio': 3.0},  # all rows excluded
+        ])
+
+        grouped = df.groupby('strategy')
+        total_trades = grouped['total_trades'].sum()
+
+        result = calculate_trade_weighted_average(df, 'sharpe_ratio', total_trades, min_trades=30)
+
+        assert result['High'] == 2.0
+        assert pd.isna(result['Low'])
 
 
 class TestEdgeCases:

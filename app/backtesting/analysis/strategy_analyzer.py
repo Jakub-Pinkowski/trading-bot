@@ -8,7 +8,7 @@ import os
 
 import pandas as pd
 
-from app.backtesting.analysis.constants import DEFAULT_LIMIT, DECIMAL_PLACES
+from app.backtesting.analysis.constants import DEFAULT_LIMIT, DECIMAL_PLACES, MIN_TRADES_FOR_RATIO
 from app.backtesting.analysis.data_helpers import (
     filter_dataframe,
     calculate_weighted_win_rate,
@@ -32,6 +32,144 @@ BACKTESTING_DIR = DATA_DIR / "backtesting"
 
 
 # ==================== Helper functions ====================
+
+def _aggregate_weighted(filtered_df, grouped, total_trades, symbol_count):
+    """
+    Calculate trade-weighted aggregated metrics for each strategy group.
+
+    Args:
+        filtered_df: Filtered DataFrame with per-combination rows
+        grouped: DataFrame grouped by strategy
+        total_trades: Series of total trade counts per strategy
+        symbol_count: Series of unique symbol counts per strategy
+
+    Returns:
+        Dict of metric name → Series, ready to merge into the base metrics_dict
+    """
+    metrics = {}
+
+    metrics['win_rate'] = calculate_weighted_win_rate(filtered_df, grouped)
+
+    # total_return_all_symbols_pct_contract grows with symbol count;
+    # avg_return_per_symbol_pct_contract is symbol-count-neutral for cross-strategy comparison
+    if 'total_return_percentage_of_contract' in filtered_df.columns:
+        _total_return_sum = grouped['total_return_percentage_of_contract'].sum()
+    else:
+        _total_return_sum = pd.Series(index=total_trades.index, data=float('nan'))
+    metrics['total_return_all_symbols_pct_contract'] = _total_return_sum
+    metrics['avg_return_per_symbol_pct_contract'] = (
+            _total_return_sum / symbol_count
+    ).round(DECIMAL_PLACES)
+    metrics['average_trade_return_percentage_of_contract'] = calculate_average_trade_return(
+        _total_return_sum, total_trades
+    )
+
+    # Guard access in case the input DataFrame does not contain those optional columns
+    def _group_mean_or_nan(col_name):
+        if col_name in filtered_df.columns:
+            return grouped[col_name].mean()
+        return pd.Series(index=total_trades.index, data=float('nan'))
+
+    metrics['average_win_percentage_of_contract'] = _group_mean_or_nan('average_win_percentage_of_contract')
+    metrics['average_loss_percentage_of_contract'] = _group_mean_or_nan('average_loss_percentage_of_contract')
+
+    # Recalculate profit factor from aggregated wins/losses when available for accuracy;
+    # fall back to trade-weighted average of per-combination profit_factor values otherwise
+    if ('total_wins_percentage_of_contract' in filtered_df.columns
+            and 'total_losses_percentage_of_contract' in filtered_df.columns):
+        total_wins_pct = grouped['total_wins_percentage_of_contract'].sum()
+        total_losses_pct = grouped['total_losses_percentage_of_contract'].sum()
+        metrics['profit_factor'] = calculate_profit_ratio(total_wins_pct, total_losses_pct)
+    elif 'profit_factor' in filtered_df.columns:
+        metrics['profit_factor'] = calculate_trade_weighted_average(filtered_df, 'profit_factor', total_trades)
+    else:
+        metrics['profit_factor'] = pd.Series(index=total_trades.index, data=float('nan'))
+
+    risk_metrics = [
+        'maximum_drawdown_percentage',
+        'sharpe_ratio',
+        'sortino_ratio',
+        'calmar_ratio',
+        'value_at_risk',
+        'expected_shortfall',
+        'ulcer_index',
+        'time_in_market_percentage',
+        'win_loss_ratio',
+        'max_consecutive_wins',
+        'max_consecutive_losses',
+        'expectancy_per_bar',
+        'average_trade_duration_bars',
+    ]
+
+    for metric in risk_metrics:
+        if metric in filtered_df.columns:
+            if metric in ('sharpe_ratio', 'sortino_ratio', 'calmar_ratio'):
+                # Exclude runs below MIN_TRADES_FOR_RATIO to reduce noise in ratio averaging.
+                # Limitation: this is still an approximation — ideally these ratios would be
+                # recomputed from the combined trade stream.
+                metrics[metric] = calculate_trade_weighted_average(
+                    filtered_df, metric, total_trades, min_trades=MIN_TRADES_FOR_RATIO
+                )
+            else:
+                metrics[metric] = calculate_trade_weighted_average(filtered_df, metric, total_trades)
+        else:
+            metrics[metric] = pd.Series(index=total_trades.index, data=float('nan'))
+
+    return metrics
+
+
+def _aggregate_unweighted(filtered_df, grouped, total_trades, symbol_count):
+    """
+    Calculate simple-averaged aggregated metrics for each strategy group.
+
+    Args:
+        filtered_df: Filtered DataFrame with per-combination rows
+        grouped: DataFrame grouped by strategy
+        total_trades: Series of total trade counts per strategy
+        symbol_count: Series of unique symbol counts per strategy
+
+    Returns:
+        Dict of metric name → Series, ready to merge into the base metrics_dict
+    """
+
+    def _safe_group_mean(col_name):
+        if col_name in filtered_df.columns:
+            return grouped[col_name].mean()
+        return pd.Series(index=total_trades.index, data=float('nan'))
+
+    # total_return_all_symbols_pct_contract grows with symbol count;
+    # avg_return_per_symbol_pct_contract is symbol-count-neutral for cross-strategy comparison
+    if 'total_return_percentage_of_contract' in filtered_df.columns:
+        _total_return_sum = grouped['total_return_percentage_of_contract'].sum()
+    else:
+        _total_return_sum = pd.Series(index=total_trades.index, data=float('nan'))
+
+    return {
+        'win_rate': _safe_group_mean('win_rate'),
+        'average_trade_duration_bars': _safe_group_mean('average_trade_duration_bars'),
+        'win_loss_ratio': _safe_group_mean('win_loss_ratio'),
+        'max_consecutive_wins': _safe_group_mean('max_consecutive_wins'),
+        'max_consecutive_losses': _safe_group_mean('max_consecutive_losses'),
+        'total_return_all_symbols_pct_contract': _total_return_sum,
+        'avg_return_per_symbol_pct_contract': (_total_return_sum / symbol_count).round(DECIMAL_PLACES),
+        'average_trade_return_percentage_of_contract': _safe_group_mean(
+            'average_trade_return_percentage_of_contract'),
+        'average_win_percentage_of_contract': _safe_group_mean('average_win_percentage_of_contract'),
+        'average_loss_percentage_of_contract': _safe_group_mean('average_loss_percentage_of_contract'),
+        'profit_factor': _safe_group_mean('profit_factor'),
+        'expectancy_per_bar': _safe_group_mean('expectancy_per_bar'),
+        # Note: simple means for Sharpe/Sortino/Calmar are an approximation; ideally these
+        # would be recomputed from the combined trade stream.
+        'maximum_drawdown_percentage': _safe_group_mean('maximum_drawdown_percentage'),
+        'sharpe_ratio': _safe_group_mean('sharpe_ratio'),
+        'sortino_ratio': _safe_group_mean('sortino_ratio'),
+        'calmar_ratio': _safe_group_mean('calmar_ratio'),
+        'value_at_risk': _safe_group_mean('value_at_risk'),
+        'expected_shortfall': _safe_group_mean('expected_shortfall'),
+        'ulcer_index': _safe_group_mean('ulcer_index'),
+        'time_in_market_percentage': _safe_group_mean('time_in_market_percentage'),
+    }
+
 
 def _aggregate_strategies(
     df,
@@ -69,7 +207,6 @@ def _aggregate_strategies(
         logger.error('No results available. Load results first.')
         raise ValueError('No results available. Load results first.')
 
-    # Apply common filtering
     filtered_df = filter_dataframe(df,
                                    min_avg_trades_per_combination,
                                    interval,
@@ -77,16 +214,12 @@ def _aggregate_strategies(
                                    min_slippage_ticks,
                                    min_symbol_count)
 
-    # Group by strategy
     grouped = filtered_df.groupby('strategy')
-
-    # Calculate aggregated metrics
     total_trades = grouped['total_trades'].sum()
     symbol_count = grouped['symbol'].nunique()
     interval_count = grouped['interval'].nunique()
 
     metrics_dict = {
-        # Basic info
         'symbol_count': symbol_count,
         'interval_count': interval_count,
         'total_trades': total_trades,
@@ -96,106 +229,11 @@ def _aggregate_strategies(
     }
 
     if weighted:
-        # Calculate weighted metrics
-        metrics_dict['win_rate'] = calculate_weighted_win_rate(filtered_df, grouped)
-
-        # Return metrics (contract-based)
-        metrics_dict['total_return_percentage_of_contract'] = grouped['total_return_percentage_of_contract'].sum()
-        metrics_dict['average_trade_return_percentage_of_contract'] = calculate_average_trade_return(
-            metrics_dict['total_return_percentage_of_contract'], metrics_dict['total_trades']
-        )
-
-        # These metrics can be averaged as they are already normalized
-        # Guard access in case the input DataFrame does not contain those optional columns
-        def _group_mean_or_nan(col_name):
-            # Return grouped mean if a column exists, otherwise return NaN series aligned with strategies
-            if col_name in filtered_df.columns:
-                return grouped[col_name].mean()
-            return pd.Series(index=total_trades.index, data=float('nan'))
-
-        metrics_dict[
-            'average_win_percentage_of_contract'] = _group_mean_or_nan('average_win_percentage_of_contract')
-        metrics_dict['average_loss_percentage_of_contract'] = _group_mean_or_nan(
-            'average_loss_percentage_of_contract')
-        metrics_dict['average_trade_duration_hours'] = _group_mean_or_nan('average_trade_duration_hours')
-
-        # Calculate profit factor percentage from aggregated wins and losses if available
-        if 'total_wins_percentage_of_contract' in filtered_df.columns and 'total_losses_percentage_of_contract' in filtered_df.columns:
-            total_wins_percentage = grouped['total_wins_percentage_of_contract'].sum()
-            total_losses_percentage = grouped['total_losses_percentage_of_contract'].sum()
-
-            # Recalculate profit factor from aggregated data
-            metrics_dict['profit_factor'] = calculate_profit_ratio(
-                total_wins_percentage, total_losses_percentage
-            )
-        else:
-            # Fallback: compute trade-weighted profit_factor if profit_factor column exists
-            if 'profit_factor' in filtered_df.columns:
-                metrics_dict['profit_factor'] = calculate_trade_weighted_average(
-                    filtered_df, 'profit_factor', total_trades
-                )
-            else:
-                metrics_dict['profit_factor'] = pd.Series(index=total_trades.index, data=float('nan'))
-
-        # Calculate trade-weighted averages for risk metrics
-        risk_metrics = [
-            'maximum_drawdown_percentage',
-            'sharpe_ratio',
-            'sortino_ratio',
-            'calmar_ratio',
-            'value_at_risk',
-            'expected_shortfall',
-            'ulcer_index'
-        ]
-
-        for metric in risk_metrics:
-            # Only calculate if the metric column exists in the filtered dataframe
-            if metric in filtered_df.columns:
-                metrics_dict[metric] = calculate_trade_weighted_average(
-                    filtered_df, metric, total_trades
-                )
-            else:
-                metrics_dict[metric] = pd.Series(index=total_trades.index, data=float('nan'))
+        metrics_dict.update(_aggregate_weighted(filtered_df, grouped, total_trades, symbol_count))
     else:
-        # Averages all metrics across strategies
-        # Use grouped means where columns exist, otherwise supply NaN Series aligned to strategies
-        def _safe_group_mean(col_name):
-            if col_name in filtered_df.columns:
-                return grouped[col_name].mean()
-            return pd.Series(index=total_trades.index, data=float('nan'))
+        metrics_dict.update(_aggregate_unweighted(filtered_df, grouped, total_trades, symbol_count))
 
-        metrics_dict.update({
-            'win_rate': _safe_group_mean('win_rate'),
-            'average_trade_duration_hours': _safe_group_mean('average_trade_duration_hours'),
-
-            # Return metrics (contract-based)
-            'total_return_percentage_of_contract': grouped[
-                'total_return_percentage_of_contract'].sum() if 'total_return_percentage_of_contract' in filtered_df.columns else pd.Series(
-                index=total_trades.index,
-                data=float('nan')),
-            'average_trade_return_percentage_of_contract': _safe_group_mean(
-                'average_trade_return_percentage_of_contract'),
-            'average_win_percentage_of_contract': _safe_group_mean('average_win_percentage_of_contract'),
-            'average_loss_percentage_of_contract': _safe_group_mean('average_loss_percentage_of_contract'),
-
-            # Risk metrics
-            'profit_factor': _safe_group_mean('profit_factor'),
-            'maximum_drawdown_percentage': _safe_group_mean('maximum_drawdown_percentage'),
-            'sharpe_ratio': _safe_group_mean('sharpe_ratio'),
-            'sortino_ratio': _safe_group_mean('sortino_ratio'),
-            'calmar_ratio': _safe_group_mean('calmar_ratio'),
-            'value_at_risk': _safe_group_mean('value_at_risk'),
-            'expected_shortfall': _safe_group_mean('expected_shortfall'),
-            'ulcer_index': _safe_group_mean('ulcer_index')
-        })
-
-    aggregated_df = pd.DataFrame(metrics_dict).reset_index()
-
-    # Apply a minimum symbol count filter if specified
-    if min_symbol_count is not None:
-        aggregated_df = aggregated_df[aggregated_df['symbol_count'] >= min_symbol_count]
-
-    return aggregated_df
+    return pd.DataFrame(metrics_dict).reset_index()
 
 
 class StrategyAnalyzer:
@@ -234,7 +272,7 @@ class StrategyAnalyzer:
 
         Args:
             metric: Metric to rank strategies by (e.g., 'profit_factor', 'win_rate',
-                   'average_trade_return_percentage_of_margin', 'sharpe_ratio')
+                   'average_trade_return_percentage_of_contract', 'sharpe_ratio')
             min_avg_trades_per_combination: Minimum average trades per symbol/interval combo
                    to filter out strategies with insufficient data
             limit: Maximum number of top strategies to return
