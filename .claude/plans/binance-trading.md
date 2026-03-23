@@ -202,7 +202,7 @@ def _get_quantity(symbol):
     Returns coin quantity for a new opening order, derived from USDT notional.
     1. Fetch mark price: binance_get('/fapi/v1/premiumIndex', {'symbol': symbol})
     2. raw_qty = NOTIONAL_USDT.get(symbol, DEFAULT_NOTIONAL_USDT) / float(response['markPrice'])
-    3. Round DOWN to stepSize precision (from cached exchangeInfo LOT_SIZE filter)
+    3. Round UP to stepSize precision (math.ceil) — ensures notional >= MIN_NOTIONAL
     4. Return None if quantity < minQty (caller rejects with clear error)
     Only used for OPEN orders. Close orders always use abs(current positionAmt).
     """
@@ -332,7 +332,8 @@ coin_qty = NOTIONAL_USDT / mark_price   (rounded down to stepSize)
 
 - **Mark price**: `GET /fapi/v1/premiumIndex` — fetch fresh on every order.
 - **stepSize / minQty**: from `GET /fapi/v1/exchangeInfo` LOT_SIZE filter — cache at module level, it changes rarely.
-- Use `math.floor` to round down; never round up (would exceed notional intent).
+- Use `math.ceil` to round up to the next valid stepSize — floor can silently produce a quantity whose notional falls
+  below `MIN_NOTIONAL` (e.g. 100 USDT for BTCUSDT), causing a `-4164` rejection.
 - If `coin_qty < minQty`, reject before placing any order.
 
 **Important:** `_get_quantity()` is only for opening new positions. Closing an existing position always uses
@@ -423,7 +424,11 @@ No new dependencies. `requests` is already in `requirements.txt`; signing uses s
    the account is in hedge mode and `reduceOnly` will be rejected. This is a one-time account setting; verify manually
    before first deployment, not at runtime.
 
-7. **Always pass `newOrderRespType='RESULT'`** on MARKET orders. Default `ACK` returns only the order ID; `RESULT`
+7. **Use `math.ceil` not `math.floor` for quantity rounding.** Floor can produce a quantity whose notional falls below
+   `MIN_NOTIONAL` (100 USDT for BTCUSDT), causing a `-4164` rejection. Ceil ensures the order always meets the minimum
+   notional, at the cost of slightly exceeding the configured USDT amount.
+
+8. **Always pass `newOrderRespType='RESULT'`** on MARKET orders. Default `ACK` returns only the order ID; `RESULT`
    returns the full fill (avgPrice, cumQty) immediately, which is what you want for logging.
 
 ---
