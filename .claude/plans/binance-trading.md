@@ -120,10 +120,8 @@ def _sign(params):
     return params
 
 
-def binance_get(endpoint, params=None, signed=True):
-    params = params or {}
-    if signed:
-        params = _sign(params)
+def binance_get(endpoint, params=None):
+    params = _sign(params or {})
     headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
     response = requests.get(BASE_URL + endpoint, params=params, headers=headers)
     response.raise_for_status()
@@ -140,14 +138,14 @@ def binance_post(endpoint, params=None):
 
 Endpoint reference:
 
-| Function                                             | Endpoint        | Signed |
-|------------------------------------------------------|-----------------|--------|
-| `binance_get('/fapi/v3/positionRisk', ...)`          | Position info   | Yes    |
-| `binance_post('/fapi/v1/order', ...)`                | Place order     | Yes    |
-| `binance_post('/fapi/v1/leverage', ...)`             | Set leverage    | Yes    |
-| `binance_post('/fapi/v1/marginType', ...)`           | Set margin type | Yes    |
-| `binance_get('/fapi/v1/exchangeInfo', signed=False)` | Exchange info   | No     |
-| `binance_get('/fapi/v1/premiumIndex', signed=False)` | Mark price      | No     |
+| Function                                    | Endpoint        | Signed |
+|---------------------------------------------|-----------------|--------|
+| `binance_get('/fapi/v3/positionRisk', ...)` | Position info   | Yes    |
+| `binance_post('/fapi/v1/order', ...)`       | Place order     | Yes    |
+| `binance_post('/fapi/v1/leverage', ...)`    | Set leverage    | Yes    |
+| `binance_post('/fapi/v1/marginType', ...)`  | Set margin type | Yes    |
+| `binance_get('/fapi/v1/exchangeInfo')`      | Exchange info   | Yes    |
+| `binance_get('/fapi/v1/premiumIndex', ...)` | Mark price      | Yes    |
 
 ---
 
@@ -202,7 +200,7 @@ def _get_position(symbol):
 def _get_quantity(symbol):
     """
     Returns coin quantity for a new opening order, derived from USDT notional.
-    1. Fetch mark price: binance_get('/fapi/v1/premiumIndex', {'symbol': symbol}, signed=False)
+    1. Fetch mark price: binance_get('/fapi/v1/premiumIndex', {'symbol': symbol})
     2. raw_qty = NOTIONAL_USDT.get(symbol, DEFAULT_NOTIONAL_USDT) / float(response['markPrice'])
     3. Round DOWN to stepSize precision (from cached exchangeInfo LOT_SIZE filter)
     4. Return None if quantity < minQty (caller rejects with clear error)
@@ -332,7 +330,7 @@ USDT notional:
 coin_qty = NOTIONAL_USDT / mark_price   (rounded down to stepSize)
 ```
 
-- **Mark price**: `GET /fapi/v1/premiumIndex` — public endpoint, no auth. Fetch fresh on every order.
+- **Mark price**: `GET /fapi/v1/premiumIndex` — fetch fresh on every order.
 - **stepSize / minQty**: from `GET /fapi/v1/exchangeInfo` LOT_SIZE filter — cache at module level, it changes rarely.
 - Use `math.floor` to round down; never round up (would exceed notional intent).
 - If `coin_qty < minQty`, reject before placing any order.
