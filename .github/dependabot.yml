@@ -1,6 +1,29 @@
 version: 2
 updates:
+  # Version updates for pip (requirements.txt)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Default is 5. In Aug 2026 all 5 slots sat occupied by open update PRs,
+    # which silently blocked any new version-update PR from being raised.
+    open-pull-requests-limit: 10
+    groups:
+      # Security advisories arrive as ONE batched PR. Security updates are
+      # event-driven -- Dependabot raises them as soon as an advisory lands
+      # and they cannot be put on a schedule -- so grouping is the only lever
+      # for keeping their volume down.
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      # Routine minor/patch bumps arrive as ONE weekly PR.
+      # Majors are deliberately left out so they come through individually
+      # and can be reviewed on their own.
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
