@@ -42,7 +42,7 @@ tenacity==9.1.4
 tvdatafeed @ git+https://github.com/rongardF/tvdatafeed.git@e6f6aaa7de439ac6e454d9b26d2760ded8dc4923
 types-pytz==2026.1.1.20260304
 typing_extensions==4.15.0
-tzdata==2025.3
+tzdata==2026.3
 tzlocal==5.3.1
 urllib3==2.7.0
 websocket-client==1.9.0
